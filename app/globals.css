@@ -127,6 +127,19 @@
   --color-destructive-light: var(--destructive-light);
   --color-hover: var(--hover);
   --color-active: var(--active);
+
+  /* Reserved for /compare shadcn theme only — DO NOT use these utilities
+     (bg-primary, bg-secondary, bg-popover, *-foreground variants) in Fluid
+     Functionalism components. The variables below are undefined at :root and
+     only get values inside `.shadcn-theme` (see app/compare/shadcn-theme.css).
+     ESLint enforces this. */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-destructive-foreground: var(--destructive-foreground);
 }
 
 html.transitioning *,

@@ -32,7 +32,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 
   const handleClose = useCallback(() => setDrawerOpen(false), []);
   const router = useRouter();
-  const isFullscreen = pathname === "/demo";
+  const isFullscreen = pathname === "/demo" || pathname === "/compare";
 
   // Arrow key navigation between pages — ref-based so held keys keep advancing
   // (closures over `pathname` would re-bind per nav and lose key-repeat events).

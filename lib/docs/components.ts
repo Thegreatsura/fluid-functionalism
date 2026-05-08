@@ -6,6 +6,17 @@ export interface ComponentEntry {
   gridSize?: "large" | "medium" | "small";
 }
 
+export interface SystemEntry {
+  slug: string;
+  name: string;
+  description: string;
+  isNew?: boolean;
+}
+
+export const systemList: SystemEntry[] = [
+  { slug: "surfaces", name: "Surfaces", description: "Eight-level surface and shadow ladder for elevation in light and dark mode.", isNew: true },
+];
+
 export const componentList: ComponentEntry[] = [
   { slug: "accordion", name: "Accordion", description: "Collapsible sections with animated expand/collapse and proximity hover in grouped mode.", gridSize: "large" },
   { slug: "badge", name: "Badge", description: "Compact label with solid and dot variants, Tailwind color palette, and three sizes.", gridSize: "small" },

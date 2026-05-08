@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { NavMenu } from "@/components/ui/nav-menu";
 import { NavItem } from "@/components/ui/nav-item";
-import { componentList } from "@/lib/docs/components";
+import { componentList, systemList } from "@/lib/docs/components";
 import { cn } from "@/registry/default/lib/utils";
 
 
@@ -28,6 +28,25 @@ export function Sidebar({ mobile }: SidebarProps) {
         <NavItem index={0} href="/" label="Showcase" />
         <NavItem index={1} href="/docs" label="Introduction" />
       </NavMenu>
+
+      {/* System section */}
+      <div>
+        <span className="text-[13px] text-muted-foreground/50 pl-1 pb-1.5 flex items-center gap-2">
+          System
+          <span className="text-[11px]">{systemList.length}</span>
+        </span>
+        <NavMenu activeSlug={pathname} aria-label="System navigation">
+          {systemList.map((s, i) => (
+            <NavItem
+              key={s.slug}
+              index={i}
+              href={`/docs/${s.slug}`}
+              label={s.name}
+              isNew={s.isNew}
+            />
+          ))}
+        </NavMenu>
+      </div>
 
       {/* Components section */}
       <div>

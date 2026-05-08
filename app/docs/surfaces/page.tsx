@@ -182,7 +182,10 @@ export default function SurfacesDoc() {
       title="Surfaces"
       description={
         <>
-          Eight-level surface and shadow ladder for elevation. Light mode: two color steps then flat white, differentiated by shadow.{" "}
+          Eight-level surface and shadow ladder for elevation.
+          <br />
+          Light mode: two color steps then flat white, differentiated by shadow.
+          <br />
           <UseDarkLink>Dark mode</UseDarkLink>: additive white-opacity ladder with layered inset highlights and drops.
         </>
       }

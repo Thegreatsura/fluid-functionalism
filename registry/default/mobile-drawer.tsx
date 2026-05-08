@@ -131,7 +131,7 @@ export function MobileDrawer({
             aria-modal="true"
             aria-label="Navigation"
             tabIndex={-1}
-            className="fixed top-0 left-0 bottom-0 w-64 bg-background z-50 border-r border-border/60 overflow-y-auto p-4"
+            className="fixed top-0 left-0 bottom-0 w-64 bg-background shadow-surface-3 z-50 border-r border-border/60 overflow-y-auto p-4"
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%", transition: { duration: 0.12 } }}

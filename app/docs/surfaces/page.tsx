@@ -224,6 +224,28 @@ export default function SurfacesDoc() {
           </p>
         </div>
       </DocSection>
+
+      <DocSection title="Used by">
+        <div className="flex flex-col gap-2 text-[13px] text-muted-foreground">
+          <UsedByRow level={2} components={["Tabs (selected pill)"]} />
+          <UsedByRow level={3} components={["Dropdown", "Select", "ColorPicker (popover)", "MobileDrawer"]} />
+          <UsedByRow level={5} components={["Dialog"]} />
+        </div>
+      </DocSection>
     </DocPage>
+  );
+}
+
+function UsedByRow({ level, components }: { level: number; components: string[] }) {
+  return (
+    <div className="flex items-baseline gap-3">
+      <span
+        className="font-mono text-[12px] text-foreground shrink-0 w-32"
+        style={{ fontVariationSettings: fontWeights.semibold }}
+      >
+        shadow-surface-{level}
+      </span>
+      <span>{components.join(", ")}</span>
+    </div>
   );
 }

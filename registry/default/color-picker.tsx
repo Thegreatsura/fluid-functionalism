@@ -1685,7 +1685,7 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
                     value={currentValue}
                     onValueChange={onValueChange}
                     className={cn(
-                      "shadow-[0_4px_12px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
+                      "shadow-surface-3",
                       pickerProps.className
                     )}
                   />

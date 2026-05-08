@@ -296,9 +296,15 @@ function RelativeElevationDemo() {
   ];
 
   const renderDropdown = (key: string) => (
-    <Dropdown key={key} className="w-full">
+    <Dropdown key={key} className="w-full" checkedIndex={0}>
       {items.map((item, i) => (
-        <MenuItem key={item.label} index={i} icon={item.icon} label={item.label} />
+        <MenuItem
+          key={item.label}
+          index={i}
+          icon={item.icon}
+          label={item.label}
+          checked={i === 0}
+        />
       ))}
     </Dropdown>
   );

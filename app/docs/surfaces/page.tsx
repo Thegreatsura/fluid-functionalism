@@ -180,7 +180,12 @@ export default function SurfacesDoc() {
   return (
     <DocPage
       title="Surfaces"
-      description="Eight-level surface and shadow ladder for elevation. Light mode: two color steps then flat white, differentiated by shadow. Dark mode: additive white-opacity ladder with layered inset highlights and drops."
+      description={
+        <>
+          Eight-level surface and shadow ladder for elevation. Light mode: two color steps then flat white, differentiated by shadow.{" "}
+          <UseDarkLink>Dark mode</UseDarkLink>: additive white-opacity ladder with layered inset highlights and drops.
+        </>
+      }
     >
       <DocSection title="Installation">
         <div className="text-[13px] text-muted-foreground">

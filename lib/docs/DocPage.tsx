@@ -11,7 +11,7 @@ import { Tooltip } from "@/registry/default/tooltip";
 
 interface DocPageProps {
   title: string;
-  description: string;
+  description: ReactNode;
   slug?: string;
   children: ReactNode;
 }

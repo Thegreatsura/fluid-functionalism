@@ -15,7 +15,11 @@ import { cn } from "@/lib/utils";
 import { useIcon } from "@/lib/icon-context";
 import { springs } from "@/lib/springs";
 import { useShape } from "@/lib/shape-context";
+import { SurfaceProvider } from "@/lib/surface-context";
+import { surfaceClasses } from "@/lib/surface-classes";
 import { Button } from "@/components/ui/button";
+
+const DIALOG_LEVEL = 5;
 
 const DialogOpenContext = createContext(false);
 
@@ -77,8 +81,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
           <motion.div
             className={cn(
               "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)]",
-              "bg-card",
-              "shadow-surface-5",
+              surfaceClasses(DIALOG_LEVEL),
               "p-6 focus:outline-none",
               size === "sm" && "max-w-[400px]",
               size === "lg" && "max-w-[540px]",
@@ -95,17 +98,19 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
             transition={open ? springs.slow : springs.moderate}
             onAnimationComplete={handleExitComplete}
           >
-            {children}
-            <DialogPrimitive.Close asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="absolute right-3 top-3"
-              >
-                <XIcon />
-                <span className="sr-only">Close</span>
-              </Button>
-            </DialogPrimitive.Close>
+            <SurfaceProvider value={DIALOG_LEVEL}>
+              {children}
+              <DialogPrimitive.Close asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="absolute right-3 top-3"
+                >
+                  <XIcon />
+                  <span className="sr-only">Close</span>
+                </Button>
+              </DialogPrimitive.Close>
+            </SurfaceProvider>
           </motion.div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>

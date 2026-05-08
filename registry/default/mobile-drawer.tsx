@@ -9,6 +9,8 @@ import {
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { springs } from "@/lib/springs";
+import { useSurface, SurfaceProvider } from "@/lib/surface-context";
+import { surfaceClasses } from "@/lib/surface-classes";
 
 interface MobileDrawerProps {
   open: boolean;
@@ -34,6 +36,8 @@ export function MobileDrawer({
 }: MobileDrawerProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const substrate = useSurface();
+  const level = Math.min(substrate + 2, 8);
 
   const getFocusableElements = useCallback(() => {
     if (!panelRef.current) return [];
@@ -131,13 +135,15 @@ export function MobileDrawer({
             aria-modal="true"
             aria-label="Navigation"
             tabIndex={-1}
-            className="fixed top-0 left-0 bottom-0 w-64 bg-background shadow-surface-3 z-50 overflow-y-auto p-4"
+            className={`fixed top-0 left-0 bottom-0 w-64 ${surfaceClasses(level)} z-50 overflow-y-auto p-4`}
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%", transition: { duration: 0.12 } }}
             transition={springs.moderate}
           >
-            {children}
+            <SurfaceProvider value={level}>
+              {children}
+            </SurfaceProvider>
           </motion.div>
         </>
       )}

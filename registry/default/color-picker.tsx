@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils";
 import { springs } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
+import { useSurface, SurfaceProvider } from "@/lib/surface-context";
+import { surfaceClasses } from "@/lib/surface-classes";
 import { useIcon } from "@/lib/icon-context";
 import { Slider } from "@/registry/default/slider";
 import { Dropdown, useDropdown } from "@/registry/default/dropdown";
@@ -1543,6 +1545,8 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
     const [panelEl, setPanelEl] = useState<HTMLDivElement | null>(null);
     const [rect, setRect] = useState<DOMRect | null>(null);
     const shape = useShape();
+    const substrate = useSurface();
+    const level = Math.min(substrate + 2, 8);
 
     const isControlled = pickerProps.value !== undefined;
     const [internalValue, setInternalValue] = useState(pickerProps.value ?? pickerProps.defaultValue ?? "#ff0000");
@@ -1680,15 +1684,17 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
                 style={{ transformOrigin: "top left" }}
               >
                 <ColorPickerPortalContainer value={panelEl}>
-                  <ColorPicker
-                    {...pickerProps}
-                    value={currentValue}
-                    onValueChange={onValueChange}
-                    className={cn(
-                      "shadow-surface-3",
-                      pickerProps.className
-                    )}
-                  />
+                  <SurfaceProvider value={level}>
+                    <ColorPicker
+                      {...pickerProps}
+                      value={currentValue}
+                      onValueChange={onValueChange}
+                      className={cn(
+                        surfaceClasses(level),
+                        pickerProps.className
+                      )}
+                    />
+                  </SurfaceProvider>
                 </ColorPickerPortalContainer>
               </motion.div>
             </AnimatePresence>

@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils";
 import { springs } from "@/lib/springs";
 import { useProximityHover } from "@/hooks/use-proximity-hover";
 import { useShape } from "@/lib/shape-context";
+import { useSurface, SurfaceProvider } from "@/lib/surface-context";
+import { surfaceClasses } from "@/lib/surface-classes";
 
 // ---------------------------------------------------------------------------
 // Select context
@@ -255,6 +257,8 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
   ({ className, children }, ref) => {
     const { open, setOpen, value, triggerRef } = useSelectContext();
     const shape = useShape();
+    const substrate = useSurface();
+    const level = Math.min(substrate + 2, 8);
     const containerRef = useRef<HTMLDivElement>(null);
     const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
 
@@ -406,6 +410,7 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
       activeIndex !== null && activeIndex !== checkedIndex;
 
     return createPortal(
+      <SurfaceProvider value={level}>
       <SelectContentContext.Provider
         value={{ registerItem, activeIndex, checkedIndex }}
       >
@@ -465,7 +470,7 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
             }}
             onKeyDown={handleKeyDown}
             className={cn(
-              `relative flex flex-col gap-0.5 max-h-[300px] overflow-y-auto ${shape.container} bg-card shadow-surface-3 p-1 select-none outline-none`,
+              `relative flex flex-col gap-0.5 max-h-[300px] overflow-y-auto ${shape.container} ${surfaceClasses(level)} p-1 select-none outline-none`,
               className
             )}
           >
@@ -545,7 +550,8 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
           </div>
           </motion.div>
         </div>
-      </SelectContentContext.Provider>,
+      </SelectContentContext.Provider>
+      </SurfaceProvider>,
       document.body
     );
   }

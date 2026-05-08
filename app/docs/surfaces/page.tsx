@@ -225,27 +225,47 @@ export default function SurfacesDoc() {
         </div>
       </DocSection>
 
+      <DocSection title="Relative elevation">
+        <div className="flex flex-col gap-3 text-[13px] text-muted-foreground leading-relaxed">
+          <p>
+            Elevated components don&apos;t pick a fixed surface level — they elevate <em>relative</em> to whatever they sit on.
+            A Dropdown opened on the page background renders at one level; the same Dropdown opened inside a Dialog renders higher.
+            Without this, nesting collapses (a popover inside a popover renders the same color as its parent and disappears).
+          </p>
+          <p>
+            The mechanism: <code className="px-1 py-0.5 rounded bg-muted text-[12px]">SurfaceProvider</code> declares the current substrate level
+            via React context. <code className="px-1 py-0.5 rounded bg-muted text-[12px]">useSurface()</code> reads it (default <code className="px-1 py-0.5 rounded bg-muted text-[12px]">1</code>, the page background).
+            Each elevated component computes its level as <code className="px-1 py-0.5 rounded bg-muted text-[12px]">substrate + offset</code> and re-provides the
+            new substrate to its children, so further nesting walks up the ladder.
+          </p>
+        </div>
+      </DocSection>
+
       <DocSection title="Used by">
         <div className="flex flex-col gap-2 text-[13px] text-muted-foreground">
-          <UsedByRow level={2} components={["Tabs (selected pill)"]} />
-          <UsedByRow level={3} components={["Dropdown", "Select", "ColorPicker (popover)", "MobileDrawer"]} />
-          <UsedByRow level={5} components={["Dialog"]} />
+          <UsedByRow label="Tabs (selected pill)" detail="absolute surface-4" />
+          <UsedByRow label="Dropdown" detail="substrate + 2" />
+          <UsedByRow label="Select" detail="substrate + 2" />
+          <UsedByRow label="ColorPicker (popover)" detail="substrate + 2" />
+          <UsedByRow label="MobileDrawer" detail="substrate + 2" />
+          <UsedByRow label="Dialog" detail="absolute surface-5" />
+          <UsedByRow label="Tooltip" detail="inverted (foreground/background)" />
         </div>
       </DocSection>
     </DocPage>
   );
 }
 
-function UsedByRow({ level, components }: { level: number; components: string[] }) {
+function UsedByRow({ label, detail }: { label: string; detail: string }) {
   return (
     <div className="flex items-baseline gap-3">
       <span
-        className="font-mono text-[12px] text-foreground shrink-0 w-32"
+        className="text-[13px] text-foreground shrink-0 w-44"
         style={{ fontVariationSettings: fontWeights.semibold }}
       >
-        shadow-surface-{level}
+        {label}
       </span>
-      <span>{components.join(", ")}</span>
+      <span className="font-mono text-[12px]">{detail}</span>
     </div>
   );
 }

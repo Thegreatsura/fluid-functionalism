@@ -112,6 +112,30 @@
       ]
     },
     {
+      "name": "surface-context",
+      "type": "registry:lib",
+      "title": "Surface Context",
+      "description": "React context that tracks the current substrate elevation level. Elevated components (Dropdown, Select, etc.) read it via useSurface() and render at substrate + offset, then re-provide a new substrate so further nesting elevates further.",
+      "files": [
+        {
+          "path": "registry/default/lib/surface-context.tsx",
+          "type": "registry:lib"
+        }
+      ]
+    },
+    {
+      "name": "surface-classes",
+      "type": "registry:lib",
+      "title": "Surface Class Lookup",
+      "description": "Static lookup tables for bg-surface-N and shadow-surface-N utilities. Required because Tailwind v4 cannot detect template-literal class names.",
+      "files": [
+        {
+          "path": "registry/default/lib/surface-classes.ts",
+          "type": "registry:lib"
+        }
+      ]
+    },
+    {
       "name": "shape-context",
       "type": "registry:lib",
       "title": "Shape Context",
@@ -240,6 +264,8 @@
         "springs",
         "font-weight",
         "shape-context",
+        "surface-context",
+        "surface-classes",
         "use-proximity-hover"
       ],
       "files": [
@@ -303,6 +329,8 @@
         "utils",
         "springs",
         "shape-context",
+        "surface-context",
+        "surface-classes",
         "icon-context",
         "button"
       ],
@@ -471,6 +499,8 @@
         "utils",
         "springs",
         "shape-context",
+        "surface-context",
+        "surface-classes",
         "icon-context",
         "use-proximity-hover"
       ],
@@ -515,7 +545,7 @@
       "title": "Color Picker",
       "description": "Color picker with HEX, RGB, HSL, and OKLCH formats, alpha channel, optional swatches, and a popover trigger. Built on the Slider component with native EyeDropper support.",
       "dependencies": ["framer-motion"],
-      "registryDependencies": ["utils", "springs", "font-weight", "shape-context", "slider", "dropdown"],
+      "registryDependencies": ["utils", "springs", "font-weight", "shape-context", "surface-context", "surface-classes", "slider", "dropdown"],
       "files": [
         {
           "path": "registry/default/color-picker.tsx",

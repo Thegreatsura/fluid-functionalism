@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactElement } from "react";
+import { useState, type ReactElement, type ReactNode } from "react";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
 import { Slider } from "@/registry/default/slider";
 import { fontWeights } from "@/registry/default/lib/font-weight";
@@ -9,6 +9,7 @@ import { SurfaceProvider } from "@/registry/default/lib/surface-context";
 import { Dropdown } from "@/registry/default/dropdown";
 import { MenuItem } from "@/registry/default/menu-item";
 import { useIcon } from "@/registry/default/lib/icon-context";
+import { useThemeContext } from "@/registry/default/lib/theme-context";
 
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 
@@ -219,7 +220,7 @@ export default function SurfacesDoc() {
           </p>
           <p>
             In light mode, surfaces 3–8 share the same <code className="px-1 py-0.5 rounded bg-muted text-[12px]">#FFFFFF</code> background;
-            the shadow alone communicates elevation. In dark mode, each level adds a small amount of white opacity over <code className="px-1 py-0.5 rounded bg-muted text-[12px]">#171717</code>,
+            the shadow alone communicates elevation. <UseDarkLink>In dark mode</UseDarkLink>, each level adds a small amount of white opacity over <code className="px-1 py-0.5 rounded bg-muted text-[12px]">#171717</code>,
             and the shadow recipe layers an inset top-edge highlight, an inset border ring, an outer hairline, and stacked drop shadows.
           </p>
           <p>
@@ -258,6 +259,19 @@ export default function SurfacesDoc() {
         </div>
       </DocSection>
     </DocPage>
+  );
+}
+
+function UseDarkLink({ children }: { children: ReactNode }) {
+  const { setTheme } = useThemeContext();
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme("dark")}
+      className="underline decoration-dotted underline-offset-2 hover:text-foreground transition-colors cursor-pointer"
+    >
+      {children}
+    </button>
   );
 }
 

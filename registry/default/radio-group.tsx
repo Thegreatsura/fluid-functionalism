@@ -138,7 +138,7 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
         {/* Selected background */}
         {selectedRect && (
           <motion.div
-            className={`absolute ${shape.bg} bg-selected/50 dark:bg-accent/40 pointer-events-none`}
+            className={`absolute ${shape.bg} bg-active pointer-events-none`}
             initial={false}
             animate={{
               top: selectedRect.top,
@@ -159,7 +159,7 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
           {activeRect && (
             <motion.div
               key={sessionRef.current}
-              className={`absolute ${shape.bg} bg-accent/40 dark:bg-accent/25 pointer-events-none`}
+              className={`absolute ${shape.bg} bg-hover pointer-events-none`}
               initial={{
                 opacity: 0,
                 top: activeRect.top,

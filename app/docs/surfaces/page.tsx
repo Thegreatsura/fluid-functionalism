@@ -82,11 +82,6 @@ function SimplePlayground() {
           showValue={false}
           aria-label="Surface elevation level"
         />
-        <div className="flex justify-between text-[10px] text-muted-foreground/60 font-mono px-0.5">
-          {LEVELS.map((l) => (
-            <span key={l}>{l}</span>
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -127,30 +122,21 @@ function Playground() {
         <NestedSurfaces substrate={from} layers={layers} />
       </div>
       <div className="flex flex-col gap-3 px-8 py-6 border-t border-border/60 bg-muted/30">
-        <div className="flex items-baseline justify-between gap-4">
-          <span
-            className="text-[13px] text-foreground"
-            style={{ fontVariationSettings: fontWeights.semibold }}
-          >
-            Stacks
-          </span>
-          <span className="text-[12px] text-muted-foreground font-mono">
-            surface-{from} → surface-{to}
-          </span>
-        </div>
+        <span
+          className="text-[13px] text-foreground"
+          style={{ fontVariationSettings: fontWeights.semibold }}
+        >
+          Stack {from} - {to}
+        </span>
         <Slider
           value={range}
           onChange={handleRange}
           min={1}
           max={8}
           step={1}
+          showValue={false}
           aria-label="Bottom and top of the surface stack"
         />
-        <div className="flex justify-between text-[10px] text-muted-foreground/60 font-mono px-0.5">
-          {LEVELS.map((l) => (
-            <span key={l}>{l}</span>
-          ))}
-        </div>
       </div>
     </div>
   );

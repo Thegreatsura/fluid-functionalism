@@ -288,30 +288,32 @@ function RelativeElevationDemo() {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {scenarios.map(({ substrate, label, rendered }) => (
-        <div key={substrate} className="flex flex-col gap-2">
-          <div className="flex items-baseline justify-between gap-2">
-            <span
-              className="text-[12px] text-foreground"
-              style={{ fontVariationSettings: fontWeights.semibold }}
+    <div className={`dark bento-card-border border bg-background p-6 overflow-hidden ${shape.container}`}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {scenarios.map(({ substrate, label, rendered }) => (
+          <div key={substrate} className="flex flex-col gap-2">
+            <div className="flex items-baseline justify-between gap-2">
+              <span
+                className="text-[12px] text-foreground"
+                style={{ fontVariationSettings: fontWeights.semibold }}
+              >
+                {label}
+              </span>
+              <span className="text-[10px] text-muted-foreground font-mono">
+                substrate {substrate} → surface {rendered}
+              </span>
+            </div>
+            <div
+              className={`flex items-center justify-center p-6 min-h-[180px] ${shape.container}`}
+              style={{ backgroundColor: `var(--surface-${substrate})` }}
             >
-              {label}
-            </span>
-            <span className="text-[10px] text-muted-foreground font-mono">
-              substrate {substrate} → surface {rendered}
-            </span>
+              <SurfaceProvider value={substrate}>
+                {renderDropdown(`d-${substrate}`)}
+              </SurfaceProvider>
+            </div>
           </div>
-          <div
-            className={`flex items-center justify-center p-6 min-h-[180px] ${shape.container}`}
-            style={{ backgroundColor: `var(--surface-${substrate})` }}
-          >
-            <SurfaceProvider value={substrate}>
-              {renderDropdown(`d-${substrate}`)}
-            </SurfaceProvider>
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

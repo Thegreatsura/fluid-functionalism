@@ -320,7 +320,7 @@ function ColorPickerDemo() {
   return (
     <div
       ref={setContainerEl}
-      className="dark relative bento-card-border border bg-background rounded-2xl p-12 flex items-start justify-center min-h-[560px] pointer-events-none"
+      className="dark relative bento-card-border border bg-background rounded-2xl p-12 flex items-start justify-center min-h-[560px]"
     >
       <ColorPickerPortalContainer value={containerEl}>
         <ColorPicker defaultValue="#FF6B35" formatOpen />

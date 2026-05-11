@@ -219,17 +219,17 @@
   --color-surface-8: var(--surface-8);
 
   /* Shadow ladder — shadow-surface-1..8 utilities.
-     Inverted pairing: lower surfaces (which lack color contrast) get the
-     stronger shadows; higher surfaces (with more color separation) get
-     subtler shadows. */
-  --shadow-surface-1: var(--shadow-8);
-  --shadow-surface-2: var(--shadow-7);
-  --shadow-surface-3: var(--shadow-6);
-  --shadow-surface-4: var(--shadow-5);
-  --shadow-surface-5: var(--shadow-4);
-  --shadow-surface-6: var(--shadow-3);
-  --shadow-surface-7: var(--shadow-2);
-  --shadow-surface-8: var(--shadow-1);
+     Surface 1 is the page background and gets no shadow. Higher surfaces
+     get progressively lighter shadows: lower surfaces (which lack color
+     contrast) carry the heavier stacks, surface 8 ends with one drop. */
+  --shadow-surface-1: none;
+  --shadow-surface-2: var(--shadow-8);
+  --shadow-surface-3: var(--shadow-7);
+  --shadow-surface-4: var(--shadow-6);
+  --shadow-surface-5: var(--shadow-5);
+  --shadow-surface-6: var(--shadow-4);
+  --shadow-surface-7: var(--shadow-3);
+  --shadow-surface-8: var(--shadow-2);
 
   /* Reserved for /compare shadcn theme only — DO NOT use these utilities
      (bg-primary, bg-secondary, bg-popover, *-foreground variants) in Fluid

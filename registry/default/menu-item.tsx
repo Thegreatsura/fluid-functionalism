@@ -6,7 +6,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useDropdown } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
-import { useShape } from "@/lib/shape-context";
+import { shapeMap } from "@/lib/shape-context";
+
+// MenuItem is only used inside Dropdown, which opts out of the global pill
+// shape — see dropdown.tsx for the rationale.
+const shape = shapeMap.rounded;
 
 interface MenuItemProps extends HTMLAttributes<HTMLDivElement> {
   icon: IconComponent;
@@ -36,7 +40,6 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
 
     const isActive = activeIndex === index;
     const skipAnimation = !hasMounted.current;
-    const shape = useShape();
 
     return (
       <div

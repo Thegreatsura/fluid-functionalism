@@ -14,8 +14,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { springs } from "@/lib/springs";
 import { useProximityHover } from "@/hooks/use-proximity-hover";
-import { useShape } from "@/lib/shape-context";
+import { shapeMap } from "@/lib/shape-context";
 import { Elevated } from "@/lib/elevated";
+
+// Dropdown opts out of the global pill/rounded shape context — popover surfaces
+// look cleaner with the smaller "rounded" radii regardless of how the rest of
+// the UI is shaped (the heavy pill bubbling distorts perceived padding at this
+// scale and produces the corner-shadow asymmetry).
+const shape = shapeMap.rounded;
 
 interface DropdownContextValue {
   registerItem: (index: number, element: HTMLElement | null) => void;
@@ -61,7 +67,6 @@ const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
     const focusRect = focusedIndex !== null ? itemRects[focusedIndex] : null;
     const isHoveringOther =
       activeIndex !== null && activeIndex !== checkedIndex;
-    const shape = useShape();
 
     return (
       <DropdownContext.Provider value={{ registerItem, activeIndex, checkedIndex }}>

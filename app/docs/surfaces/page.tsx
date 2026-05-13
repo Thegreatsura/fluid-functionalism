@@ -330,13 +330,13 @@ function SubstrateDemo() {
 
   return (
     <ComponentPreview code={SUBSTRATE_CODE} padding="compact">
-      <div className="dark grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
         {scenarios.map(({ substrate, label }) => {
           const menuLevel = Math.min(substrate + 2, 8);
           return (
             <div key={substrate} className="flex flex-col gap-3">
               <div
-                className="flex flex-col gap-3 rounded-2xl p-4 border border-border/40"
+                className="dark flex flex-col gap-3 rounded-2xl p-4 border border-border/40"
                 style={{ backgroundColor: `var(--surface-${substrate})` }}
               >
                 <span

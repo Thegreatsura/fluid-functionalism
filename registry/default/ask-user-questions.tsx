@@ -150,6 +150,9 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     // ── Refs & proximity hover ───────────────────────────────────
     const rowsContainerRef = useRef<HTMLDivElement>(null);
     const otherInputRef = useRef<HTMLInputElement>(null);
+    // Stable IDs for contiguous-selection runs (see selectedGroups below).
+    const groupIdCounterRef = useRef(0);
+    const prevGroupMapRef = useRef(new Map<number, number>());
     const {
       activeIndex,
       setActiveIndex,
@@ -365,6 +368,56 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     const focusRect =
       focusedIndex !== null ? itemRects[focusedIndex] : null;
 
+    // ── Selected-row grouping (merges contiguous selections) ─────
+    // Mirrors the CheckboxGroup pattern: contiguous selected indices
+    // collapse into a single rounded background block; stable IDs let
+    // framer-motion morph block size/position when neighbours toggle.
+    const selectedIndices = useMemo(() => {
+      const set = new Set<number>();
+      options.forEach((opt, i) => {
+        if (selectedIds.includes(optionKey(opt, i))) set.add(i);
+      });
+      if (allowOther && otherText.length > 0) set.add(otherIndex);
+      return set;
+    }, [options, selectedIds, allowOther, otherText, otherIndex]);
+
+    const selectedGroups = useMemo(() => {
+      const runs: { start: number; end: number }[] = [];
+      const sorted = [...selectedIndices].sort((a, b) => a - b);
+      for (const idx of sorted) {
+        const last = runs[runs.length - 1];
+        if (last && idx === last.end + 1) last.end = idx;
+        else runs.push({ start: idx, end: idx });
+      }
+
+      // Stable run IDs so a growing/shrinking run animates instead of
+      // exit+re-enter when neighbours flip.
+      const usedIds = new Set<number>();
+      const nextGroupMap = new Map<number, number>();
+      const groups = runs.map((run) => {
+        let stableId: number | null = null;
+        for (let i = run.start; i <= run.end; i++) {
+          const prev = prevGroupMapRef.current.get(i);
+          if (prev !== undefined && !usedIds.has(prev)) {
+            stableId = prev;
+            break;
+          }
+        }
+        const id = stableId ?? ++groupIdCounterRef.current;
+        usedIds.add(id);
+        for (let i = run.start; i <= run.end; i++) nextGroupMap.set(i, id);
+        return { ...run, id };
+      });
+      prevGroupMapRef.current = nextGroupMap;
+      return groups;
+    }, [selectedIndices]);
+
+    // True when the user is hovering a row that ISN'T part of any selected
+    // run — we dim the selected backgrounds slightly to draw attention to
+    // the hover target.
+    const isHoveringNonSelected =
+      activeIndex !== null && !selectedIndices.has(activeIndex);
+
     const showFooter = (total > 1 && isSkippable) || isMulti;
     const showSkip = total > 1 && isSkippable;
 
@@ -415,6 +468,43 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
               onMouseLeave={handlers.onMouseLeave}
               className="relative flex flex-col gap-0.5 -mx-3"
             >
+              {/* Selected-row backgrounds (merged for contiguous selections) */}
+              <AnimatePresence>
+                {selectedGroups.map((group) => {
+                  const startRect = itemRects[group.start];
+                  const endRect = itemRects[group.end];
+                  if (!startRect || !endRect) return null;
+                  const mergedTop = startRect.top;
+                  const mergedHeight =
+                    endRect.top + endRect.height - startRect.top;
+                  const mergedLeft = Math.min(startRect.left, endRect.left);
+                  const mergedWidth = Math.max(startRect.width, endRect.width);
+                  return (
+                    <motion.div
+                      key={`selected-${group.id}`}
+                      aria-hidden
+                      className={cn(
+                        "absolute pointer-events-none bg-accent",
+                        shape.mergedBg
+                      )}
+                      initial={false}
+                      animate={{
+                        top: mergedTop,
+                        left: mergedLeft,
+                        width: mergedWidth,
+                        height: mergedHeight,
+                        opacity: isHoveringNonSelected ? 0.8 : 1,
+                      }}
+                      exit={{ opacity: 0, transition: { duration: 0.12 } }}
+                      transition={{
+                        ...springs.moderate,
+                        opacity: { duration: 0.08 },
+                      }}
+                    />
+                  );
+                })}
+              </AnimatePresence>
+
               {/* Single morphing hover indicator */}
               <AnimatePresence>
                 {activeRect && (
@@ -739,19 +829,9 @@ function Row({
         shape.item
       )}
     >
-      {/* Per-row selected background (multi-select can have multiple) */}
-      {isSelected && (
-        <motion.div
-          aria-hidden
-          className={cn(
-            "absolute inset-0 -z-10 bg-accent pointer-events-none",
-            shape.bg
-          )}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.08 }}
-        />
-      )}
+      {/* Selected background is drawn at the container level so contiguous
+          selections can merge into a single block (see AskUserQuestions's
+          selectedGroups / merged-bg block). Row keeps z-10 to sit above it. */}
 
       {/* Body — left, fills row */}
       <span className="min-w-0 flex-1 text-[13px] leading-snug inline-flex items-center gap-0">

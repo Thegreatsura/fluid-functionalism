@@ -6,7 +6,7 @@ import { Sidebar } from "@/app/components/sidebar";
 import { useIcon } from "@/lib/icon-context";
 import { MobileDrawer } from "@/registry/default/mobile-drawer";
 import { Button } from "@/registry/radix/button";
-import { RightPanel, SettingsContent } from "@/app/components/right-panel";
+import { RightPanel, SettingsContent, GitHubStarButton } from "@/app/components/right-panel";
 import { componentList } from "@/lib/docs/components";
 
 const pageOrder = [
@@ -114,6 +114,15 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
       >
         <Sidebar mobile />
         <div className="mt-auto pt-4">
+          <div className="flex items-center justify-between pl-1 pt-2 pb-2">
+            <h2
+              className="text-[16px] text-foreground leading-none"
+              style={{ fontVariationSettings: "'wght' 600" }}
+            >
+              Make them yours
+            </h2>
+            <GitHubStarButton />
+          </div>
           <SettingsContent tooltipSide="right" />
         </div>
       </MobileDrawer>

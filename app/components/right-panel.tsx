@@ -37,14 +37,59 @@ function formatStars(n: number): string {
   return String(n);
 }
 
+/** Standalone GitHub star-count button — rendered next to the "Make them yours" heading. */
+export function GitHubStarButton() {
+  const shapeCtx = useShape();
+  const [stars, setStars] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch(`https://api.github.com/repos/${REPO}`, {
+      headers: { Accept: "application/vnd.github.v3+json" },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.stargazers_count != null) {
+          setStars(data.stargazers_count);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  return (
+    <a
+      href={`https://github.com/${REPO}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="View on GitHub"
+      className={cn(
+        buttonVariants({ variant: "ghost", size: "sm", iconLeft: true }),
+        shapeCtx.button
+      )}
+    >
+      <svg
+        width={16}
+        height={16}
+        viewBox="0 0 16 16"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" />
+      </svg>
+      {stars !== null && (
+        <span style={{ fontVariantNumeric: "tabular-nums" }}>
+          {formatStars(stars)}
+        </span>
+      )}
+    </a>
+  );
+}
+
 /** The inner settings content — reused in the right column and mobile drawer. */
-export function SettingsContent({ tooltipSide = "left", hideSocial }: { tooltipSide?: "left" | "right" | "top" | "bottom"; hideSocial?: boolean }) {
+export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left" | "right" | "top" | "bottom" }) {
   const { theme, setTheme } = useThemeContext();
   const { shape, setShape } = useShapeContext();
   const { iconLibrary, setIconLibrary } = useIconLibrary();
   const { base, setBase } = useBase();
-  const shapeCtx = useShape();
-  const [stars, setStars] = useState<number | null>(null);
 
   const MonitorIcon = useIcon("monitor");
   const SunIcon = useIcon("sun");
@@ -54,7 +99,6 @@ export function SettingsContent({ tooltipSide = "left", hideSocial }: { tooltipS
   const PaletteIcon = useIcon("palette");
   const RadixIcon = useIcon("circle");
   const BaseUiIcon = useIcon("square-library");
-  const PrimitiveTriggerIcon = base === "base" ? BaseUiIcon : RadixIcon;
 
   const themeOptions = [
     { label: "System", value: "system" as Theme, icon: MonitorIcon },
@@ -77,19 +121,6 @@ export function SettingsContent({ tooltipSide = "left", hideSocial }: { tooltipS
     { label: "Radix", value: "radix" as Base, icon: RadixIcon },
     { label: "Base UI", value: "base" as Base, icon: BaseUiIcon },
   ];
-
-  useEffect(() => {
-    fetch(`https://api.github.com/repos/${REPO}`, {
-      headers: { Accept: "application/vnd.github.v3+json" },
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.stargazers_count != null) {
-          setStars(data.stargazers_count);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   return (
     <div className="flex flex-col gap-2">
@@ -191,54 +222,6 @@ export function SettingsContent({ tooltipSide = "left", hideSocial }: { tooltipS
         </div>
       </Tooltip>
 
-      {/* Telegram + GitHub buttons */}
-      {!hideSocial && (<div className="flex items-center gap-1 pt-1">
-        <a
-          href="https://t.me/micka_design"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={cn(
-            buttonVariants({ variant: "tertiary", size: "sm", iconLeft: true }),
-            shapeCtx.button
-          )}
-        >
-          <svg
-            width={16}
-            height={16}
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
-          </svg>
-          Chat with Micka
-        </a>
-        <a
-          href={`https://github.com/${REPO}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="View on GitHub"
-          className={cn(
-            buttonVariants({ variant: "ghost", size: "sm", iconLeft: true }),
-            shapeCtx.button
-          )}
-        >
-          <svg
-            width={16}
-            height={16}
-            viewBox="0 0 16 16"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" />
-          </svg>
-          {stars !== null && (
-            <span style={{ fontVariantNumeric: "tabular-nums" }}>
-              {formatStars(stars)}
-            </span>
-          )}
-        </a>
-      </div>)}
     </div>
   );
 }
@@ -248,12 +231,15 @@ export function RightPanel() {
   return (
     <aside className="shrink-0 w-64 p-4 sticky top-4 self-start mt-4 mr-4 rounded-lg bg-muted hidden lg:block">
       <SurfaceProvider value={2}>
-        <h2
-          className="text-[16px] text-foreground leading-none pl-1 pt-2 pb-2"
-          style={{ fontVariationSettings: fontWeights.semibold }}
-        >
-          Make them yours
-        </h2>
+        <div className="flex items-center justify-between pl-1 pt-2 pb-2">
+          <h2
+            className="text-[16px] text-foreground leading-none"
+            style={{ fontVariationSettings: fontWeights.semibold }}
+          >
+            Make them yours
+          </h2>
+          <GitHubStarButton />
+        </div>
         <SettingsContent tooltipSide="left" />
       </SurfaceProvider>
     </aside>

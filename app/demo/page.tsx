@@ -208,7 +208,7 @@ function DemoPageInner() {
               <div ref={setScaleEl} className="w-full max-w-[420px] mx-auto flex justify-center relative" style={{ transform: `scale(${scale})`, transformOrigin: "center" }}>
                 <TooltipPortalContainer value={scaleEl}>
                   <ColorPickerPortalContainer value={scaleEl}>
-                    <SettingsContent tooltipSide="right" hideSocial />
+                    <SettingsContent tooltipSide="right" />
                   </ColorPickerPortalContainer>
                 </TooltipPortalContainer>
               </div>

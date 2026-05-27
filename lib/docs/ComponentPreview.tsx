@@ -24,8 +24,10 @@ interface ComponentPreviewProps {
   playbackButton?: PlaybackButton;
   /** Padding around the preview content. Use "compact" when the demo
    *  is a self-contained block that already supplies its own breathing
-   *  room (dialogs, full-bleed cards). Defaults to "default". */
-  padding?: "default" | "compact";
+   *  room (dialogs, full-bleed cards). "responsive" is compact on mobile
+   *  and default on desktop — for big demos that feel cramped on phones.
+   *  Defaults to "default". */
+  padding?: "default" | "compact" | "responsive";
   /** Override the minimum height of the preview area. Accepts any Tailwind
    *  min-height class (e.g. `min-h-[280px]`). Defaults to `min-h-[120px]`.
    *  Useful when a demo opens floating UI (popovers, dropdowns) that needs
@@ -99,7 +101,11 @@ export function ComponentPreview({
           ref={previewRef}
           onMouseDown={handlePreviewMouseDown}
           className={`flex ${align === "bottom" ? "items-end" : "items-center"} justify-center ${minHeightClass} bg-background ${
-            padding === "compact" ? "px-4 py-4" : "px-8 py-12"
+            padding === "compact"
+              ? "px-4 py-4"
+              : padding === "responsive"
+                ? "px-4 py-4 sm:px-8 sm:py-12"
+                : "px-8 py-12"
           }`}
         >
           {children}

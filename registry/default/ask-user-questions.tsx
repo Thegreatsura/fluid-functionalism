@@ -133,6 +133,33 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     const ArrowLeft = useIcon("arrow-left");
     const ArrowRight = useIcon("arrow-right");
 
+    // The footer ← / → icons hint at the ArrowLeft/ArrowRight keys, which
+    // mobile has no equivalent for, so render them desktop-only. (The inline
+    // submit arrows on option rows stay — those are tap affordances, not
+    // keyboard hints.)
+    const ArrowLeftKey = useMemo(
+      () =>
+        function ArrowLeftKey(p: {
+          size?: number;
+          strokeWidth?: number;
+          className?: string;
+        }) {
+          return <ArrowLeft {...p} className={cn(p.className, "hidden sm:block")} />;
+        },
+      [ArrowLeft]
+    );
+    const ArrowRightKey = useMemo(
+      () =>
+        function ArrowRightKey(p: {
+          size?: number;
+          strokeWidth?: number;
+          className?: string;
+        }) {
+          return <ArrowRight {...p} className={cn(p.className, "hidden sm:block")} />;
+        },
+      [ArrowRight]
+    );
+
     // Detect the platform so the Continue shortcut hint shows the right
     // modifier: ⌘ on macOS, ⌃ (Control) elsewhere. Resolved after mount to
     // avoid a hydration mismatch (the server can't know the platform).
@@ -975,8 +1002,11 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                       <Button
                         variant="ghost"
                         size="sm"
-                        leadingIcon={ArrowLeft}
+                        leadingIcon={ArrowLeftKey}
                         onClick={handleBack}
+                        // Arrow is desktop-only; restore symmetric padding on
+                        // mobile where it's hidden, tighten for the icon on ≥sm.
+                        className="pl-3 sm:pl-[6px]"
                       >
                         Back
                       </Button>
@@ -1002,8 +1032,11 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                       <Button
                         variant="ghost"
                         size="sm"
-                        trailingIcon={ArrowRight}
+                        trailingIcon={ArrowRightKey}
                         onClick={handleSkip}
+                        // Arrow is desktop-only; restore symmetric padding on
+                        // mobile where it's hidden, tighten for the icon on ≥sm.
+                        className="pr-3 sm:pr-[6px]"
                       >
                         {skipLabel}
                       </Button>
@@ -1030,19 +1063,24 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                           otherText.trim().length === 0
                         }
                         // The shortcut chip acts as a trailing icon, so tighten
-                        // the right padding to match the Button's iconRight.
-                        className="pr-[6px]"
+                        // the right padding to match the Button's iconRight on
+                        // desktop. The chip is hidden on mobile, so restore
+                        // symmetric padding there.
+                        className="pr-3 sm:pr-[6px]"
                       >
                         <span className="inline-flex items-center gap-1.5">
                           {question.nextLabel ??
                             (safeIndex >= total - 1 ? "Finish" : "Continue")}
                           {/* Shortcut hint — replaces the trailing arrow. Sits
                               inside the button so it dims with the disabled
-                              state. ⌘↵ on macOS, ⌃↵ elsewhere. */}
-                          <ShortcutChip shape={shape} tone="inverted">
-                            {isMac ? "⌘" : "⌃"}
-                            {"↵"}
-                          </ShortcutChip>
+                              state. ⌘↵ on macOS, ⌃↵ elsewhere. Desktop-only:
+                              mobile has no physical keyboard to trigger it. */}
+                          <span className="hidden sm:contents">
+                            <ShortcutChip shape={shape} tone="inverted">
+                              {isMac ? "⌘" : "⌃"}
+                              {"↵"}
+                            </ShortcutChip>
+                          </span>
                         </span>
                       </Button>
                     </motion.div>

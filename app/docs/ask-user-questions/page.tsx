@@ -39,6 +39,7 @@ function ReplayableExample({
       code={code}
       align={align}
       minHeightClass={minHeightClass}
+      padding="responsive"
       playbackButton={{
         icon: <RotateIcon size={16} strokeWidth={1.5} />,
         tooltip: "Replay",

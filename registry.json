@@ -619,7 +619,7 @@
       "type": "registry:ui",
       "title": "Input Message",
       "description": "Chat-style message composer with auto-resizing textarea, drag-and-drop file attachments (PNG / JPEG / PDF), flexible left/right action slots, and a built-in send button on a Surface-2 substrate.",
-      "dependencies": ["framer-motion", "pdfjs-dist"],
+      "dependencies": ["framer-motion"],
       "registryDependencies": [
         "utils",
         "springs",
@@ -628,12 +628,41 @@
         "icon-context",
         "surface-context",
         "surface-classes",
+        "file-thumbnail",
         "button",
         "tooltip"
       ],
       "files": [
         {
           "path": "registry/default/input-message.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "file-thumbnail",
+      "type": "registry:ui",
+      "title": "File Thumbnail",
+      "description": "Read-only square preview of a File. Images render via object-cover; PDFs render their first page via pdfjs; a spinner shows while either resolves. Adapts its corner radius to the global shape setting.",
+      "dependencies": ["pdfjs-dist"],
+      "registryDependencies": ["utils", "shape-context"],
+      "files": [
+        {
+          "path": "registry/default/file-thumbnail.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "chat-message",
+      "type": "registry:ui",
+      "title": "Chat Message",
+      "description": "A single chat transcript entry with baked-in entrance and layout motion. Right-aligned accent bubble for the user, left-aligned muted bubble for the assistant, with optional file attachments. Adapts to the global shape setting.",
+      "dependencies": ["framer-motion"],
+      "registryDependencies": ["utils", "springs", "shape-context", "file-thumbnail"],
+      "files": [
+        {
+          "path": "registry/default/chat-message.tsx",
           "type": "registry:ui"
         }
       ]

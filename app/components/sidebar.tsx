@@ -64,6 +64,7 @@ export function Sidebar({ mobile }: SidebarProps) {
               label={c.name}
               isNew={c.isNew}
               isUpdated={c.isUpdated}
+              dotColorClass={c.dotColor}
             />
           ))}
         </NavMenu>

@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { InputMessage } from "@/registry/default/input-message";
+import { ChatMessage } from "@/registry/default/chat-message";
 import { Button } from "@/registry/radix/button";
 import { Dropdown } from "@/registry/default/dropdown";
 import { MenuItem } from "@/registry/default/menu-item";
 import { Tooltip } from "@/registry/radix/tooltip";
 import { useIcon } from "@/lib/icon-context";
 import { springs } from "@/registry/default/lib/springs";
-import { fontWeights } from "@/registry/default/lib/font-weight";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
@@ -30,12 +30,13 @@ const [value, setValue] = useState("");
 
 const actionsCode = `import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { InputMessage, Button, Dropdown, MenuItem, Tooltip } from "./components";
+import { InputMessage, ChatMessage, Button, Dropdown, MenuItem, Tooltip } from "./components";
 import { useIcon } from "@/lib/icon-context";
 
 const MODELS = ["Sonnet 5", "Sonnet 4.6", "Sonnet 4.5", "Haiku 4"] as const;
 
 const [value, setValue] = useState("");
+const [messages, setMessages] = useState<{ text: string; files: File[] }[]>([]);
 const [files, setFiles] = useState<File[]>([]);
 const [modelOpen, setModelOpen] = useState(false);
 const [attachOpen, setAttachOpen] = useState(false);
@@ -43,6 +44,9 @@ const [model, setModel] = useState<typeof MODELS[number]>("Sonnet 5");
 
 const modelRef = useRef<HTMLDivElement>(null);
 const attachRef = useRef<HTMLDivElement>(null);
+const scrollRef = useRef<HTMLDivElement>(null);
+const inputRef = useRef<HTMLDivElement>(null);
+const [inputH, setInputH] = useState(0);
 
 useEffect(() => {
   const handler = (e: MouseEvent) => {
@@ -55,23 +59,54 @@ useEffect(() => {
   return () => document.removeEventListener("mousedown", handler);
 }, []);
 
+// Measure the floating composer so we can reserve scroll padding under it.
+useEffect(() => {
+  const el = inputRef.current;
+  if (!el) return;
+  const ro = new ResizeObserver(() => setInputH(el.offsetHeight));
+  ro.observe(el);
+  setInputH(el.offsetHeight);
+  return () => ro.disconnect();
+}, []);
+
+// Keep the history pinned to the latest message as it grows.
+useEffect(() => {
+  const el = scrollRef.current;
+  if (el) el.scrollTop = el.scrollHeight;
+}, [messages, inputH]);
+
 const PlusIcon = useIcon("plus");
 const ChevronDownIcon = useIcon("chevron-down");
 const ImageIcon = useIcon("image");
 const FileTextIcon = useIcon("square-library");
 
-<InputMessage
-  value={value}
-  onValueChange={setValue}
-  files={files}
-  onFilesChange={setFiles}
-  onSend={(text, attachments) => {
-    console.log("send:", text, attachments);
-    setValue("");
-    setFiles([]);
-  }}
-  // Drag-and-drop works on the whole container. Click + to choose a type.
-  leftSlot={({ openFilePicker }) => (
+<div className="relative w-full h-[440px]">
+  <div ref={scrollRef} className="absolute inset-0 overflow-y-auto scrollbar-hide">
+    <div
+      className="flex min-h-full flex-col justify-end gap-2"
+      style={{ paddingBottom: inputH + 12 }}
+    >
+      {messages.map((m, i) => (
+        <ChatMessage key={i} from="user" files={m.files}>
+          {m.text}
+        </ChatMessage>
+      ))}
+    </div>
+  </div>
+  <InputMessage
+    ref={inputRef}
+    className="absolute inset-x-0 bottom-0"
+    value={value}
+    onValueChange={setValue}
+    files={files}
+    onFilesChange={setFiles}
+    onSend={(text, attachments) => {
+      setMessages((prev) => [...prev, { text, files: attachments }]);
+      setValue("");
+      setFiles([]);
+    }}
+    // Drag-and-drop works on the whole container. Click + to choose a type.
+    leftSlot={({ openFilePicker }) => (
     <div ref={attachRef} className="relative">
       <Tooltip content="Add" side="top">
         <Button
@@ -159,7 +194,8 @@ const FileTextIcon = useIcon("square-library");
       </AnimatePresence>
     </div>
   }
-/>`;
+  />
+</div>`;
 
 const leftOnlyCode = `import { useState } from "react";
 import { InputMessage } from "./components";
@@ -198,23 +234,30 @@ const ChevronDownIcon = useIcon("chevron-down");
 />`;
 
 const sendHandlerCode = `import { useState } from "react";
-import { InputMessage } from "./components";
+import { InputMessage, ChatMessage } from "./components";
 
 const [value, setValue] = useState("");
 const [messages, setMessages] = useState<string[]>([]);
 
-<InputMessage
-  value={value}
-  onValueChange={setValue}
-  onSend={(text) => {
-    setMessages((prev) => [...prev, text]);
-    setValue("");
-  }}
-/>
-
-<ul>
-  {messages.map((m, i) => <li key={i}>{m}</li>)}
-</ul>`;
+<div className="flex flex-col gap-3">
+  {messages.length > 0 && (
+    <div className="flex flex-col gap-2">
+      {messages.map((m, i) => (
+        <ChatMessage key={i} from="user">
+          {m}
+        </ChatMessage>
+      ))}
+    </div>
+  )}
+  <InputMessage
+    value={value}
+    onValueChange={setValue}
+    onSend={(text) => {
+      if (text) setMessages((prev) => [...prev, text]);
+      setValue("");
+    }}
+  />
+</div>`;
 
 const disabledCode = `import { InputMessage } from "./components";
 
@@ -247,6 +290,9 @@ const inputMessageProps: PropDef[] = [
 export default function InputMessageDoc() {
   const [basicValue, setBasicValue] = useState("");
   const [actionsValue, setActionsValue] = useState("");
+  const [actionsMessages, setActionsMessages] = useState<
+    { text: string; files: File[] }[]
+  >([]);
   const [leftValue, setLeftValue] = useState("");
   const [rightValue, setRightValue] = useState("");
   const [handlerValue, setHandlerValue] = useState("");
@@ -271,10 +317,33 @@ export default function InputMessageDoc() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // The composer floats over the scrollable history. We reserve bottom space
+  // equal to its measured height so the newest message rests just above the
+  // edge, while older messages scroll cleanly behind the opaque composer
+  // instead of being hard-cropped at its top edge.
+  const actionsInputRef = useRef<HTMLDivElement>(null);
+  const [actionsInputH, setActionsInputH] = useState(0);
+  useEffect(() => {
+    const el = actionsInputRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setActionsInputH(el.offsetHeight));
+    ro.observe(el);
+    setActionsInputH(el.offsetHeight);
+    return () => ro.disconnect();
+  }, []);
+
+  // Keep the message history pinned to the latest message as it grows.
+  const actionsScrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = actionsScrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [actionsMessages, actionsInputH]);
+
   const PlusIcon = useIcon("plus");
   const ChevronDownIcon = useIcon("chevron-down");
   const ImageIcon = useIcon("image");
   const FileTextIcon = useIcon("square-library");
+  const ResetIcon = useIcon("rotate-ccw");
 
   return (
     <DocPage
@@ -283,14 +352,49 @@ export default function InputMessageDoc() {
       description="Chat-style message composer with an auto-resizing textarea, flexible left/right action slots, and a built-in send button on a Surface-2 substrate."
     >
       <DocSection title="Example">
-        <ComponentPreview code={actionsCode} minHeightClass="min-h-[280px]">
-          <div className="w-full max-w-xl">
+        <ComponentPreview
+          code={actionsCode}
+          minHeightClass="h-[440px]"
+          align="bottom"
+          padding="compact"
+          playbackButton={
+            actionsMessages.length > 0
+              ? {
+                  icon: <ResetIcon size={16} strokeWidth={1.5} />,
+                  tooltip: "Clear messages",
+                  onClick: () => setActionsMessages([]),
+                }
+              : undefined
+          }
+        >
+          <div className="relative w-full self-stretch">
+            <div
+              ref={actionsScrollRef}
+              className="absolute inset-0 overflow-y-auto scrollbar-hide"
+            >
+              <div
+                className="flex min-h-full flex-col justify-end gap-2"
+                style={{ paddingBottom: actionsInputH + 12 }}
+              >
+                {actionsMessages.map((m, i) => (
+                  <ChatMessage key={i} from="user" files={m.files}>
+                    {m.text}
+                  </ChatMessage>
+                ))}
+              </div>
+            </div>
             <InputMessage
+              ref={actionsInputRef}
+              className="absolute inset-x-0 bottom-0"
               value={actionsValue}
               onValueChange={setActionsValue}
               files={files}
               onFilesChange={setFiles}
-              onSend={() => {
+              onSend={(text, attachments) => {
+                setActionsMessages((prev) => [
+                  ...prev,
+                  { text, files: attachments },
+                ]);
                 setActionsValue("");
                 setFiles([]);
               }}
@@ -434,29 +538,38 @@ export default function InputMessageDoc() {
       </DocSection>
 
       <DocSection title="Send Handler">
-        <ComponentPreview code={sendHandlerCode} minHeightClass="min-h-[280px]">
+        <ComponentPreview
+          code={sendHandlerCode}
+          minHeightClass="min-h-[280px]"
+          playbackButton={
+            messages.length > 0
+              ? {
+                  icon: <ResetIcon size={16} strokeWidth={1.5} />,
+                  tooltip: "Clear messages",
+                  onClick: () => setMessages([]),
+                }
+              : undefined
+          }
+        >
           <div className="w-full max-w-xl flex flex-col gap-3">
+            {messages.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {messages.map((m, i) => (
+                  <ChatMessage key={i} from="user">
+                    {m}
+                  </ChatMessage>
+                ))}
+              </div>
+            )}
             <InputMessage
               value={handlerValue}
               onValueChange={setHandlerValue}
               onSend={(text) => {
-                setMessages((prev) => [...prev, text]);
+                if (text) setMessages((prev) => [...prev, text]);
                 setHandlerValue("");
               }}
               placeholder="Press Enter to send. Shift+Enter for newline."
             />
-            {messages.length > 0 && (
-              <ul className="flex flex-col gap-1 text-[13px] text-muted-foreground pl-1">
-                {messages.map((m, i) => (
-                  <li key={i} className="truncate">
-                    <span className="text-foreground" style={{ fontVariationSettings: fontWeights.medium }}>
-                      Sent:
-                    </span>{" "}
-                    {m}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
         </ComponentPreview>
       </DocSection>

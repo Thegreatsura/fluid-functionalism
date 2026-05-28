@@ -620,8 +620,7 @@
       "title": "Input Message",
       "description": "Chat-style message composer with auto-resizing textarea, drag-and-drop file attachments (PNG / JPEG / PDF), flexible left/right action slots, and a built-in send button on a Surface-2 substrate.",
       "dependencies": [
-        "framer-motion",
-        "pdfjs-dist"
+        "framer-motion"
       ],
       "registryDependencies": [
         "utils",
@@ -631,12 +630,53 @@
         "https://www.fluidfunctionalism.com/r/icon-context.json",
         "https://www.fluidfunctionalism.com/r/surface-context.json",
         "https://www.fluidfunctionalism.com/r/surface-classes.json",
+        "https://www.fluidfunctionalism.com/r/file-thumbnail.json",
         "https://www.fluidfunctionalism.com/r/button.json",
         "https://www.fluidfunctionalism.com/r/tooltip.json"
       ],
       "files": [
         {
           "path": "registry/default/input-message.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "file-thumbnail",
+      "type": "registry:ui",
+      "title": "File Thumbnail",
+      "description": "Read-only square preview of a File. Images render via object-cover; PDFs render their first page via pdfjs; a spinner shows while either resolves. Adapts its corner radius to the global shape setting.",
+      "dependencies": [
+        "pdfjs-dist"
+      ],
+      "registryDependencies": [
+        "utils",
+        "https://www.fluidfunctionalism.com/r/shape-context.json"
+      ],
+      "files": [
+        {
+          "path": "registry/default/file-thumbnail.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "chat-message",
+      "type": "registry:ui",
+      "title": "Chat Message",
+      "description": "A single chat transcript entry with baked-in entrance and layout motion. Right-aligned accent bubble for the user, left-aligned muted bubble for the assistant, with optional file attachments. Adapts to the global shape setting.",
+      "dependencies": [
+        "framer-motion"
+      ],
+      "registryDependencies": [
+        "utils",
+        "https://www.fluidfunctionalism.com/r/springs.json",
+        "https://www.fluidfunctionalism.com/r/shape-context.json",
+        "https://www.fluidfunctionalism.com/r/file-thumbnail.json"
+      ],
+      "files": [
+        {
+          "path": "registry/default/chat-message.tsx",
           "type": "registry:ui"
         }
       ]

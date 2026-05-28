@@ -50,8 +50,10 @@ const CUSTOM_ITEMS = new Set([
   ...DUAL_FLAVOR_SLUGS,
   // primitive-agnostic UI components (single source under @fluid)
   "badge",
+  "chat-message",
   "color-picker",
   "dropdown",
+  "file-thumbnail",
   "input-copy",
   "input-group",
   "menu-item",

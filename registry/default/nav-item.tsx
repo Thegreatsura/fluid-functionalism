@@ -16,10 +16,13 @@ interface NavItemProps
   icon?: IconComponent;
   isNew?: boolean;
   isUpdated?: boolean;
+  /** Tailwind background class for the status dot. Defaults to blue for `isNew`,
+   *  yellow for `isUpdated`. Set to override the new-dot colour per item. */
+  dotColorClass?: string;
 }
 
 const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
-  ({ label, href, index, icon: Icon, isNew, isUpdated, className, ...props }, ref) => {
+  ({ label, href, index, icon: Icon, isNew, isUpdated, dotColorClass, className, ...props }, ref) => {
     const internalRef = useRef<HTMLAnchorElement>(null);
     const { registerItem, registerSlug, activeIndex, activeSlug } =
       useNavMenu();
@@ -98,7 +101,12 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
             {isUpdated ? (
               <span className="inline-block ml-2 size-1.5 rounded-full bg-yellow-400 align-middle" />
             ) : isNew ? (
-              <span className="inline-block ml-2 size-1.5 rounded-full bg-blue-500 align-middle" />
+              <span
+                className={cn(
+                  "inline-block ml-2 size-1.5 rounded-full align-middle",
+                  dotColorClass ?? "bg-blue-500"
+                )}
+              />
             ) : null}
           </span>
         </span>

@@ -194,7 +194,11 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
 
     // ── Refs & proximity hover ───────────────────────────────────
     const rowsContainerRef = useRef<HTMLDivElement>(null);
-    const otherInputRef = useRef<HTMLInputElement>(null);
+    const otherInputRef = useRef<HTMLTextAreaElement>(null);
+    // True when the Other textarea has wrapped past its first line. Drives the
+    // submit-arrow nudge so it stays optically aligned with the first line
+    // rather than the growing field's centre.
+    const [otherMultiline, setOtherMultiline] = useState(false);
     // Stable IDs for contiguous-selection runs (see selectedGroups below).
     const groupIdCounterRef = useRef(0);
     const prevGroupMapRef = useRef(new Map<number, number>());
@@ -224,12 +228,17 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     useEffect(() => {
       const el = contentMeasureRef.current;
       if (!el) return;
-      const update = () => setContentHeight(el.offsetHeight);
+      const update = () => {
+        setContentHeight(el.offsetHeight);
+        // Re-measure row rects so the selected-row background tracks rows that
+        // grow taller as the Other textarea wraps to multiple lines.
+        measureItems();
+      };
       update();
       const ro = new ResizeObserver(update);
       ro.observe(el);
       return () => ro.disconnect();
-    }, []);
+    }, [measureItems]);
 
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
@@ -328,6 +337,18 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
       },
       [question, qId, writeAnswers]
     );
+
+    // Track whether the Other textarea has wrapped past one line, so the
+    // submit arrow can be nudged to stay aligned with the first line.
+    useEffect(() => {
+      const el = otherInputRef.current;
+      if (!el) {
+        setOtherMultiline(false);
+        return;
+      }
+      const lh = parseFloat(getComputedStyle(el).lineHeight) || 18;
+      setOtherMultiline(el.scrollHeight > lh * 1.5);
+    }, [otherText]);
 
     const handleOtherSubmit = useCallback(() => {
       if (!question) return;
@@ -437,10 +458,18 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
         target.isContentEditable;
 
       // Inside the Other text field, ←/→ and Home/End move the caret natively.
-      // But ↑/↓ don't move a single-line caret, so we still use them to
-      // navigate out to the option rows above/below — otherwise focus gets
-      // trapped in the field with no way back via the keyboard.
-      if (isTextInput && e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      // ↑/↓ move the caret between the textarea's wrapped lines; we only steal
+      // them to navigate out to the option rows when the caret is already at the
+      // field's edge (↑ at the very start, ↓ at the very end) — so a multi-line
+      // answer stays editable but focus is never trapped.
+      if (isTextInput) {
+        if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+        const field = target as HTMLTextAreaElement;
+        const atStart = field.selectionStart === 0;
+        const atEnd = field.selectionStart === field.value.length;
+        if (e.key === "ArrowUp" && !atStart) return;
+        if (e.key === "ArrowDown" && !atEnd) return;
+      }
 
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
         e.preventDefault();
@@ -908,6 +937,9 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                   chipContent={otherIndex + 1}
                   chipFilled={otherText.length > 0}
                   isMulti={isMulti}
+                  endSlotClassName={
+                    otherMultiline ? "self-start -mt-px" : undefined
+                  }
                   ariaLabel={
                     question.otherPlaceholder ?? "Describe in your own words"
                   }
@@ -931,9 +963,21 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                   }
                 >
                   <span className="inline-grid w-full">
-                    <input
+                    {/* Mirror — invisible, holds the same text so the grid cell
+                        grows to the wrapped height. The textarea overlays the
+                        same cell and stretches to fill it (auto-grow without JS
+                        height math). The trailing space keeps the last line's
+                        height when text ends in a newline. */}
+                    <span
+                      aria-hidden
+                      className="col-start-1 row-start-1 invisible whitespace-pre-wrap break-words text-[13px] leading-snug"
+                      style={{ fontVariationSettings: fontWeights.medium }}
+                    >
+                      {otherText ? otherText + "​" : "​"}
+                    </span>
+                    <textarea
                       ref={otherInputRef}
-                      type="text"
+                      rows={1}
                       value={otherText}
                       placeholder={
                         question.otherPlaceholder ??
@@ -950,14 +994,15 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                         )
                       }
                       onKeyDown={(e) => {
-                        if (e.key === "Enter" && !isMulti) {
+                        // Enter submits; Shift+Enter inserts a newline.
+                        if (e.key === "Enter" && !e.shiftKey && !isMulti) {
                           e.preventDefault();
                           handleOtherSubmit();
                         }
                       }}
                       onClick={(e) => e.stopPropagation()}
                       className={cn(
-                        "col-start-1 row-start-1 bg-transparent outline-none text-[13px] text-foreground placeholder:text-muted-foreground w-full"
+                        "col-start-1 row-start-1 resize-none overflow-hidden bg-transparent outline-none text-[13px] leading-snug text-foreground placeholder:text-muted-foreground w-full"
                       )}
                       style={{ fontVariationSettings: fontWeights.medium }}
                     />
@@ -1147,6 +1192,9 @@ interface RowProps {
   showArrow?: boolean;
   arrowIcon?: React.ReactNode;
   onArrowClick?: () => void;
+  /** Extra classes for the trailing chip/arrow slot. Used by the Other row to
+   *  top-align + nudge the arrow once its textarea wraps to multiple lines. */
+  endSlotClassName?: string;
   /** Body content layout. "inline" keeps title + description on one line;
    *  "stacked" puts description below the title with extra vertical padding. */
   bodyLayout?: "inline" | "stacked";
@@ -1171,6 +1219,7 @@ function Row({
   showArrow,
   arrowIcon,
   onArrowClick,
+  endSlotClassName,
   bodyLayout = "inline",
   children,
   ...aria
@@ -1222,7 +1271,12 @@ function Row({
       </span>
 
       {/* End slot — chip with optional arrow overlay */}
-      <span className="shrink-0 w-7 h-7 relative inline-flex items-center justify-center">
+      <span
+        className={cn(
+          "shrink-0 w-7 h-7 relative inline-flex items-center justify-center",
+          endSlotClassName
+        )}
+      >
         {/* Chip — number or icon */}
         <span
           aria-hidden

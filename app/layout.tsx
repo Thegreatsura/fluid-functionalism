@@ -11,6 +11,7 @@ import { SidebarLayout } from "@/app/components/sidebar-layout";
 import { DialRoot } from "dialkit";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.fluidfunctionalism.com"),
   title: "Fluid Functionalism",
   description: "Shadcn components used in service of functional clarity.",
   icons: {

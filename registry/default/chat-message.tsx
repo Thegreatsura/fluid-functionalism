@@ -16,7 +16,8 @@ interface ChatMessageProps
   files?: File[];
   /** Side length of each attachment thumbnail in pixels. Defaults to 64. */
   thumbnailSize?: number;
-  /** Timestamp shown in the hover-revealed meta row. Caller pre-formats it
+  /** Timestamp shown in the hover-revealed meta row, before the actions.
+   *  User-message only — ignored on assistant replies. Caller pre-formats it
    *  (e.g. `"Wednesday 6:08 PM"`). */
   time?: ReactNode;
   /** Icon-only action buttons shown in the hover-revealed meta row (e.g. copy,
@@ -37,6 +38,8 @@ const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
   ) => {
     const shape = useShape();
     const isUser = from === "user";
+    // Timestamps are a user-message affordance; assistant replies show actions only.
+    const showTime = isUser && time != null;
 
     return (
       <motion.div
@@ -86,20 +89,21 @@ const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
             {children}
           </div>
         )}
-        {(time != null || actions != null) && (
+        {(showTime || actions != null) && (
           // Meta row: timestamp + icon-only actions. Always rendered (so it
           // reserves its height and the gap between bubbles never shifts) but
           // hidden until the message is hovered or an action is focused.
+          // The timestamp is a user-message affordance only — assistant replies
+          // show their actions alone. User rows read date → icons left-to-right.
           <div
             className={cn(
               "flex items-center gap-2 px-1 text-[12px] leading-none text-muted-foreground select-none",
               "opacity-0 pointer-events-none transition-opacity duration-150",
               "group-hover:opacity-100 group-hover:pointer-events-auto",
-              "group-focus-within:opacity-100 group-focus-within:pointer-events-auto",
-              isUser ? "flex-row-reverse" : ""
+              "group-focus-within:opacity-100 group-focus-within:pointer-events-auto"
             )}
           >
-            {time != null && <span className="tabular-nums">{time}</span>}
+            {showTime && <span className="tabular-nums">{time}</span>}
             {actions != null && (
               <span className="flex items-center gap-0.5">{actions}</span>
             )}

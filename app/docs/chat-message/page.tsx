@@ -10,14 +10,9 @@ import { useShape } from "@/registry/default/lib/shape-context";
 import { cn } from "@/registry/default/lib/utils";
 
 // Icon-only action buttons for the hover-revealed meta row. Assistant replies
-// get copy + regenerate; user messages get copy + edit.
-function MessageActions({
-  from,
-  text,
-}: {
-  from: "user" | "assistant";
-  text: string;
-}) {
+// get copy + regenerate; user messages get copy + edit. Illustrative only —
+// the buttons carry no behaviour in the docs demo.
+function MessageActions({ from }: { from: "user" | "assistant" }) {
   const shape = useShape();
   const CopyIcon = useIcon("copy");
   const SecondIcon = useIcon(from === "user" ? "pencil" : "rotate-ccw");
@@ -27,12 +22,7 @@ function MessageActions({
   );
   return (
     <>
-      <button
-        type="button"
-        aria-label="Copy message"
-        className={btn}
-        onClick={() => navigator.clipboard?.writeText(text)}
-      >
+      <button type="button" aria-label="Copy message" className={btn}>
         <CopyIcon size={13} strokeWidth={1.5} />
       </button>
       <button
@@ -50,7 +40,8 @@ const conversationCode = `import { ChatMessage } from "./components";
 import { Copy, RotateCcw } from "lucide-react";
 
 // Timestamp + icon buttons are revealed on hover; their height is always
-// reserved, so the gap between bubbles never shifts.
+// reserved, so the gap between bubbles never shifts. The timestamp is a
+// user-message affordance — assistant replies show their actions alone.
 const actions = (
   <>
     <button aria-label="Copy"><Copy size={13} strokeWidth={1.5} /></button>
@@ -62,13 +53,13 @@ const actions = (
   <ChatMessage from="user" time="Wednesday 6:06 PM" actions={actions}>
     What does "good design" actually mean? Everyone says it, no one defines it.
   </ChatMessage>
-  <ChatMessage from="assistant" time="Wednesday 6:06 PM" actions={actions}>
+  <ChatMessage from="assistant" actions={actions}>
     Good design is mostly invisible — you only notice it when it's missing. It's less about how something looks and more about how effortlessly it lets you do what you came to do.
   </ChatMessage>
   <ChatMessage from="user" time="Wednesday 6:07 PM" actions={actions}>
     So function over form?
   </ChatMessage>
-  <ChatMessage from="assistant" time="Wednesday 6:07 PM" actions={actions}>
+  <ChatMessage from="assistant" actions={actions}>
     Not quite. Form is part of function — something that feels good to use is, in a real sense, working better. The split between the two is mostly a myth.
   </ChatMessage>
   <ChatMessage from="user" time="Wednesday 6:08 PM" actions={actions}>
@@ -93,7 +84,7 @@ const attachmentsCode = `import { ChatMessage } from "./components";
 const chatMessageProps: PropDef[] = [
   { name: "from", type: '"user" | "assistant"', description: "Who sent the message. `user` renders a right-aligned accent bubble; `assistant` renders left-aligned plain text with no background. Also sets the entrance transform-origin." },
   { name: "children", type: "ReactNode", description: "Message body. For the user it renders inside the bubble; for the assistant it renders as plain text. When omitted (attachment-only message) the body is dropped and only the thumbnails show." },
-  { name: "time", type: "ReactNode", description: "Timestamp shown in the meta row that is revealed on hover (or focus). Caller pre-formats it, e.g. \"Wednesday 6:08 PM\"." },
+  { name: "time", type: "ReactNode", description: "Timestamp shown before the actions in the hover-revealed meta row. User-message only — ignored on assistant replies. Caller pre-formats it, e.g. \"Wednesday 6:08 PM\"." },
   { name: "actions", type: "ReactNode", description: "Icon-only action buttons (copy, edit, regenerate, …) shown next to the timestamp in the hover-revealed meta row. The row's height is always reserved, so revealing it never shifts the layout." },
   { name: "files", type: "File[]", description: "Optional attachments rendered as square thumbnails above the bubble. Images use object-cover; PDFs render their first page via pdfjs." },
   { name: "thumbnailSize", type: "number", default: "64", description: "Side length (in pixels) of each attachment thumbnail." },
@@ -132,25 +123,14 @@ export default function ChatMessageDoc() {
             <ChatMessage
               from="user"
               time="Wednesday 6:06 PM"
-              actions={
-                <MessageActions
-                  from="user"
-                  text={`What does "good design" actually mean? Everyone says it, no one defines it.`}
-                />
-              }
+              actions={<MessageActions from="user" />}
             >
               What does &ldquo;good design&rdquo; actually mean? Everyone says
               it, no one defines it.
             </ChatMessage>
             <ChatMessage
               from="assistant"
-              time="Wednesday 6:06 PM"
-              actions={
-                <MessageActions
-                  from="assistant"
-                  text="Good design is mostly invisible — you only notice it when it's missing. It's less about how something looks and more about how effortlessly it lets you do what you came to do."
-                />
-              }
+              actions={<MessageActions from="assistant" />}
             >
               Good design is mostly invisible — you only notice it when it&apos;s
               missing. It&apos;s less about how something looks and more about
@@ -159,19 +139,13 @@ export default function ChatMessageDoc() {
             <ChatMessage
               from="user"
               time="Wednesday 6:07 PM"
-              actions={<MessageActions from="user" text="So function over form?" />}
+              actions={<MessageActions from="user" />}
             >
               So function over form?
             </ChatMessage>
             <ChatMessage
               from="assistant"
-              time="Wednesday 6:07 PM"
-              actions={
-                <MessageActions
-                  from="assistant"
-                  text="Not quite. Form is part of function — something that feels good to use is, in a real sense, working better. The split between the two is mostly a myth."
-                />
-              }
+              actions={<MessageActions from="assistant" />}
             >
               Not quite. Form is part of function — something that feels good to
               use is, in a real sense, working better. The split between the two
@@ -180,9 +154,7 @@ export default function ChatMessageDoc() {
             <ChatMessage
               from="user"
               time="Wednesday 6:08 PM"
-              actions={
-                <MessageActions from="user" text="That reframes it completely." />
-              }
+              actions={<MessageActions from="user" />}
             >
               That reframes it completely.
             </ChatMessage>

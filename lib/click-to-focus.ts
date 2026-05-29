@@ -39,6 +39,18 @@ export function routeKeyboardOnMouseDown(
   const region = fallback ?? scope;
   if (region.contains(document.activeElement) && document.activeElement !== region)
     return; // already keyboard-active here — keep the current focus
-  const focusable = scope.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+  const focusable = firstInteractive(scope);
   (focusable ?? fallback ?? scope).focus();
+}
+
+// First focusable descendant the user could actually interact with. Skips
+// controls that are present but non-interactable at rest (e.g. hover-revealed
+// action buttons sitting under `pointer-events: none`) so an empty-space click
+// doesn't route keyboard focus into hidden affordances.
+function firstInteractive(scope: HTMLElement): HTMLElement | null {
+  const candidates = scope.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+  for (const el of candidates) {
+    if (getComputedStyle(el).pointerEvents !== "none") return el;
+  }
+  return null;
 }

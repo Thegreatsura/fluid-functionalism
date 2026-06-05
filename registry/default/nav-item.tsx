@@ -16,8 +16,8 @@ interface NavItemProps
   icon?: IconComponent;
   isNew?: boolean;
   isUpdated?: boolean;
-  /** Tailwind background class for the status dot. Defaults to blue for `isNew`,
-   *  yellow for `isUpdated`. Set to override the new-dot colour per item. */
+  /** Tailwind background class for the status dot. Defaults to blue for both
+   *  `isNew` and `isUpdated`. Set to override the new-dot colour per item. */
   dotColorClass?: string;
 }
 
@@ -99,7 +99,7 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
           >
             {label}
             {isUpdated ? (
-              <span className="inline-block ml-2 size-1.5 rounded-full bg-yellow-400 align-middle" />
+              <span className="inline-block ml-2 size-1.5 rounded-full bg-blue-500 align-middle" />
             ) : isNew ? (
               <span
                 className={cn(

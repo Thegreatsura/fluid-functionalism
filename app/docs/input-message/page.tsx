@@ -398,7 +398,7 @@ useEffect(() => () => timers.current.forEach(clearTimeout), []);
             transition={{ type: "spring", duration: 0.16 }}
             style={{ height: CARD_H, transformOrigin: "bottom center", zIndex: 100 - i }}
             onDoubleClick={() => { setValue(item.text); setQueue((q) => q.filter((x) => x.id !== item.id)); }}
-            className="absolute bottom-0 left-7 right-0 flex items-center gap-2 rounded-[20px] bg-[color-mix(in_oklab,var(--accent),var(--background)_45%)] px-3.5 text-[14px] text-muted-foreground shadow-surface-3"
+            className="absolute bottom-0 left-7 right-7 flex items-center gap-2 rounded-[20px] bg-[color-mix(in_oklab,var(--accent),var(--background)_45%)] px-3.5 text-[14px] text-muted-foreground shadow-surface-3"
           >
             {/* Attachments: small thumbnails (1 or many; +N past 3). */}
             {item.files.length > 0 && (
@@ -410,6 +410,7 @@ useEffect(() => () => timers.current.forEach(clearTimeout), []);
               </div>
             )}
             <span className="min-w-0 flex-1 truncate">{item.text}</span>
+            <button onClick={() => { setValue(item.text); setQueue((q) => q.filter((x) => x.id !== item.id)); }} aria-label="Edit queued message">✎</button>
             <button onClick={() => setQueue((q) => q.filter((x) => x.id !== item.id))} aria-label="Remove queued message">
               ✕
             </button>
@@ -554,7 +555,7 @@ export default function InputMessageDoc() {
       description="Chat-style message composer with an auto-resizing textarea, flexible left/right action slots, and a built-in send button on a Surface-2 substrate."
     >
       <DocSection title="Example">
-        <QueuedChatDemo code={actionsCode} rich />
+        <QueuedChatDemo code={actionsCode} rich minHeightClass="h-[560px]" />
       </DocSection>
 
       <DocSection title="Basic">

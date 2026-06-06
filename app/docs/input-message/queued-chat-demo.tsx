@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CornerDownRight } from "lucide-react";
 import {
   InputMessage,
   type QueuedMessage,
@@ -32,6 +31,9 @@ type Turn = {
   from: "user" | "assistant";
   text: string;
   thinking?: boolean;
+  // Attachments carried through from the composer / dispatched queue item, so
+  // the sent bubble shows them inline.
+  files?: File[];
   // Set on user turns dispatched from the queue, so the front stack card and
   // the sent bubble share a layoutId and morph.
   id?: string;
@@ -50,15 +52,19 @@ type Turn = {
 export function QueuedChatDemo({
   code,
   rich = false,
+  minHeightClass = "h-[440px]",
 }: {
   code: string;
   rich?: boolean;
+  minHeightClass?: string;
 }) {
   const shape = useShape();
   const ResetIcon = useIcon("rotate-ccw");
   const PlayIcon = useIcon("play");
   const PauseIcon = useIcon("pause");
   const XIcon = useIcon("x");
+  const PencilIcon = useIcon("pencil");
+  const CornerDownRightIcon = useIcon("corner-down-right");
   const PlusIcon = useIcon("plus");
   const ChevronDownIcon = useIcon("chevron-down");
   const ImageIcon = useIcon("image");
@@ -125,11 +131,11 @@ export function QueuedChatDemo({
     }
   };
 
-  const respond = (text: string, queuedId?: string) => {
+  const respond = (text: string, files: File[] = [], queuedId?: string) => {
     const reply = `Replying to “${text}”. Here's a fuller answer that streams in a word at a time so you can watch the queue release the next message.`;
     setChat((c) => [
       ...c,
-      { from: "user", text, id: queuedId },
+      { from: "user", text, files, id: queuedId },
       { from: "assistant", text: "", thinking: true },
     ]);
     setChatStatus("streaming");
@@ -190,11 +196,16 @@ export function QueuedChatDemo({
         if (cancelled) return;
         pausedRef.current = true;
         setPaused(true);
-        respond("Show me how queued messages work");
+        respond("Help me polish the dashboard design");
         setQueue([
-          { id: crypto.randomUUID(), text: "Press ▶ to send these", files: [img] },
-          { id: crypto.randomUUID(), text: "Compare these two files", files: [img, pdf] },
-          { id: crypto.randomUUID(), text: "Then summarize the result", files: [] },
+          // A message with attachments, a short one, and a longer one.
+          { id: crypto.randomUUID(), text: "Match these mockups", files: [img, pdf] },
+          { id: crypto.randomUUID(), text: "Tighten the spacing", files: [] },
+          {
+            id: crypto.randomUUID(),
+            text: "Audit the color contrast across the dashboard and suggest accessible token values",
+            files: [],
+          },
         ]);
       })
       .catch(() => {});
@@ -358,7 +369,7 @@ export function QueuedChatDemo({
   return (
     <ComponentPreview
       code={code}
-      minHeightClass="h-[440px]"
+      minHeightClass={minHeightClass}
       align="bottom"
       padding="compact"
       playbackButton={playbackButton}
@@ -369,7 +380,7 @@ export function QueuedChatDemo({
           className="absolute inset-0 overflow-y-auto scrollbar-hide"
         >
           <div
-            className="flex min-h-full flex-col justify-end gap-2"
+            className="flex min-h-full flex-col justify-start gap-2"
             style={{
               paddingBottom: inputH + 8 + (stackCount > 0 ? collapsedStackH + 8 : 0),
             }}
@@ -383,6 +394,7 @@ export function QueuedChatDemo({
                 <ChatMessage
                   key={i}
                   from={m.from}
+                  files={m.files}
                   layoutId={`qm-${m.id}`}
                   layout
                   initial={false}
@@ -393,7 +405,7 @@ export function QueuedChatDemo({
                   </motion.span>
                 </ChatMessage>
               ) : (
-                <ChatMessage key={i} from={m.from}>
+                <ChatMessage key={i} from={m.from} files={m.files}>
                   {m.text}
                 </ChatMessage>
               )
@@ -419,12 +431,17 @@ export function QueuedChatDemo({
               onMouseEnter={() => setStackHovered(true)}
               onMouseLeave={() => setStackHovered(false)}
             >
-              <div
-                className="pointer-events-none absolute bottom-0 left-0 flex items-center justify-center text-muted-foreground"
-                style={{ height: CARD_H, width: 28 }}
+              <Tooltip
+                content={`${stackCount} queued message${stackCount === 1 ? "" : "s"}`}
+                side="left"
               >
-                <CornerDownRight size={16} strokeWidth={2} />
-              </div>
+                <div
+                  className="absolute bottom-0 left-0 flex items-center justify-center text-muted-foreground"
+                  style={{ height: CARD_H, width: 28 }}
+                >
+                  <CornerDownRightIcon size={16} strokeWidth={2} />
+                </div>
+              </Tooltip>
               <AnimatePresence initial={false}>
                 {queue.map((item, i) => {
                   const peek = Math.min(i, STACK_MAX_PEEK);
@@ -465,7 +482,12 @@ export function QueuedChatDemo({
                         zIndex: isDragging ? 200 : 100 - i,
                         cursor: stackExpanded ? "grab" : "default",
                       }}
-                      className={`group/qm absolute bottom-0 left-7 right-0 flex select-none items-center gap-2 bg-[color-mix(in_oklab,var(--accent),var(--background)_45%)] px-3.5 text-[14px] text-muted-foreground shadow-surface-3 active:cursor-grabbing ${shape.bg}`}
+                      // Equal left/right gutters (the left holds the queue icon)
+                      // so the cards sit centered above the composer.
+                      // With attachments, use 8px side padding to match the ~8px
+                      // above/below the 28px thumbnail in the 44px card (square
+                      // inset); otherwise the roomier 14px for text-only cards.
+                      className={`group/qm absolute bottom-0 left-7 right-7 flex select-none items-center gap-2 bg-[color-mix(in_oklab,var(--accent),var(--background)_45%)] ${item.files.length > 0 ? "px-2" : "px-3.5"} text-[14px] text-muted-foreground shadow-surface-3 active:cursor-grabbing ${shape.bg}`}
                     >
                       {item.files.length > 0 && (
                         <div className="pointer-events-none flex shrink-0 items-center gap-1">
@@ -490,20 +512,40 @@ export function QueuedChatDemo({
                             item.files.length === 1 ? "" : "s"
                           }`}
                       </span>
-                      <Tooltip content="Remove" side="top">
-                        <button
-                          type="button"
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeQueuedMsg(item);
-                          }}
-                          aria-label={`Remove queued message: ${item.text}`}
-                          className="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-hover hover:text-foreground focus-visible:ring-1 focus-visible:ring-[#6B97FF]"
-                        >
-                          <XIcon size={14} strokeWidth={2.5} />
-                        </button>
-                      </Tooltip>
+                      {/* Edit (same as double-click) then remove. The group is
+                          hidden until the card is hovered — so it's out of layout
+                          by default and the text gets the full width — with 4px
+                          between the two buttons. */}
+                      <div className="hidden shrink-0 items-center gap-1 group-hover/qm:flex">
+                        <Tooltip content="Edit" side="top">
+                          <button
+                            type="button"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              editQueuedMsg(item);
+                            }}
+                            aria-label={`Edit queued message: ${item.text}`}
+                            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-hover hover:text-foreground focus-visible:ring-1 focus-visible:ring-[#6B97FF]"
+                          >
+                            <PencilIcon size={14} strokeWidth={2} />
+                          </button>
+                        </Tooltip>
+                        <Tooltip content="Remove" side="top">
+                          <button
+                            type="button"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeQueuedMsg(item);
+                            }}
+                            aria-label={`Remove queued message: ${item.text}`}
+                            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-hover hover:text-foreground focus-visible:ring-1 focus-visible:ring-[#6B97FF]"
+                          >
+                            <XIcon size={14} strokeWidth={2.5} />
+                          </button>
+                        </Tooltip>
+                      </div>
                     </motion.div>
                   );
                 })}
@@ -524,8 +566,8 @@ export function QueuedChatDemo({
           history={chat.filter((m) => m.from === "user").map((m) => m.text)}
           files={rich ? composerFiles : undefined}
           onFilesChange={rich ? setComposerFiles : undefined}
-          onSend={(text, _files, meta) => {
-            if (text) respond(text, meta?.queuedId);
+          onSend={(text, files, meta) => {
+            if (text) respond(text, files, meta?.queuedId);
             setValue("");
             setComposerFiles([]);
           }}

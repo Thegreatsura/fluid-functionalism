@@ -868,12 +868,18 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
                         : { opacity: 0, scale: 0.6, transition: { duration: 0.06 } }
                     }
                     transition={springs.fast}
-                    className="inline-flex items-center justify-center"
+                    className="inline-flex items-center justify-center align-middle leading-none"
                   >
                     {buttonMode === "stop" ? (
-                      <span className="h-2.5 w-2.5 rounded-[3px] bg-current" />
+                      <span className="h-3 w-3 rounded-[3px] bg-current" />
                     ) : (
-                      <ArrowUpIcon />
+                      // Override icon-sm's small 14px svg — the send glyph reads
+                      // better a touch larger. `size` matches the attribute to
+                      // the CSS so the svg box stays centered.
+                      <ArrowUpIcon
+                        size={18}
+                        className="block !h-[18px] !w-[18px]"
+                      />
                     )}
                   </motion.span>
                 </AnimatePresence>

@@ -50,6 +50,7 @@ import {
   Inbox,
   Pencil,
   SkipForward,
+  CornerDownRight,
 } from "lucide-react";
 
 // ── Tabler ──────────────────────────────────────────────────
@@ -100,6 +101,7 @@ import {
   IconInbox,
   IconPencil,
   IconPlayerSkipForward,
+  IconCornerDownRight,
 } from "@tabler/icons-react";
 
 // ── Phosphor ────────────────────────────────────────────────
@@ -150,6 +152,7 @@ import {
   Tray as PhTray,
   Pencil as PhPencil,
   SkipForward as PhSkipForward,
+  ArrowElbowDownRight as PhArrowElbowDownRight,
 } from "@phosphor-icons/react";
 
 // ── HugeIcons ───────────────────────────────────────────────
@@ -197,6 +200,7 @@ import HiMessage from "@hugeicons/core-free-icons/BubbleChatIcon";
 import HiInbox from "@hugeicons/core-free-icons/InboxIcon";
 import HiPencil from "@hugeicons/core-free-icons/PencilEdit01Icon";
 import HiSkipForward from "@hugeicons/core-free-icons/NextIcon";
+import HiCornerDownRight from "@hugeicons/core-free-icons/ArrowMoveDownRightIcon";
 
 // ── Types ───────────────────────────────────────────────────
 
@@ -221,7 +225,7 @@ export type IconName =
   | "image" | "link" | "check" | "rotate-ccw"
   | "play" | "pause" | "pipette"
   | "home" | "message-circle" | "inbox"
-  | "pencil" | "skip-forward";
+  | "pencil" | "skip-forward" | "corner-down-right";
 
 export const iconLibraryOrder: IconLibrary[] = ["lucide", "tabler", "phosphor", "hugeicons"];
 
@@ -315,6 +319,7 @@ const lucideMap: Record<IconName, IconComponent> = {
   "inbox": Inbox,
   "pencil": Pencil,
   "skip-forward": SkipForward,
+  "corner-down-right": CornerDownRight,
 };
 
 const tablerMap: Record<IconName, IconComponent> = {
@@ -364,6 +369,7 @@ const tablerMap: Record<IconName, IconComponent> = {
   "inbox": tabler(IconInbox),
   "pencil": tabler(IconPencil),
   "skip-forward": tabler(IconPlayerSkipForward),
+  "corner-down-right": tabler(IconCornerDownRight),
 };
 
 const phosphorMap: Record<IconName, IconComponent> = {
@@ -413,6 +419,7 @@ const phosphorMap: Record<IconName, IconComponent> = {
   "inbox": phosphor(PhTray),
   "pencil": phosphor(PhPencil),
   "skip-forward": phosphor(PhSkipForward),
+  "corner-down-right": phosphor(PhArrowElbowDownRight),
 };
 
 const hugeiconsMap: Record<IconName, IconComponent> = {
@@ -462,6 +469,7 @@ const hugeiconsMap: Record<IconName, IconComponent> = {
   "inbox": hugeicons(HiInbox),
   "pencil": hugeicons(HiPencil),
   "skip-forward": hugeicons(HiSkipForward),
+  "corner-down-right": hugeicons(HiCornerDownRight),
 };
 
 // ── Unified Map ─────────────────────────────────────────────

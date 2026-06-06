@@ -877,8 +877,8 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
                       // better a touch larger. `size` matches the attribute to
                       // the CSS so the svg box stays centered.
                       <ArrowUpIcon
-                        size={18}
-                        className="block !h-[18px] !w-[18px]"
+                        size={19}
+                        className="block !h-[19px] !w-[19px]"
                       />
                     )}
                   </motion.span>

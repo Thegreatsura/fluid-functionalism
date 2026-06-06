@@ -1,0 +1,651 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { CornerDownRight } from "lucide-react";
+import {
+  InputMessage,
+  type QueuedMessage,
+} from "@/registry/default/input-message";
+import { ChatMessage } from "@/registry/default/chat-message";
+import { ThinkingIndicator } from "@/registry/default/thinking-indicator";
+import { FileThumbnail } from "@/registry/default/file-thumbnail";
+import { Button } from "@/registry/radix/button";
+import { Dropdown } from "@/registry/default/dropdown";
+import { MenuItem } from "@/registry/default/menu-item";
+import { Tooltip } from "@/registry/radix/tooltip";
+import { useIcon } from "@/lib/icon-context";
+import { useShape } from "@/registry/default/lib/shape-context";
+import { springs } from "@/registry/default/lib/springs";
+import { ComponentPreview } from "@/lib/docs/ComponentPreview";
+
+// Sonner-style queued stack tuning (see the doc section for the rationale).
+const CARD_H = 44;
+const STACK_PEEK = 12;
+const STACK_SCALE = 0.05;
+const STACK_GAP = 8;
+const STACK_MAX_PEEK = 2;
+
+const MODELS = ["Sonnet 5", "Sonnet 4.6", "Sonnet 4.5", "Haiku 4"] as const;
+
+type Turn = {
+  from: "user" | "assistant";
+  text: string;
+  thinking?: boolean;
+  // Set on user turns dispatched from the queue, so the front stack card and
+  // the sent bubble share a layoutId and morph.
+  id?: string;
+};
+
+/**
+ * Self-contained "queued messages" demo: a streaming reply with a pausable
+ * stepper, a Sonner-style queued stack (collapse/expand, drag-reorder,
+ * double-click edit, attachment thumbnails), and the queued→sent morph. It
+ * loads already paused so the feature reads at a glance.
+ *
+ * `rich` adds the composer chrome from the hero example — an attach dropdown
+ * and a model picker — and enables real attachments so users can queue with
+ * files of their own.
+ */
+export function QueuedChatDemo({
+  code,
+  rich = false,
+}: {
+  code: string;
+  rich?: boolean;
+}) {
+  const shape = useShape();
+  const ResetIcon = useIcon("rotate-ccw");
+  const PlayIcon = useIcon("play");
+  const PauseIcon = useIcon("pause");
+  const XIcon = useIcon("x");
+  const PlusIcon = useIcon("plus");
+  const ChevronDownIcon = useIcon("chevron-down");
+  const ImageIcon = useIcon("image");
+  const FileTextIcon = useIcon("square-library");
+
+  const [value, setValue] = useState("");
+  const [composerFiles, setComposerFiles] = useState<File[]>([]);
+  const [queue, setQueue] = useState<QueuedMessage[]>([]);
+  const [chatStatus, setChatStatus] = useState<"idle" | "streaming">("idle");
+  const [chat, setChat] = useState<Turn[]>([]);
+
+  // ── Pausable stepper: drives the in-flight reply (think → stream word-by-
+  // word). One reply animates at a time, so a single controller is enough. The
+  // playback button pauses/resumes it; the cascade pauses with it, since status
+  // only reaches "idle" once a reply finishes streaming.
+  const [paused, setPaused] = useState(false);
+  const pausedRef = useRef(false);
+  const stepRef = useRef<{
+    id: ReturnType<typeof setTimeout> | null;
+    cb: (() => void) | null;
+    remaining: number;
+    startedAt: number;
+  }>({ id: null, cb: null, remaining: 0, startedAt: 0 });
+
+  const fireStep = () => {
+    const s = stepRef.current;
+    s.id = null;
+    const cb = s.cb;
+    s.cb = null;
+    cb?.();
+  };
+  const armStep = (cb: () => void, delay: number) => {
+    const s = stepRef.current;
+    s.cb = cb;
+    s.remaining = delay;
+    if (pausedRef.current) return;
+    s.startedAt = performance.now();
+    s.id = setTimeout(fireStep, delay);
+  };
+  const clearStep = () => {
+    const s = stepRef.current;
+    if (s.id != null) clearTimeout(s.id);
+    s.id = null;
+    s.cb = null;
+    s.remaining = 0;
+  };
+  const pauseAnim = () => {
+    const s = stepRef.current;
+    if (s.id != null) {
+      clearTimeout(s.id);
+      s.id = null;
+      s.remaining = Math.max(0, s.remaining - (performance.now() - s.startedAt));
+    }
+    pausedRef.current = true;
+    setPaused(true);
+  };
+  const resumeAnim = () => {
+    pausedRef.current = false;
+    setPaused(false);
+    const s = stepRef.current;
+    if (s.cb != null && s.id == null) {
+      s.startedAt = performance.now();
+      s.id = setTimeout(fireStep, s.remaining);
+    }
+  };
+
+  const respond = (text: string, queuedId?: string) => {
+    const reply = `Replying to “${text}”. Here's a fuller answer that streams in a word at a time so you can watch the queue release the next message.`;
+    setChat((c) => [
+      ...c,
+      { from: "user", text, id: queuedId },
+      { from: "assistant", text: "", thinking: true },
+    ]);
+    setChatStatus("streaming");
+
+    const patchAssistant = (
+      fn: (m: { text: string; thinking?: boolean }) => {
+        text: string;
+        thinking?: boolean;
+      }
+    ) =>
+      setChat((c) => {
+        const next = [...c];
+        for (let k = next.length - 1; k >= 0; k--) {
+          if (next[k].from === "assistant") {
+            next[k] = { from: "assistant", ...fn(next[k]) };
+            break;
+          }
+        }
+        return next;
+      });
+
+    const words = reply.split(" ");
+    const revealWord = (i: number) => {
+      patchAssistant(() => ({
+        text: words.slice(0, i + 1).join(" "),
+        thinking: false,
+      }));
+      if (i === words.length - 1) {
+        setChatStatus("idle");
+        return;
+      }
+      armStep(() => revealWord(i + 1), 150);
+    };
+    armStep(() => revealWord(0), 4000);
+  };
+
+  useEffect(() => () => clearStep(), []);
+
+  // Auto-demo: load already paused mid-reply with a few messages queued (some
+  // carrying attachments) so the feature reads at a glance. The front card
+  // nudges the user to press ▶ to resume and release the queue.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      fetch("/micka.png")
+        .then((r) => r.blob())
+        .then((b) => new File([b], "photo.png", { type: b.type || "image/png" })),
+      fetch("/design-notes.pdf")
+        .then((r) => r.blob())
+        .then(
+          (b) =>
+            new File([b], "design-notes.pdf", {
+              type: b.type || "application/pdf",
+            })
+        ),
+    ])
+      .then(([img, pdf]) => {
+        if (cancelled) return;
+        pausedRef.current = true;
+        setPaused(true);
+        respond("Show me how queued messages work");
+        setQueue([
+          { id: crypto.randomUUID(), text: "Press ▶ to send these", files: [img] },
+          { id: crypto.randomUUID(), text: "Compare these two files", files: [img, pdf] },
+          { id: crypto.randomUUID(), text: "Then summarize the result", files: [] },
+        ]);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // Run once on mount.
+  }, []);
+
+  // ── Layout plumbing: float the composer over the transcript, reserve scroll
+  // padding under it (+ the collapsed stack), and keep the transcript pinned.
+  const inputRef = useRef<HTMLDivElement>(null);
+  const [inputH, setInputH] = useState(0);
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setInputH(el.offsetHeight));
+    ro.observe(el);
+    setInputH(el.offsetHeight);
+    return () => ro.disconnect();
+  }, []);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [chat, inputH, queue]);
+
+  const resetDemo = () => {
+    clearStep();
+    pausedRef.current = false;
+    setPaused(false);
+    setChat([]);
+    setQueue([]);
+    setValue("");
+    setComposerFiles([]);
+    setChatStatus("idle");
+  };
+
+  const editQueuedMsg = (item: QueuedMessage) => {
+    setValue(item.text);
+    setComposerFiles(item.files);
+    setQueue((q) => q.filter((x) => x.id !== item.id));
+    requestAnimationFrame(() => {
+      const el = inputRef.current?.querySelector("textarea");
+      if (el) {
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      }
+    });
+  };
+  const removeQueuedMsg = (item: QueuedMessage) =>
+    setQueue((q) => q.filter((x) => x.id !== item.id));
+
+  // ── Stack geometry.
+  const stackCount = queue.length;
+  const collapsedStackH =
+    CARD_H + Math.min(Math.max(stackCount - 1, 0), STACK_MAX_PEEK) * STACK_PEEK;
+  const expandedStackH =
+    stackCount * CARD_H + Math.max(stackCount - 1, 0) * STACK_GAP;
+
+  // ── Drag-to-reorder the (expanded) stack. The dragged card follows the
+  // pointer; the rest snap to slots; on release it snaps too. Window listeners
+  // so release works anywhere.
+  const stackRef = useRef<HTMLDivElement>(null);
+  const [stackHovered, setStackHovered] = useState(false);
+  const [pointerDownId, setPointerDownId] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragY, setDragY] = useState(0);
+  const dragStartYRef = useRef(0);
+  const queueLenRef = useRef(queue.length);
+  queueLenRef.current = queue.length;
+  const stackExpanded =
+    stackHovered || pointerDownId !== null || draggingId !== null;
+  const slotY = (i: number) => -i * (CARD_H + STACK_GAP);
+
+  useEffect(() => {
+    if (!pointerDownId) return;
+    let started = false;
+    const onMove = (e: PointerEvent) => {
+      const el = stackRef.current;
+      if (!el) return;
+      if (!started) {
+        if (Math.abs(e.clientY - dragStartYRef.current) < 4) return;
+        started = true;
+        setDraggingId(pointerDownId);
+      }
+      const rect = el.getBoundingClientRect();
+      const fromBottom = rect.bottom - e.clientY;
+      setQueue((q) => {
+        const slot = Math.max(
+          0,
+          Math.min(q.length - 1, Math.floor(fromBottom / (CARD_H + STACK_GAP)))
+        );
+        const cur = q.findIndex((x) => x.id === pointerDownId);
+        if (cur === -1 || cur === slot) return q;
+        const moved = q[cur];
+        const next = [...q];
+        next.splice(cur, 1);
+        next.splice(slot, 0, moved);
+        return next;
+      });
+      const minY = -(queueLenRef.current - 1) * (CARD_H + STACK_GAP);
+      setDragY(
+        Math.max(minY, Math.min(0, e.clientY - rect.bottom + CARD_H / 2))
+      );
+    };
+    const onUp = () => {
+      setPointerDownId(null);
+      setDraggingId(null);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, [pointerDownId]);
+
+  // ── Composer chrome for the rich (hero) variant: attach dropdown + model
+  // picker, with click-outside to close.
+  const [model, setModel] = useState<(typeof MODELS)[number]>("Sonnet 5");
+  const [attachOpen, setAttachOpen] = useState(false);
+  const [modelOpen, setModelOpen] = useState(false);
+  const attachRef = useRef<HTMLDivElement>(null);
+  const modelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!rich) return;
+    const handler = (e: MouseEvent) => {
+      if (attachRef.current && !attachRef.current.contains(e.target as Node))
+        setAttachOpen(false);
+      if (modelRef.current && !modelRef.current.contains(e.target as Node))
+        setModelOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [rich]);
+
+  const playbackButton =
+    paused
+      ? {
+          icon: <PlayIcon size={16} strokeWidth={1.5} />,
+          tooltip: "Resume",
+          onClick: resumeAnim,
+        }
+      : chatStatus === "streaming"
+        ? {
+            icon: <PauseIcon size={16} strokeWidth={1.5} />,
+            tooltip: "Pause",
+            onClick: pauseAnim,
+          }
+        : chat.length > 0 || queue.length > 0
+          ? {
+              icon: <ResetIcon size={16} strokeWidth={1.5} />,
+              tooltip: "Reset",
+              onClick: resetDemo,
+            }
+          : undefined;
+
+  return (
+    <ComponentPreview
+      code={code}
+      minHeightClass="h-[440px]"
+      align="bottom"
+      padding="compact"
+      playbackButton={playbackButton}
+    >
+      <div className="relative w-full self-stretch">
+        <div
+          ref={scrollRef}
+          className="absolute inset-0 overflow-y-auto scrollbar-hide"
+        >
+          <div
+            className="flex min-h-full flex-col justify-end gap-2"
+            style={{
+              paddingBottom: inputH + 8 + (stackCount > 0 ? collapsedStackH + 8 : 0),
+            }}
+          >
+            {chat.map((m, i) =>
+              m.thinking ? (
+                <ChatMessage key={i} from="assistant">
+                  <ThinkingIndicator showIcon={false} className="px-0 py-0" />
+                </ChatMessage>
+              ) : m.id ? (
+                <ChatMessage
+                  key={i}
+                  from={m.from}
+                  layoutId={`qm-${m.id}`}
+                  layout
+                  initial={false}
+                  transition={springs.moderate}
+                >
+                  <motion.span layout className="inline-block align-top">
+                    {m.text}
+                  </motion.span>
+                </ChatMessage>
+              ) : (
+                <ChatMessage key={i} from={m.from}>
+                  {m.text}
+                </ChatMessage>
+              )
+            )}
+          </div>
+        </div>
+
+        {/* Queued messages — Sonner-style stack overlaying just above the
+            composer (front card = next to dispatch). */}
+        <AnimatePresence>
+          {stackCount > 0 && (
+            <motion.div
+              ref={stackRef}
+              className="absolute inset-x-0 z-10"
+              style={{ bottom: inputH + 8 }}
+              initial={{ opacity: 0 }}
+              animate={{
+                opacity: 1,
+                height: stackExpanded ? expandedStackH : collapsedStackH,
+              }}
+              exit={{ opacity: 0 }}
+              transition={{ ...springs.moderate, bounce: 0 }}
+              onMouseEnter={() => setStackHovered(true)}
+              onMouseLeave={() => setStackHovered(false)}
+            >
+              <div
+                className="pointer-events-none absolute bottom-0 left-0 flex items-center justify-center text-muted-foreground"
+                style={{ height: CARD_H, width: 28 }}
+              >
+                <CornerDownRight size={16} strokeWidth={2} />
+              </div>
+              <AnimatePresence initial={false}>
+                {queue.map((item, i) => {
+                  const peek = Math.min(i, STACK_MAX_PEEK);
+                  const isDragging = draggingId === item.id;
+                  const target = stackExpanded
+                    ? {
+                        y: isDragging ? dragY : slotY(i),
+                        scale: isDragging ? 1.03 : 1,
+                        opacity: 1,
+                      }
+                    : {
+                        y: -peek * STACK_PEEK,
+                        scale: 1 - peek * STACK_SCALE,
+                        opacity: i <= STACK_MAX_PEEK ? 1 : 0,
+                      };
+                  return (
+                    <motion.div
+                      key={item.id}
+                      layoutId={`qm-${item.id}`}
+                      onDoubleClick={() => editQueuedMsg(item)}
+                      onPointerDown={(e) => {
+                        if (!stackExpanded || e.button !== 0) return;
+                        dragStartYRef.current = e.clientY;
+                        setDragY(slotY(i));
+                        setPointerDownId(item.id);
+                      }}
+                      initial={{ opacity: 0, y: 14, scale: 0.96 }}
+                      animate={target}
+                      exit={{
+                        opacity: 0,
+                        scale: 0.9,
+                        transition: { duration: 0.12 },
+                      }}
+                      transition={isDragging ? { duration: 0 } : springs.moderate}
+                      style={{
+                        height: CARD_H,
+                        transformOrigin: "bottom center",
+                        zIndex: isDragging ? 200 : 100 - i,
+                        cursor: stackExpanded ? "grab" : "default",
+                      }}
+                      className={`group/qm absolute bottom-0 left-7 right-0 flex select-none items-center gap-2 bg-[color-mix(in_oklab,var(--accent),var(--background)_45%)] px-3.5 text-[14px] text-muted-foreground shadow-surface-3 active:cursor-grabbing ${shape.bg}`}
+                    >
+                      {item.files.length > 0 && (
+                        <div className="pointer-events-none flex shrink-0 items-center gap-1">
+                          {item.files.slice(0, 3).map((f, fi) => (
+                            <FileThumbnail
+                              key={`${f.name}-${f.size}-${fi}`}
+                              file={f}
+                              size={28}
+                              className="rounded-md"
+                            />
+                          ))}
+                          {item.files.length > 3 && (
+                            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-background/40 text-[11px] font-medium tabular-nums text-foreground/80">
+                              +{item.files.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <span className="pointer-events-none min-w-0 flex-1 truncate">
+                        {item.text ||
+                          `${item.files.length} attachment${
+                            item.files.length === 1 ? "" : "s"
+                          }`}
+                      </span>
+                      <Tooltip content="Remove" side="top">
+                        <button
+                          type="button"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeQueuedMsg(item);
+                          }}
+                          aria-label={`Remove queued message: ${item.text}`}
+                          className="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-hover hover:text-foreground focus-visible:ring-1 focus-visible:ring-[#6B97FF]"
+                        >
+                          <XIcon size={14} strokeWidth={2.5} />
+                        </button>
+                      </Tooltip>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <InputMessage
+          ref={inputRef}
+          className="absolute inset-x-0 bottom-0"
+          value={value}
+          onValueChange={setValue}
+          status={chatStatus}
+          queue={queue}
+          onQueueChange={setQueue}
+          showQueue={false}
+          history={chat.filter((m) => m.from === "user").map((m) => m.text)}
+          files={rich ? composerFiles : undefined}
+          onFilesChange={rich ? setComposerFiles : undefined}
+          onSend={(text, _files, meta) => {
+            if (text) respond(text, meta?.queuedId);
+            setValue("");
+            setComposerFiles([]);
+          }}
+          onStop={() => {
+            clearStep();
+            pausedRef.current = false;
+            setPaused(false);
+            setChat((c) => {
+              const next = [...c];
+              for (let k = next.length - 1; k >= 0; k--) {
+                if (next[k].from === "assistant") {
+                  if (next[k].thinking || next[k].text === "") {
+                    next[k] = { from: "assistant", text: "Stopped." };
+                  } else {
+                    next[k] = { ...next[k], thinking: false };
+                  }
+                  break;
+                }
+              }
+              return next;
+            });
+            setChatStatus("idle");
+          }}
+          placeholder="Send while I’m responding to queue a message…"
+          leftSlot={
+            rich
+              ? ({ openFilePicker }) => (
+                  <div ref={attachRef} className="relative">
+                    <Tooltip content="Add" side="top">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Attach files"
+                        active={attachOpen}
+                        onClick={() => setAttachOpen((o) => !o)}
+                      >
+                        <PlusIcon />
+                      </Button>
+                    </Tooltip>
+                    <AnimatePresence>
+                      {attachOpen && (
+                        <motion.div
+                          className="absolute bottom-full mb-2 left-0 z-10"
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 4, transition: { duration: 0.1 } }}
+                          transition={springs.fast}
+                        >
+                          <Dropdown>
+                            <MenuItem
+                              index={0}
+                              label="Image"
+                              icon={ImageIcon}
+                              onSelect={() => {
+                                setAttachOpen(false);
+                                openFilePicker("image/png,image/jpeg");
+                              }}
+                            />
+                            <MenuItem
+                              index={1}
+                              label="PDF"
+                              icon={FileTextIcon}
+                              onSelect={() => {
+                                setAttachOpen(false);
+                                openFilePicker("application/pdf");
+                              }}
+                            />
+                          </Dropdown>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )
+              : undefined
+          }
+          rightSlot={
+            rich ? (
+              <div ref={modelRef} className="relative">
+                <Tooltip content="Select model" side="top">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    trailingIcon={ChevronDownIcon}
+                    active={modelOpen}
+                    onClick={() => setModelOpen((o) => !o)}
+                  >
+                    {model}
+                  </Button>
+                </Tooltip>
+                <AnimatePresence>
+                  {modelOpen && (
+                    <motion.div
+                      className="absolute bottom-full mb-2 right-0 z-10"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 4, transition: { duration: 0.1 } }}
+                      transition={springs.fast}
+                    >
+                      <Dropdown checkedIndex={MODELS.indexOf(model)}>
+                        {MODELS.map((name, i) => (
+                          <MenuItem
+                            key={name}
+                            index={i}
+                            label={name}
+                            checked={name === model}
+                            onSelect={() => {
+                              setModel(name);
+                              setModelOpen(false);
+                            }}
+                          />
+                        ))}
+                      </Dropdown>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : undefined
+          }
+        />
+      </div>
+    </ComponentPreview>
+  );
+}

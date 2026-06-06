@@ -469,8 +469,17 @@ export function QueuedChatDemo({
                       // for text-only messages. With attachments the layouts
                       // differ too much (inline vs stacked), so it dispatches
                       // without a morph target and fades instead.
+                      //
+                      // Drop the layoutId while ANY drag is in progress: a card
+                      // is positioned with an animated `y`, and framer's layout
+                      // projection (driven by layoutId) fights that transform
+                      // every frame — which made dragging a card into slot 0
+                      // (place 1) fail to settle. The morph only needs the
+                      // layoutId at dispatch (unmount), never mid-drag.
                       layoutId={
-                        item.files.length > 0 ? undefined : `qm-${item.id}`
+                        pointerDownId !== null || item.files.length > 0
+                          ? undefined
+                          : `qm-${item.id}`
                       }
                       onDoubleClick={() => editQueuedMsg(item)}
                       onPointerDown={(e) => {

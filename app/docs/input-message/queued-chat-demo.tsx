@@ -390,11 +390,12 @@ export function QueuedChatDemo({
                 <ChatMessage key={i} from="assistant">
                   <ThinkingIndicator showIcon={false} className="px-0 py-0" />
                 </ChatMessage>
-              ) : m.id ? (
+              ) : m.id && !(m.files && m.files.length) ? (
+                // Text-only dispatch → clean shared-layout morph from the front
+                // card (text scale-corrected so it doesn't stretch).
                 <ChatMessage
                   key={i}
                   from={m.from}
-                  files={m.files}
                   layoutId={`qm-${m.id}`}
                   layout
                   initial={false}
@@ -405,6 +406,10 @@ export function QueuedChatDemo({
                   </motion.span>
                 </ChatMessage>
               ) : (
+                // Idle/assistant turns, or a dispatch that carries attachments.
+                // Attachment cards skip the box-scale morph (it squishes the
+                // thumbnails + text since the card lays them out inline and the
+                // bubble stacks them) and instead fade in cleanly.
                 <ChatMessage key={i} from={m.from} files={m.files}>
                   {m.text}
                 </ChatMessage>
@@ -460,7 +465,13 @@ export function QueuedChatDemo({
                   return (
                     <motion.div
                       key={item.id}
-                      layoutId={`qm-${item.id}`}
+                      // Share a layoutId with the sent bubble to morph — but only
+                      // for text-only messages. With attachments the layouts
+                      // differ too much (inline vs stacked), so it dispatches
+                      // without a morph target and fades instead.
+                      layoutId={
+                        item.files.length > 0 ? undefined : `qm-${item.id}`
+                      }
                       onDoubleClick={() => editQueuedMsg(item)}
                       onPointerDown={(e) => {
                         if (!stackExpanded || e.button !== 0) return;

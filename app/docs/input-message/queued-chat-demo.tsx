@@ -495,12 +495,13 @@ export function QueuedChatDemo({
                   className="absolute bottom-0 left-0 flex items-center justify-center text-muted-foreground"
                   style={{ height: CARD_H, width: 28 }}
                 >
-                  {/* Persistent overflow count, sitting just above the arrow.
-                      Hidden once expanded (every card is then visible). */}
+                  {/* Total queued count, sitting just above the arrow — surfaced
+                      once the stack overflows its visible peeks. Hidden while
+                      expanded (every card is then visible). */}
                   <AnimatePresence>
                     {!stackExpanded && hiddenCount > 0 && (
                       <motion.span
-                        key="overflow"
+                        key="count"
                         initial={{ opacity: 0, scale: 0.6 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.6 }}
@@ -508,7 +509,7 @@ export function QueuedChatDemo({
                         className="pointer-events-none absolute inset-x-0 text-center text-[10px] font-semibold leading-none tabular-nums text-muted-foreground"
                         style={{ bottom: CARD_H / 2 + 9 }}
                       >
-                        +{hiddenCount}
+                        {stackCount}
                       </motion.span>
                     )}
                   </AnimatePresence>

@@ -515,11 +515,11 @@ export function QueuedChatDemo({
                   style={{ height: CARD_H, width: 40 }}
                 >
                   {/* Total queued count, to the LEFT of the arrow — surfaced once
-                      the stack overflows its visible peeks. Hidden while expanded
-                      (every card is then visible). justify-end pins the arrow so
-                      the number fades in beside it without nudging it. */}
+                      the stack overflows its visible peeks, and kept visible on
+                      hover too. justify-end pins the arrow so the number fades in
+                      beside it without nudging it. */}
                   <AnimatePresence>
-                    {!stackExpanded && hiddenCount > 0 && (
+                    {hiddenCount > 0 && (
                       <motion.span
                         key="count"
                         initial={{ opacity: 0, scale: 0.6 }}
@@ -595,7 +595,7 @@ export function QueuedChatDemo({
                       // With attachments, use 8px side padding to match the ~8px
                       // above/below the 28px thumbnail in the 44px card (square
                       // inset); otherwise the roomier 14px for text-only cards.
-                      className={`group/qm absolute bottom-0 left-10 right-10 flex select-none items-center gap-2 bg-[color-mix(in_oklab,var(--accent),var(--background)_68%)] ${item.files.length > 0 ? "px-2" : "px-3.5"} text-[14px] text-muted-foreground shadow-surface-3 active:cursor-grabbing ${shape.bg}`}
+                      className={`group/qm absolute bottom-0 left-10 right-10 flex select-none items-center gap-2 bg-[color-mix(in_oklab,var(--accent),var(--background)_68%)] ${item.files.length > 0 ? "pl-2" : "pl-3.5"} pr-1.5 text-[14px] text-muted-foreground shadow-surface-3 active:cursor-grabbing ${shape.bg}`}
                     >
                       {item.files.length > 0 && (
                         <div className="pointer-events-none flex shrink-0 items-center gap-1">
@@ -634,7 +634,7 @@ export function QueuedChatDemo({
                               editQueuedMsg(item);
                             }}
                             aria-label={`Edit queued message: ${item.text}`}
-                            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-hover hover:text-foreground focus-visible:ring-1 focus-visible:ring-[#6B97FF]"
+                            className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center ${shape.button} text-muted-foreground outline-none hover:bg-hover hover:text-foreground focus-visible:ring-1 focus-visible:ring-[#6B97FF]`}
                           >
                             <PencilIcon size={14} strokeWidth={2} />
                           </button>
@@ -648,7 +648,7 @@ export function QueuedChatDemo({
                               removeQueuedMsg(item);
                             }}
                             aria-label={`Remove queued message: ${item.text}`}
-                            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-hover hover:text-foreground focus-visible:ring-1 focus-visible:ring-[#6B97FF]"
+                            className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center ${shape.button} text-muted-foreground outline-none hover:bg-hover hover:text-foreground focus-visible:ring-1 focus-visible:ring-[#6B97FF]`}
                           >
                             <XIcon size={14} strokeWidth={2.5} />
                           </button>

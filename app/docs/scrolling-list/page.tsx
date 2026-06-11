@@ -88,14 +88,14 @@ const PROBLEM_CODE = `// ❌ Native overflow — the list just stops. Nothing sa
 
 const SIZES_CODE = `import { ScrollArea } from "./components";
 
-// Two cue band sizes: "tight" (32px) for dense surfaces,
-// "comfortable" (60px, default) everywhere else. The chevron
-// stays 16px in both.
-<ScrollArea cueSize="tight" className="h-56 w-64">
+// Two cue band sizes: "comfortable" (60px, default) and
+// "tight" (32px) for dense surfaces. The chevron stays 16px
+// in both.
+<ScrollArea cueSize="comfortable" className="h-56 w-64">
   ...
 </ScrollArea>
 
-<ScrollArea cueSize="comfortable" className="h-56 w-64">
+<ScrollArea cueSize="tight" className="h-56 w-64">
   ...
 </ScrollArea>`;
 
@@ -339,15 +339,6 @@ function SizesDemo() {
       <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
         <div className="flex flex-col gap-2">
           <ScrollArea
-            cueSize="tight"
-            className={`h-56 w-64 border border-border ${shape.container}`}
-          >
-            <ReleaseRows />
-          </ScrollArea>
-          <PanelLabel>Tight — 32px band</PanelLabel>
-        </div>
-        <div className="flex flex-col gap-2">
-          <ScrollArea
             cueSize="comfortable"
             className={`h-56 w-64 border border-border ${shape.container}`}
           >
@@ -355,19 +346,24 @@ function SizesDemo() {
           </ScrollArea>
           <PanelLabel>Comfortable — 60px band (default)</PanelLabel>
         </div>
+        <div className="flex flex-col gap-2">
+          <ScrollArea
+            cueSize="tight"
+            className={`h-56 w-64 border border-border ${shape.container}`}
+          >
+            <ReleaseRows />
+          </ScrollArea>
+          <PanelLabel>Tight — 32px band</PanelLabel>
+        </div>
       </div>
     </ComponentPreview>
   );
 }
 
 function TableDemo() {
-  const shape = useShape();
   return (
     <ComponentPreview code={TABLE_CODE} padding="compact">
-      <ScrollArea
-        orientation="both"
-        className={`h-80 w-full border border-border ${shape.container}`}
-      >
+      <ScrollArea orientation="both" className="h-80 w-full">
         <Table className="w-max">
           <TableHeader>
             <TableRow>
@@ -569,14 +565,14 @@ export default function ScrollingListDoc() {
         <P>
           Two band sizes:{" "}
           <code className="px-1 py-0.5 rounded bg-muted text-[12px]">
-            tight
-          </code>{" "}
-          (32px) for dense surfaces and{" "}
-          <code className="px-1 py-0.5 rounded bg-muted text-[12px]">
             comfortable
           </code>{" "}
-          (60px, the default) everywhere else. The chevron stays 16px in both
-          — only the gradient runway changes.
+          (60px, the default) and{" "}
+          <code className="px-1 py-0.5 rounded bg-muted text-[12px]">
+            tight
+          </code>{" "}
+          (32px) for dense surfaces. The chevron stays 16px in both — only
+          the gradient runway changes.
         </P>
         <SizesDemo />
 

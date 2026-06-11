@@ -17,6 +17,9 @@ import { Switch as BaseSwitch } from "@/registry/base/switch";
 import { Tooltip as RadixTooltip } from "@/registry/radix/tooltip";
 import { Tooltip as BaseTooltip } from "@/registry/base/tooltip";
 
+import { ScrollArea as RadixScrollArea } from "@/registry/radix/scroll-area";
+import { ScrollArea as BaseScrollArea } from "@/registry/base/scroll-area";
+
 import {
   Accordion as RadixAccordion,
   AccordionItem as RadixAccordionItem,
@@ -342,6 +345,27 @@ export default function CompareBasesPage() {
           <BaseRadioItem label="Cherry" index={2} value="c" />
         </BaseRadioGroup>
       </Row>
+
+      <Row label="Scroll Area">
+        <RadixScrollArea className="h-48 w-full max-w-[260px] border border-border rounded-xl">
+          <ScrollAreaRows />
+        </RadixScrollArea>
+        <BaseScrollArea className="h-48 w-full max-w-[260px] border border-border rounded-xl">
+          <ScrollAreaRows />
+        </BaseScrollArea>
+      </Row>
+    </div>
+  );
+}
+
+function ScrollAreaRows() {
+  return (
+    <div className="flex flex-col p-2">
+      {Array.from({ length: 20 }, (_, i) => (
+        <div key={i} className="px-3 py-2 text-[13px] whitespace-nowrap">
+          v1.{19 - i}.0 — maintenance release
+        </div>
+      ))}
     </div>
   );
 }

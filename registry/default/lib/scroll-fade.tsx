@@ -112,6 +112,11 @@ const CHEVRON_PATHS: Record<string, string> = {
   right: "M9 6l6 6-6 6",
 };
 
+// Band size presets along the scroll axis. The chevron stays 16px in both.
+const CUE_SIZES = { tight: 32, comfortable: 60 } as const;
+
+export type ScrollEdgeCueSize = keyof typeof CUE_SIZES;
+
 export interface ScrollEdgeCueProps {
   edge: "top" | "bottom" | "left" | "right";
   visible: boolean;
@@ -124,8 +129,9 @@ export interface ScrollEdgeCueProps {
    *  provided by the nearest SurfaceProvider/Elevated — override only when
    *  the scroller sits on a background outside the ladder. */
   surfaceLevel?: number;
-  /** Band size in px along the scroll axis. Defaults to 52. */
-  size?: number;
+  /** Band size along the scroll axis: `"tight"` (32px) or `"comfortable"`
+   *  (60px). The chevron is 16px in either. Defaults to `"comfortable"`. */
+  size?: ScrollEdgeCueSize;
   /** Sticky-mode bleed in px so the band covers the scroller's padding
    *  (e.g. 4 for `p-1`, 16 for `p-4`). Defaults to 4. */
   inset?: number;
@@ -139,13 +145,14 @@ export function ScrollEdgeCue({
   visible,
   mode = "sticky",
   surfaceLevel,
-  size = 52,
+  size = "comfortable",
   inset = 4,
   chevron = true,
 }: ScrollEdgeCueProps) {
   const contextLevel = useSurface();
   const surface = `var(--surface-${surfaceLevel ?? contextLevel})`;
   const vertical = edge === "top" || edge === "bottom";
+  const sizePx = CUE_SIZES[size];
   // Gradient direction where 100% == the hard outer edge.
   const dir = `to ${edge}`;
 
@@ -155,14 +162,15 @@ export function ScrollEdgeCue({
         {
           position: "absolute",
           opacity: visible ? 1 : 0,
-          transition: "opacity 160ms ease",
+          // Exit slightly faster than enter, per the animation guidelines.
+          transition: `opacity ${visible ? 160 : 120}ms ease`,
           ...(mode === "sticky"
             ? vertical
-              ? { left: -inset, right: -inset, [edge]: -inset, height: size }
-              : { top: -inset, bottom: -inset, [edge]: -inset, width: size }
+              ? { left: -inset, right: -inset, [edge]: -inset, height: sizePx }
+              : { top: -inset, bottom: -inset, [edge]: -inset, width: sizePx }
             : vertical
-              ? { left: 0, right: 0, [edge]: 0, height: size }
-              : { top: 0, bottom: 0, [edge]: 0, width: size }),
+              ? { left: 0, right: 0, [edge]: 0, height: sizePx }
+              : { top: 0, bottom: 0, [edge]: 0, width: sizePx }),
         } as CSSProperties
       }
     >

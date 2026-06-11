@@ -19,7 +19,11 @@ import {
 import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area";
 import { cn } from "@/lib/utils";
 import { useShape } from "@/lib/shape-context";
-import { useScrollEdges, ScrollEdgeCue } from "@/lib/scroll-fade";
+import {
+  useScrollEdges,
+  ScrollEdgeCue,
+  type ScrollEdgeCueSize,
+} from "@/lib/scroll-fade";
 import { useTouchPrimary } from "@/hooks/use-touch-primary";
 
 // On touch-primary devices the Base UI machinery is skipped entirely in
@@ -34,8 +38,9 @@ interface ScrollAreaProps extends ComponentPropsWithoutRef<"div"> {
   /** Surface-gradient + chevron cues at edges with more content. Auto-shows
    *  on overflow; set to `false` to disable. Defaults to `true`. */
   scrollFade?: boolean;
-  /** Cue band size in px along the scroll axis. Defaults to 52. */
-  cueSize?: number;
+  /** Cue band size along the scroll axis: `"tight"` (32px) or
+   *  `"comfortable"` (60px). Defaults to `"comfortable"`. */
+  cueSize?: ScrollEdgeCueSize;
   /** Show the directional chevron in the cues. The gradient fade always
    *  renders; set to `false` for fade-only cues. Defaults to `true`. */
   chevron?: boolean;
@@ -53,7 +58,7 @@ const ScrollArea = forwardRef<
       children,
       viewportClassName,
       scrollFade = true,
-      cueSize = 52,
+      cueSize = "comfortable",
       chevron = true,
       orientation = "vertical",
       ...props

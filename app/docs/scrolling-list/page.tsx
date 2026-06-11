@@ -154,7 +154,9 @@ import {
 
 const HORIZONTAL_CODE = `import { ScrollArea } from "./components";
 
-<ScrollArea orientation="horizontal" className="w-full">
+// cueSize="tight" narrows the fade band to 32px (default
+// "comfortable" is 60px); the chevron stays 16px.
+<ScrollArea orientation="horizontal" cueSize="tight" className="w-full">
   <div className="flex gap-2 p-3 w-max">
     {months.map((month) => (
       <Card key={month} label={month} />
@@ -211,9 +213,10 @@ const scrollAreaProps: PropDef[] = [
   },
   {
     name: "cueSize",
-    type: "number",
-    default: "52",
-    description: "Cue band size in px along the scroll axis.",
+    type: '"tight" | "comfortable"',
+    default: '"comfortable"',
+    description:
+      "Cue band size along the scroll axis — tight is 32px, comfortable is 60px. The chevron stays 16px in either.",
   },
   {
     name: "viewportClassName",
@@ -276,9 +279,10 @@ const scrollEdgeCueProps: PropDef[] = [
   },
   {
     name: "size",
-    type: "number",
-    default: "52",
-    description: "Band size in px along the scroll axis.",
+    type: '"tight" | "comfortable"',
+    default: '"comfortable"',
+    description:
+      "Band size along the scroll axis — tight is 32px, comfortable is 60px. The chevron stays 16px in either.",
   },
   {
     name: "inset",
@@ -433,6 +437,7 @@ function HorizontalDemo() {
     <ComponentPreview code={HORIZONTAL_CODE}>
       <ScrollArea
         orientation="horizontal"
+        cueSize="tight"
         className={`w-full max-w-md border border-border ${shape.container}`}
       >
         <div className="flex gap-2 p-3 w-max">
@@ -592,7 +597,13 @@ export default function ScrollingListDoc() {
 
       <DocSection title="Examples">
         <H3>Horizontal</H3>
-        <P>Left/right chevrons, same gradient logic per edge.</P>
+        <P>
+          Left/right chevrons, same gradient logic per edge — here with the{" "}
+          <code className="px-1 py-0.5 rounded bg-muted text-[12px]">
+            cueSize=&quot;tight&quot;
+          </code>{" "}
+          band (32px instead of the comfortable 60px).
+        </P>
         <HorizontalDemo />
 
         <H3>Double overflow</H3>

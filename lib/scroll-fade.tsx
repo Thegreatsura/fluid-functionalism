@@ -3,4 +3,5 @@ export type {
   ScrollEdges,
   UseScrollEdgesOptions,
   ScrollEdgeCueProps,
+  ScrollEdgeCueSize,
 } from "@/registry/default/lib/scroll-fade";

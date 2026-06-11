@@ -362,7 +362,7 @@ function SizesDemo() {
 
 function TableDemo() {
   return (
-    <ComponentPreview code={TABLE_CODE} padding="compact">
+    <ComponentPreview code={TABLE_CODE} padding="none">
       <ScrollArea orientation="both" className="h-80 w-full">
         <Table className="w-max">
           <TableHeader>

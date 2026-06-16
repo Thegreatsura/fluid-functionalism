@@ -77,6 +77,48 @@ Most components *also* use `fast` for their hover and focus states on top of
 their headline tier — the table lists each component once, by its headline
 motion.
 
+## Reduced motion
+
+`prefers-reduced-motion` means *fewer and gentler*, not *none*. Keep opacity and
+colour fades (they aid comprehension); drop the movement — transforms, position,
+scale, and layout shifts.
+
+The whole system is switched on at the root in
+[`app/layout.tsx`](app/layout.tsx):
+
+```tsx
+<MotionConfig reducedMotion="user">
+  {/* providers + app */}
+</MotionConfig>
+```
+
+`reducedMotion="user"` makes **every** framer-motion component honour the OS
+setting automatically: it disables animations of `transform` (`scale`, `x`,
+`y`, `rotate`) and `layout`, while letting `opacity` and colour keep animating.
+A dialog opens by fading in instead of scaling; a drawer appears in place
+instead of sliding; a tooltip fades instead of moving.
+
+**Consumers** who copy a component into their own app get this for free by
+wrapping their tree the same way — one line, like a `ThemeProvider`.
+
+### The catch — and why it pushes you toward `transform`
+
+`MotionConfig` only neutralises **transform / layout** animations. A component
+that moves by animating `top` / `left` / `width` / `height` directly is *not*
+auto-reduced, and it's also off the GPU's fast path. Both problems have the same
+fix:
+
+> **Animate `transform` and `opacity`, never `top` / `left` / `width` / `height`.**
+> Then `MotionConfig` covers reduced motion for free, and the motion stays on
+> the compositor.
+
+Known stragglers that still animate layout properties (so they aren't yet
+auto-reduced): the magnetic highlight slides in `dropdown` / `nav-menu` /
+`select` / `tabs-subtle`, and the `height` collapse in `accordion`. Re-expressing
+those as `transform` (or gating them on `useReducedMotion()`) is the remaining
+work. `input-message` already reads `useReducedMotion()` directly as a reference
+for the manual approach.
+
 ---
 
 ## When you add (or change) a component
@@ -92,7 +134,11 @@ Do this as part of the [new-component checklist](component-documentation-guideli
 4. **Update the Motion page:** add the component to the correct column of the
    `SPEED_USAGE` array in `app/docs/motion/page.tsx`, and update the table above
    to match.
-5. **Animated weight?** Follow the ghost-span pattern (link above).
-6. If you changed a spring token's value, re-check every duration quoted on the
+5. **Move with `transform` / `opacity`, not `top` / `left` / `width` /
+   `height`.** That keeps it on the GPU *and* lets the root `MotionConfig`
+   reduce it for free (see [Reduced motion](#reduced-motion)). If you must
+   animate a layout property, gate the movement on `useReducedMotion()`.
+6. **Animated weight?** Follow the ghost-span pattern (link above).
+7. If you changed a spring token's value, re-check every duration quoted on the
    Motion page (the Reference token tables, code comments, and the
    "Slow in, faster out" demo) and in this file.

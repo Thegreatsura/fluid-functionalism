@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence, type Transition } from "framer-motion";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
-import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
 import { spring } from "@/registry/default/lib/springs";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { Button } from "@/registry/radix/button";
@@ -37,47 +37,161 @@ import { spring } from "@/lib/springs";
 />`;
 
 // ---------------------------------------------------------------------------
-// Reference table
+// Animated reference — one block per tier, enter + exit tracks + chips
 // ---------------------------------------------------------------------------
 
-const springTokens: PropDef[] = [
+const REFERENCE_TIERS = [
   {
-    name: "spring.fast",
-    type: "{ duration: 0.08, bounce: 0 }",
-    description:
-      "Micro-interactions: hover backgrounds, focus rings, fades, tooltips, selection indicators.",
+    key: "fast",
+    trackWidth: "w-1/3",
+    enterToken: "spring.fast",
+    exitToken: "spring.fast.exit",
+    enterMeta: "0.08s",
+    exitMeta: "0.06s",
+    enterTransition: spring.fast,
+    exitTransition: spring.fast.exit,
+    components: [
+      { label: "Hover & focus rings", slug: null },
+      { label: "Checkbox",            slug: "/docs/checkbox-group" },
+      { label: "Radio",               slug: "/docs/radio-group" },
+      { label: "Tooltip",             slug: "/docs/tooltip" },
+      { label: "Table rows",          slug: "/docs/table" },
+      { label: "Input copy",          slug: "/docs/input-copy" },
+      { label: "Slider",              slug: "/docs/slider" },
+      { label: "Select",              slug: "/docs/select" },
+      { label: "Color picker",        slug: "/docs/color-picker" },
+    ],
   },
   {
-    name: "spring.moderate",
-    type: "{ duration: 0.16, bounce: 0.08 }",
-    description:
-      "Short travel and small expansion: dropdown and tab indicators, switch thumb, accordions, drawers.",
+    key: "moderate",
+    trackWidth: "w-2/3",
+    enterToken: "spring.moderate",
+    exitToken: "spring.moderate.exit",
+    enterMeta: "0.16s bounce 0.08",
+    exitMeta: "0.12s",
+    enterTransition: spring.moderate,
+    exitTransition: spring.moderate.exit,
+    components: [
+      { label: "Dropdown",          slug: "/docs/dropdown" },
+      { label: "Tabs indicator",    slug: "/docs/tabs" },
+      { label: "Switch thumb",      slug: "/docs/switch" },
+      { label: "Accordion",         slug: "/docs/accordion" },
+      { label: "Chat bubbles",      slug: "/docs/chat-message" },
+      { label: "Mobile drawer",     slug: null },
+    ],
   },
   {
-    name: "spring.slow",
-    type: "{ duration: 0.24, bounce: 0.12 }",
-    description:
-      "Large surfaces and important notifications: dialogs, drawers, side panels.",
+    key: "slow",
+    trackWidth: "w-full",
+    enterToken: "spring.slow",
+    exitToken: "spring.slow.exit",
+    enterMeta: "0.24s bounce 0.12",
+    exitMeta: "0.16s",
+    enterTransition: spring.slow,
+    exitTransition: spring.slow.exit,
+    components: [
+      { label: "Dialog",              slug: "/docs/dialog" },
+      { label: "Ask-user questions",  slug: "/docs/ask-user-questions" },
+      { label: "Thinking steps",      slug: "/docs/thinking-steps" },
+    ],
   },
 ];
 
-const exitTokens: PropDef[] = [
-  {
-    name: "spring.fast.exit",
-    type: "{ duration: 0.06 }",
-    description: "Hover and selection fades, tooltips, focus rings.",
-  },
-  {
-    name: "spring.moderate.exit",
-    type: "{ duration: 0.12 }",
-    description: "Dropdown, select, and nav active backgrounds; drawers.",
-  },
-  {
-    name: "spring.slow.exit",
-    type: "{ duration: 0.16 }",
-    description: "Dialogs and other large surfaces.",
-  },
-];
+// ms to wait before reversing (covers spring settle + tiny pause)
+const ENTER_SETTLE = { fast: 220, moderate: 400, slow: 560 } as const;
+// ms the exit takes (blocks re-clicks until done)
+const EXIT_SETTLE  = { fast: 150, moderate: 200, slow: 250 } as const;
+
+function SpringReferenceSection() {
+  const [atEnds, setAtEnds] = useState([false, false, false]);
+  const [transitions, setTransitions] = useState<Transition[]>([
+    spring.fast, spring.moderate, spring.slow,
+  ]);
+  const [busy, setBusy] = useState([false, false, false]);
+
+  const fire = (i: number) => {
+    if (busy[i]) return;
+    const tier = REFERENCE_TIERS[i];
+    const k = tier.key as keyof typeof ENTER_SETTLE;
+
+    // Enter: L → R
+    setBusy(b      => b.map((v, j) => j === i ? true  : v));
+    setTransitions(t => t.map((v, j) => j === i ? (tier.enterTransition as Transition) : v));
+    setAtEnds(a    => a.map((v, j) => j === i ? true  : v));
+
+    // Exit: R → L (after spring settles)
+    setTimeout(() => {
+      setTransitions(t => t.map((v, j) => j === i ? (tier.exitTransition as Transition) : v));
+      setAtEnds(a      => a.map((v, j) => j === i ? false : v));
+      setTimeout(() => {
+        setBusy(b => b.map((v, j) => j === i ? false : v));
+      }, EXIT_SETTLE[k]);
+    }, ENTER_SETTLE[k]);
+  };
+
+  return (
+    <div className="flex flex-col">
+      {REFERENCE_TIERS.map(({ key, trackWidth, enterToken, exitToken, enterMeta, exitMeta, components }, i) => (
+        <div
+          key={key}
+          className={cn("flex flex-col gap-4 py-6", i > 0 && "border-t border-border")}
+        >
+          <div className="flex flex-col gap-0.5">
+            <span
+              className="text-[13px] text-foreground"
+              style={{ fontVariationSettings: fontWeights.semibold }}
+            >
+              {key}
+            </span>
+            <span className="text-[12px] text-muted-foreground">
+              → <code className="font-mono">{enterToken}</code> {enterMeta}
+            </span>
+            <span className="text-[12px] text-muted-foreground">
+              ← <code className="font-mono">{exitToken}</code> {exitMeta}
+            </span>
+          </div>
+
+          {/* Track constrained to tier width */}
+          <button
+            onClick={() => fire(i)}
+            aria-label={`Play ${key} enter then exit`}
+            className={cn(
+              "flex h-7 cursor-pointer items-center rounded-full bg-muted px-0.5 outline-none",
+              "focus-visible:ring-1 focus-visible:ring-[#6B97FF]",
+              trackWidth,
+              atEnds[i] ? "justify-end" : "justify-start"
+            )}
+          >
+            <motion.div
+              layout
+              transition={transitions[i]}
+              className="h-6 w-6 rounded-full bg-foreground"
+            />
+          </button>
+
+          {/* Component chips — links where a page exists */}
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            {components.map(({ label, slug }) =>
+              slug ? (
+                <Link
+                  key={label}
+                  href={slug}
+                  className="text-[11px] text-muted-foreground/50 transition-colors hover:text-foreground"
+                >
+                  {label}
+                </Link>
+              ) : (
+                <span key={label} className="text-[11px] text-muted-foreground/30">
+                  {label}
+                </span>
+              )
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Spring tokens demo
@@ -159,11 +273,11 @@ function SpringTokensDemo() {
 
 const MODAL_CODE = `// Both modals open on spring.slow. Only the exit differs.
 
-// ❌ Same exit time — leaves on spring.slow too (0.24s, and it bounces)
+// ❌ Slow exit — same 0.4s as the enter, drags on the way out
 <motion.div
   initial={{ opacity: 0, scale: 0.95 }}
   animate={{ opacity: 1, scale: 1 }}
-  exit={{ opacity: 0, scale: 0.95, transition: spring.slow }}
+  exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.4 } }}
   transition={spring.slow}
 />
 
@@ -207,17 +321,17 @@ function ModalFrame({
               transition={spring.slow}
             >
               {/* close affordance */}
-              <div className="absolute right-3 top-3 h-4 w-4 rounded-full bg-muted" />
+              <div className="absolute right-3 top-3 h-4 w-4 rounded-full bg-foreground/10" />
               {/* title */}
-              <div className="h-3 w-1/2 rounded-full bg-muted" />
+              <div className="h-3 w-1/2 rounded-full bg-foreground/10" />
               {/* body */}
-              <div className="mt-1 h-2 w-full rounded-full bg-muted/60" />
-              <div className="h-2 w-full rounded-full bg-muted/60" />
-              <div className="h-2 w-2/5 rounded-full bg-muted/60" />
+              <div className="mt-1 h-2 w-full rounded-full bg-foreground/6" />
+              <div className="h-2 w-full rounded-full bg-foreground/6" />
+              <div className="h-2 w-2/5 rounded-full bg-foreground/6" />
               {/* footer actions */}
               <div className="mt-3 flex justify-end gap-2">
-                <div className="h-6 w-16 rounded-md bg-muted" />
-                <div className="h-6 w-16 rounded-md bg-muted" />
+                <div className="h-6 w-16 rounded-md bg-foreground/10" />
+                <div className="h-6 w-16 rounded-md bg-foreground/10" />
               </div>
             </motion.div>
           </>
@@ -240,7 +354,7 @@ function ModalExitDemo() {
         <div className="grid w-full gap-5 sm:grid-cols-2">
           {/* Same exit time */}
           <div className="flex flex-col items-center gap-3">
-            <ModalFrame open={openSame} exitTransition={spring.slow} />
+            <ModalFrame open={openSame} exitTransition={{ duration: 0.4 }} />
             <Button
               variant="secondary"
               size="sm"
@@ -279,74 +393,6 @@ function ModalExitDemo() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// High-level map of which components lead with which spring
-// ---------------------------------------------------------------------------
-
-const SPEED_USAGE = [
-  {
-    key: "fast",
-    duration: "0.08s",
-    components: [
-      "Hover & focus rings",
-      "Checkbox",
-      "Radio",
-      "Table rows",
-      "Tooltip",
-      "Input copy",
-      "Slider",
-      "Select / Color picker open",
-    ],
-  },
-  {
-    key: "moderate",
-    duration: "0.16s",
-    components: [
-      "Dropdown / Select highlight",
-      "Tabs indicator",
-      "Switch thumb",
-      "Accordion",
-      "Chat & message bubbles",
-      "Mobile drawer",
-    ],
-  },
-  {
-    key: "slow",
-    duration: "0.24s",
-    components: ["Dialog", "Ask-user questions", "Thinking steps"],
-  },
-] as const;
-
-function SpeedUsageList() {
-  return (
-    <div className="flex flex-col">
-      {SPEED_USAGE.map((tier, i) => (
-        <div
-          key={tier.key}
-          className={cn(
-            "grid grid-cols-[84px_1fr] items-baseline gap-4 py-3",
-            i > 0 && "border-t border-border"
-          )}
-        >
-          <div className="flex flex-col">
-            <span
-              className="text-[13px] text-foreground"
-              style={{ fontVariationSettings: fontWeights.semibold }}
-            >
-              {tier.key}
-            </span>
-            <span className="font-mono text-[11px] text-muted-foreground/70">
-              {tier.duration}
-            </span>
-          </div>
-          <p className="text-[13px] leading-relaxed text-muted-foreground">
-            {tier.components.join(" · ")}
-          </p>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Page
@@ -406,61 +452,25 @@ export default function MotionDoc() {
         <ModalExitDemo />
       </DocSection>
 
-      <DocSection title="Where each speed shows up">
-        <p className="text-[13px] leading-relaxed text-muted-foreground">
-          A high-level map of which component leads with which spring. Most
-          components also use{" "}
-          <Code>
-            fast
-          </Code>{" "}
-          for their hover and focus states on top of this.
-        </p>
-        <SpeedUsageList />
-      </DocSection>
-
       <DocSection title="Reference">
-        <h3
-          className="text-[15px] text-foreground"
-          style={{ fontVariationSettings: fontWeights.semibold }}
-        >
-          Enter springs
-        </h3>
         <p className="text-[13px] leading-relaxed text-muted-foreground">
-          Imported from{" "}
-          <Code>
-            lib/springs
-          </Code>
-          . Springs, with a little bounce on the larger tiers.
+          Click a track — the ball enters right on the spring, then exits left on
+          the matching tween. Import from{" "}
+          <Code>lib/springs</Code>; never hand-write a duration.
         </p>
-        <PropsTable props={springTokens} />
+        <SpringReferenceSection />
 
         <h3
-          className="mt-6 text-[15px] text-foreground"
+          className="mt-8 text-[15px] text-foreground"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
-          Exit tweens
+          Reduced motion
         </h3>
         <p className="text-[13px] leading-relaxed text-muted-foreground">
-          From the same{" "}
-          <Code>
-            lib/springs
-          </Code>
-          . Plain tweens, no bounce, one tier quicker than the matching enter —
-          pair{" "}
-          <Code>
-            spring.fast
-          </Code>{" "}
-          with{" "}
-          <Code>
-            spring.fast.exit
-          </Code>
-          , and so on. Never hand-write an exit{" "}
-          <Code>
-            {"{ duration }"}
-          </Code>
-          .
+          Every spring respects the OS setting. The app wraps its tree in{" "}
+          <Code>{`<MotionConfig reducedMotion="user">`}</Code>, so turning on
+          reduce motion drops the movement and keeps only the opacity fades.
         </p>
-        <PropsTable props={exitTokens} />
       </DocSection>
     </DocPage>
   );

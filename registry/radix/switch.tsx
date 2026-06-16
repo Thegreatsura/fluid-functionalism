@@ -8,7 +8,7 @@ import {
   useCallback,
   type HTMLAttributes,
 } from "react";
-import { motion, useMotionValue, animate } from "framer-motion";
+import { motion, useMotionValue, animate, type Transition } from "framer-motion";
 import * as SwitchPrimitive from "@radix-ui/react-switch";
 import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
@@ -18,6 +18,7 @@ interface SwitchProps extends HTMLAttributes<HTMLDivElement> {
   checked: boolean;
   onToggle: () => void;
   disabled?: boolean;
+  thumbTransition?: Transition;
 }
 
 const TRACK_WIDTH = 34;
@@ -31,7 +32,7 @@ const PRESS_SHRINK = 4;
 const DRAG_DEAD_ZONE = 2;
 
 const Switch = forwardRef<HTMLDivElement, SwitchProps>(
-  ({ label, checked, onToggle, disabled = false, className, ...props }, ref) => {
+  ({ label, checked, onToggle, disabled = false, thumbTransition, className, ...props }, ref) => {
     const hasMounted = useRef(false);
     const [hovered, setHovered] = useState(false);
     const [pressed, setPressed] = useState(false);
@@ -72,9 +73,9 @@ const Switch = forwardRef<HTMLDivElement, SwitchProps>(
       if (!hasMounted.current) {
         motionX.set(thumbX);
       } else {
-        animate(motionX, thumbX, spring.moderate);
+        animate(motionX, thumbX, thumbTransition ?? spring.moderate);
       }
-    }, [thumbX, motionX]);
+    }, [thumbX, motionX, thumbTransition]);
 
     // --- Pointer handlers ---
 
@@ -137,7 +138,7 @@ const Switch = forwardRef<HTMLDivElement, SwitchProps>(
             const snapTarget = checked
               ? THUMB_OFFSET + THUMB_TRAVEL
               : THUMB_OFFSET;
-            animate(motionX, snapTarget, spring.moderate);
+            animate(motionX, snapTarget, thumbTransition ?? spring.moderate);
           }
 
           requestAnimationFrame(() => {
@@ -206,7 +207,7 @@ const Switch = forwardRef<HTMLDivElement, SwitchProps>(
                 width: thumbWidth,
                 height: thumbHeight,
               }}
-              transition={hasMounted.current ? spring.moderate : { duration: 0 }}
+              transition={hasMounted.current ? (thumbTransition ?? spring.moderate) : { duration: 0 }}
             />
           </SwitchPrimitive.Thumb>
         </SwitchPrimitive.Root>

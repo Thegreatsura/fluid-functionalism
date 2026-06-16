@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MotionConfig } from "framer-motion";
 import "./globals.css";
 import "dialkit/styles.css";
 import { Analytics } from "@vercel/analytics/react";
@@ -46,18 +47,24 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <ShapeProvider defaultShape="pill">
-          <ThemeProvider>
-            <IconProvider>
-              <BaseProvider>
-                <SidebarLayout>{children}</SidebarLayout>
-                <DialRoot />
-                <Analytics />
-                <SpeedInsights />
-              </BaseProvider>
-            </IconProvider>
-          </ThemeProvider>
-        </ShapeProvider>
+        {/* reducedMotion="user" makes every framer-motion component honor the
+            OS "reduce motion" setting: transform / scale / position / layout
+            animations are dropped, opacity and color fades are kept. One switch
+            for the whole system — see motion-guidelines.md. */}
+        <MotionConfig reducedMotion="user">
+          <ShapeProvider defaultShape="pill">
+            <ThemeProvider>
+              <IconProvider>
+                <BaseProvider>
+                  <SidebarLayout>{children}</SidebarLayout>
+                  <DialRoot />
+                  <Analytics />
+                  <SpeedInsights />
+                </BaseProvider>
+              </IconProvider>
+            </ThemeProvider>
+          </ShapeProvider>
+        </MotionConfig>
       </body>
     </html>
   );

@@ -176,12 +176,12 @@ function SpringReferenceSection() {
                 <Link
                   key={label}
                   href={slug}
-                  className="text-[11px] text-muted-foreground/50 transition-colors hover:text-foreground"
+                  className="text-[13px] text-muted-foreground/50 transition-colors hover:text-foreground"
                 >
                   {label}
                 </Link>
               ) : (
-                <span key={label} className="text-[11px] text-muted-foreground/30">
+                <span key={label} className="text-[13px] text-muted-foreground/30">
                   {label}
                 </span>
               )
@@ -404,59 +404,37 @@ export default function MotionDoc() {
       title="Motion"
       slug="motion"
       installSlug="springs"
-      description="Three spring speeds, and exits that run a little quicker than entrances. Every component follows the same handful of rules."
+      description="Three spring speeds, and exits always move a little faster than entrances. Pick a speed, wire it in — every component follows the same pattern."
     >
-      <DocSection title="Spring tokens">
+      <DocSection title="Three speeds">
         <p className="text-[13px] leading-relaxed text-muted-foreground">
-          Every animation pulls one of three springs from{" "}
-          <Code>
-            lib/springs
-          </Code>
-          . The bigger the thing that moves, the slower the spring: a hover state
-          uses{" "}
-          <Code>
-            fast
-          </Code>
-          , a dropdown uses{" "}
-          <Code>
-            moderate
-          </Code>
-          , a dialog uses{" "}
-          <Code>
-            slow
-          </Code>
-          . Nothing picks its own duration, so two unrelated parts of the screen
-          still move at the same pace.
+          All animations come from one of three springs in{" "}
+          <Code>lib/springs</Code>. Hover states and small toggles use{" "}
+          <Code>fast</Code>. Dropdowns and tabs use <Code>moderate</Code>.
+          Dialogs and drawers use <Code>slow</Code>. No component invents its
+          own timing, so things you've never thought about together will move
+          at the same pace.
         </p>
         <SpringTokensDemo />
       </DocSection>
 
       <DocSection title="Slow in, faster out">
         <p className="text-[13px] leading-relaxed text-muted-foreground">
-          The rule, made visible. Both modals open the same way, on{" "}
-          <Code>
-            spring.slow
-          </Code>
-          . The only thing that changes is the close: the left leaves on that
-          same{" "}
-          <Code>
-            spring.slow
-          </Code>
-          , the right on{" "}
-          <Code>
-            spring.slow.exit
-          </Code>{" "}
-          — a tier quicker. Watch the slow one: it feels like the modal cannot
-          quite commit to leaving.
+          Both modals open on <Code>spring.slow</Code>. The only difference is
+          the close: the left exits on the same <Code>spring.slow</Code>, the
+          right on <Code>spring.slow.exit</Code> — one tier faster. Toggle the
+          left one first. That slight drag on the way out is exactly what
+          you're trying to avoid.
         </p>
         <ModalExitDemo />
       </DocSection>
 
-      <DocSection title="Reference">
+      <DocSection title="All tokens">
         <p className="text-[13px] leading-relaxed text-muted-foreground">
-          Click a track — the ball enters right on the spring, then exits left on
-          the matching tween. Import from{" "}
-          <Code>lib/springs</Code>; never hand-write a duration.
+          Click a track to see it. The ball enters right on the spring, then
+          returns left on the exit tween. Everything lives in{" "}
+          <Code>lib/springs</Code> — duration values belong there, not
+          scattered through component code.
         </p>
         <SpringReferenceSection />
 
@@ -467,9 +445,10 @@ export default function MotionDoc() {
           Reduced motion
         </h3>
         <p className="text-[13px] leading-relaxed text-muted-foreground">
-          Every spring respects the OS setting. The app wraps its tree in{" "}
-          <Code>{`<MotionConfig reducedMotion="user">`}</Code>, so turning on
-          reduce motion drops the movement and keeps only the opacity fades.
+          All springs respect the OS setting. Wrap the app tree in{" "}
+          <Code>{`<MotionConfig reducedMotion="user">`}</Code> and when the
+          user turns on reduced motion, the position changes drop out and only
+          the opacity fades remain.
         </p>
       </DocSection>
     </DocPage>

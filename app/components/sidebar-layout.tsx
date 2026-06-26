@@ -33,7 +33,10 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 
   const handleClose = useCallback(() => setDrawerOpen(false), []);
   const router = useRouter();
-  const isFullscreen = pathname === "/demo" || pathname === "/compare";
+  const isFullscreen =
+    pathname === "/demo" ||
+    pathname === "/compare" ||
+    pathname.startsWith("/concepts");
 
   // Arrow key navigation between pages — ref-based so held keys keep advancing
   // (closures over `pathname` would re-bind per nav and lose key-repeat events).
@@ -100,7 +103,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
         ref={menuButtonRef}
         variant="ghost"
         size="icon"
-        className="lg:hidden fixed top-4 left-4 z-50"
+        className="xl:hidden fixed top-4 left-4 z-50"
         onClick={() => setDrawerOpen(true)}
         aria-label="Open navigation"
       >

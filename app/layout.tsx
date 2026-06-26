@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { MotionConfig } from "framer-motion";
 import "./globals.css";
-import "dialkit/styles.css";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ShapeProvider } from "@/registry/default/lib/shape-context";
@@ -9,7 +8,6 @@ import { ThemeProvider } from "@/registry/default/lib/theme-context";
 import { IconProvider } from "@/registry/default/lib/icon-context";
 import { BaseProvider } from "@/lib/base-context";
 import { SidebarLayout } from "@/app/components/sidebar-layout";
-import { DialRoot } from "dialkit";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.fluidfunctionalism.com"),
@@ -52,12 +50,11 @@ export default function RootLayout({
             animations are dropped, opacity and color fades are kept. One switch
             for the whole system — see motion-guidelines.md. */}
         <MotionConfig reducedMotion="user">
-          <ShapeProvider defaultShape="pill">
+          <ShapeProvider defaultShape="rounded">
             <ThemeProvider>
-              <IconProvider>
+              <IconProvider defaultLibrary="untitledui">
                 <BaseProvider>
                   <SidebarLayout>{children}</SidebarLayout>
-                  <DialRoot />
                   <Analytics />
                   <SpeedInsights />
                 </BaseProvider>

@@ -17,10 +17,10 @@ export function Sidebar({ mobile }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "shrink-0 w-56 overflow-y-auto p-4 flex flex-col gap-4",
+        "shrink-0 w-56 overflow-y-auto p-4 flex-col gap-4",
         mobile
-          ? "w-full"
-          : "sticky top-0 h-screen hidden lg:flex"
+          ? "w-full flex"
+          : "sticky top-0 h-screen xl-fade-flex"
       )}
     >
       {/* Top-level navigation */}

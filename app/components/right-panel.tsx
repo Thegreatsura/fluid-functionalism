@@ -237,7 +237,7 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
 /** Desktop-only right column that mirrors the left sidebar styling. */
 export function RightPanel() {
   return (
-    <aside className="shrink-0 w-64 p-4 sticky top-4 self-start mt-4 mr-4 rounded-lg bg-muted hidden lg:block">
+    <aside className="shrink-0 w-64 p-4 sticky top-4 self-start mt-4 mr-4 rounded-lg bg-muted xl-fade-block">
       <SurfaceProvider value={2}>
         <div className="flex items-center justify-between pl-1 pt-2 pb-2">
           <h2

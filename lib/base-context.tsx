@@ -24,27 +24,28 @@ const STORAGE_KEY = "ff:base";
 
 /**
  * Wraps the app and provides the currently selected primitive flavour
- * (Radix or Base UI). Persisted to localStorage. Default: "radix".
+ * (Radix or Base UI). Persisted to localStorage. Default: "base".
  *
  * The selected flavour drives the install URL surfaced in DocPage and (later)
  * the rendered code preview / live demo for primitive-touching components.
  *
- * **Hydration strategy:** the initial state is always `"radix"` so the server
- * render matches the client's first render. After mount, a `useEffect` reads
- * localStorage and (if needed) flips state to `"base"`. This produces a brief
- * paint of Radix-flavoured install URL / Primitive icon before swapping —
- * accepted as the cost of avoiding SSR/CSR hydration mismatches, which would
- * otherwise corrupt SVG attribute trees (icons change shape between renders).
+ * **Hydration strategy:** the initial state is always the default (`"base"`) so
+ * the server render matches the client's first render. After mount, a
+ * `useEffect` reads localStorage and (if needed) flips state to the persisted
+ * value. This produces a brief paint of the default-flavoured install URL /
+ * Primitive icon before swapping — accepted as the cost of avoiding SSR/CSR
+ * hydration mismatches, which would otherwise corrupt SVG attribute trees
+ * (icons change shape between renders).
  */
 export function BaseProvider({ children }: { children: ReactNode }) {
-  const [base, setBaseState] = useState<Base>("radix");
+  const [base, setBaseState] = useState<Base>("base");
 
   // After hydration, read persisted preference. Doing this in useEffect (not
   // useState's initializer) keeps the server and first-client renders aligned.
   useEffect(() => {
     try {
       const v = localStorage.getItem(STORAGE_KEY);
-      if (v === "base") setBaseState("base");
+      if (v === "base" || v === "radix") setBaseState(v);
     } catch {
       // localStorage may be unavailable (private mode); ignore.
     }

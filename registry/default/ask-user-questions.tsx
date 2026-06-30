@@ -30,7 +30,9 @@ export interface AskUserOption {
 export interface AskUserQuestion {
   id?: string;
   title: string;
-  options: AskUserOption[];
+  /** Options to choose from. Optional only because a `freeText` question
+   *  has none; every other mode requires at least one. */
+  options?: AskUserOption[];
   multiSelect?: boolean;
   allowOther?: boolean;
   otherPlaceholder?: string;
@@ -50,6 +52,15 @@ export interface AskUserQuestion {
    *  Works with every other option (single/multi-select, allowOther,
    *  inline/stacked layout). */
   chipPosition?: "left" | "right";
+  /** Render a single multi-line textarea as the *only* answer, with no
+   *  option rows — for open-ended prompts (a name, a description, free
+   *  comments). Distinct from `allowOther`, which appends a free-text row
+   *  *alongside* options. The field auto-focuses when the question appears;
+   *  ⌘/⌃+Enter (or the bottom submit button) commits, and the answer is
+   *  returned in `otherText`. `options` is ignored when this is set. */
+  freeText?: boolean;
+  /** Placeholder for the `freeText` textarea. */
+  freeTextPlaceholder?: string;
 }
 
 export interface AskUserAnswer {
@@ -191,7 +202,10 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
 
     const isMulti = !!question?.multiSelect;
     const isSkippable = question?.skippable !== false;
-    const allowOther = !!question?.allowOther;
+    const isFreeText = !!question?.freeText;
+    // freeText owns the whole answer area, so the inline Other row is
+    // suppressed even if a caller sets both.
+    const allowOther = !isFreeText && !!question?.allowOther;
     const selectedIds = useMemo(
       () => currentAnswer?.selectedIds ?? [],
       [currentAnswer]
@@ -263,6 +277,18 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
       setIsOtherMultiline(el.scrollHeight > lineHeight * 1.5);
       measureItems();
     }, [otherText, measureItems, qId]);
+
+    // ── freeText auto-focus ─────────────────────────────────────
+    // A freeText question is a single open-ended field, so drop the caret
+    // straight into it when the question appears — the user can start typing
+    // without a click. Re-runs on qId so each freeText step in a flow gets
+    // focused as it slides in.
+    useEffect(() => {
+      if (!isFreeText) return;
+      // preventScroll so mounting the card (or advancing to the next freeText
+      // step) drops the caret in without yanking the viewport to the field.
+      otherInputRef.current?.focus({ preventScroll: true });
+    }, [isFreeText, qId]);
 
     // ── Animated height ──────────────────────────────────────────
     // Track the natural height of the Q/A content and animate the wrapper's
@@ -552,8 +578,14 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     const handleRootKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
       if (e.key !== "Enter") return;
       const mod = isMac ? e.metaKey : e.ctrlKey;
-      if (!mod || !isMulti) return;
+      // ⌘/⌃+Enter commits multi-select and freeText alike — both use the
+      // bottom submit button rather than an inline arrow.
+      if (!mod || !(isMulti || isFreeText)) return;
       e.preventDefault(); // keep a focused button/row from also activating
+      if (isFreeText) {
+        if (otherText.trim().length > 0) handleOtherSubmit();
+        return;
+      }
       const hasAnswer = selectedIds.length > 0 || otherText.trim().length > 0;
       if (hasAnswer) handleMultiNext();
     };
@@ -651,7 +683,9 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
 
     const showBack = total > 1 && safeIndex > 0;
     const showSkip = total > 1 && isSkippable;
-    const showFooter = showBack || showSkip || isMulti;
+    // freeText commits through the same bottom submit button as multi-select.
+    const showSubmit = isMulti || isFreeText;
+    const showFooter = showBack || showSkip || showSubmit;
 
     return (
       <div
@@ -706,7 +740,50 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
               {question.title}
             </h3>
 
-            {/* Options + Other (proximity-tracked container) */}
+            {/* freeText: a single open-ended textarea is the whole answer —
+                no option rows, no chips. It auto-focuses (see the freeText
+                effect) and commits via ⌘/⌃+Enter or the bottom submit
+                button. The field auto-resizes via the shared resize effect
+                (otherInputRef), and its value is stored in `otherText`. */}
+            {isFreeText ? (
+              // The min-height lives on the CONTAINER, not the textarea: the
+              // shared auto-resize effect drives the textarea's `height`
+              // explicitly (1 line → grows as it wraps), so a min-height on
+              // the field itself fights that and mis-measures. The box gives
+              // the field a few lines of presence at rest; clicking anywhere
+              // in it focuses the caret.
+              <div
+                onClick={() => otherInputRef.current?.focus()}
+                className={cn(
+                  "relative mt-1 min-h-[76px] px-3 py-2.5 cursor-text transition-colors",
+                  shape.bg,
+                  // Mirror the "Something else" field instead of a blue focus
+                  // ring. Empty: a quiet bordered field that lightens with
+                  // bg-hover on hover and shows the bg-card hint on focus.
+                  // Once it has text it fills with the same bg-active overlay
+                  // the selected option rows use (focus-within comes after
+                  // hover in the cascade, so focusing wins over hovering).
+                  otherText.length > 0
+                    ? "bg-active"
+                    : "ring-1 ring-inset ring-border hover:bg-hover focus-within:bg-card"
+                )}
+              >
+                <textarea
+                  ref={otherInputRef}
+                  rows={1}
+                  value={otherText}
+                  placeholder={
+                    question.freeTextPlaceholder ?? "Type your answer…"
+                  }
+                  aria-labelledby={`${reactId}-${qId}-title`}
+                  onChange={(e) => handleOtherChange(e.target.value)}
+                  // Plain Enter inserts a newline — the root handler catches
+                  // ⌘/⌃+Enter for submit, mirroring multi-select.
+                  className="block w-full bg-transparent border-0 p-0 m-0 outline-none resize-none overflow-hidden text-[13px] leading-snug text-foreground placeholder:text-muted-foreground"
+                  style={{ fontVariationSettings: fontWeights.medium }}
+                />
+              </div>
+            ) : (
             <div
               ref={rowsContainerRef}
               role={isMulti ? "group" : "radiogroup"}
@@ -1057,6 +1134,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                 </Row>
               )}
             </div>
+            )}
           </div>
           </div>
         </motion.div>
@@ -1134,7 +1212,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                       </Button>
                     </motion.div>
                   )}
-                  {isMulti && (
+                  {showSubmit && (
                     <motion.div
                       key="continue"
                       layout="position"
@@ -1149,10 +1227,14 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                       <Button
                         variant="primary"
                         size="sm"
-                        onClick={handleMultiNext}
+                        onClick={
+                          isFreeText ? handleOtherSubmit : handleMultiNext
+                        }
                         disabled={
-                          selectedIds.length === 0 &&
-                          otherText.trim().length === 0
+                          isFreeText
+                            ? otherText.trim().length === 0
+                            : selectedIds.length === 0 &&
+                              otherText.trim().length === 0
                         }
                         // The shortcut chip acts as a trailing icon, so tighten
                         // the right padding to match the Button's iconRight on

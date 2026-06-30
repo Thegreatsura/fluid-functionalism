@@ -633,6 +633,32 @@ const chipLeftCode = `const questions = [
 
 <AskUserQuestions questions={questions} />`;
 
+// freeText turns a question into a single open-ended textarea — no options.
+// The field auto-focuses and commits with ⌘/⌃+Enter or the bottom button.
+const freeTextCode = `const questions = [
+  {
+    id: "name",
+    title: "What should we call your workspace?",
+    freeText: true,
+    freeTextPlaceholder: "e.g. Acme Design",
+  },
+  {
+    id: "goal",
+    title: "Describe what you're hoping to build.",
+    freeText: true,
+    freeTextPlaceholder: "A sentence or two is plenty…",
+  },
+  {
+    id: "feedback",
+    title: "Anything else you'd like us to know?",
+    freeText: true,
+    skippable: false,
+    nextLabel: "Finish",
+  },
+];
+
+<AskUserQuestions questions={questions} />`;
+
 const controlledCode = `const [index, setIndex] = useState(0);
 const [answers, setAnswers] = useState({});
 
@@ -663,7 +689,7 @@ const componentProps: PropDef[] = [
 const questionProps: PropDef[] = [
   { name: "id", type: "string", description: "Stable identifier used to key the answer. Falls back to position." },
   { name: "title", type: "string", description: "Question text shown above the options." },
-  { name: "options", type: "AskUserOption[]", description: "2–5 options to choose from." },
+  { name: "options", type: "AskUserOption[]", description: "2–5 options to choose from. Omit for freeText questions." },
   { name: "multiSelect", type: "boolean", default: "false", description: "Allow multiple options to be selected. Adds a Next button at the bottom." },
   { name: "allowOther", type: "boolean", default: "false", description: "Render an always-visible inline textarea for free-form, multi-line answers. Enter submits (single-select); Shift+Enter inserts a newline." },
   { name: "otherPlaceholder", type: "string", default: '"Describe in your own words…"', description: "Placeholder for the Other textarea." },
@@ -671,6 +697,8 @@ const questionProps: PropDef[] = [
   { name: "nextLabel", type: "string", description: "Label for the Next button in multi-select mode. Defaults to 'Next' or 'Finish'." },
   { name: "layout", type: '"inline" | "stacked"', default: '"inline"', description: "Row layout. 'stacked' places the description on its own line under the title — use when descriptions are long enough to wrap." },
   { name: "chipPosition", type: '"left" | "right"', default: '"right"', description: "Which side of the row the numbered chip sits on. With 'left', the single-select submit arrow still appears on the row's right edge. Works with single/multi-select, allowOther, and inline/stacked layouts." },
+  { name: "freeText", type: "boolean", default: "false", description: "Render a single multi-line textarea as the only answer — no option rows. The field auto-focuses; ⌘/⌃+Enter or the bottom submit button commits, and the answer is returned in otherText. Distinct from allowOther (which appends a free-text row alongside options); options is ignored when set." },
+  { name: "freeTextPlaceholder", type: "string", default: '"Type your answer…"', description: "Placeholder for the freeText textarea." },
 ];
 
 const optionProps: PropDef[] = [
@@ -682,7 +710,7 @@ const optionProps: PropDef[] = [
 const answerProps: PropDef[] = [
   { name: "questionId", type: "string", description: "Id of the question this answer belongs to." },
   { name: "selectedIds", type: "string[]", description: "Selected option ids. Length 0–1 in single-select, 0–N in multi-select." },
-  { name: "otherText", type: "string", description: "Free-form text from the Other input, if any." },
+  { name: "otherText", type: "string", description: "Free-form text from the Other input or a freeText question, if any." },
   { name: "skipped", type: "boolean", description: "True when the user skipped the question." },
 ];
 
@@ -1206,6 +1234,28 @@ const chipLeftQuestions: AskUserQuestion[] = [
   },
 ];
 
+const freeTextQuestions: AskUserQuestion[] = [
+  {
+    id: "name",
+    title: "What should we call your workspace?",
+    freeText: true,
+    freeTextPlaceholder: "e.g. Acme Design",
+  },
+  {
+    id: "goal",
+    title: "Describe what you're hoping to build.",
+    freeText: true,
+    freeTextPlaceholder: "A sentence or two is plenty…",
+  },
+  {
+    id: "feedback",
+    title: "Anything else you'd like us to know?",
+    freeText: true,
+    skippable: false,
+    nextLabel: "Finish",
+  },
+];
+
 const skipQuestions: AskUserQuestion[] = [
   {
     id: "experience",
@@ -1284,6 +1334,16 @@ export default function AskUserQuestionsDoc() {
           minHeightClass="min-h-[560px]"
         >
           {(k) => <AskUserQuestions key={k} questions={otherQuestions} />}
+        </ReplayableExample>
+      </DocSection>
+
+      <DocSection title="Free text">
+        <ReplayableExample
+          code={freeTextCode}
+          align="bottom"
+          minHeightClass="min-h-[560px]"
+        >
+          {(k) => <AskUserQuestions key={k} questions={freeTextQuestions} />}
         </ReplayableExample>
       </DocSection>
 

@@ -12,6 +12,11 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { RadioGroup as RadioGroupPrimitive } from "@base-ui/react/radio-group";
+import { Radio as RadioPrimitive } from "@base-ui/react/radio";
+import { CheckboxGroup as CheckboxGroupPrimitive } from "@base-ui/react/checkbox-group";
+import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox";
+import { Field } from "@base-ui/react/field";
 import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
@@ -200,16 +205,20 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     );
 
     // Detect the platform so the Continue shortcut hint shows the right
-    // modifier: ⌘ on macOS, ⌃ (Control) elsewhere. Resolved after mount to
-    // avoid a hydration mismatch (the server can't know the platform).
-    const [isMac, setIsMac] = useState(false);
-    useEffect(() => {
+    // modifier: ⌘ on macOS, ⌃ (Control) elsewhere. Computed in a lazy
+    // initializer (guarded for SSR, where `navigator` doesn't exist) rather
+    // than an effect — an effect resolves a frame late, so ⌘/⌃+Enter would
+    // check ctrlKey on Macs for the first frames. The server can't know the
+    // platform, so the ⌘/⌃ glyph alone may differ on hydration; ShortcutChip
+    // carries suppressHydrationWarning to absorb that one-character delta.
+    const [isMac] = useState(() => {
+      if (typeof navigator === "undefined") return false;
       const nav = navigator as Navigator & {
         userAgentData?: { platform?: string };
       };
       const platform = nav.userAgentData?.platform || nav.platform || "";
-      setIsMac(/mac/i.test(platform));
-    }, []);
+      return /mac/i.test(platform);
+    });
 
     const reactId = useId();
     const total = questions.length;
@@ -388,7 +397,10 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     const handleSingleSelect = useCallback(
       (optId: string) => {
         if (!question) return;
-        const text = answers[qId]?.otherText;
+        // Read through answersRef — the same source writeAnswers mutates — so
+        // a write earlier in the same tick is never missed the way a stale
+        // render-scope `answers` capture could be.
+        const text = answersRef.current[qId]?.otherText;
         const snapshot = writeAnswers((prev) => ({
           ...prev,
           [qId]: {
@@ -400,7 +412,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
         }));
         goNext(snapshot);
       },
-      [question, qId, answers, writeAnswers, goNext]
+      [question, qId, writeAnswers, goNext]
     );
 
     const handleMultiToggle = useCallback(
@@ -425,6 +437,26 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
       [question, qId, writeAnswers]
     );
 
+    // Base UI Checkbox.Group reports value changes coming from its (hidden)
+    // per-row checkbox primitives. Row clicks go through handleMultiToggle
+    // directly, so in practice this only fires if a hidden control is toggled
+    // by other means — mirror it into the answer so the two never disagree.
+    const handleGroupValueChange = useCallback(
+      (vals: string[]) => {
+        if (!question) return;
+        writeAnswers((prev) => ({
+          ...prev,
+          [qId]: {
+            questionId: qId,
+            selectedIds: vals,
+            otherText: prev[qId]?.otherText,
+            skipped: false,
+          },
+        }));
+      },
+      [question, qId, writeAnswers]
+    );
+
     const handleOtherChange = useCallback(
       (text: string) => {
         if (!question) return;
@@ -445,7 +477,9 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
 
     const handleOtherSubmit = useCallback(() => {
       if (!question) return;
-      const text = (answers[qId]?.otherText ?? "").trim();
+      // answersRef (not render-scope `answers`) keeps this read consistent
+      // with writeAnswers below — see handleSingleSelect.
+      const text = (answersRef.current[qId]?.otherText ?? "").trim();
       if (!text) return;
       // freeText questions may validate on submit; a returned message blocks
       // navigation and surfaces in the footer.
@@ -467,7 +501,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
         },
       }));
       goNext(snapshot);
-    }, [question, qId, answers, writeAnswers, goNext]);
+    }, [question, qId, writeAnswers, goNext]);
 
     const handleSkip = useCallback(() => {
       if (!question) return;
@@ -594,9 +628,20 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
         if (e.key === "ArrowDown" && ta.selectionEnd < ta.value.length) return;
       }
 
+      // Our keydown handler and Base UI's RadioGroup composite are merged onto
+      // the SAME rows container (via the primitive's render prop), and the
+      // composite's roving focus targets the hidden sr-only radios. Base UI
+      // runs our (external) handler first and skips its own when we call
+      // preventBaseUIHandler — without it, every arrow press would land focus
+      // on an invisible control right after we move it to the next row.
+      const preventBaseUI = (
+        e as unknown as { preventBaseUIHandler?: () => void }
+      ).preventBaseUIHandler;
+
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
         e.preventDefault();
         e.stopPropagation();
+        preventBaseUI?.();
         if (e.key === "ArrowLeft") {
           if (safeIndex > 0) handleBack();
         } else if (isSkippable && total > 1) {
@@ -614,6 +659,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
       ) {
         e.preventDefault();
         e.stopPropagation();
+        preventBaseUI?.();
         let next: number;
         if (e.key === "Home") next = 0;
         else if (e.key === "End") next = rowCount - 1;
@@ -666,12 +712,14 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     // ── Layout calculations for hover/focus indicators ───────────
     const activeRect =
       activeIndex !== null ? itemRects[activeIndex] : null;
-    // The blue morphing focus ring is intentionally suppressed for the Other
-    // field: that row has its own input-field treatment (the "type here" hint
-    // when empty, the merged selected bg once it has text), so the ring is
-    // redundant there and reads as noise while typing. focusedIndex is still
-    // tracked for the hint and submit-arrow visibility — we just don't draw a
-    // ring around it.
+    // focusedIndex comes from the rows container's onFocus (see rowsContent),
+    // set only when the focused row matches :focus-visible — so the blue
+    // morphing ring tracks keyboard focus across option rows. It is
+    // intentionally suppressed for the Other field: that row has its own
+    // input-field treatment (the "type here" hint when empty, the merged
+    // selected bg once it has text), so the ring is redundant there and reads
+    // as noise while typing. focusedIndex is still tracked for the hint and
+    // submit-arrow visibility — we just don't draw a ring around it.
     const focusRect =
       focusedIndex !== null && !(allowOther && focusedIndex === otherIndex)
         ? itemRects[focusedIndex]
@@ -744,6 +792,414 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     const showSubmit = isMulti || isFreeText;
     const showFooter = showBack || showSkip || showSubmit;
 
+    // ── Roving tabindex ──────────────────────────────────────────
+    // One tab stop for the whole group, single- AND multi-select alike: the
+    // first selected row, or — when the question is unanswered — the first
+    // row, so the group stays keyboard-reachable (the hasSelection-style
+    // fallback from registry/base). Arrows handle row-to-row movement; Tab
+    // moves on past the group. The Other row never takes the stop — its
+    // textarea is natively focusable on its own.
+    const firstSelectedRow = options.findIndex((opt, i) =>
+      selectedIds.includes(optionKey(opt, i))
+    );
+
+    // ── Option rows ──────────────────────────────────────────────
+    // The rows container is handed to a Base UI group primitive via `render`
+    // (Radio.Group for single-select, Checkbox.Group for multi-select — see
+    // the JSX below), so group semantics and selection plumbing come from
+    // Base UI while the rows keep their custom proximity-hover treatment.
+    // Each option Row hosts a hidden sr-only Radio/Checkbox primitive; the
+    // visible wrapper carries role/aria-checked. CAUTION: every keyboard-nav
+    // query in here is scoped to [data-proximity-index] — a bare
+    // [role="radio"] / [role="checkbox"] selector would ALSO match the hidden
+    // primitive inside each row (two hits per row) and land arrow-key focus
+    // on invisible controls.
+    const rowsContent = (
+      <div
+        ref={rowsContainerRef}
+        role={isMulti ? "group" : "radiogroup"}
+        aria-labelledby={`${reactId}-${qId}-title`}
+        onMouseEnter={handlers.onMouseEnter}
+        onMouseMove={handlers.onMouseMove}
+        onMouseLeave={handlers.onMouseLeave}
+        onFocus={(e) => {
+          // Track focus at the container (React's onFocus is focusin, so row
+          // and Other-textarea focus both bubble here). activeIndex mirrors
+          // the hover highlight onto the focused row; focusedIndex feeds the
+          // morphing blue ring, gated to keyboard focus via :focus-visible —
+          // mouse clicks focus rows without drawing the ring.
+          const indexAttr = (e.target as HTMLElement)
+            .closest("[data-proximity-index]")
+            ?.getAttribute("data-proximity-index");
+          if (indexAttr != null) {
+            const idx = Number(indexAttr);
+            setActiveIndex(idx);
+            setFocusedIndex(
+              (e.target as HTMLElement).matches(":focus-visible") ? idx : null
+            );
+          }
+        }}
+        onBlur={(e) => {
+          // Only clear when focus leaves the whole group — row-to-row moves
+          // keep the indicators mounted so they morph instead of exiting and
+          // re-entering.
+          if (rowsContainerRef.current?.contains(e.relatedTarget as Node))
+            return;
+          setFocusedIndex(null);
+          setActiveIndex(null);
+        }}
+        onKeyDown={handleNavKey}
+        className="relative flex flex-col gap-0.5 -mx-3"
+      >
+        {/* Other-row input hint — shown only when the Other input is
+            focused and still empty, to signal "type here". As soon as
+            text exists, the row joins selectedIndices and inherits the
+            selected merged bg, so it visually integrates with adjacent
+            selected options instead of looking like a standalone field. */}
+        <AnimatePresence>
+          {(() => {
+            if (!allowOther) return null;
+            const otherRect = itemRects[otherIndex];
+            const isEmptyFocused =
+              focusedIndex === otherIndex && otherText.length === 0;
+            if (!otherRect || !isEmptyFocused) return null;
+            return (
+              <motion.div
+                key="other-input"
+                aria-hidden
+                className={cn(
+                  "absolute pointer-events-none bg-card ring-1 ring-inset ring-border",
+                  shape.bg
+                )}
+                initial={{
+                  opacity: 0,
+                  top: otherRect.top,
+                  left: otherRect.left,
+                  width: otherRect.width,
+                  height: otherRect.height,
+                }}
+                animate={{
+                  opacity: 1,
+                  top: otherRect.top,
+                  left: otherRect.left,
+                  width: otherRect.width,
+                  height: otherRect.height,
+                }}
+                exit={{ opacity: 0, transition: spring.fast.exit }}
+                transition={{
+                  ...spring.fast,
+                  opacity: { duration: 0.08 },
+                }}
+              />
+            );
+          })()}
+        </AnimatePresence>
+
+        {/* Single morphing hover indicator (rendered below selected bg
+            so a hovered+selected row still reads as clearly selected) */}
+        <AnimatePresence>
+          {activeRect && (
+            <motion.div
+              key={`hover-${sessionRef.current}`}
+              aria-hidden
+              className={cn(
+                "absolute pointer-events-none bg-hover",
+                shape.bg
+              )}
+              initial={{
+                opacity: 0,
+                top: activeRect.top,
+                left: activeRect.left,
+                width: activeRect.width,
+                height: activeRect.height,
+              }}
+              animate={{
+                opacity: 1,
+                top: activeRect.top,
+                left: activeRect.left,
+                width: activeRect.width,
+                height: activeRect.height,
+              }}
+              exit={{ opacity: 0, transition: spring.fast.exit }}
+              transition={{
+                ...spring.fast,
+                opacity: { duration: 0.08 },
+              }}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Selected-row backgrounds (merged for contiguous selections).
+            A run is normally one block; mid merge/split it is drawn as two
+            abutting halves — see useMergeSplitBlocks. Uses bg-active
+            (overlay-aware) and renders ABOVE the hover indicator so the
+            selected state stays readable when mousing over a row. Corners
+            are driven numerically (around shape.bg's radius) so a single
+            selected row matches its hover. */}
+        <SelectionBackgrounds
+          blocks={blocks}
+          dimmed={isHoveringNonSelected}
+        />
+
+        {/* Single morphing focus ring — fed by the container onFocus above,
+            so keyboard focus on any option row draws it. */}
+        <AnimatePresence>
+          {focusRect && (
+            <motion.div
+              aria-hidden
+              className={cn(
+                "absolute pointer-events-none border border-[#6B97FF] z-20",
+                shape.focusRing
+              )}
+              initial={{
+                opacity: 0,
+                top: focusRect.top - 2,
+                left: focusRect.left - 2,
+                width: focusRect.width + 4,
+                height: focusRect.height + 4,
+              }}
+              animate={{
+                opacity: 1,
+                top: focusRect.top - 2,
+                left: focusRect.left - 2,
+                width: focusRect.width + 4,
+                height: focusRect.height + 4,
+              }}
+              exit={{ opacity: 0, transition: spring.fast.exit }}
+              transition={{
+                ...spring.fast,
+                opacity: { duration: 0.08 },
+              }}
+            />
+          )}
+        </AnimatePresence>
+
+        {options.map((opt, i) => {
+          const oid = optionKey(opt, i);
+          const isSelected = selectedIds.includes(oid);
+          const isHover = activeIndex === i;
+          const showArrow = !isMulti && isHover;
+          return (
+            <Row
+              key={oid}
+              index={i}
+              registerItem={registerItem}
+              role={isMulti ? "checkbox" : "radio"}
+              isSelected={isSelected}
+              // Roving tabindex — see firstSelectedRow above. Multi-select
+              // no longer puts a tab stop on every row.
+              tabIndex={
+                i === firstSelectedRow ||
+                (firstSelectedRow === -1 && i === 0)
+                  ? 0
+                  : -1
+              }
+              onClick={() =>
+                isMulti ? handleMultiToggle(oid) : handleSingleSelect(oid)
+              }
+              onKeyDown={(e) => {
+                // Let ⌘/Ctrl+Enter fall through to the root handler
+                // (Continue) instead of toggling the focused row.
+                if (
+                  (e.key === " " || e.key === "Enter") &&
+                  !e.metaKey &&
+                  !e.ctrlKey
+                ) {
+                  e.preventDefault();
+                  if (isMulti) handleMultiToggle(oid);
+                  else handleSingleSelect(oid);
+                }
+              }}
+              shape={shape}
+              aria-checked={isSelected}
+              chipContent={i + 1}
+              chipFilled={isSelected}
+              isMulti={isMulti}
+              showArrow={showArrow}
+              bodyLayout={question.layout === "stacked" ? "stacked" : "inline"}
+              // Anchor the chip to the first text line whenever the
+              // body can wrap to multiple lines (stacked layouts
+              // pair a title with a description that often wraps).
+              topAlign={question.layout === "stacked"}
+              chipPosition={question.chipPosition ?? "right"}
+              arrowIcon={
+                <ArrowRight
+                  size={14}
+                  strokeWidth={2}
+                  className="h-3.5 w-3.5"
+                />
+              }
+              // Hidden Base UI primitive (sr-only): carries the group's
+              // selection plumbing while the visible row wrapper handles
+              // all interaction and styling. aria-hidden + tabIndex -1 keep
+              // it out of the a11y tree and the tab order — the row itself
+              // is the radio/checkbox as far as AT is concerned.
+              hiddenControl={
+                isMulti ? (
+                  <CheckboxPrimitive.Root
+                    name={oid}
+                    className="sr-only"
+                    tabIndex={-1}
+                    aria-hidden
+                  />
+                ) : (
+                  <RadioPrimitive.Root
+                    value={oid}
+                    className="sr-only"
+                    tabIndex={-1}
+                    aria-hidden
+                  />
+                )
+              }
+            >
+              {question.layout === "stacked" ? (
+                <>
+                  <span className="inline-grid">
+                    <span
+                      className="col-start-1 row-start-1 invisible"
+                      style={{ fontVariationSettings: fontWeights.semibold }}
+                      aria-hidden="true"
+                    >
+                      {opt.title}
+                    </span>
+                    <span
+                      className="col-start-1 row-start-1 text-foreground transition-[color,font-variation-settings] duration-80"
+                      style={{
+                        fontVariationSettings: isSelected
+                          ? fontWeights.semibold
+                          : fontWeights.medium,
+                      }}
+                    >
+                      {opt.title}
+                    </span>
+                  </span>
+                  {opt.description && (
+                    <span className="text-[12px] text-muted-foreground leading-snug">
+                      {opt.description}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span>
+                  <span className="inline-grid">
+                    <span
+                      className="col-start-1 row-start-1 invisible"
+                      style={{ fontVariationSettings: fontWeights.semibold }}
+                      aria-hidden="true"
+                    >
+                      {opt.title}
+                    </span>
+                    <span
+                      className="col-start-1 row-start-1 text-foreground transition-[color,font-variation-settings] duration-80"
+                      style={{
+                        fontVariationSettings: isSelected
+                          ? fontWeights.semibold
+                          : fontWeights.medium,
+                      }}
+                    >
+                      {opt.title}
+                    </span>
+                  </span>
+                  {opt.description && (
+                    <>
+                      {" "}
+                      <span className="text-muted-foreground">
+                        {opt.description}
+                      </span>
+                    </>
+                  )}
+                </span>
+              )}
+            </Row>
+          );
+        })}
+
+        {allowOther && (
+          <Row
+            index={otherIndex}
+            registerItem={registerItem}
+            role={null}
+            isSelected={otherText.length > 0}
+            tabIndex={-1}
+            onClick={() => otherInputRef.current?.focus()}
+            shape={shape}
+            chipContent={otherIndex + 1}
+            chipFilled={otherText.length > 0}
+            isMulti={isMulti}
+            // Other body is a textarea that may grow past one line;
+            // only switch to top-aligned when it actually wraps, so
+            // the 1-line empty / single-line state stays visually
+            // centred like the surrounding option rows.
+            topAlign={isOtherMultiline}
+            chipPosition={question.chipPosition ?? "right"}
+            ariaLabel={
+              question.otherPlaceholder ?? "Describe in your own words"
+            }
+            showArrow={
+              !isMulti &&
+              (focusedIndex === otherIndex ||
+                activeIndex === otherIndex) &&
+              otherText.trim().length > 0
+            }
+            arrowIcon={
+              <ArrowRight
+                size={14}
+                strokeWidth={2}
+                className="h-3.5 w-3.5"
+              />
+            }
+            onArrowClick={
+              !isMulti && otherText.trim().length > 0
+                ? handleOtherSubmit
+                : undefined
+            }
+          >
+            <span className="inline-grid w-full">
+              <textarea
+                ref={otherInputRef}
+                rows={1}
+                value={otherText}
+                placeholder={
+                  question.otherPlaceholder ??
+                  "Describe in your own words…"
+                }
+                aria-label={
+                  question.otherPlaceholder ?? "Describe in your own words"
+                }
+                onChange={(e) => handleOtherChange(e.target.value)}
+                onKeyDown={(e) => {
+                  // Standard chat pattern: plain Enter submits,
+                  // Shift+Enter inserts a newline. Works for both
+                  // desktop and mobile soft keyboards (where ⌘/⌃
+                  // isn't reachable). In multi-select we leave plain
+                  // Enter to the textarea (newline) and let the
+                  // root handler catch ⌘/⌃+Enter for Continue —
+                  // multi-select has its own Continue button as the
+                  // primary submit affordance.
+                  if (e.key !== "Enter") return;
+                  if (e.shiftKey) return; // Shift+Enter = newline
+                  if (!isMulti) {
+                    e.preventDefault();
+                    handleOtherSubmit();
+                  }
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className={cn(
+                  // Reset every textarea default that would otherwise
+                  // make the field taller/boxier than the single-line
+                  // input it replaces — no border, no padding, no
+                  // resize handle, no scrollbars (height is JS-driven,
+                  // see the auto-resize effect above).
+                  "col-start-1 row-start-1 block w-full bg-transparent border-0 p-0 m-0 outline-none resize-none overflow-hidden text-[13px] leading-snug text-foreground placeholder:text-muted-foreground"
+                )}
+                style={{ fontVariationSettings: fontWeights.medium }}
+              />
+            </span>
+          </Row>
+        )}
+      </div>
+    );
+
     return (
       <div
         ref={(node) => {
@@ -774,599 +1230,308 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
           </span>
         </div>
 
-        {/* Morphing Q/A region — its REAL height animates to the measured
-            natural height of the content below, so the card border and the
-            footer reflow in lockstep with the spring. overflow-hidden clips
-            the instantly-swapped content, revealing it as the height opens.
-            Header and footer sit outside, so neither is clipped or yanked. */}
-        <motion.div
-          animate={{ height: contentHeight }}
-          initial={false}
-          transition={spring.slow}
-          className="overflow-hidden"
-        >
-          <div
-            ref={contentMeasureRef}
-            className={cn(
-              "px-4 sm:px-5",
-              showFooter ? "pb-1" : "pb-2.5 sm:pb-3"
-            )}
+        {/* Field context for freeText validation — one Base UI Field spans
+            both the textarea (Field.Control, in the morphing region) and the
+            footer error (Field.Error), which is how the two get auto-wired:
+            the error's generated id lands in the textarea's aria-describedby,
+            and `invalid` drives its aria-invalid. Validation itself stays
+            submit-time in handleOtherSubmit (freeTextValidate runs on
+            ⌘/⌃+Enter or the submit button and blocks navigation), so the
+            Field is driven declaratively via `invalid`. display: contents
+            keeps this wrapper out of layout, and it renders for every
+            question mode so the card's DOM shape stays stable across
+            question types. */}
+        <Field.Root invalid={freeTextError !== null} className="contents">
+          {/* Morphing Q/A region — its REAL height animates to the measured
+              natural height of the content below, so the card border and the
+              footer reflow in lockstep with the spring. overflow-hidden clips
+              the instantly-swapped content, revealing it as the height opens.
+              Header and footer sit outside, so neither is clipped or yanked. */}
+          <motion.div
+            animate={{ height: contentHeight }}
+            initial={false}
+            transition={spring.slow}
+            className="overflow-hidden"
           >
-            <div key={qId} className="flex flex-col gap-2">
-            {/* Question title */}
-            <h3
-              id={`${reactId}-${qId}-title`}
-              className="text-[16px] text-foreground leading-snug"
-              style={{ fontVariationSettings: fontWeights.semibold }}
-            >
-              {question.title}
-            </h3>
-
-            {/* freeText: a single open-ended textarea is the whole answer —
-                no option rows, no chips. It auto-focuses (see the freeText
-                effect) and commits via ⌘/⌃+Enter or the bottom submit
-                button. The field auto-resizes via the shared resize effect
-                (otherInputRef), and its value is stored in `otherText`. */}
-            {isFreeText ? (
-              // The min-height lives on the CONTAINER, not the textarea: the
-              // shared auto-resize effect drives the textarea's `height`
-              // explicitly (1 line → grows as it wraps), so a min-height on
-              // the field itself fights that and mis-measures. The box gives
-              // the field a few lines of presence at rest; clicking anywhere
-              // in it focuses the caret.
-              <div
-                onClick={() => otherInputRef.current?.focus()}
-                className={cn(
-                  // -mx-3 + px-3 mirrors the option rows / "Something else"
-                  // field: the box bleeds 12px each side (so its fill spans the
-                  // same width as the hover/selected backgrounds) while the
-                  // text starts at the content edge, aligned with the option
-                  // titles and the question heading.
-                  "relative mt-1 -mx-3 px-3 py-2.5 cursor-text transition-colors",
-                  // Resting height: a few lines for multi-line, one row for
-                  // single-line. The textarea still auto-resizes above this
-                  // floor as content wraps.
-                  isFreeTextMultiline ? "min-h-[76px]" : "min-h-10",
-                  shape.bg,
-                  // Mirror the "Something else" field instead of a blue focus
-                  // ring. Empty + at rest: no border, fully quiet. Hover
-                  // lightens with bg-hover; focus shows the bg-card + border
-                  // hint. Once it has text it fills with the same bg-active
-                  // overlay the selected option rows use (focus-within comes
-                  // after hover in the cascade, so focusing wins over hovering).
-                  otherText.length > 0
-                    ? "bg-active"
-                    : "hover:bg-hover focus-within:bg-card focus-within:ring-1 focus-within:ring-inset focus-within:ring-border"
-                )}
-              >
-                <textarea
-                  ref={otherInputRef}
-                  rows={1}
-                  value={otherText}
-                  placeholder={
-                    question.freeTextPlaceholder ?? "Type your answer…"
-                  }
-                  aria-labelledby={`${reactId}-${qId}-title`}
-                  onChange={(e) => handleOtherChange(e.target.value)}
-                  onKeyDown={(e) => {
-                    // Multi-line: plain Enter is a newline; ⌘/⌃+Enter submits
-                    // (caught by the root handler). Single-line: plain Enter
-                    // submits like an input, so a newline is never inserted.
-                    if (e.key !== "Enter") return;
-                    if (e.shiftKey || e.metaKey || e.ctrlKey) return;
-                    if (!isFreeTextMultiline) {
-                      e.preventDefault();
-                      handleOtherSubmit();
-                    }
-                  }}
-                  className="block w-full bg-transparent border-0 p-0 m-0 outline-none resize-none overflow-hidden text-[13px] leading-snug text-foreground placeholder:text-muted-foreground"
-                  style={{ fontVariationSettings: fontWeights.medium }}
-                />
-              </div>
-            ) : (
             <div
-              ref={rowsContainerRef}
-              role={isMulti ? "group" : "radiogroup"}
-              aria-labelledby={`${reactId}-${qId}-title`}
-              onMouseEnter={handlers.onMouseEnter}
-              onMouseMove={handlers.onMouseMove}
-              onMouseLeave={handlers.onMouseLeave}
-              onKeyDown={handleNavKey}
-              className="relative flex flex-col gap-0.5 -mx-3"
+              ref={contentMeasureRef}
+              className={cn(
+                "px-4 sm:px-5",
+                showFooter ? "pb-1" : "pb-2.5 sm:pb-3"
+              )}
             >
-              {/* Other-row input hint — shown only when the Other input is
-                  focused and still empty, to signal "type here". As soon as
-                  text exists, the row joins selectedIndices and inherits the
-                  selected merged bg, so it visually integrates with adjacent
-                  selected options instead of looking like a standalone field. */}
-              <AnimatePresence>
-                {(() => {
-                  if (!allowOther) return null;
-                  const otherRect = itemRects[otherIndex];
-                  const isEmptyFocused =
-                    focusedIndex === otherIndex && otherText.length === 0;
-                  if (!otherRect || !isEmptyFocused) return null;
-                  return (
-                    <motion.div
-                      key="other-input"
-                      aria-hidden
-                      className={cn(
-                        "absolute pointer-events-none bg-card ring-1 ring-inset ring-border",
-                        shape.bg
-                      )}
-                      initial={{
-                        opacity: 0,
-                        top: otherRect.top,
-                        left: otherRect.left,
-                        width: otherRect.width,
-                        height: otherRect.height,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        top: otherRect.top,
-                        left: otherRect.left,
-                        width: otherRect.width,
-                        height: otherRect.height,
-                      }}
-                      exit={{ opacity: 0, transition: spring.fast.exit }}
-                      transition={{
-                        ...spring.fast,
-                        opacity: { duration: 0.08 },
-                      }}
-                    />
-                  );
-                })()}
-              </AnimatePresence>
+              <div key={qId} className="flex flex-col gap-2">
+              {/* Question title */}
+              <h3
+                id={`${reactId}-${qId}-title`}
+                className="text-[16px] text-foreground leading-snug"
+                style={{ fontVariationSettings: fontWeights.semibold }}
+              >
+                {question.title}
+              </h3>
 
-              {/* Single morphing hover indicator (rendered below selected bg
-                  so a hovered+selected row still reads as clearly selected) */}
-              <AnimatePresence>
-                {activeRect && (
-                  <motion.div
-                    key={`hover-${sessionRef.current}`}
-                    aria-hidden
-                    className={cn(
-                      "absolute pointer-events-none bg-hover",
-                      shape.bg
-                    )}
-                    initial={{
-                      opacity: 0,
-                      top: activeRect.top,
-                      left: activeRect.left,
-                      width: activeRect.width,
-                      height: activeRect.height,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      top: activeRect.top,
-                      left: activeRect.left,
-                      width: activeRect.width,
-                      height: activeRect.height,
-                    }}
-                    exit={{ opacity: 0, transition: spring.fast.exit }}
-                    transition={{
-                      ...spring.fast,
-                      opacity: { duration: 0.08 },
-                    }}
-                  />
-                )}
-              </AnimatePresence>
-
-              {/* Selected-row backgrounds (merged for contiguous selections).
-                  A run is normally one block; mid merge/split it is drawn as two
-                  abutting halves — see useMergeSplitBlocks. Uses bg-active
-                  (overlay-aware) and renders ABOVE the hover indicator so the
-                  selected state stays readable when mousing over a row. Corners
-                  are driven numerically (around shape.bg's radius) so a single
-                  selected row matches its hover. */}
-              <SelectionBackgrounds
-                blocks={blocks}
-                dimmed={isHoveringNonSelected}
-              />
-
-              {/* Single morphing focus ring */}
-              <AnimatePresence>
-                {focusRect && (
-                  <motion.div
-                    aria-hidden
-                    className={cn(
-                      "absolute pointer-events-none border border-[#6B97FF] z-20",
-                      shape.focusRing
-                    )}
-                    initial={{
-                      opacity: 0,
-                      top: focusRect.top - 2,
-                      left: focusRect.left - 2,
-                      width: focusRect.width + 4,
-                      height: focusRect.height + 4,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      top: focusRect.top - 2,
-                      left: focusRect.left - 2,
-                      width: focusRect.width + 4,
-                      height: focusRect.height + 4,
-                    }}
-                    exit={{ opacity: 0, transition: spring.fast.exit }}
-                    transition={{
-                      ...spring.fast,
-                      opacity: { duration: 0.08 },
-                    }}
-                  />
-                )}
-              </AnimatePresence>
-
-              {options.map((opt, i) => {
-                const oid = optionKey(opt, i);
-                const isSelected = selectedIds.includes(oid);
-                const isHover = activeIndex === i;
-                const showArrow = !isMulti && isHover;
-                return (
-                  <Row
-                    key={oid}
-                    index={i}
-                    registerItem={registerItem}
-                    role={isMulti ? "checkbox" : "radio"}
-                    isSelected={isSelected}
-                    tabIndex={
-                      isMulti
-                        ? 0
-                        : selectedIds[0] === oid ||
-                          (!selectedIds.length && i === 0)
-                        ? 0
-                        : -1
-                    }
-                    onFocusVisible={() => setActiveIndex(i)}
-                    onBlurAny={() =>
-                      setActiveIndex((prev) => (prev === i ? null : prev))
-                    }
-                    onClick={() =>
-                      isMulti ? handleMultiToggle(oid) : handleSingleSelect(oid)
-                    }
-                    onKeyDown={(e) => {
-                      // Let ⌘/Ctrl+Enter fall through to the root handler
-                      // (Continue) instead of toggling the focused row.
-                      if (
-                        (e.key === " " || e.key === "Enter") &&
-                        !e.metaKey &&
-                        !e.ctrlKey
-                      ) {
-                        e.preventDefault();
-                        if (isMulti) handleMultiToggle(oid);
-                        else handleSingleSelect(oid);
-                      }
-                    }}
-                    shape={shape}
-                    aria-checked={isSelected}
-                    chipContent={i + 1}
-                    chipFilled={isSelected}
-                    isMulti={isMulti}
-                    showArrow={showArrow}
-                    bodyLayout={question.layout === "stacked" ? "stacked" : "inline"}
-                    // Anchor the chip to the first text line whenever the
-                    // body can wrap to multiple lines (stacked layouts
-                    // pair a title with a description that often wraps).
-                    topAlign={question.layout === "stacked"}
-                    chipPosition={question.chipPosition ?? "right"}
-                    arrowIcon={
-                      <ArrowRight
-                        size={14}
-                        strokeWidth={2}
-                        className="h-3.5 w-3.5"
+              {/* freeText: a single open-ended textarea is the whole answer —
+                  no option rows, no chips. It auto-focuses (see the freeText
+                  effect) and commits via ⌘/⌃+Enter or the bottom submit
+                  button. The field auto-resizes via the shared resize effect
+                  (otherInputRef), and its value is stored in `otherText`. */}
+              {isFreeText ? (
+                // The min-height lives on the CONTAINER, not the textarea: the
+                // shared auto-resize effect drives the textarea's `height`
+                // explicitly (1 line → grows as it wraps), so a min-height on
+                // the field itself fights that and mis-measures. The box gives
+                // the field a few lines of presence at rest; clicking anywhere
+                // in it focuses the caret.
+                <div
+                  onClick={() => otherInputRef.current?.focus()}
+                  className={cn(
+                    // -mx-3 + px-3 mirrors the option rows / "Something else"
+                    // field: the box bleeds 12px each side (so its fill spans the
+                    // same width as the hover/selected backgrounds) while the
+                    // text starts at the content edge, aligned with the option
+                    // titles and the question heading.
+                    "relative mt-1 -mx-3 px-3 py-2.5 cursor-text transition-colors",
+                    // Resting height: a few lines for multi-line, one row for
+                    // single-line. The textarea still auto-resizes above this
+                    // floor as content wraps.
+                    isFreeTextMultiline ? "min-h-[76px]" : "min-h-10",
+                    shape.bg,
+                    // Mirror the "Something else" field instead of a blue focus
+                    // ring. Empty + at rest: no border, fully quiet. Hover
+                    // lightens with bg-hover; focus shows the bg-card + border
+                    // hint. Once it has text it fills with the same bg-active
+                    // overlay the selected option rows use (focus-within comes
+                    // after hover in the cascade, so focusing wins over hovering).
+                    otherText.length > 0
+                      ? "bg-active"
+                      : "hover:bg-hover focus-within:bg-card focus-within:ring-1 focus-within:ring-inset focus-within:ring-border"
+                  )}
+                >
+                  {/* Base UI Field.Control wires the textarea into the Field:
+                      the footer Field.Error's generated id lands in this
+                      element's aria-describedby, and Field.Root's `invalid`
+                      drives aria-invalid — the association the previous bare
+                      <textarea> + <p role="alert"> pairing never made. Value
+                      flows through onValueChange into the same
+                      handleOtherChange path; all visual props live on the
+                      rendered textarea. */}
+                  <Field.Control
+                    value={otherText}
+                    onValueChange={handleOtherChange}
+                    render={
+                      <textarea
+                        ref={otherInputRef}
+                        rows={1}
+                        placeholder={
+                          question.freeTextPlaceholder ?? "Type your answer…"
+                        }
+                        aria-labelledby={`${reactId}-${qId}-title`}
+                        onKeyDown={(e) => {
+                          // Multi-line: plain Enter is a newline; ⌘/⌃+Enter
+                          // submits (caught by the root handler). Single-line:
+                          // plain Enter submits like an input, so a newline is
+                          // never inserted.
+                          if (e.key !== "Enter") return;
+                          if (e.shiftKey || e.metaKey || e.ctrlKey) return;
+                          if (!isFreeTextMultiline) {
+                            e.preventDefault();
+                            handleOtherSubmit();
+                          }
+                        }}
+                        className="block w-full bg-transparent border-0 p-0 m-0 outline-none resize-none overflow-hidden text-[13px] leading-snug text-foreground placeholder:text-muted-foreground"
+                        style={{ fontVariationSettings: fontWeights.medium }}
                       />
                     }
-                  >
-                    {question.layout === "stacked" ? (
-                      <>
-                        <span className="inline-grid">
-                          <span
-                            className="col-start-1 row-start-1 invisible"
-                            style={{ fontVariationSettings: fontWeights.semibold }}
-                            aria-hidden="true"
-                          >
-                            {opt.title}
-                          </span>
-                          <span
-                            className="col-start-1 row-start-1 text-foreground transition-[color,font-variation-settings] duration-80"
-                            style={{
-                              fontVariationSettings: isSelected
-                                ? fontWeights.semibold
-                                : fontWeights.medium,
-                            }}
-                          >
-                            {opt.title}
-                          </span>
-                        </span>
-                        {opt.description && (
-                          <span className="text-[12px] text-muted-foreground leading-snug">
-                            {opt.description}
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <span>
-                        <span className="inline-grid">
-                          <span
-                            className="col-start-1 row-start-1 invisible"
-                            style={{ fontVariationSettings: fontWeights.semibold }}
-                            aria-hidden="true"
-                          >
-                            {opt.title}
-                          </span>
-                          <span
-                            className="col-start-1 row-start-1 text-foreground transition-[color,font-variation-settings] duration-80"
-                            style={{
-                              fontVariationSettings: isSelected
-                                ? fontWeights.semibold
-                                : fontWeights.medium,
-                            }}
-                          >
-                            {opt.title}
-                          </span>
-                        </span>
-                        {opt.description && (
-                          <>
-                            {" "}
-                            <span className="text-muted-foreground">
-                              {opt.description}
-                            </span>
-                          </>
-                        )}
-                      </span>
-                    )}
-                  </Row>
-                );
-              })}
-
-              {allowOther && (
-                <Row
-                  index={otherIndex}
-                  registerItem={registerItem}
-                  role={null}
-                  isSelected={otherText.length > 0}
-                  tabIndex={-1}
-                  onFocusVisible={() => setFocusedIndex(otherIndex)}
-                  onBlurAny={() =>
-                    setFocusedIndex((prev) =>
-                      prev === otherIndex ? null : prev
-                    )
-                  }
-                  onClick={() => otherInputRef.current?.focus()}
-                  shape={shape}
-                  chipContent={otherIndex + 1}
-                  chipFilled={otherText.length > 0}
-                  isMulti={isMulti}
-                  // Other body is a textarea that may grow past one line;
-                  // only switch to top-aligned when it actually wraps, so
-                  // the 1-line empty / single-line state stays visually
-                  // centred like the surrounding option rows.
-                  topAlign={isOtherMultiline}
-                  chipPosition={question.chipPosition ?? "right"}
-                  ariaLabel={
-                    question.otherPlaceholder ?? "Describe in your own words"
-                  }
-                  showArrow={
-                    !isMulti &&
-                    (focusedIndex === otherIndex ||
-                      activeIndex === otherIndex) &&
-                    otherText.trim().length > 0
-                  }
-                  arrowIcon={
-                    <ArrowRight
-                      size={14}
-                      strokeWidth={2}
-                      className="h-3.5 w-3.5"
-                    />
-                  }
-                  onArrowClick={
-                    !isMulti && otherText.trim().length > 0
-                      ? handleOtherSubmit
-                      : undefined
-                  }
-                >
-                  <span className="inline-grid w-full">
-                    <textarea
-                      ref={otherInputRef}
-                      rows={1}
-                      value={otherText}
-                      placeholder={
-                        question.otherPlaceholder ??
-                        "Describe in your own words…"
-                      }
-                      aria-label={
-                        question.otherPlaceholder ?? "Describe in your own words"
-                      }
-                      onChange={(e) => handleOtherChange(e.target.value)}
-                      onFocus={() => setFocusedIndex(otherIndex)}
-                      onBlur={() =>
-                        setFocusedIndex((prev) =>
-                          prev === otherIndex ? null : prev
-                        )
-                      }
-                      onKeyDown={(e) => {
-                        // Standard chat pattern: plain Enter submits,
-                        // Shift+Enter inserts a newline. Works for both
-                        // desktop and mobile soft keyboards (where ⌘/⌃
-                        // isn't reachable). In multi-select we leave plain
-                        // Enter to the textarea (newline) and let the
-                        // root handler catch ⌘/⌃+Enter for Continue —
-                        // multi-select has its own Continue button as the
-                        // primary submit affordance.
-                        if (e.key !== "Enter") return;
-                        if (e.shiftKey) return; // Shift+Enter = newline
-                        if (!isMulti) {
-                          e.preventDefault();
-                          handleOtherSubmit();
-                        }
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className={cn(
-                        // Reset every textarea default that would otherwise
-                        // make the field taller/boxier than the single-line
-                        // input it replaces — no border, no padding, no
-                        // resize handle, no scrollbars (height is JS-driven,
-                        // see the auto-resize effect above).
-                        "col-start-1 row-start-1 block w-full bg-transparent border-0 p-0 m-0 outline-none resize-none overflow-hidden text-[13px] leading-snug text-foreground placeholder:text-muted-foreground"
-                      )}
-                      style={{ fontVariationSettings: fontWeights.medium }}
-                    />
-                  </span>
-                </Row>
+                  />
+                </div>
+              ) : isMulti ? (
+                // Multi-select: Base UI Checkbox.Group supplies group state to
+                // the hidden per-row checkbox primitives, rendered onto the
+                // rows container itself (see rowsContent above) so the DOM
+                // stays one flat container the absolute overlays can measure.
+                <CheckboxGroupPrimitive
+                  value={selectedIds}
+                  onValueChange={handleGroupValueChange}
+                  render={rowsContent}
+                />
+              ) : (
+                // Single-select: Base UI Radio.Group, same render-onto-the-
+                // container trick. `null` (not undefined) when unanswered keeps
+                // the group controlled from the first render. onValueChange
+                // routes hidden-primitive selection through the same
+                // handleSingleSelect path as row clicks — the two never
+                // double-fire, since clicking a row doesn't click its sr-only
+                // child.
+                <RadioGroupPrimitive
+                  value={selectedIds[0] ?? null}
+                  onValueChange={(value) => {
+                    if (typeof value === "string") handleSingleSelect(value);
+                  }}
+                  render={rowsContent}
+                />
               )}
             </div>
-            )}
-          </div>
-          </div>
-        </motion.div>
+            </div>
+          </motion.div>
 
-        {/* Footer — outside the morphing region, so the animating height never
-            clips it. Because the height is a real layout value (not a
-            transform), the footer reflows frame-by-frame and rides the morph
-            in lockstep. */}
-        {showFooter && (
-          <div className="px-4 sm:px-5 pt-1 pb-2">
-            <div className="flex items-center justify-between gap-2 -mx-2 sm:-mx-3">
-              {/* Each button is wrapped in a motion.div so it fades + scales
-                  when it appears/disappears (e.g. Continue on multi-select).
-                  popLayout pops the exiting button out of flow so its
-                  neighbours slide to their new spot *at the same time* it fades
-                  (not sequentially). The group is `relative` so the popped
-                  (absolutely positioned) button stays put instead of flying to
-                  the page origin. */}
-              {/* Left cluster: Back, then any validation error. flex-1 so the
-                  error fills the row up to the right-hand buttons; min-w-0 lets
-                  a long message wrap instead of overflowing. */}
-              <div className="relative flex flex-1 min-w-0 items-center gap-2">
-                <AnimatePresence mode="popLayout" initial={false}>
-                  {showBack && (
-                    <motion.div
-                      key="back"
-                      layout="position"
-                      initial={{ opacity: 0, scale: 0.85 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.85 }}
-                      transition={{
-                        ...spring.fast,
-                        opacity: { duration: 0.1 },
-                      }}
-                    >
-                      {/* Bare ← icon via the Button's icon slot, so it gets the
-                          proper tighter icon-side padding. */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        leadingIcon={ArrowLeftKey}
-                        onClick={handleBack}
-                        // Arrow is desktop-only; restore symmetric padding on
-                        // mobile where it's hidden, tighten for the icon on ≥sm.
-                        className="pl-3 sm:pl-[6px]"
+          {/* Footer — outside the morphing region, so the animating height never
+              clips it. Because the height is a real layout value (not a
+              transform), the footer reflows frame-by-frame and rides the morph
+              in lockstep. */}
+          {showFooter && (
+            <div className="px-4 sm:px-5 pt-1 pb-2">
+              <div className="flex items-center justify-between gap-2 -mx-2 sm:-mx-3">
+                {/* Each button is wrapped in a motion.div so it fades + scales
+                    when it appears/disappears (e.g. Continue on multi-select).
+                    popLayout pops the exiting button out of flow so its
+                    neighbours slide to their new spot *at the same time* it fades
+                    (not sequentially). The group is `relative` so the popped
+                    (absolutely positioned) button stays put instead of flying to
+                    the page origin. */}
+                {/* Left cluster: Back, then any validation error. flex-1 so the
+                    error fills the row up to the right-hand buttons; min-w-0 lets
+                    a long message wrap instead of overflowing. */}
+                <div className="relative flex flex-1 min-w-0 items-center gap-2">
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    {showBack && (
+                      <motion.div
+                        key="back"
+                        layout="position"
+                        initial={{ opacity: 0, scale: 0.85 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.85 }}
+                        transition={{
+                          ...spring.fast,
+                          opacity: { duration: 0.1 },
+                        }}
                       >
-                        Back
-                      </Button>
-                    </motion.div>
+                        {/* Bare ← icon via the Button's icon slot, so it gets the
+                            proper tighter icon-side padding. */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          leadingIcon={ArrowLeftKey}
+                          onClick={handleBack}
+                          // Arrow is desktop-only; restore symmetric padding on
+                          // mobile where it's hidden, tighten for the icon on ≥sm.
+                          className="pl-3 sm:pl-[6px]"
+                        >
+                          Back
+                        </Button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  {/* Validation error — left-aligned at the content edge (the
+                      px-2/sm:px-3 cancels the row's -mx), or just after Back when
+                      present. Conditionally rendered (no exit animation) so
+                      clearing it on edit removes the node immediately instead of
+                      leaving an invisible spacer. Rendered through Base UI
+                      Field.Error so its generated id is registered on the Field
+                      and auto-appears in the textarea's aria-describedby;
+                      `match` pins it visible while our submit-time validation
+                      (handleOtherSubmit) has an error standing. */}
+                  {freeTextError && (
+                    <Field.Error
+                      key="ft-error"
+                      match
+                      render={
+                        <motion.p
+                          role="alert"
+                          initial={{ opacity: 0, y: -2 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            ...spring.fast,
+                            opacity: { duration: 0.12 },
+                          }}
+                          className="min-w-0 px-2 sm:px-3 text-left text-[12px] leading-snug text-destructive"
+                        />
+                      }
+                    >
+                      {freeTextError}
+                    </Field.Error>
                   )}
-                </AnimatePresence>
-                {/* Validation error — left-aligned at the content edge (the
-                    px-2/sm:px-3 cancels the row's -mx), or just after Back when
-                    present. Conditionally rendered (no exit animation) so
-                    clearing it on edit removes the node immediately instead of
-                    leaving an invisible spacer. */}
-                {freeTextError && (
-                  <motion.p
-                    key="ft-error"
-                    role="alert"
-                    initial={{ opacity: 0, y: -2 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      ...spring.fast,
-                      opacity: { duration: 0.12 },
-                    }}
-                    className="min-w-0 px-2 sm:px-3 text-left text-[12px] leading-snug text-destructive"
-                  >
-                    {freeTextError}
-                  </motion.p>
-                )}
-              </div>
-              <div className="relative flex items-center gap-2">
-                <AnimatePresence mode="popLayout" initial={false}>
-                  {showSkip && (
-                    <motion.div
-                      key="skip"
-                      layout="position"
-                      initial={{ opacity: 0, scale: 0.85 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.85 }}
-                      transition={{
-                        ...spring.fast,
-                        opacity: { duration: 0.1 },
-                      }}
-                    >
-                      {/* Bare → icon via the Button's icon slot (mirror of Back). */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        trailingIcon={ArrowRightKey}
-                        onClick={handleSkip}
-                        // Arrow is desktop-only; restore symmetric padding on
-                        // mobile where it's hidden, tighten for the icon on ≥sm.
-                        className="pr-3 sm:pr-[6px]"
+                </div>
+                <div className="relative flex items-center gap-2">
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    {showSkip && (
+                      <motion.div
+                        key="skip"
+                        layout="position"
+                        initial={{ opacity: 0, scale: 0.85 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.85 }}
+                        transition={{
+                          ...spring.fast,
+                          opacity: { duration: 0.1 },
+                        }}
                       >
-                        {skipLabel}
-                      </Button>
-                    </motion.div>
-                  )}
-                  {showSubmit && (
-                    <motion.div
-                      key="continue"
-                      layout="position"
-                      initial={{ opacity: 0, scale: 0.85 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.85 }}
-                      transition={{
-                        ...spring.fast,
-                        opacity: { duration: 0.1 },
-                      }}
-                    >
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={
-                          isFreeText ? handleOtherSubmit : handleMultiNext
-                        }
-                        disabled={
-                          isFreeText
-                            ? otherText.trim().length === 0
-                            : selectedIds.length === 0 &&
-                              otherText.trim().length === 0
-                        }
-                        // The shortcut chip acts as a trailing icon, so tighten
-                        // the right padding to match the Button's iconRight on
-                        // desktop. The chip is hidden on mobile, so restore
-                        // symmetric padding there.
-                        className="pr-3 sm:pr-[6px]"
+                        {/* Bare → icon via the Button's icon slot (mirror of Back). */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          trailingIcon={ArrowRightKey}
+                          onClick={handleSkip}
+                          // Arrow is desktop-only; restore symmetric padding on
+                          // mobile where it's hidden, tighten for the icon on ≥sm.
+                          className="pr-3 sm:pr-[6px]"
+                        >
+                          {skipLabel}
+                        </Button>
+                      </motion.div>
+                    )}
+                    {showSubmit && (
+                      <motion.div
+                        key="continue"
+                        layout="position"
+                        initial={{ opacity: 0, scale: 0.85 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.85 }}
+                        transition={{
+                          ...spring.fast,
+                          opacity: { duration: 0.1 },
+                        }}
                       >
-                        <span className="inline-flex items-center gap-1.5">
-                          {question.nextLabel ??
-                            (safeIndex >= total - 1 ? "Finish" : "Continue")}
-                          {/* Shortcut hint — replaces the trailing arrow. Sits
-                              inside the button so it dims with the disabled
-                              state. ⌘↵ on macOS, ⌃↵ elsewhere. Desktop-only:
-                              mobile has no physical keyboard to trigger it. */}
-                          <span className="hidden sm:contents">
-                            <ShortcutChip shape={shape} tone="inverted">
-                              {isMac ? "⌘" : "⌃"}
-                              {"↵"}
-                            </ShortcutChip>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={
+                            isFreeText ? handleOtherSubmit : handleMultiNext
+                          }
+                          disabled={
+                            isFreeText
+                              ? otherText.trim().length === 0
+                              : selectedIds.length === 0 &&
+                                otherText.trim().length === 0
+                          }
+                          // The shortcut chip acts as a trailing icon, so tighten
+                          // the right padding to match the Button's iconRight on
+                          // desktop. The chip is hidden on mobile, so restore
+                          // symmetric padding there.
+                          className="pr-3 sm:pr-[6px]"
+                        >
+                          <span className="inline-flex items-center gap-1.5">
+                            {question.nextLabel ??
+                              (safeIndex >= total - 1 ? "Finish" : "Continue")}
+                            {/* Shortcut hint — replaces the trailing arrow. Sits
+                                inside the button so it dims with the disabled
+                                state. ⌘↵ on macOS, ⌃↵ elsewhere. Desktop-only:
+                                mobile has no physical keyboard to trigger it. */}
+                            <span className="hidden sm:contents">
+                              <ShortcutChip shape={shape} tone="inverted">
+                                {isMac ? "⌘" : "⌃"}
+                                {"↵"}
+                              </ShortcutChip>
+                            </span>
                           </span>
-                        </span>
-                      </Button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                        </Button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </Field.Root>
       </div>
     );
   }
@@ -1378,6 +1543,9 @@ AskUserQuestions.displayName = "AskUserQuestions";
 // Small keycap showing the keyboard shortcut for an action, so Back (←),
 // Skip (→) and Continue (⌘↵ / ⌃↵) all read consistently. `tone="inverted"`
 // sits on the dark primary button; the default reads on quiet ghost buttons.
+// suppressHydrationWarning: the ⌘/⌃ glyph is platform-detected in a lazy
+// initializer (see isMac), so the server always renders ⌃ while a Mac client
+// renders ⌘ — a benign one-character text mismatch on hydration.
 function ShortcutChip({
   children,
   tone = "muted",
@@ -1390,6 +1558,7 @@ function ShortcutChip({
   return (
     <kbd
       aria-hidden
+      suppressHydrationWarning
       className={cn(
         "inline-flex items-center justify-center gap-0.5 px-1 min-w-[18px] h-[18px] text-[11px] leading-none font-sans tracking-wide",
         tone === "inverted"
@@ -1411,8 +1580,6 @@ interface RowProps {
   role: "radio" | "checkbox" | null;
   isSelected: boolean;
   tabIndex: number;
-  onFocusVisible: () => void;
-  onBlurAny: () => void;
   onClick: () => void;
   onKeyDown?: (e: ReactKeyboardEvent<HTMLDivElement>) => void;
   shape: ReturnType<typeof useShape>;
@@ -1437,6 +1604,11 @@ interface RowProps {
    *  the leading edge of the row; the trailing arrow slot still sits on
    *  the right. Defaults to "right". */
   chipPosition?: "left" | "right";
+  /** Hidden sr-only Base UI Radio/Checkbox primitive that binds the row to
+   *  its Radio.Group / Checkbox.Group parent. Kept out of the a11y tree
+   *  (aria-hidden) and the tab order (tabIndex -1) — the visible wrapper is
+   *  the radio/checkbox as far as AT and keyboard users are concerned. */
+  hiddenControl?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -1446,8 +1618,6 @@ function Row({
   role,
   isSelected,
   tabIndex,
-  onFocusVisible,
-  onBlurAny,
   onClick,
   onKeyDown,
   shape,
@@ -1461,6 +1631,7 @@ function Row({
   bodyLayout = "inline",
   topAlign = false,
   chipPosition = "right",
+  hiddenControl,
   children,
   ...aria
 }: RowProps) {
@@ -1586,12 +1757,20 @@ function Row({
       aria-checked={role === "radio" || role === "checkbox" ? !!aria["aria-checked"] : undefined}
       aria-label={ariaLabel}
       tabIndex={tabIndex}
-      onFocus={(e) => {
-        if ((e.target as HTMLElement).matches(":focus-visible")) {
-          onFocusVisible();
-        }
+      onMouseDown={(e) => {
+        // A click landing on the hidden sr-only primitive would natively
+        // focus it (nearest focusable ancestor of the click target), after
+        // which keyboard nav dead-zones on an invisible control. Prevent the
+        // native focus move (click still fires) and land focus on the row
+        // instead. Skip genuinely interactive children — the Other row's
+        // textarea must keep taking focus from clicks.
+        const interactive = (e.target as HTMLElement).closest(
+          'button:not([tabindex="-1"]), a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (interactive && interactive !== e.currentTarget) return;
+        e.preventDefault();
+        e.currentTarget.focus();
       }}
-      onBlur={onBlurAny}
       onClick={onClick}
       onKeyDown={onKeyDown}
       className={cn(
@@ -1639,6 +1818,10 @@ function Row({
       </span>
 
       {chipPosition === "right" ? chipSlot : rightArrowSlot}
+
+      {/* Hidden Base UI Radio/Checkbox primitive (see RowProps) — rendered
+          last so it never disturbs the flex layout of chip/body/arrow. */}
+      {hiddenControl}
     </div>
   );
 }

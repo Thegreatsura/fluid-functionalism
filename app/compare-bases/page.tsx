@@ -84,20 +84,34 @@ import {
   RadioItem as BaseRadioItem,
 } from "@/registry/base/radio-group";
 
+import {
+  Select as RadixSelect,
+  SelectTrigger as RadixSelectTrigger,
+  SelectContent as RadixSelectContent,
+  SelectItem as RadixSelectItem,
+} from "@/registry/radix/select";
+import {
+  Select as BaseSelect,
+  SelectTrigger as BaseSelectTrigger,
+  SelectContent as BaseSelectContent,
+  SelectItem as BaseSelectItem,
+} from "@/registry/base/select";
+
 // Single-source components built on Base UI primitives — no Radix flavor,
 // shown once, spanning both columns.
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@/registry/default/select";
 import { ColorPickerPopover } from "@/registry/default/color-picker";
 import {
-  DropdownMenu,
-  DropdownTrigger,
-  DropdownContent,
-} from "@/registry/default/dropdown";
+  DropdownMenu as RadixDropdownMenu,
+  DropdownTrigger as RadixDropdownTrigger,
+  DropdownContent as RadixDropdownContent,
+} from "@/registry/radix/dropdown";
+import {
+  DropdownMenu as BaseDropdownMenu,
+  DropdownTrigger as BaseDropdownTrigger,
+  DropdownContent as BaseDropdownContent,
+} from "@/registry/base/dropdown";
+// MenuItem is shared by both dropdown flavors (it renders through the
+// context-provided renderMenuItem), so a single import serves both columns.
 import { MenuItem } from "@/registry/default/menu-item";
 import {
   TabsSubtle as RadixTabsSubtle,
@@ -194,9 +208,12 @@ export default function CompareBasesPage() {
   const [radioA, setRadioA] = useState("a");
   const [radioB, setRadioB] = useState("a");
 
+  const [viewA, setViewA] = useState(0);
+  const [viewB, setViewB] = useState(0);
+
   // Single-source section state
-  const [fruit, setFruit] = useState("");
-  const [view, setView] = useState(0);
+  const [fruitA, setFruitA] = useState("");
+  const [fruitB, setFruitB] = useState("");
   const [tabA, setTabA] = useState(0);
   const [tabB, setTabB] = useState(0);
   const [searchValue, setSearchValue] = useState("");
@@ -444,6 +461,50 @@ export default function CompareBasesPage() {
         </BaseThinkingSteps>
       </Row>
 
+      <Row label="Dropdown Menu">
+        <RadixDropdownMenu>
+          <RadixDropdownTrigger
+            render={<RadixButton variant="secondary">Open menu</RadixButton>}
+          />
+          <RadixDropdownContent checkedIndex={viewA}>
+            <MenuItem index={0} icon={SquareLibrary} label="Teamspaces" checked={viewA === 0} onSelect={() => setViewA(0)} />
+            <MenuItem index={1} icon={Clock} label="Recents" checked={viewA === 1} onSelect={() => setViewA(1)} />
+            <MenuItem index={2} icon={Star} label="Favorites" checked={viewA === 2} onSelect={() => setViewA(2)} />
+          </RadixDropdownContent>
+        </RadixDropdownMenu>
+        <BaseDropdownMenu>
+          <BaseDropdownTrigger
+            render={<BaseButton variant="secondary">Open menu</BaseButton>}
+          />
+          <BaseDropdownContent checkedIndex={viewB}>
+            <MenuItem index={0} icon={SquareLibrary} label="Teamspaces" checked={viewB === 0} onSelect={() => setViewB(0)} />
+            <MenuItem index={1} icon={Clock} label="Recents" checked={viewB === 1} onSelect={() => setViewB(1)} />
+            <MenuItem index={2} icon={Star} label="Favorites" checked={viewB === 2} onSelect={() => setViewB(2)} />
+          </BaseDropdownContent>
+        </BaseDropdownMenu>
+      </Row>
+
+      <Row label="Select">
+        <RadixSelect value={fruitA} onValueChange={setFruitA}>
+          <RadixSelectTrigger placeholder="Select a fruit…" />
+          <RadixSelectContent>
+            <RadixSelectItem index={0} value="apple">Apple</RadixSelectItem>
+            <RadixSelectItem index={1} value="banana">Banana</RadixSelectItem>
+            <RadixSelectItem index={2} value="cherry">Cherry</RadixSelectItem>
+            <RadixSelectItem index={3} value="mango">Mango</RadixSelectItem>
+          </RadixSelectContent>
+        </RadixSelect>
+        <BaseSelect value={fruitB} onValueChange={setFruitB}>
+          <BaseSelectTrigger placeholder="Select a fruit…" />
+          <BaseSelectContent>
+            <BaseSelectItem index={0} value="apple">Apple</BaseSelectItem>
+            <BaseSelectItem index={1} value="banana">Banana</BaseSelectItem>
+            <BaseSelectItem index={2} value="cherry">Cherry</BaseSelectItem>
+            <BaseSelectItem index={3} value="mango">Mango</BaseSelectItem>
+          </BaseSelectContent>
+        </BaseSelect>
+      </Row>
+
       {/* ── Single-source components ─────────────────────────────────── */}
       <section className="pt-24 pb-4">
         <h2
@@ -454,35 +515,10 @@ export default function CompareBasesPage() {
         </h2>
         <p className="text-sm text-muted-foreground mt-2 max-w-[560px]">
           These components ship as a single source sitting on Base UI
-          primitives — Select, Menu, Popover, Field — and are
+          primitives — Select, Popover, Field — and are
           used as-is under either flavor.
         </p>
       </section>
-
-      <SingleRow label="Select">
-        <Select value={fruit} onValueChange={setFruit}>
-          <SelectTrigger placeholder="Select a fruit…" />
-          <SelectContent>
-            <SelectItem index={0} value="apple">Apple</SelectItem>
-            <SelectItem index={1} value="banana">Banana</SelectItem>
-            <SelectItem index={2} value="cherry">Cherry</SelectItem>
-            <SelectItem index={3} value="mango">Mango</SelectItem>
-          </SelectContent>
-        </Select>
-      </SingleRow>
-
-      <SingleRow label="Dropdown Menu">
-        <DropdownMenu>
-          <DropdownTrigger
-            render={<RadixButton variant="secondary">Open menu</RadixButton>}
-          />
-          <DropdownContent checkedIndex={view}>
-            <MenuItem index={0} icon={SquareLibrary} label="Teamspaces" checked={view === 0} onSelect={() => setView(0)} />
-            <MenuItem index={1} icon={Clock} label="Recents" checked={view === 1} onSelect={() => setView(1)} />
-            <MenuItem index={2} icon={Star} label="Favorites" checked={view === 2} onSelect={() => setView(2)} />
-          </DropdownContent>
-        </DropdownMenu>
-      </SingleRow>
 
       <SingleRow label="Color Picker">
         <ColorPickerPopover defaultValue="#6B97FF" />

@@ -10,7 +10,7 @@ import {
   SelectGroup,
   SelectLabel,
   SelectSeparator,
-} from "@/registry/default/select";
+} from "@/components/flavored/select";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";

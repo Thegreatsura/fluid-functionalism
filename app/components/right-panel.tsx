@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectContent,
   SelectItem,
-} from "@/registry/default/select";
+} from "@/components/flavored/select";
 import {
   useShape,
   useShapeContext,

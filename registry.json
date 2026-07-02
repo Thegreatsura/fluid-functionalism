@@ -427,7 +427,40 @@
       "name": "dropdown",
       "type": "registry:ui",
       "title": "Dropdown",
-      "description": "Dropdown menu with proximity-based hover tracking, animated selection indicator, and animated focus ring. Renders as an always-visible inline panel or as a triggered popup (DropdownMenu/DropdownTrigger/DropdownContent) built on Base UI Menu with collision-aware positioning, typeahead, and close-on-select. Includes MenuItem sub-component.",
+      "description": "Dropdown menu with proximity hover, animated selection indicator, inline panel or triggered popup with collision-aware positioning, typeahead, and close-on-select. Includes MenuItem. Radix flavor.",
+      "dependencies": [
+        "@radix-ui/react-dropdown-menu",
+        "framer-motion"
+      ],
+      "registryDependencies": [
+        "utils",
+        "springs",
+        "font-weight",
+        "shape-context",
+        "surface-context",
+        "surface-classes",
+        "icon-context",
+        "use-proximity-hover",
+        "elevated"
+      ],
+      "files": [
+        {
+          "path": "registry/radix/dropdown.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/dropdown.tsx"
+        },
+        {
+          "path": "registry/default/menu-item.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/menu-item.tsx"
+        }
+      ]
+    },
+    {
+      "name": "dropdown-base",
+      "type": "registry:ui",
+      "title": "Dropdown",
+      "description": "Dropdown menu with proximity hover, animated selection indicator, inline panel or triggered popup with collision-aware positioning, typeahead, and close-on-select. Includes MenuItem. Base UI flavor.",
       "dependencies": [
         "@base-ui/react",
         "framer-motion"
@@ -445,12 +478,14 @@
       ],
       "files": [
         {
-          "path": "registry/default/dropdown.tsx",
-          "type": "registry:ui"
+          "path": "registry/base/dropdown.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/dropdown.tsx"
         },
         {
           "path": "registry/default/menu-item.tsx",
-          "type": "registry:ui"
+          "type": "registry:ui",
+          "target": "components/ui/menu-item.tsx"
         }
       ]
     },
@@ -1060,7 +1095,36 @@
       "name": "select",
       "type": "registry:ui",
       "title": "Select",
-      "description": "Animated select menu built on Base UI Select \u2014 collision-aware positioning, typeahead, and full combobox ARIA \u2014 with proximity hover, bordered/borderless variants, optional leading icons, spring-animated popover, and animated checkmark indicator.",
+      "description": "Animated select menu with collision-aware positioning, typeahead, proximity hover, spring-animated popover, and animated checkmark. Radix flavor.",
+      "dependencies": [
+        "@radix-ui/react-select",
+        "framer-motion",
+        "class-variance-authority",
+        "lucide-react"
+      ],
+      "registryDependencies": [
+        "utils",
+        "springs",
+        "shape-context",
+        "surface-context",
+        "surface-classes",
+        "icon-context",
+        "use-proximity-hover",
+        "elevated"
+      ],
+      "files": [
+        {
+          "path": "registry/radix/select.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/select.tsx"
+        }
+      ]
+    },
+    {
+      "name": "select-base",
+      "type": "registry:ui",
+      "title": "Select",
+      "description": "Animated select menu with collision-aware positioning, typeahead, proximity hover, spring-animated popover, and animated checkmark. Base UI flavor.",
       "dependencies": [
         "@base-ui/react",
         "framer-motion",
@@ -1079,8 +1143,9 @@
       ],
       "files": [
         {
-          "path": "registry/default/select.tsx",
-          "type": "registry:ui"
+          "path": "registry/base/select.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/select.tsx"
         }
       ]
     },

@@ -13,17 +13,20 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { Popover } from "@base-ui/react/popover";
+import { Menu } from "@base-ui/react/menu";
+import { NumberField } from "@base-ui/react/number-field";
 import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
-import { useShape } from "@/lib/shape-context";
+import { useShape, shapeMap } from "@/lib/shape-context";
 import { useSurface, SurfaceProvider } from "@/lib/surface-context";
 import { surfaceClasses } from "@/lib/surface-classes";
 import { useIcon } from "@/lib/icon-context";
+import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { Elevated } from "@/lib/elevated";
 import { Slider } from "@/registry/radix/slider";
-import { Dropdown, useDropdown } from "@/registry/default/dropdown";
 import { Tooltip } from "@/registry/radix/tooltip";
 
 // ---------------------------------------------------------------------------
@@ -338,6 +341,36 @@ function parseColor(input: string): { r: number; g: number; b: number; a: number
   return null;
 }
 
+// Browser-assisted fallback for color strings the manual parser doesn't cover
+// (named CSS colors like "red" / "tomato", etc.). A canvas 2d context
+// round-trips any valid CSS color through `fillStyle`, which serializes to a
+// hex or rgba() string that parseColor understands. Must only be called from
+// event handlers or effects — never at module scope or during render — so SSR
+// stays safe.
+let cssColorCtx: CanvasRenderingContext2D | null = null;
+
+function resolveCssColor(input: string): { r: number; g: number; b: number; a: number } | null {
+  const direct = parseColor(input);
+  if (direct) return direct;
+  const s = input.trim();
+  if (!s || typeof document === "undefined") return null;
+  if (!cssColorCtx) {
+    cssColorCtx = document.createElement("canvas").getContext("2d");
+    if (!cssColorCtx) return null;
+  }
+  const ctx = cssColorCtx;
+  // An invalid color assignment leaves fillStyle untouched, so round-trip from
+  // two different starting values to detect rejection.
+  ctx.fillStyle = "#000000";
+  ctx.fillStyle = s;
+  const first = String(ctx.fillStyle);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = s;
+  const second = String(ctx.fillStyle);
+  if (first !== second) return null;
+  return parseColor(first);
+}
+
 function buildParsed(h: number, s: number, v: number, a: number): ParsedColor {
   const { r, g, b } = hsvToRgb(h, s, v);
   const hsl = rgbToHsl(r, g, b);
@@ -393,7 +426,9 @@ interface SaturationSquareProps {
 
 function SaturationSquare({ h, s, v, onChange }: SaturationSquareProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
+  // State (not a ref): this gates the ghost hover cursor during render, and a
+  // ref mutation wouldn't re-render, letting the ghost stick around.
+  const [dragging, setDragging] = useState(false);
   const hasMoved = useRef(false);
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -424,7 +459,7 @@ function SaturationSquare({ h, s, v, onChange }: SaturationSquareProps) {
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (e.pointerType === "mouse" && e.button !== 0) return;
       e.preventDefault();
-      dragging.current = true;
+      setDragging(true);
       hasMoved.current = false;
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       updateFromPointer(e.clientX, e.clientY);
@@ -435,15 +470,15 @@ function SaturationSquare({ h, s, v, onChange }: SaturationSquareProps) {
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       updateCursorPos(e.clientX, e.clientY);
-      if (!dragging.current) return;
+      if (!dragging) return;
       hasMoved.current = true;
       updateFromPointer(e.clientX, e.clientY);
     },
-    [updateFromPointer, updateCursorPos]
+    [dragging, updateFromPointer, updateCursorPos]
   );
 
   const onPointerUp = useCallback(() => {
-    dragging.current = false;
+    setDragging(false);
     hasMoved.current = false;
   }, []);
 
@@ -519,7 +554,7 @@ function SaturationSquare({ h, s, v, onChange }: SaturationSquareProps) {
           backgroundColor: thumbColor,
         }}
       />
-      {hovered && !dragging.current && cursorPos && (
+      {hovered && !dragging && cursorPos && (
         <div
           className="absolute pointer-events-none rounded-full"
           style={{
@@ -608,7 +643,15 @@ function AlphaSlider({
 }
 
 // ---------------------------------------------------------------------------
-// FormatDropdown (custom, lightweight)
+// FormatDropdown
+//
+// Built on Base UI's Menu primitive, which owns trigger wiring, positioning
+// (anchor tracking + collision flipping — the old hand-rolled version computed
+// coordinates once on open and detached from the trigger on scroll),
+// dismissal, roving highlight, and typeahead. Menu.RadioGroup/RadioItem carry
+// the radio semantics. The Fluid Functionalism layer keeps the proximity-hover
+// overlays and the spring open/close animation (actionsRef deferred unmount —
+// the same verified pattern as select.tsx / dropdown.tsx).
 // ---------------------------------------------------------------------------
 
 const FORMAT_LABELS: Record<ColorFormat, string> = {
@@ -618,47 +661,57 @@ const FORMAT_LABELS: Record<ColorFormat, string> = {
   oklch: "OKLCH",
 };
 
+const FORMATS = ["hex", "rgb", "hsl", "oklch"] as const;
+
+// Popup surfaces opt out of the global pill/rounded shape — same rationale as
+// the Dropdown component (pill radii distort perceived padding at this scale).
+const menuShape = shapeMap.rounded;
+
+interface FormatMenuContextValue {
+  registerItem: (index: number, element: HTMLElement | null) => void;
+  activeIndex: number | null;
+  checkedIndex?: number;
+}
+
+const FormatMenuContext = createContext<FormatMenuContextValue | null>(null);
+
 function FormatItem({
   index,
+  value,
   label,
   checked,
-  onSelect,
 }: {
   index: number;
+  value: ColorFormat;
   label: string;
   checked: boolean;
-  onSelect: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const { registerItem, activeIndex, checkedIndex } = useDropdown();
+  const menuCtx = useContext(FormatMenuContext);
   const shape = useShape();
 
   useEffect(() => {
-    registerItem(index, ref.current);
-    return () => registerItem(index, null);
-  }, [index, registerItem]);
+    menuCtx?.registerItem(index, ref.current);
+    return () => menuCtx?.registerItem(index, null);
+  }, [index, menuCtx]);
 
-  const isActive = activeIndex === index;
+  const isActive = menuCtx?.activeIndex === index;
 
   return (
-    <div
-      ref={ref}
-      data-proximity-index={index}
-      role="menuitemradio"
-      aria-checked={checked}
-      aria-label={label}
-      tabIndex={index === (checkedIndex ?? 0) ? 0 : -1}
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === " " || e.key === "Enter") {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
-      className={cn(
-        `relative z-10 flex items-center px-3 py-2 text-[13px] cursor-pointer outline-none`,
-        shape.item
-      )}
+    <Menu.RadioItem
+      value={value}
+      label={label}
+      closeOnClick
+      render={
+        <div
+          ref={ref}
+          data-proximity-index={index}
+          className={cn(
+            `relative z-10 flex items-center px-3 py-2 text-[13px] cursor-pointer outline-none`,
+            shape.item
+          )}
+        />
+      }
     >
       <span className="inline-grid">
         <span
@@ -682,7 +735,7 @@ function FormatItem({
           {label}
         </span>
       </span>
-    </div>
+    </Menu.RadioItem>
   );
 }
 
@@ -700,81 +753,74 @@ function FormatDropdown({
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : internalOpen;
-  const setOpen: (next: boolean | ((prev: boolean) => boolean)) => void = (next) => {
-    if (isControlled) return;
-    setInternalOpen(next);
-  };
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<{ unmount: () => void; close: () => void } | null>(null);
   const shape = useShape();
   const portalContainer = useContext(ColorPickerPortalContainerContext);
-  const [pos, setPos] = useState<
-    | { mode: "fixed"; top: number; left: number; width: number }
-    | { mode: "absolute"; top: number; left: number; width: number }
-    | null
-  >(null);
-
-  useEffect(() => {
-    if (!open || !triggerRef.current) {
-      setPos(null);
-      return;
-    }
-    const triggerRect = triggerRef.current.getBoundingClientRect();
-    if (portalContainer) {
-      const cRect = portalContainer.getBoundingClientRect();
-      const cWidth = portalContainer.offsetWidth;
-      const scale = cWidth > 0 ? cRect.width / cWidth : 1;
-      // Convert viewport coords into the portal container's pre-scale frame so
-      // an ancestor CSS scale visually scales the menu alongside the trigger.
-      setPos({
-        mode: "absolute",
-        top: (triggerRect.bottom - cRect.top) / scale + 6,
-        left: (triggerRect.left - cRect.left) / scale,
-        width: triggerRect.width / scale,
-      });
-    } else {
-      setPos({
-        mode: "fixed",
-        top: triggerRect.bottom + 6,
-        left: triggerRect.left,
-        width: triggerRect.width,
-      });
-    }
-  }, [open, portalContainer]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (
-        !panelRef.current?.contains(e.target as Node) &&
-        !triggerRef.current?.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  const formats = ["hex", "rgb", "hsl", "oklch"] as const;
-  const checkedIdx = formats.indexOf(value);
+  const containerRef = useRef<HTMLDivElement>(null);
   const ChevronDownIcon = useIcon("chevron-down");
 
+  const {
+    activeIndex,
+    setActiveIndex,
+    itemRects,
+    sessionRef,
+    handlers,
+    registerItem,
+    measureItems,
+  } = useProximityHover(containerRef);
+
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+
+  // Release Base UI's deferred unmount once the exit tween has played.
+  // onAnimationComplete on the motion.div is the primary signal; this timeout
+  // is a fallback for throttled/background tabs where rAF-driven animation
+  // callbacks can stall (spring.fast.exit is 60ms — 120ms covers it with
+  // margin without holding the portal open perceptibly).
+  useEffect(() => {
+    if (open) return;
+    const id = setTimeout(() => actionsRef.current?.unmount(), 120);
+    return () => clearTimeout(id);
+  }, [open]);
+
+  // Measure items once the popup has mounted.
+  useEffect(() => {
+    if (!open) return;
+    // Double rAF: first waits for React commit, second for layout
+    let inner: number;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => {
+        measureItems();
+      });
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
+  }, [open, measureItems]);
+
+  const checkedIndex = FORMATS.indexOf(value);
+  const activeRect = activeIndex !== null ? itemRects[activeIndex] : null;
+  const checkedRect = checkedIndex !== -1 ? itemRects[checkedIndex] : null;
+  const focusRect = focusedIndex !== null ? itemRects[focusedIndex] : null;
+  const isHoveringOther = activeIndex !== null && activeIndex !== checkedIndex;
+
+  const menuCtx = useMemo(
+    () => ({ registerItem, activeIndex, checkedIndex }),
+    [registerItem, activeIndex, checkedIndex]
+  );
+
   return (
-    <>
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="menu"
-        aria-expanded={open}
+    <Menu.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (!isControlled) setInternalOpen(next);
+      }}
+      actionsRef={actionsRef}
+      // Non-modal: the page keeps scrolling and the Positioner tracks the
+      // anchor, so the popup follows its trigger instead of detaching.
+      modal={false}
+    >
+      <Menu.Trigger
         className={cn(
           "flex items-center justify-between gap-2 h-9 px-3 text-[13px] bg-transparent hover:bg-hover hover:text-foreground transition-colors duration-80 outline-none focus-visible:ring-1 focus-visible:ring-[#6B97FF] cursor-pointer",
           open ? "bg-active text-foreground" : "text-muted-foreground active:bg-active",
@@ -791,47 +837,179 @@ function FormatDropdown({
             open && "rotate-180"
           )}
         />
-      </button>
-      {open && pos && typeof document !== "undefined" && createPortal(
-        <div
-          style={{
-            position: pos.mode,
-            top: pos.top,
-            left: pos.left,
-            zIndex: 60,
-          }}
+      </Menu.Trigger>
+      <Menu.Portal container={portalContainer ?? undefined}>
+        <Menu.Positioner
+          side="bottom"
+          align="start"
+          sideOffset={6}
+          className="z-[60] outline-none"
         >
           <motion.div
-            ref={panelRef}
             initial={{ opacity: 0, y: -4, scaleY: 0.96 }}
-            animate={{ opacity: 1, y: 0, scaleY: 1 }}
-            transition={spring.fast}
-            style={{ transformOrigin: "top center", minWidth: pos.width }}
+            animate={
+              open
+                ? { opacity: 1, y: 0, scaleY: 1 }
+                : { opacity: 0, y: -4, scaleY: 0.96 }
+            }
+            transition={open ? spring.fast : spring.fast.exit}
+            style={{ transformOrigin: "top center" }}
+            // Base UI defers unmount while actionsRef is set; release it once
+            // the exit spring has finished so the close animation fully plays.
+            onAnimationComplete={() => {
+              if (!open) actionsRef.current?.unmount();
+            }}
           >
-            <Dropdown checkedIndex={checkedIdx} className="!w-auto min-w-full">
-              {formats.map((fmt, i) => (
-                <FormatItem
-                  key={fmt}
-                  index={i}
-                  label={FORMAT_LABELS[fmt]}
-                  checked={value === fmt}
-                  onSelect={() => {
-                    onChange(fmt);
-                    setOpen(false);
-                  }}
-                />
-              ))}
-            </Dropdown>
+            <FormatMenuContext.Provider value={menuCtx}>
+              <Menu.Popup
+                render={
+                  <Elevated
+                    offset={2}
+                    shadowLevel={3}
+                    ref={(node: HTMLDivElement | null) => {
+                      (
+                        containerRef as React.MutableRefObject<HTMLDivElement | null>
+                      ).current = node;
+                    }}
+                  />
+                }
+                onMouseEnter={() => {
+                  handlers.onMouseEnter();
+                  setFocusedIndex(null);
+                }}
+                onMouseMove={handlers.onMouseMove}
+                onMouseLeave={handlers.onMouseLeave}
+                onFocus={(e) => {
+                  const indexAttr = (e.target as HTMLElement)
+                    .closest("[data-proximity-index]")
+                    ?.getAttribute("data-proximity-index");
+                  if (indexAttr != null) {
+                    const idx = Number(indexAttr);
+                    setActiveIndex(idx);
+                    setFocusedIndex(
+                      (e.target as HTMLElement).matches(":focus-visible")
+                        ? idx
+                        : null
+                    );
+                  }
+                }}
+                onBlur={(e) => {
+                  if (containerRef.current?.contains(e.relatedTarget as Node))
+                    return;
+                  setFocusedIndex(null);
+                  setActiveIndex(null);
+                }}
+                className={cn(
+                  `relative flex flex-col gap-0.5 min-w-[var(--anchor-width)] ${menuShape.container} p-1 select-none outline-none`
+                )}
+              >
+                {/* Selected background */}
+                <AnimatePresence>
+                  {checkedRect && (
+                    <motion.div
+                      className={`absolute ${menuShape.bg} bg-active pointer-events-none`}
+                      initial={false}
+                      animate={{
+                        top: checkedRect.top,
+                        left: checkedRect.left,
+                        width: checkedRect.width,
+                        height: checkedRect.height,
+                        opacity: isHoveringOther ? 0.8 : 1,
+                      }}
+                      exit={{ opacity: 0, transition: spring.moderate.exit }}
+                      transition={{
+                        ...spring.moderate,
+                        opacity: { duration: 0.08 },
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
+
+                {/* Hover background */}
+                <AnimatePresence>
+                  {activeRect && (
+                    <motion.div
+                      key={sessionRef.current}
+                      className={`absolute ${menuShape.bg} bg-hover pointer-events-none`}
+                      initial={{
+                        opacity: 0,
+                        top: checkedRect?.top ?? activeRect.top,
+                        left: checkedRect?.left ?? activeRect.left,
+                        width: checkedRect?.width ?? activeRect.width,
+                        height: checkedRect?.height ?? activeRect.height,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        top: activeRect.top,
+                        left: activeRect.left,
+                        width: activeRect.width,
+                        height: activeRect.height,
+                      }}
+                      exit={{ opacity: 0, transition: spring.fast.exit }}
+                      transition={{
+                        ...spring.fast,
+                        opacity: { duration: 0.08 },
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
+
+                {/* Focus ring */}
+                <AnimatePresence>
+                  {focusRect && (
+                    <motion.div
+                      className={`absolute ${menuShape.focusRing} pointer-events-none z-20 border border-[#6B97FF]`}
+                      initial={false}
+                      animate={{
+                        left: focusRect.left - 2,
+                        top: focusRect.top - 2,
+                        width: focusRect.width + 4,
+                        height: focusRect.height + 4,
+                      }}
+                      exit={{ opacity: 0, transition: spring.fast.exit }}
+                      transition={{
+                        ...spring.fast,
+                        opacity: { duration: 0.08 },
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
+
+                {/* display: contents keeps items direct flex children of the
+                    popup so proximity measurement and gap layout still work,
+                    while the group provides the radio value context. */}
+                <Menu.RadioGroup
+                  value={value}
+                  onValueChange={(next) => onChange(next as ColorFormat)}
+                  className="contents"
+                >
+                  {FORMATS.map((fmt, i) => (
+                    <FormatItem
+                      key={fmt}
+                      index={i}
+                      value={fmt}
+                      label={FORMAT_LABELS[fmt]}
+                      checked={value === fmt}
+                    />
+                  ))}
+                </Menu.RadioGroup>
+              </Menu.Popup>
+            </FormatMenuContext.Provider>
           </motion.div>
-        </div>,
-        portalContainer ?? document.body
-      )}
-    </>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }
 
 // ---------------------------------------------------------------------------
-// ColorInput (a single styled text input, used for hex)
+// ColorInput
+//
+// Two internal variants behind one API:
+// - TextColorInput: draft-based text input (hex).
+// - ScrubColorInput: numeric channels, built on Base UI's NumberField whose
+//   ScrubArea provides pointer-lock scrubbing with a virtual cursor,
+//   replacing the old hand-rolled pointer-capture logic.
 // ---------------------------------------------------------------------------
 
 interface ColorInputProps {
@@ -855,7 +1033,7 @@ interface ColorInputProps {
   wrap?: boolean;
 }
 
-const ColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
+const TextColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
   (
     {
       value,
@@ -871,7 +1049,6 @@ const ColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
       nudgeShiftStep,
       hasPercent = false,
       decimals,
-      scrubbable = false,
       min,
       max,
       wrap = false,
@@ -879,30 +1056,12 @@ const ColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
     ref
   ) => {
     const [draft, setDraft] = useState(value);
-    const [editing, setEditing] = useState(false);
     const interactingRef = useRef(false);
-    const inputRef = useRef<HTMLInputElement | null>(null);
-    const wrapperRef = useRef<HTMLDivElement>(null);
-    const scrubRef = useRef<{
-      startX: number;
-      startValue: number;
-      scrubbing: boolean;
-      pointerId: number;
-    } | null>(null);
     const shape = useShape();
 
     useEffect(() => {
       if (!interactingRef.current) setDraft(value);
     }, [value]);
-
-    const setInputRef = useCallback(
-      (node: HTMLInputElement | null) => {
-        inputRef.current = node;
-        if (typeof ref === "function") ref(node);
-        else if (ref) (ref as React.MutableRefObject<HTMLInputElement | null>).current = node;
-      },
-      [ref]
-    );
 
     const formatNumber = (n: number) =>
       decimals != null ? n.toFixed(decimals) : String(Math.round(n));
@@ -929,68 +1088,11 @@ const ColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
       commitNumber(cur + direction * baseStep);
     };
 
-    const onWrapperPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!scrubbable || editing) return;
-      if (e.pointerType === "mouse" && e.button !== 0) return;
-      const cur = parseFloat(draft.replace("%", ""));
-      if (Number.isNaN(cur)) return;
-      scrubRef.current = {
-        startX: e.clientX,
-        startValue: cur,
-        scrubbing: false,
-        pointerId: e.pointerId,
-      };
-      // Block focus while we wait to see if this is a click or a drag
-      e.preventDefault();
-      wrapperRef.current?.setPointerCapture(e.pointerId);
-    };
-
-    const onWrapperPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-      const state = scrubRef.current;
-      if (!state) return;
-      const dx = e.clientX - state.startX;
-      if (!state.scrubbing && Math.abs(dx) > 3) {
-        state.scrubbing = true;
-        interactingRef.current = true;
-      }
-      if (state.scrubbing) {
-        const baseStep = e.shiftKey ? (nudgeShiftStep ?? 10) : (nudgeStep ?? 1);
-        commitNumber(state.startValue + dx * baseStep);
-      }
-    };
-
-    const onWrapperPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-      const state = scrubRef.current;
-      if (!state) return;
-      scrubRef.current = null;
-      try {
-        wrapperRef.current?.releasePointerCapture(e.pointerId);
-      } catch {}
-      if (state.scrubbing) {
-        interactingRef.current = false;
-        // Sync draft back to the (possibly clamped) value from parent
-        setDraft(value);
-        return;
-      }
-      // Click without drag → enter edit mode and focus the input
-      setEditing(true);
-      requestAnimationFrame(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      });
-    };
-
     return (
       <div
-        ref={wrapperRef}
-        onPointerDown={onWrapperPointerDown}
-        onPointerMove={onWrapperPointerMove}
-        onPointerUp={onWrapperPointerUp}
-        onPointerCancel={onWrapperPointerUp}
         className={cn(
           "flex items-center h-9 px-2 bg-transparent hover:bg-hover active:bg-active transition-colors duration-80 focus-within:ring-1 focus-within:ring-[#6B97FF] select-none",
           shape.input,
-          scrubbable && !editing && "cursor-ew-resize",
           className
         )}
         style={{ width }}
@@ -1001,17 +1103,15 @@ const ColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
           </span>
         )}
         <input
-          ref={setInputRef}
+          ref={ref}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onFocus={(e) => {
             interactingRef.current = true;
-            setEditing(true);
             e.currentTarget.select();
           }}
           onBlur={() => {
             interactingRef.current = false;
-            setEditing(false);
             if (draft !== value) {
               const numeric = parseFloat(draft.replace("%", ""));
               if (!Number.isNaN(numeric) && (min != null || max != null)) {
@@ -1041,7 +1141,6 @@ const ColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
             "flex-1 min-w-0 bg-transparent text-foreground text-[13px] outline-none tabular-nums",
             align === "center" && "text-center",
             align === "right" && "text-right",
-            scrubbable && !editing && "pointer-events-none",
             inputClassName
           )}
           style={{ fontVariationSettings: fontWeights.medium }}
@@ -1049,6 +1148,232 @@ const ColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
       </div>
     );
   }
+);
+
+TextColorInput.displayName = "TextColorInput";
+
+const ScrubColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
+  (
+    {
+      value,
+      onCommit,
+      ariaLabel,
+      width,
+      className,
+      inputClassName,
+      align = "left",
+      prefix,
+      inputMode = "numeric",
+      nudgeStep,
+      nudgeShiftStep,
+      hasPercent = false,
+      decimals,
+      min,
+      max,
+      wrap = false,
+    },
+    ref
+  ) => {
+    const shape = useShape();
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const [editing, setEditing] = useState(false);
+    // Set on pointerdown inside the scrub area (capture phase, before Base UI
+    // focuses the input for scrubbing) so onFocus can tell scrub-focus apart
+    // from keyboard/programmatic focus.
+    const pointerDownRef = useRef(false);
+
+    const numeric = parseFloat(String(value).replace("%", ""));
+    const fieldValue = Number.isNaN(numeric) ? null : numeric;
+
+    const format = useMemo(() => {
+      const f: Intl.NumberFormatOptions = { useGrouping: false };
+      if (decimals != null) {
+        f.minimumFractionDigits = decimals;
+        f.maximumFractionDigits = decimals;
+      } else {
+        f.maximumFractionDigits = 0;
+      }
+      if (hasPercent) {
+        // style "unit" + unit "percent" renders "50%" while keeping the
+        // numeric value on the 0..100 scale (unlike style "percent").
+        f.style = "unit";
+        f.unit = "percent";
+      }
+      return f;
+    }, [decimals, hasPercent]);
+
+    const setInputRef = useCallback(
+      (node: HTMLInputElement | null) => {
+        inputRef.current = node;
+        if (typeof ref === "function") ref(node);
+        else if (ref) (ref as React.MutableRefObject<HTMLInputElement | null>).current = node;
+      },
+      [ref]
+    );
+
+    const commit = useCallback(
+      (n: number) => {
+        let bounded = n;
+        if (wrap && min != null && max != null) {
+          // Hue-style wrap: NumberField won't wrap natively, so shim it here
+          // (361 → 1, -1 → 359; exactly `max` stays put).
+          if (bounded < min || bounded > max) {
+            const range = max - min;
+            bounded = ((bounded - min) % range + range) % range + min;
+          }
+        } else {
+          if (min != null) bounded = Math.max(min, bounded);
+          if (max != null) bounded = Math.min(max, bounded);
+        }
+        const formatted =
+          decimals != null ? bounded.toFixed(decimals) : String(Math.round(bounded));
+        onCommit(hasPercent ? `${formatted}%` : formatted);
+      },
+      [wrap, min, max, decimals, hasPercent, onCommit]
+    );
+
+    return (
+      <NumberField.Root
+        value={fieldValue}
+        onValueChange={(next, eventDetails) => {
+          if (next == null) return;
+          const reason = eventDetails.reason;
+          // Preserve the old commit-on-blur typing semantics: ignore the
+          // per-keystroke parses and let the input-blur change land the final
+          // value. Keyboard nudges, scrubbing, and wheel commit immediately.
+          if (
+            reason === "input-change" ||
+            reason === "input-paste" ||
+            reason === "input-clear"
+          ) {
+            return;
+          }
+          commit(next);
+        }}
+        onValueCommitted={(_, eventDetails) => {
+          // After a scrub gesture ends, drop the focus Base UI placed on the
+          // input so the field returns to its rest state (matching the old
+          // behavior). For a no-drag press, ScrubArea dispatches a synthetic
+          // click right after this, which re-enters edit mode below.
+          if (eventDetails.reason === "scrub") {
+            pointerDownRef.current = false;
+            inputRef.current?.blur();
+          }
+        }}
+        min={wrap ? undefined : min}
+        max={wrap ? undefined : max}
+        step={nudgeStep ?? 1}
+        largeStep={nudgeShiftStep ?? 10}
+        format={format}
+        className={cn(
+          "flex items-center h-9 bg-transparent hover:bg-hover active:bg-active transition-colors duration-80 focus-within:ring-1 focus-within:ring-[#6B97FF] select-none",
+          shape.input,
+          className
+        )}
+        style={{ width }}
+      >
+        <NumberField.ScrubArea
+          direction="horizontal"
+          pixelSensitivity={1}
+          onPointerDownCapture={() => {
+            pointerDownRef.current = true;
+          }}
+          onClick={() => {
+            // Real clicks and the synthetic click ScrubArea dispatches after a
+            // no-drag press both land here → enter edit mode (focus + select),
+            // like the old click-to-edit behavior.
+            pointerDownRef.current = false;
+            setEditing(true);
+            inputRef.current?.focus();
+            inputRef.current?.select();
+          }}
+          className={cn(
+            "flex flex-1 min-w-0 items-center self-stretch px-2",
+            !editing && "cursor-ew-resize"
+          )}
+        >
+          <NumberField.ScrubAreaCursor className="drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]">
+            <svg
+              width={24}
+              height={14}
+              viewBox="0 0 24 14"
+              fill="#000"
+              stroke="#fff"
+              strokeWidth={1}
+              aria-hidden="true"
+            >
+              <path d="M0.5 7l5-5v3.5h13V2l5 5-5 5V8.5h-13V12l-5-5z" />
+            </svg>
+          </NumberField.ScrubAreaCursor>
+          {prefix && (
+            <span className="text-[12px] text-muted-foreground mr-1 select-none">
+              {prefix}
+            </span>
+          )}
+          <NumberField.Input
+            ref={setInputRef}
+            aria-label={ariaLabel}
+            inputMode={inputMode}
+            onPointerDown={(e) => {
+              // While editing, let the input handle caret placement and text
+              // selection itself instead of starting a scrub gesture.
+              if (editing) e.stopPropagation();
+            }}
+            onFocus={(e) => {
+              if (pointerDownRef.current) return; // scrub-initiated focus
+              setEditing(true);
+              e.currentTarget.select();
+            }}
+            onBlur={() => {
+              setEditing(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.currentTarget.blur();
+              } else if (e.key === "Escape") {
+                // Revert the draft like the old input: restore the committed
+                // value's text before blurring so the input-blur commit is a
+                // no-op.
+                const input = e.currentTarget;
+                const setter = Object.getOwnPropertyDescriptor(
+                  window.HTMLInputElement.prototype,
+                  "value"
+                )?.set;
+                if (setter && fieldValue != null) {
+                  const restored =
+                    decimals != null
+                      ? fieldValue.toFixed(decimals)
+                      : String(Math.round(fieldValue));
+                  setter.call(input, hasPercent ? `${restored}%` : restored);
+                  input.dispatchEvent(new Event("input", { bubbles: true }));
+                }
+                input.blur();
+              }
+            }}
+            className={cn(
+              "flex-1 min-w-0 bg-transparent text-foreground text-[13px] outline-none tabular-nums",
+              align === "center" && "text-center",
+              align === "right" && "text-right",
+              !editing && "pointer-events-none",
+              inputClassName
+            )}
+            style={{ fontVariationSettings: fontWeights.medium }}
+          />
+        </NumberField.ScrubArea>
+      </NumberField.Root>
+    );
+  }
+);
+
+ScrubColorInput.displayName = "ScrubColorInput";
+
+const ColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
+  ({ scrubbable = false, ...props }, ref) =>
+    scrubbable ? (
+      <ScrubColorInput ref={ref} {...props} />
+    ) : (
+      <TextColorInput ref={ref} {...props} />
+    )
 );
 
 ColorInput.displayName = "ColorInput";
@@ -1192,13 +1517,28 @@ function SwatchStrip({
     return p ? rgbToHexStr(p.r, p.g, p.b, p.a).toLowerCase() : "";
   }, [current]);
 
+  // Named CSS colors ("red", "tomato") need the browser to normalize before
+  // the selected-state comparison can match. Resolve them in an effect so
+  // render (and SSR) never touch the DOM.
+  const [resolvedSwatches, setResolvedSwatches] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const next: Record<string, string> = {};
+    for (const sw of swatches) {
+      if (!parseColor(sw)) {
+        const p = resolveCssColor(sw);
+        if (p) next[sw] = rgbToHexStr(p.r, p.g, p.b, p.a).toLowerCase();
+      }
+    }
+    setResolvedSwatches(next);
+  }, [swatches]);
+
   return (
     <div className="flex flex-wrap gap-2">
       {swatches.map((sw, i) => {
         const parsed = parseColor(sw);
         const normalized = parsed
           ? rgbToHexStr(parsed.r, parsed.g, parsed.b, parsed.a).toLowerCase()
-          : sw.toLowerCase();
+          : resolvedSwatches[sw] ?? sw.toLowerCase();
         const isSelected = normalized === normalizedCurrent;
         return (
           <ColorSwatch
@@ -1244,13 +1584,14 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
     const [internalFormat, setInternalFormat] = useState<ColorFormat>(defaultFormat);
     const currentFormat = isFormatControlled ? (format as ColorFormat) : internalFormat;
 
-    // Internal HSV state (canonical). H is preserved across S=0 / V=0 transitions.
+    // Internal HSV state (canonical). H is preserved across S=0 / V=0
+    // transitions. Deliberately computed once from the initial value only.
     const initialParsed = useMemo(() => {
       const p = parseColor(currentRawValue);
       if (!p) return { h: 0, s: 1, v: 1, a: 1 };
       const hsv = rgbToHsv(p.r, p.g, p.b);
       return { h: hsv.s === 0 ? 0 : hsv.h, s: hsv.s, v: hsv.v, a: p.a };
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []);
 
     const [hsv, setHsv] = useState(initialParsed);
 
@@ -1312,7 +1653,10 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 
     const handleHexCommit = useCallback(
       (input: string) => {
-        const p = parseColor(input);
+        // resolveCssColor falls back to browser normalization so named CSS
+        // colors ("red", "tomato") from swatches or the hex field work too.
+        // Safe here: this only ever runs inside event handlers.
+        const p = resolveCssColor(input);
         if (!p) return;
         oklchHueRef.current = null;
         const newHsv = rgbToHsv(p.r, p.g, p.b);
@@ -1585,7 +1929,17 @@ function AlphaInput({ value, onCommit }: { value: number; onCommit: (n: number) 
 }
 
 // ---------------------------------------------------------------------------
-// ColorPickerPopover (trigger button + portal panel)
+// ColorPickerPopover (trigger button + popover panel)
+//
+// Built on Base UI's Popover primitive, which owns positioning (anchor
+// tracking + collision flipping — the old version placed the panel at a
+// captured rect and could overflow the viewport bottom), dismissal (outside
+// press, focus-out, Escape only while focus is relevant), and focus
+// management (focus moves into the panel on open and restores to the trigger
+// on close). The spring open/close animation stays via the actionsRef
+// deferred-unmount pattern (same as select.tsx) — the previous conditional
+// portal unmounted the AnimatePresence container itself, so the exit
+// animation never played.
 // ---------------------------------------------------------------------------
 
 const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
@@ -1607,24 +1961,25 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
     const isOpenControlled = openProp !== undefined;
     const [internalOpen, setInternalOpen] = useState(defaultOpen);
     const open = isOpenControlled ? openProp : internalOpen;
-    const setOpen: (next: boolean | ((prev: boolean) => boolean)) => void = (next) => {
-      const resolved = typeof next === "function" ? next(open) : next;
-      if (!isOpenControlled) setInternalOpen(resolved);
-      onOpenChange?.(resolved);
-    };
-    const triggerRef = useRef<HTMLButtonElement>(null);
-    const panelRef = useRef<HTMLDivElement>(null);
+    const actionsRef = useRef<{ unmount: () => void; close: () => void } | null>(null);
     const [panelEl, setPanelEl] = useState<HTMLDivElement | null>(null);
-    const [rect, setRect] = useState<DOMRect | null>(null);
     const shape = useShape();
     const substrate = useSurface();
     const level = Math.min(substrate + 2, 8);
+
+    const handleOpenChange = useCallback(
+      (next: boolean) => {
+        if (!isOpenControlled) setInternalOpen(next);
+        onOpenChange?.(next);
+      },
+      [isOpenControlled, onOpenChange]
+    );
 
     const isControlled = pickerProps.value !== undefined;
     const [internalValue, setInternalValue] = useState(pickerProps.value ?? pickerProps.defaultValue ?? "#6B97FF");
     const currentValue = isControlled ? (pickerProps.value as string) : internalValue;
 
-    const onValueChange = useCallback(
+    const handleValueChange = useCallback(
       (v: string, parsed: ParsedColor) => {
         if (!isControlled) setInternalValue(v);
         pickerProps.onValueChange?.(v, parsed);
@@ -1632,44 +1987,15 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
       [isControlled, pickerProps]
     );
 
+    // Release Base UI's deferred unmount once the exit tween has played.
+    // onAnimationComplete on the motion.div is the primary signal; this
+    // timeout is a fallback for throttled/background tabs where rAF-driven
+    // animation callbacks can stall (spring.moderate.exit is 120ms — 150ms
+    // covers it with margin).
     useEffect(() => {
-      if (!open || !triggerRef.current) {
-        setRect(null);
-        return;
-      }
-      const update = () => {
-        if (triggerRef.current) {
-          setRect(triggerRef.current.getBoundingClientRect());
-        }
-      };
-      update();
-      window.addEventListener("scroll", update, { passive: true, capture: true });
-      window.addEventListener("resize", update);
-      return () => {
-        window.removeEventListener("scroll", update, { capture: true } as EventListenerOptions);
-        window.removeEventListener("resize", update);
-      };
-    }, [open]);
-
-    useEffect(() => {
-      if (!open) return;
-      const onClick = (e: MouseEvent) => {
-        if (
-          !panelRef.current?.contains(e.target as Node) &&
-          !triggerRef.current?.contains(e.target as Node)
-        ) {
-          setOpen(false);
-        }
-      };
-      const onKey = (e: KeyboardEvent) => {
-        if (e.key === "Escape") setOpen(false);
-      };
-      document.addEventListener("mousedown", onClick);
-      document.addEventListener("keydown", onKey);
-      return () => {
-        document.removeEventListener("mousedown", onClick);
-        document.removeEventListener("keydown", onKey);
-      };
+      if (open) return;
+      const id = setTimeout(() => actionsRef.current?.unmount(), 150);
+      return () => clearTimeout(id);
     }, [open]);
 
     const XIcon = useIcon("x");
@@ -1682,98 +2008,107 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
       : currentValue;
 
     return (
-      <div ref={ref} className="inline-flex">
-        <button
-          ref={triggerRef}
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          className={cn(
-            "flex items-center gap-2 h-9 px-2 border border-border bg-transparent hover:bg-hover transition-colors duration-80 outline-none focus-visible:ring-1 focus-visible:ring-[#6B97FF] cursor-pointer",
-            shape.input,
-            triggerClassName
-          )}
-          style={{ fontVariationSettings: fontWeights.medium }}
-        >
-          {triggerLabel && triggerLabelPosition === "left" && (
-            <span className="text-[13px] text-muted-foreground px-1 select-none">
-              {triggerLabel}
-            </span>
-          )}
-          <ColorTile color={swatchColor} size={20} />
-          {triggerShowValue && (
-            <span className="text-[13px] text-foreground tabular-nums">
-              {valueLabel}
-            </span>
-          )}
-          {triggerLabel && triggerLabelPosition === "right" && (
-            <span className="text-[13px] text-muted-foreground px-1 select-none">
-              {triggerLabel}
-            </span>
-          )}
-          {triggerShowRemove && (
-            <span
-              role="button"
-              aria-label="Remove color"
-              tabIndex={0}
-              onClick={(e) => {
-                e.stopPropagation();
-                onTriggerRemove?.();
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onTriggerRemove?.();
-                }
-              }}
-              className="ml-1 text-muted-foreground hover:text-foreground cursor-pointer flex items-center"
-            >
-              <XIcon size={14} strokeWidth={1.5} />
-            </span>
-          )}
-        </button>
-        {open && rect && typeof document !== "undefined" && createPortal(
-          <div
-            style={{
-              position: "fixed",
-              top: rect.bottom + 6,
-              left: rect.left,
-              zIndex: 50,
-            }}
+      <Popover.Root
+        open={open}
+        onOpenChange={handleOpenChange}
+        actionsRef={actionsRef}
+        // Non-modal: the page keeps scrolling and the Positioner tracks the
+        // anchor, so the panel follows its trigger instead of detaching.
+        modal={false}
+      >
+        <div ref={ref} className="inline-flex">
+          <Popover.Trigger
+            className={cn(
+              "flex items-center gap-2 h-9 px-2 border border-border bg-transparent hover:bg-hover transition-colors duration-80 outline-none focus-visible:ring-1 focus-visible:ring-[#6B97FF] cursor-pointer",
+              shape.input,
+              triggerClassName
+            )}
+            style={{ fontVariationSettings: fontWeights.medium }}
           >
-            <AnimatePresence>
-              <motion.div
-                ref={(node) => {
-                  (panelRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-                  setPanelEl(node);
+            {triggerLabel && triggerLabelPosition === "left" && (
+              <span className="text-[13px] text-muted-foreground px-1 select-none">
+                {triggerLabel}
+              </span>
+            )}
+            <ColorTile color={swatchColor} size={20} />
+            {triggerShowValue && (
+              <span className="text-[13px] text-foreground tabular-nums">
+                {valueLabel}
+              </span>
+            )}
+            {triggerLabel && triggerLabelPosition === "right" && (
+              <span className="text-[13px] text-muted-foreground px-1 select-none">
+                {triggerLabel}
+              </span>
+            )}
+            {triggerShowRemove && (
+              <span
+                role="button"
+                aria-label="Remove color"
+                tabIndex={0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTriggerRemove?.();
                 }}
-                initial={{ opacity: 0, y: -4, scaleY: 0.96 }}
-                animate={{ opacity: 1, y: 0, scaleY: 1 }}
-                exit={{ opacity: 0, y: -4, scaleY: 0.96 }}
-                transition={spring.moderate}
-                style={{ transformOrigin: "top left" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onTriggerRemove?.();
+                  }
+                }}
+                className="ml-1 text-muted-foreground hover:text-foreground cursor-pointer flex items-center"
               >
-                <ColorPickerPortalContainer value={panelEl}>
-                  <SurfaceProvider value={level}>
-                    <ColorPicker
-                      {...pickerProps}
-                      value={currentValue}
-                      onValueChange={onValueChange}
-                      className={cn(
-                        surfaceClasses(level, 3),
-                        pickerProps.className
-                      )}
-                    />
-                  </SurfaceProvider>
-                </ColorPickerPortalContainer>
+                <XIcon size={14} strokeWidth={1.5} />
+              </span>
+            )}
+          </Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Positioner
+              side="bottom"
+              align="start"
+              sideOffset={6}
+              className="z-50 outline-none"
+            >
+              <motion.div
+                initial={{ opacity: 0, y: -4, scaleY: 0.96 }}
+                animate={
+                  open
+                    ? { opacity: 1, y: 0, scaleY: 1 }
+                    : { opacity: 0, y: -4, scaleY: 0.96 }
+                }
+                transition={open ? spring.moderate : spring.moderate.exit}
+                style={{ transformOrigin: "top left" }}
+                // Base UI defers unmount while actionsRef is set; release it
+                // once the exit spring has finished so the close animation
+                // fully plays.
+                onAnimationComplete={() => {
+                  if (!open) actionsRef.current?.unmount();
+                }}
+              >
+                <Popover.Popup
+                  render={<div ref={setPanelEl} />}
+                  className="outline-none"
+                >
+                  <ColorPickerPortalContainer value={panelEl}>
+                    <SurfaceProvider value={level}>
+                      <ColorPicker
+                        {...pickerProps}
+                        value={currentValue}
+                        onValueChange={handleValueChange}
+                        className={cn(
+                          surfaceClasses(level, 3),
+                          pickerProps.className
+                        )}
+                      />
+                    </SurfaceProvider>
+                  </ColorPickerPortalContainer>
+                </Popover.Popup>
               </motion.div>
-            </AnimatePresence>
-          </div>,
-          document.body
-        )}
-      </div>
+            </Popover.Positioner>
+          </Popover.Portal>
+        </div>
+      </Popover.Root>
     );
   }
 );

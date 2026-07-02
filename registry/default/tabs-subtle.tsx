@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  useId,
   useRef,
   useState,
   useCallback,
@@ -12,6 +11,7 @@ import {
   type ReactNode,
   type HTMLAttributes,
 } from "react";
+import { Tabs } from "@base-ui/react/tabs";
 import { motion, AnimatePresence } from "framer-motion";
 import type { IconComponent } from "@/lib/icon-context";
 import { cn } from "@/lib/utils";
@@ -24,8 +24,7 @@ interface TabsSubtleContextValue {
   registerTab: (index: number, element: HTMLElement | null) => void;
   hoveredIndex: number | null;
   selectedIndex: number;
-  onSelect: (index: number) => void;
-  idPrefix: string;
+  idPrefix: string | undefined;
   activeLabel: boolean;
 }
 
@@ -47,12 +46,10 @@ interface TabsSubtleProps extends Omit<HTMLAttributes<HTMLDivElement>, "onSelect
 }
 
 const TabsSubtle = forwardRef<HTMLDivElement, TabsSubtleProps>(
-  ({ children, selectedIndex, onSelect, idPrefix: idPrefixProp, activeLabel = false, className, ...props }, ref) => {
+  ({ children, selectedIndex, onSelect, idPrefix, activeLabel = false, className, ...props }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const isMouseInside = useRef(false);
-    const generatedId = useId();
     const shape = useShape();
-    const idPrefix = idPrefixProp || generatedId;
 
     const {
       activeIndex: hoveredIndex,
@@ -115,143 +112,137 @@ const TabsSubtle = forwardRef<HTMLDivElement, TabsSubtleProps>(
 
     return (
       <TabsSubtleContext.Provider
-        value={{ registerTab, hoveredIndex, selectedIndex, onSelect, idPrefix, activeLabel }}
+        value={{ registerTab, hoveredIndex, selectedIndex, idPrefix, activeLabel }}
       >
-        <div
-          ref={(node) => {
-            (containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-            if (typeof ref === "function") ref(node);
-            else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        {/* Root is merged into List via `render` so a single <div> is emitted,
+            matching the previous DOM structure. Base UI owns role="tablist",
+            roving tabindex, and Arrow/Home/End keyboard navigation.
+            `activateOnFocus={false}` keeps manual activation: arrows move
+            focus, Enter/Space selects. */}
+        <Tabs.Root
+          value={selectedIndex}
+          onValueChange={(value) => {
+            if (typeof value === "number") onSelect(value);
           }}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-          onFocus={(e) => {
-            const indexAttr = (e.target as HTMLElement)
-              .closest("[data-proximity-index]")
-              ?.getAttribute("data-proximity-index");
-            if (indexAttr != null) {
-              const idx = Number(indexAttr);
-              setHoveredIndex(idx);
-              setFocusedIndex(
-                (e.target as HTMLElement).matches(":focus-visible") ? idx : null
-              );
-            }
-          }}
-          onBlur={(e) => {
-            if (containerRef.current?.contains(e.relatedTarget as Node)) return;
-            setFocusedIndex(null);
-            if (isMouseInside.current) return;
-            setHoveredIndex(null);
-          }}
-          onKeyDown={(e) => {
-            const items = Array.from(
-              containerRef.current?.querySelectorAll('[role="tab"]') ?? []
-            ) as HTMLElement[];
-            const currentIdx = items.indexOf(e.target as HTMLElement);
-            if (currentIdx === -1) return;
-
-            if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) {
-              e.preventDefault();
-              const next = ["ArrowRight", "ArrowDown"].includes(e.key)
-                ? (currentIdx + 1) % items.length
-                : (currentIdx - 1 + items.length) % items.length;
-              items[next].focus();
-            } else if (e.key === "Home") {
-              e.preventDefault();
-              items[0]?.focus();
-            } else if (e.key === "End") {
-              e.preventDefault();
-              items[items.length - 1]?.focus();
-            }
-          }}
-          className={cn(
-            "relative flex items-center gap-0.5 select-none overflow-x-auto max-w-full scrollbar-hide -my-1 py-1",
-            className
-          )}
-          role="tablist"
-          {...props}
-        >
-          {/* Selected pill */}
-          {selectedRect && (
-            <motion.div
-              className={cn("absolute bg-active pointer-events-none", shape.bg)}
-              initial={false}
-              animate={{
-                left: selectedRect.left,
-                width: selectedRect.width,
-                top: selectedRect.top,
-                height: selectedRect.height,
-                opacity: isHovering ? 0.8 : 1,
+          render={
+            <Tabs.List
+              activateOnFocus={false}
+              ref={(node: HTMLDivElement | null) => {
+                containerRef.current = node;
+                if (typeof ref === "function") ref(node);
+                else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
               }}
-              transition={{
-                ...spring.moderate,
-                opacity: { duration: 0.08 },
-              }}
-            />
-          )}
-
-          {/* Hover pill */}
-          <AnimatePresence>
-            {hoverRect && !isHoveringSelected && selectedRect && (
-              <motion.div
-                className={cn("absolute bg-active pointer-events-none", shape.bg)}
-                initial={{
-                  left: selectedRect.left,
-                  width: selectedRect.width,
-                  top: selectedRect.top,
-                  height: selectedRect.height,
-                  opacity: 0,
-                }}
-                animate={{
-                  left: hoverRect.left,
-                  width: hoverRect.width,
-                  top: hoverRect.top,
-                  height: hoverRect.height,
-                  opacity: 0.4,
-                }}
-                exit={
-                  !isMouseInside.current && selectedRect
-                    ? {
-                        left: selectedRect.left,
-                        width: selectedRect.width,
-                        top: selectedRect.top,
-                        height: selectedRect.height,
-                        opacity: 0,
-                        transition: { ...spring.moderate, opacity: { duration: 0.06 } },
-                      }
-                    : { opacity: 0, transition: spring.fast.exit }
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              onFocus={(e: React.FocusEvent<HTMLDivElement>) => {
+                const indexAttr = (e.target as HTMLElement)
+                  .closest("[data-proximity-index]")
+                  ?.getAttribute("data-proximity-index");
+                if (indexAttr != null) {
+                  const idx = Number(indexAttr);
+                  setHoveredIndex(idx);
+                  setFocusedIndex(
+                    (e.target as HTMLElement).matches(":focus-visible") ? idx : null
+                  );
                 }
-                transition={{
-                  ...spring.fast,
-                  opacity: { duration: 0.08 },
-                }}
-              />
-            )}
-          </AnimatePresence>
+              }}
+              onBlur={(e: React.FocusEvent<HTMLDivElement>) => {
+                if (containerRef.current?.contains(e.relatedTarget as Node)) return;
+                setFocusedIndex(null);
+                if (isMouseInside.current) return;
+                setHoveredIndex(null);
+              }}
+              className={cn(
+                // -mx-1 px-1 / -my-1 py-1 give the 2px-outset focus ring room
+                // to draw without being clipped by overflow-x-auto
+                "relative flex items-center gap-0.5 select-none overflow-x-auto max-w-full scrollbar-hide -mx-1 px-1 -my-1 py-1",
+                className
+              )}
+              {...props}
+            >
+              {/* Selected pill */}
+              {selectedRect && (
+                <motion.div
+                  className={cn("absolute bg-active pointer-events-none", shape.bg)}
+                  initial={false}
+                  animate={{
+                    left: selectedRect.left,
+                    width: selectedRect.width,
+                    top: selectedRect.top,
+                    height: selectedRect.height,
+                    opacity: isHovering ? 0.8 : 1,
+                  }}
+                  transition={{
+                    ...spring.moderate,
+                    opacity: { duration: 0.08 },
+                  }}
+                />
+              )}
 
-          {/* Focus ring */}
-          <AnimatePresence>
-            {focusRect && (
-              <motion.div
-                className={cn("absolute pointer-events-none z-20 border border-[#6B97FF]", shape.focusRing)}
-                initial={false}
-                animate={{
-                  left: focusRect.left - 2,
-                  top: focusRect.top - 2,
-                  width: focusRect.width + 4,
-                  height: focusRect.height + 4,
-                }}
-                exit={{ opacity: 0, transition: spring.fast.exit }}
-                transition={{
-                  ...spring.fast,
-                  opacity: { duration: 0.08 },
-                }}
-              />
-            )}
-          </AnimatePresence>
+              {/* Hover pill */}
+              <AnimatePresence>
+                {hoverRect && !isHoveringSelected && selectedRect && (
+                  <motion.div
+                    className={cn("absolute bg-active pointer-events-none", shape.bg)}
+                    initial={{
+                      left: selectedRect.left,
+                      width: selectedRect.width,
+                      top: selectedRect.top,
+                      height: selectedRect.height,
+                      opacity: 0,
+                    }}
+                    animate={{
+                      left: hoverRect.left,
+                      width: hoverRect.width,
+                      top: hoverRect.top,
+                      height: hoverRect.height,
+                      opacity: 0.4,
+                    }}
+                    exit={
+                      !isMouseInside.current && selectedRect
+                        ? {
+                            left: selectedRect.left,
+                            width: selectedRect.width,
+                            top: selectedRect.top,
+                            height: selectedRect.height,
+                            opacity: 0,
+                            transition: { ...spring.moderate, opacity: { duration: 0.06 } },
+                          }
+                        : { opacity: 0, transition: spring.fast.exit }
+                    }
+                    transition={{
+                      ...spring.fast,
+                      opacity: { duration: 0.08 },
+                    }}
+                  />
+                )}
+              </AnimatePresence>
 
-          {children}
-        </div>
+              {/* Focus ring */}
+              <AnimatePresence>
+                {focusRect && (
+                  <motion.div
+                    className={cn("absolute pointer-events-none z-20 border border-[#6B97FF]", shape.focusRing)}
+                    initial={false}
+                    animate={{
+                      left: focusRect.left - 2,
+                      top: focusRect.top - 2,
+                      width: focusRect.width + 4,
+                      height: focusRect.height + 4,
+                    }}
+                    exit={{ opacity: 0, transition: spring.fast.exit }}
+                    transition={{
+                      ...spring.fast,
+                      opacity: { duration: 0.08 },
+                    }}
+                  />
+                )}
+              </AnimatePresence>
+
+              {children}
+            </Tabs.List>
+          }
+        />
       </TabsSubtleContext.Provider>
     );
   }
@@ -267,9 +258,9 @@ interface TabsSubtleItemProps extends HTMLAttributes<HTMLButtonElement> {
 
 const TabsSubtleItem = forwardRef<HTMLButtonElement, TabsSubtleItemProps>(
   ({ icon: Icon, label, index, className, ...props }, ref) => {
-    const internalRef = useRef<HTMLButtonElement>(null);
+    const internalRef = useRef<HTMLButtonElement | null>(null);
     const shape = useShape();
-    const { registerTab, hoveredIndex, selectedIndex, onSelect, idPrefix, activeLabel } =
+    const { registerTab, hoveredIndex, selectedIndex, idPrefix, activeLabel } =
       useTabsSubtle();
 
     useEffect(() => {
@@ -308,21 +299,22 @@ const TabsSubtleItem = forwardRef<HTMLButtonElement, TabsSubtleItemProps>(
     );
 
     return (
-      <button
-        ref={(node) => {
-          (internalRef as React.MutableRefObject<HTMLButtonElement | null>).current = node;
-          if (typeof ref === "function") ref(node);
-          else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = node;
+      // Base UI Tab renders a native <button type="button"> and wires
+      // role="tab", aria-selected, roving tabindex, and activation for us.
+      // id/aria-controls are only overridden when an idPrefix is supplied so
+      // externally rendered TabsSubtlePanel elements stay linked.
+      <Tabs.Tab
+        ref={(node: HTMLElement | null) => {
+          const button = node as HTMLButtonElement | null;
+          internalRef.current = button;
+          if (typeof ref === "function") ref(button);
+          else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = button;
         }}
-        type="button"
+        value={index}
         data-proximity-index={index}
-        id={`${idPrefix}-tab-${index}`}
-        role="tab"
-        aria-selected={isSelected}
-        aria-controls={`${idPrefix}-panel-${index}`}
+        id={idPrefix ? `${idPrefix}-tab-${index}` : undefined}
+        aria-controls={idPrefix ? `${idPrefix}-panel-${index}` : undefined}
         aria-label={collapseLabel && !showLabel ? label : undefined}
-        tabIndex={isSelected ? 0 : -1}
-        onClick={() => onSelect(index)}
         className={cn(
           "relative z-10 flex items-center px-3 py-2 cursor-pointer bg-transparent border-none outline-none",
           collapseLabel ? "h-8" : "gap-2",
@@ -362,7 +354,7 @@ const TabsSubtleItem = forwardRef<HTMLButtonElement, TabsSubtleItemProps>(
         ) : (
           labelContent
         )}
-      </button>
+      </Tabs.Tab>
     );
   }
 );
@@ -376,6 +368,9 @@ interface TabsSubtlePanelProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
 }
 
+// Rendered outside <TabsSubtle> at every call site, so it cannot use Base UI's
+// Tabs.Panel (which requires the Tabs.Root context). It stays a plain tabpanel
+// linked to its tab through the shared idPrefix.
 const TabsSubtlePanel = forwardRef<HTMLDivElement, TabsSubtlePanelProps>(
   ({ index, selectedIndex, idPrefix, children, className, ...props }, ref) => {
     const isSelected = selectedIndex === index;

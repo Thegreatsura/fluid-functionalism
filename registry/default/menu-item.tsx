@@ -3,6 +3,7 @@
 import { useRef, useEffect, forwardRef, type HTMLAttributes } from "react";
 import type { IconComponent } from "@/lib/icon-context";
 import { motion, AnimatePresence } from "framer-motion";
+import { Menu } from "@base-ui/react/menu";
 import { useDropdown } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
@@ -24,16 +25,30 @@ interface MenuItemProps extends HTMLAttributes<HTMLDivElement> {
   checked?: boolean;
   onSelect?: () => void;
   disabled?: boolean;
+  /** Popup-only (inside DropdownContent): whether activating the item closes
+   *  the menu. Ignored in the inline Dropdown panel. @default true */
+  closeOnClick?: boolean;
 }
 
 const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
   (
-    { icon: Icon, label, index, checked, onSelect, disabled, className, ...props },
+    {
+      icon: Icon,
+      label,
+      index,
+      checked,
+      onSelect,
+      disabled,
+      closeOnClick,
+      className,
+      onClick,
+      ...props
+    },
     ref
   ) => {
     const internalRef = useRef<HTMLDivElement>(null);
     const hasMounted = useRef(false);
-    const { registerItem, activeIndex, checkedIndex } = useDropdown();
+    const { registerItem, activeIndex, checkedIndex, inMenu } = useDropdown();
 
     useEffect(() => {
       registerItem(index, internalRef.current);
@@ -47,35 +62,27 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
     const isActive = activeIndex === index;
     const skipAnimation = !hasMounted.current;
 
-    return (
-      <div
-        ref={(node) => {
-          (internalRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-          if (typeof ref === "function") ref(node);
-          else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
-        }}
-        data-proximity-index={index}
-        // Disabled items are never the roving tab stop.
-        tabIndex={!disabled && index === (checkedIndex ?? 0) ? 0 : -1}
-        role={typeof checked === "boolean" ? "menuitemradio" : "menuitem"}
-        aria-checked={typeof checked === "boolean" ? checked : undefined}
-        aria-disabled={disabled || undefined}
-        aria-label={label}
-        onClick={disabled ? undefined : onSelect}
-        onKeyDown={(e) => {
-          if (disabled) return;
-          if (e.key === " " || e.key === "Enter") {
-            e.preventDefault();
-            onSelect?.();
-          }
-        }}
-        className={cn(
-          `relative z-10 flex items-center gap-2 ${shape.item} px-2 py-2 cursor-pointer outline-none`,
-          disabled && "opacity-50 pointer-events-none",
-          className
-        )}
-        {...props}
-      >
+    const mergeRef = (node: HTMLDivElement | null) => {
+      (internalRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      if (typeof ref === "function") ref(node);
+      else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    };
+
+    const handleActivate = disabled
+      ? undefined
+      : (e: React.MouseEvent<HTMLDivElement>) => {
+          onClick?.(e);
+          onSelect?.();
+        };
+
+    const itemClassName = cn(
+      `relative z-10 flex items-center gap-2 ${shape.item} px-2 py-2 cursor-pointer outline-none`,
+      disabled && "opacity-50 pointer-events-none",
+      className
+    );
+
+    const content = (
+      <>
         {Icon && (
           <span className="inline-grid">
             <span className="col-start-1 row-start-1 invisible">
@@ -149,6 +156,70 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
             </motion.svg>
           )}
         </AnimatePresence>
+      </>
+    );
+
+    if (inMenu) {
+      // Inside DropdownContent, Base UI's Menu.Item / Menu.RadioItem owns the
+      // role, aria-checked, tabIndex, roving highlight, typeahead, and
+      // Enter/Space/click activation (activation synthesizes a click, so
+      // handleActivate also fires for keyboard). The render div carries the
+      // Fluid Functionalism visuals and the proximity-hover registration.
+      const renderDiv = (
+        <div
+          ref={mergeRef}
+          data-proximity-index={index}
+          aria-label={label}
+          onClick={handleActivate}
+          className={itemClassName}
+          {...props}
+        />
+      );
+
+      return typeof checked === "boolean" ? (
+        <Menu.RadioItem
+          value={index}
+          disabled={disabled}
+          label={label}
+          closeOnClick={closeOnClick ?? true}
+          render={renderDiv}
+        >
+          {content}
+        </Menu.RadioItem>
+      ) : (
+        <Menu.Item
+          disabled={disabled}
+          label={label}
+          closeOnClick={closeOnClick ?? true}
+          render={renderDiv}
+        >
+          {content}
+        </Menu.Item>
+      );
+    }
+
+    return (
+      <div
+        ref={mergeRef}
+        data-proximity-index={index}
+        // Disabled items are never the roving tab stop.
+        tabIndex={!disabled && index === (checkedIndex ?? 0) ? 0 : -1}
+        role={typeof checked === "boolean" ? "menuitemradio" : "menuitem"}
+        aria-checked={typeof checked === "boolean" ? checked : undefined}
+        aria-disabled={disabled || undefined}
+        aria-label={label}
+        onClick={handleActivate}
+        onKeyDown={(e) => {
+          if (disabled) return;
+          if (e.key === " " || e.key === "Enter") {
+            e.preventDefault();
+            onSelect?.();
+          }
+        }}
+        className={itemClassName}
+        {...props}
+      >
+        {content}
       </div>
     );
   }

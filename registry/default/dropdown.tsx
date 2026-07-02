@@ -4,13 +4,18 @@ import {
   useRef,
   useState,
   useEffect,
+  useCallback,
+  useMemo,
   createContext,
   useContext,
   forwardRef,
   type ReactNode,
   type HTMLAttributes,
+  type ComponentProps,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Menu } from "@base-ui/react/menu";
+import type { MenuTriggerProps } from "@base-ui/react/menu";
 import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
 import { useProximityHover } from "@/hooks/use-proximity-hover";
@@ -23,10 +28,18 @@ import { Elevated } from "@/lib/elevated";
 // scale and produces the corner-shadow asymmetry).
 const shape = shapeMap.rounded;
 
+// ---------------------------------------------------------------------------
+// Panel context — shared by the inline Dropdown and the popup DropdownContent
+// ---------------------------------------------------------------------------
+
 interface DropdownContextValue {
   registerItem: (index: number, element: HTMLElement | null) => void;
   activeIndex: number | null;
   checkedIndex?: number;
+  /** True when items render inside a Base UI Menu popup (DropdownContent),
+   *  where Menu.Item / Menu.RadioItem own roles, roving highlight, typeahead,
+   *  and activation. MenuItem switches its rendering accordingly. */
+  inMenu?: boolean;
 }
 
 const DropdownContext = createContext<DropdownContextValue | null>(null);
@@ -36,6 +49,17 @@ export function useDropdown() {
   if (!ctx) throw new Error("useDropdown must be used within a Dropdown");
   return ctx;
 }
+
+// ---------------------------------------------------------------------------
+// Dropdown (inline panel)
+//
+// An always-rendered panel — no trigger, positioning, or dismissal. Because it
+// sits statically in the page it does NOT claim popup menu semantics: the
+// container is a plain role="group" (pass `aria-label` to name it). The real
+// role="menu" lives on the popup DropdownContent below, which Base UI wires to
+// a trigger. Consumers who hand-roll a trigger around the inline panel get
+// grouping semantics rather than a falsely-announced popup menu.
+// ---------------------------------------------------------------------------
 
 interface DropdownProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
@@ -100,7 +124,9 @@ const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
           }}
           onKeyDown={(e) => {
             const items = Array.from(
-              containerRef.current?.querySelectorAll('[role="menuitemradio"]') ?? []
+              containerRef.current?.querySelectorAll(
+                '[role="menuitem"], [role="menuitemradio"]'
+              ) ?? []
             ) as HTMLElement[];
             const currentIdx = items.indexOf(e.target as HTMLElement);
             if (currentIdx === -1) return;
@@ -119,7 +145,7 @@ const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
               items[items.length - 1]?.focus();
             }
           }}
-          role="menu"
+          role="group"
           className={cn(
             `relative flex flex-col gap-0.5 w-72 max-w-full ${shape.container} p-1 select-none`,
             className
@@ -208,6 +234,351 @@ const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
 Dropdown.displayName = "Dropdown";
 
 // ---------------------------------------------------------------------------
+// DropdownMenu (popup root)
+//
+// Built on Base UI's Menu primitive, which owns the trigger wiring,
+// positioning (collision flipping, anchor tracking), dismissal (outside
+// press, focus-out, Escape), roving highlight, typeahead, and close-on-select.
+// The Fluid Functionalism layer keeps the proximity-hover overlays and the
+// spring open/close animation (via actionsRef deferred unmount) — the same
+// verified pattern as select.tsx.
+// ---------------------------------------------------------------------------
+
+interface DropdownMenuActions {
+  unmount: () => void;
+  close: () => void;
+}
+
+interface DropdownMenuContextValue {
+  open: boolean;
+  actionsRef: React.RefObject<DropdownMenuActions | null>;
+}
+
+const DropdownMenuContext = createContext<DropdownMenuContextValue | null>(null);
+
+function useDropdownMenuContext() {
+  const ctx = useContext(DropdownMenuContext);
+  if (!ctx)
+    throw new Error(
+      "DropdownMenu compound components must be inside <DropdownMenu>"
+    );
+  return ctx;
+}
+
+interface DropdownMenuProps {
+  children: ReactNode;
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  disabled?: boolean;
+}
+
+function DropdownMenu({
+  children,
+  open: openProp,
+  defaultOpen = false,
+  onOpenChange,
+  disabled = false,
+}: DropdownMenuProps) {
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const open = openProp !== undefined ? openProp : internalOpen;
+  const actionsRef = useRef<DropdownMenuActions | null>(null);
+
+  const handleOpenChange = useCallback(
+    (next: boolean) => {
+      if (openProp === undefined) setInternalOpen(next);
+      onOpenChange?.(next);
+    },
+    [openProp, onOpenChange]
+  );
+
+  const ctx = useMemo(() => ({ open, actionsRef }), [open]);
+
+  return (
+    <DropdownMenuContext.Provider value={ctx}>
+      <Menu.Root
+        open={open}
+        onOpenChange={handleOpenChange}
+        actionsRef={actionsRef}
+        disabled={disabled}
+        // Non-modal: the page keeps scrolling and the Positioner tracks the
+        // anchor, so the popup follows its trigger instead of detaching.
+        modal={false}
+      >
+        {children}
+      </Menu.Root>
+    </DropdownMenuContext.Provider>
+  );
+}
+
+DropdownMenu.displayName = "DropdownMenu";
+
+// ---------------------------------------------------------------------------
+// DropdownTrigger
+//
+// Base UI's Menu.Trigger, re-exported under the library name. Composes via
+// the `render` prop, so any element can be the trigger:
+//
+//   <DropdownTrigger render={<Button variant="secondary">Open</Button>} />
+// ---------------------------------------------------------------------------
+
+type DropdownTriggerProps = MenuTriggerProps;
+
+const DropdownTrigger = Menu.Trigger;
+
+// ---------------------------------------------------------------------------
+// DropdownContent (popup panel)
+//
+// Portal > Positioner > Popup carrying the exact inline-panel visuals:
+// Elevated surface, proximity-hover overlays, animated selected background,
+// and animated focus ring. Children are wrapped in a Menu.RadioGroup so
+// radio-style MenuItems (boolean `checked`) get correct aria-checked from
+// `checkedIndex`.
+// ---------------------------------------------------------------------------
+
+type MenuPositionerProps = ComponentProps<typeof Menu.Positioner>;
+
+interface DropdownContentProps {
+  children: ReactNode;
+  className?: string;
+  /** Index of the checked item. Drives the animated selected background and
+   *  the radio-group value announced to assistive tech. */
+  checkedIndex?: number;
+  side?: MenuPositionerProps["side"];
+  align?: MenuPositionerProps["align"];
+  sideOffset?: number;
+}
+
+const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
+  (
+    {
+      className,
+      children,
+      checkedIndex,
+      side = "bottom",
+      align = "start",
+      sideOffset = 6,
+    },
+    ref
+  ) => {
+    const { open, actionsRef } = useDropdownMenuContext();
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    const {
+      activeIndex,
+      setActiveIndex,
+      itemRects,
+      sessionRef,
+      handlers,
+      registerItem,
+      measureItems,
+    } = useProximityHover(containerRef);
+
+    const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+
+    // Release Base UI's deferred unmount once the exit tween has played.
+    // onAnimationComplete on the motion.div is the primary signal; this
+    // timeout is a fallback for throttled/background tabs where rAF-driven
+    // animation callbacks can stall (spring.fast.exit is 60ms — 120ms covers
+    // it with margin without holding the portal open perceptibly).
+    useEffect(() => {
+      if (open) return;
+      const id = setTimeout(() => actionsRef.current?.unmount(), 120);
+      return () => clearTimeout(id);
+    }, [open, actionsRef]);
+
+    // Measure items once the popup has mounted.
+    useEffect(() => {
+      if (!open) return;
+      // Double rAF: first waits for React commit, second for layout
+      let inner: number;
+      const outer = requestAnimationFrame(() => {
+        inner = requestAnimationFrame(() => {
+          measureItems();
+        });
+      });
+      return () => {
+        cancelAnimationFrame(outer);
+        cancelAnimationFrame(inner);
+      };
+    }, [open, measureItems]);
+
+    const activeRect = activeIndex !== null ? itemRects[activeIndex] : null;
+    const checkedRect = checkedIndex != null ? itemRects[checkedIndex] : null;
+    const focusRect = focusedIndex !== null ? itemRects[focusedIndex] : null;
+    const isHoveringOther =
+      activeIndex !== null && activeIndex !== checkedIndex;
+
+    const contentCtx = useMemo(
+      () => ({ registerItem, activeIndex, checkedIndex, inMenu: true }),
+      [registerItem, activeIndex, checkedIndex]
+    );
+
+    return (
+      <Menu.Portal>
+        <Menu.Positioner
+          side={side}
+          align={align}
+          sideOffset={sideOffset}
+          className="z-50 outline-none"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: -4, scaleY: 0.96 }}
+            animate={
+              open
+                ? { opacity: 1, y: 0, scaleY: 1 }
+                : { opacity: 0, y: -4, scaleY: 0.96 }
+            }
+            transition={open ? spring.fast : spring.fast.exit}
+            style={{ transformOrigin: "top center" }}
+            // Base UI defers unmount while actionsRef is set; release it once
+            // the exit spring has finished so the close animation fully plays.
+            onAnimationComplete={() => {
+              if (!open) actionsRef.current?.unmount();
+            }}
+          >
+            <DropdownContext.Provider value={contentCtx}>
+              <Menu.Popup
+                render={
+                  <Elevated
+                    offset={2}
+                    shadowLevel={3}
+                    ref={(node: HTMLDivElement | null) => {
+                      (
+                        containerRef as React.MutableRefObject<HTMLDivElement | null>
+                      ).current = node;
+                      if (typeof ref === "function") ref(node);
+                      else if (ref)
+                        (
+                          ref as React.MutableRefObject<HTMLDivElement | null>
+                        ).current = node;
+                    }}
+                  />
+                }
+                onMouseEnter={() => {
+                  handlers.onMouseEnter();
+                  setFocusedIndex(null);
+                }}
+                onMouseMove={handlers.onMouseMove}
+                onMouseLeave={handlers.onMouseLeave}
+                onFocus={(e) => {
+                  const indexAttr = (e.target as HTMLElement)
+                    .closest("[data-proximity-index]")
+                    ?.getAttribute("data-proximity-index");
+                  if (indexAttr != null) {
+                    const idx = Number(indexAttr);
+                    setActiveIndex(idx);
+                    setFocusedIndex(
+                      (e.target as HTMLElement).matches(":focus-visible")
+                        ? idx
+                        : null
+                    );
+                  }
+                }}
+                onBlur={(e) => {
+                  if (containerRef.current?.contains(e.relatedTarget as Node))
+                    return;
+                  setFocusedIndex(null);
+                  setActiveIndex(null);
+                }}
+                className={cn(
+                  `relative flex flex-col gap-0.5 w-72 max-w-full max-h-[min(480px,var(--available-height))] overflow-y-auto ${shape.container} p-1 select-none outline-none`,
+                  className
+                )}
+              >
+                {/* Selected background */}
+                <AnimatePresence>
+                  {checkedRect && (
+                    <motion.div
+                      className={`absolute ${shape.bg} bg-active pointer-events-none`}
+                      initial={false}
+                      animate={{
+                        top: checkedRect.top,
+                        left: checkedRect.left,
+                        width: checkedRect.width,
+                        height: checkedRect.height,
+                        opacity: isHoveringOther ? 0.8 : 1,
+                      }}
+                      exit={{ opacity: 0, transition: spring.moderate.exit }}
+                      transition={{
+                        ...spring.moderate,
+                        opacity: { duration: 0.08 },
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
+
+                {/* Hover background */}
+                <AnimatePresence>
+                  {activeRect && (
+                    <motion.div
+                      key={sessionRef.current}
+                      className={`absolute ${shape.bg} bg-hover pointer-events-none`}
+                      initial={{
+                        opacity: 0,
+                        top: checkedRect?.top ?? activeRect.top,
+                        left: checkedRect?.left ?? activeRect.left,
+                        width: checkedRect?.width ?? activeRect.width,
+                        height: checkedRect?.height ?? activeRect.height,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        top: activeRect.top,
+                        left: activeRect.left,
+                        width: activeRect.width,
+                        height: activeRect.height,
+                      }}
+                      exit={{ opacity: 0, transition: spring.fast.exit }}
+                      transition={{
+                        ...spring.fast,
+                        opacity: { duration: 0.08 },
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
+
+                {/* Focus ring */}
+                <AnimatePresence>
+                  {focusRect && (
+                    <motion.div
+                      className={`absolute ${shape.focusRing} pointer-events-none z-20 border border-[#6B97FF]`}
+                      initial={false}
+                      animate={{
+                        left: focusRect.left - 2,
+                        top: focusRect.top - 2,
+                        width: focusRect.width + 4,
+                        height: focusRect.height + 4,
+                      }}
+                      exit={{ opacity: 0, transition: spring.fast.exit }}
+                      transition={{
+                        ...spring.fast,
+                        opacity: { duration: 0.08 },
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
+
+                {/* display: contents keeps items direct flex children of the
+                    popup so proximity measurement and gap layout still work,
+                    while the group provides the radio value context. */}
+                <Menu.RadioGroup
+                  value={checkedIndex ?? null}
+                  className="contents"
+                >
+                  {children}
+                </Menu.RadioGroup>
+              </Menu.Popup>
+            </DropdownContext.Provider>
+          </motion.div>
+        </Menu.Positioner>
+      </Menu.Portal>
+    );
+  }
+);
+
+DropdownContent.displayName = "DropdownContent";
+
+// ---------------------------------------------------------------------------
 // DropdownLabel
 // ---------------------------------------------------------------------------
 
@@ -244,5 +615,18 @@ const DropdownSeparator = forwardRef<
 
 DropdownSeparator.displayName = "DropdownSeparator";
 
-export { Dropdown, DropdownLabel, DropdownSeparator };
+export {
+  Dropdown,
+  DropdownLabel,
+  DropdownSeparator,
+  DropdownMenu,
+  DropdownTrigger,
+  DropdownContent,
+};
+export type {
+  DropdownProps,
+  DropdownMenuProps,
+  DropdownTriggerProps,
+  DropdownContentProps,
+};
 export default Dropdown;

@@ -125,8 +125,16 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
           const currentIdx = items.indexOf(e.target as HTMLElement);
           if (currentIdx === -1) return;
 
+          // In value mode this handler is merged with Base UI RadioGroup's
+          // composite onto the same element; suppress the composite's own
+          // roving focus (it targets the hidden sr-only radios).
+          const preventBaseUI = (
+            e as unknown as { preventBaseUIHandler?: () => void }
+          ).preventBaseUIHandler;
+
           if (["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft"].includes(e.key)) {
             e.preventDefault();
+            preventBaseUI?.();
             const next = ["ArrowDown", "ArrowRight"].includes(e.key)
               ? (currentIdx + 1) % items.length
               : (currentIdx - 1 + items.length) % items.length;
@@ -134,10 +142,12 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
             items[next].click();
           } else if (e.key === "Home") {
             e.preventDefault();
+            preventBaseUI?.();
             items[0]?.focus();
             items[0]?.click();
           } else if (e.key === "End") {
             e.preventDefault();
+            preventBaseUI?.();
             items[items.length - 1]?.focus();
             items[items.length - 1]?.click();
           }

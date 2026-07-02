@@ -236,6 +236,7 @@
       "title": "useMergeSplitBlocks",
       "description": "React hook + renderer for the selected-background merge/split animation. When one row bridges or splits two contiguous selected runs, their inner edges glide together (or apart) and swap to a single block, instead of one block spring-growing over the union.",
       "registryDependencies": [
+        "https://www.fluidfunctionalism.com/r/springs.json",
         "https://www.fluidfunctionalism.com/r/use-proximity-hover.json"
       ],
       "files": [
@@ -303,7 +304,8 @@
       "title": "Ask User Questions",
       "description": "Stepped question flow with numbered options, keyboard shortcuts (1–9), single or multi-select, inline 'other' text input, optional skip, proximity-based hover, and multi-question navigation. Auto-advances on selection in single-select.",
       "dependencies": [
-        "framer-motion"
+        "framer-motion",
+        "@base-ui/react"
       ],
       "registryDependencies": [
         "utils",
@@ -425,8 +427,9 @@
       "name": "dropdown",
       "type": "registry:ui",
       "title": "Dropdown",
-      "description": "Dropdown menu with proximity-based hover tracking, animated selection indicator, and animated focus ring. Includes MenuItem sub-component.",
+      "description": "Dropdown menu with proximity-based hover tracking, animated selection indicator, and animated focus ring. Renders as an always-visible inline panel or as a triggered popup (DropdownMenu/DropdownTrigger/DropdownContent) built on Base UI Menu with collision-aware positioning, typeahead, and close-on-select. Includes MenuItem sub-component.",
       "dependencies": [
+        "@base-ui/react",
         "framer-motion"
       ],
       "registryDependencies": [
@@ -436,7 +439,9 @@
         "https://www.fluidfunctionalism.com/r/shape-context.json",
         "https://www.fluidfunctionalism.com/r/surface-context.json",
         "https://www.fluidfunctionalism.com/r/surface-classes.json",
-        "https://www.fluidfunctionalism.com/r/use-proximity-hover.json"
+        "https://www.fluidfunctionalism.com/r/icon-context.json",
+        "https://www.fluidfunctionalism.com/r/use-proximity-hover.json",
+        "https://www.fluidfunctionalism.com/r/elevated.json"
       ],
       "files": [
         {
@@ -602,6 +607,27 @@
       ]
     },
     {
+      "name": "mobile-drawer",
+      "type": "registry:ui",
+      "title": "Mobile Drawer",
+      "description": "Left-anchored navigation drawer built on Base UI Dialog — modal scroll lock, focus trap and restore, Esc/outside-click dismissal, and a spring-animated slide-in panel with surface-aware elevation.",
+      "dependencies": [
+        "@base-ui/react",
+        "framer-motion"
+      ],
+      "registryDependencies": [
+        "https://www.fluidfunctionalism.com/r/springs.json",
+        "https://www.fluidfunctionalism.com/r/surface-context.json",
+        "https://www.fluidfunctionalism.com/r/surface-classes.json"
+      ],
+      "files": [
+        {
+          "path": "registry/default/mobile-drawer.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "input-copy",
       "type": "registry:ui",
       "title": "Input Copy",
@@ -630,13 +656,15 @@
       "title": "Input Group",
       "description": "Grouped input fields with proximity-based highlighting, animated label transitions, optional icons, and error states.",
       "dependencies": [
-        "lucide-react"
+        "lucide-react",
+        "@base-ui/react"
       ],
       "registryDependencies": [
         "utils",
         "https://www.fluidfunctionalism.com/r/font-weight.json",
         "https://www.fluidfunctionalism.com/r/shape-context.json",
-        "https://www.fluidfunctionalism.com/r/icon-context.json"
+        "https://www.fluidfunctionalism.com/r/icon-context.json",
+        "https://www.fluidfunctionalism.com/r/use-proximity-hover.json"
       ],
       "files": [
         {
@@ -703,6 +731,7 @@
         "utils",
         "https://www.fluidfunctionalism.com/r/springs.json",
         "https://www.fluidfunctionalism.com/r/shape-context.json",
+        "https://www.fluidfunctionalism.com/r/use-touch-primary.json",
         "https://www.fluidfunctionalism.com/r/file-thumbnail.json"
       ],
       "files": [
@@ -718,6 +747,7 @@
       "title": "Tabs Subtle",
       "description": "Horizontal tab navigation with proximity hover, animated pill selection indicator, and fluid font-weight transitions. Supports icons and keyboard navigation.",
       "dependencies": [
+        "@base-ui/react",
         "framer-motion",
         "lucide-react"
       ],
@@ -981,8 +1011,9 @@
       "name": "select",
       "type": "registry:ui",
       "title": "Select",
-      "description": "Animated select menu with proximity hover, bordered/borderless variants, optional leading icons, spring-animated popover, and animated checkmark indicator.",
+      "description": "Animated select menu built on Base UI Select — collision-aware positioning, typeahead, and full combobox ARIA — with proximity hover, bordered/borderless variants, optional leading icons, spring-animated popover, and animated checkmark indicator.",
       "dependencies": [
+        "@base-ui/react",
         "framer-motion",
         "class-variance-authority",
         "lucide-react"
@@ -1056,6 +1087,7 @@
       "title": "Thinking Steps",
       "description": "Chain-of-thought reasoning display with collapsible steps, sequential animation, source badges, and image support.",
       "dependencies": [
+        "@base-ui/react",
         "framer-motion",
         "lucide-react"
       ],
@@ -1065,7 +1097,6 @@
         "https://www.fluidfunctionalism.com/r/font-weight.json",
         "https://www.fluidfunctionalism.com/r/shape-context.json",
         "https://www.fluidfunctionalism.com/r/icon-context.json",
-        "https://www.fluidfunctionalism.com/r/accordion.json",
         "https://www.fluidfunctionalism.com/r/badge.json"
       ],
       "files": [
@@ -1079,8 +1110,9 @@
       "name": "color-picker",
       "type": "registry:ui",
       "title": "Color Picker",
-      "description": "Color picker with HEX, RGB, HSL, and OKLCH formats, alpha channel, optional swatches, and a popover trigger. Built on the Slider component with native EyeDropper support.",
+      "description": "Color picker with HEX, RGB, HSL, and OKLCH formats, alpha channel, optional swatches, and a popover trigger. Built on Base UI's Popover, Menu, and NumberField primitives with native EyeDropper support.",
       "dependencies": [
+        "@base-ui/react",
         "framer-motion"
       ],
       "registryDependencies": [
@@ -1090,8 +1122,10 @@
         "https://www.fluidfunctionalism.com/r/shape-context.json",
         "https://www.fluidfunctionalism.com/r/surface-context.json",
         "https://www.fluidfunctionalism.com/r/surface-classes.json",
-        "https://www.fluidfunctionalism.com/r/slider.json",
-        "https://www.fluidfunctionalism.com/r/dropdown.json"
+        "https://www.fluidfunctionalism.com/r/icon-context.json",
+        "https://www.fluidfunctionalism.com/r/use-proximity-hover.json",
+        "https://www.fluidfunctionalism.com/r/elevated.json",
+        "https://www.fluidfunctionalism.com/r/slider.json"
       ],
       "files": [
         {

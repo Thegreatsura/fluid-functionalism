@@ -84,6 +84,32 @@ import {
   RadioItem as BaseRadioItem,
 } from "@/registry/base/radio-group";
 
+// Single-source components built on Base UI primitives — no Radix flavor,
+// shown once, spanning both columns.
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@/registry/default/select";
+import { ColorPickerPopover } from "@/registry/default/color-picker";
+import {
+  DropdownMenu,
+  DropdownTrigger,
+  DropdownContent,
+} from "@/registry/default/dropdown";
+import { MenuItem } from "@/registry/default/menu-item";
+import { TabsSubtle, TabsSubtleItem } from "@/registry/default/tabs-subtle";
+import {
+  ThinkingSteps,
+  ThinkingStepsHeader,
+  ThinkingStepsContent,
+  ThinkingStep,
+} from "@/registry/default/thinking-steps";
+import { InputGroup, InputField } from "@/registry/default/input-group";
+import { AskUserQuestions } from "@/registry/default/ask-user-questions";
+import { Search, Mail, SquareLibrary, Clock, Star } from "lucide-react";
+
 function PrimitiveToggle() {
   const { base, setBase } = useBase();
   const options: { value: Base; label: string }[] = [
@@ -132,6 +158,18 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+// Row for single-source components: one demo spanning both primitive columns.
+function SingleRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[180px_1fr_1fr] gap-6 items-start py-8 border-t border-border">
+      <div className="text-sm" style={{ fontVariationSettings: "'wght' 600" }}>
+        {label}
+      </div>
+      <div className="col-span-2">{children}</div>
+    </div>
+  );
+}
+
 export default function CompareBasesPage() {
   const [heroHovered, setHeroHovered] = useState(false);
   const [switchA, setSwitchA] = useState(true);
@@ -142,6 +180,13 @@ export default function CompareBasesPage() {
   const [checkedB, setCheckedB] = useState<Set<number>>(new Set([0, 2]));
   const [radioA, setRadioA] = useState("a");
   const [radioB, setRadioB] = useState("a");
+
+  // Single-source section state
+  const [fruit, setFruit] = useState("");
+  const [view, setView] = useState(0);
+  const [tab, setTab] = useState(0);
+  const [searchValue, setSearchValue] = useState("");
+  const [emailValue, setEmailValue] = useState("");
 
   const toggle = (set: Set<number>, setSet: (s: Set<number>) => void) => (i: number) => {
     const n = new Set(set);
@@ -354,6 +399,106 @@ export default function CompareBasesPage() {
           <ScrollAreaRows />
         </BaseScrollArea>
       </Row>
+
+      {/* ── Single-source components ─────────────────────────────────── */}
+      <section className="pt-24 pb-4">
+        <h2
+          className="text-2xl tracking-tight text-foreground"
+          style={{ fontVariationSettings: "'wght' 700" }}
+        >
+          Built on Base UI
+        </h2>
+        <p className="text-sm text-muted-foreground mt-2 max-w-[560px]">
+          These components ship as a single source sitting on Base UI
+          primitives — Select, Menu, Popover, Field, Collapsible — and are
+          used as-is under either flavor.
+        </p>
+      </section>
+
+      <SingleRow label="Select">
+        <Select value={fruit} onValueChange={setFruit}>
+          <SelectTrigger placeholder="Select a fruit…" />
+          <SelectContent>
+            <SelectItem index={0} value="apple">Apple</SelectItem>
+            <SelectItem index={1} value="banana">Banana</SelectItem>
+            <SelectItem index={2} value="cherry">Cherry</SelectItem>
+            <SelectItem index={3} value="mango">Mango</SelectItem>
+          </SelectContent>
+        </Select>
+      </SingleRow>
+
+      <SingleRow label="Dropdown Menu">
+        <DropdownMenu>
+          <DropdownTrigger
+            render={<RadixButton variant="secondary">Open menu</RadixButton>}
+          />
+          <DropdownContent checkedIndex={view}>
+            <MenuItem index={0} icon={SquareLibrary} label="Teamspaces" checked={view === 0} onSelect={() => setView(0)} />
+            <MenuItem index={1} icon={Clock} label="Recents" checked={view === 1} onSelect={() => setView(1)} />
+            <MenuItem index={2} icon={Star} label="Favorites" checked={view === 2} onSelect={() => setView(2)} />
+          </DropdownContent>
+        </DropdownMenu>
+      </SingleRow>
+
+      <SingleRow label="Color Picker">
+        <ColorPickerPopover defaultValue="#6B97FF" />
+      </SingleRow>
+
+      <SingleRow label="Tabs Subtle">
+        <TabsSubtle selectedIndex={tab} onSelect={setTab}>
+          <TabsSubtleItem index={0} label="Overview" />
+          <TabsSubtleItem index={1} label="Activity" />
+          <TabsSubtleItem index={2} label="Settings" />
+        </TabsSubtle>
+      </SingleRow>
+
+      <SingleRow label="Thinking Steps">
+        <ThinkingSteps>
+          <ThinkingStepsHeader />
+          <ThinkingStepsContent>
+            <ThinkingStep icon="search" label="Searched the web" />
+            <ThinkingStep icon="globe" label="Read 3 sources" />
+          </ThinkingStepsContent>
+        </ThinkingSteps>
+      </SingleRow>
+
+      <SingleRow label="Input Group">
+        <div className="max-w-[360px]">
+          <InputGroup>
+            <InputField
+              index={0}
+              label="Search"
+              placeholder="Search teamspaces…"
+              icon={Search}
+              value={searchValue}
+              onChange={setSearchValue}
+            />
+            <InputField
+              index={1}
+              label="Email"
+              placeholder="you@company.com"
+              icon={Mail}
+              value={emailValue}
+              onChange={setEmailValue}
+            />
+          </InputGroup>
+        </div>
+      </SingleRow>
+
+      <SingleRow label="Ask User Questions">
+        <AskUserQuestions
+          questions={[
+            {
+              title: "How will you use Fluid Functionalism?",
+              options: [
+                { title: "Design system" },
+                { title: "Product UI" },
+                { title: "Prototyping" },
+              ],
+            },
+          ]}
+        />
+      </SingleRow>
     </div>
   );
 }

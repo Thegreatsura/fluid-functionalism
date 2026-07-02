@@ -967,8 +967,9 @@
       "name": "select",
       "type": "registry:ui",
       "title": "Select",
-      "description": "Animated select menu with proximity hover, bordered/borderless variants, optional leading icons, spring-animated popover, and animated checkmark indicator.",
+      "description": "Animated select menu built on Base UI Select — collision-aware positioning, typeahead, and full combobox ARIA — with proximity hover, bordered/borderless variants, optional leading icons, spring-animated popover, and animated checkmark indicator.",
       "dependencies": [
+        "@base-ui/react",
         "framer-motion",
         "class-variance-authority",
         "lucide-react"

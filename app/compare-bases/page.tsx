@@ -515,8 +515,8 @@ export default function CompareBasesPage() {
         </h2>
         <p className="text-sm text-muted-foreground mt-2 max-w-[560px]">
           These components ship as a single source sitting on Base UI
-          primitives — Select, Popover, Field — and are
-          used as-is under either flavor.
+          primitives — Popover, Menu, NumberField, Field, and the
+          Radio/Checkbox Groups — and are used as-is under either flavor.
         </p>
       </section>
 

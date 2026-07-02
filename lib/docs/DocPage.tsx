@@ -16,12 +16,8 @@ import { useBase, installUrl, DUAL_FLAVOR_SLUGS } from "@/lib/base-context";
 // @base-ui/react to the consumer's dependencies, so the installation note
 // says so under both flavors.
 const BASE_UI_BACKED_SLUGS = new Set([
-  "select",
   "color-picker",
-  "dropdown",
   "ask-user-questions",
-  "thinking-steps",
-  "tabs-subtle",
   "input-group",
 ]);
 

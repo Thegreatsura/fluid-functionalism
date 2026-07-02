@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useMemo,
   createContext,
@@ -14,6 +15,10 @@ import {
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
+
+// SSR-safe layout effect (client components still server-render in Next).
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 import { cn } from "@/lib/utils";
 import { useIcon } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
@@ -759,37 +764,90 @@ const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
     const groupCtx = useAccordionGroup();
     const { isOpen } = useAccordionItemContext();
 
+    // The open height is animated to a self-measured LAYOUT pixel value, not
+    // `height: "auto"`: framer resolves an "auto" target by measuring the
+    // element's *visual* (transformed) size, so under a scaled ancestor
+    // (e.g. /demo's 1.7x card) the animation overshoots to scale× the real
+    // height and snaps back when the final "auto" lands — a visible height
+    // reduction at the end of every open. offsetHeight and ResizeObserver
+    // are transform-immune.
+    const innerRef = useRef<HTMLDivElement | null>(null);
+    const roRef = useRef<ResizeObserver | null>(null);
+    const [contentHeight, setContentHeight] = useState<number | null>(null);
+    // Items open at mount render `initial: "auto"` and receive their first
+    // pixel target a commit later; that hand-off must SNAP (duration 0), not
+    // spring — framer would measure the spring's numeric start visually
+    // (scaled) and play a shrink. Items that open later spring normally.
+    const needsSnap = useRef(isOpen);
+
+    const measureRef = useCallback((el: HTMLDivElement | null) => {
+      roRef.current?.disconnect();
+      roRef.current = null;
+      innerRef.current = el;
+      if (!el) return;
+      if (el.offsetHeight > 0) setContentHeight(el.offsetHeight);
+      const ro = new ResizeObserver(() => {
+        // Ignore the 0 that fires while the panel is display:none.
+        if (el.offsetHeight > 0) setContentHeight(el.offsetHeight);
+      });
+      ro.observe(el);
+      roRef.current = ro;
+    }, []);
+
+    // Re-measure synchronously (pre-paint) when opening, so the spring's
+    // target is the fresh layout height from its first frame.
+    useIsoLayoutEffect(() => {
+      if (isOpen && innerRef.current && innerRef.current.offsetHeight > 0) {
+        setContentHeight(innerRef.current.offsetHeight);
+      }
+    }, [isOpen]);
+
+    useEffect(() => {
+      if (contentHeight !== null) needsSnap.current = false;
+    }, [contentHeight]);
+
+    // Content stays mounted so it can be measured; fully-closed panels are
+    // display:none (hidden) once the exit finishes, keeping them out of the
+    // accessibility tree without cutting the animation short.
+    const [exitComplete, setExitComplete] = useState(!isOpen);
+    if (isOpen && exitComplete) {
+      // Reset during render so the panel is un-hidden before the opening
+      // animation's first paint.
+      setExitComplete(false);
+    }
+
     return (
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <AccordionPrimitive.Content forceMount asChild {...props}>
-            <motion.div
-              ref={ref}
-              className={cn("overflow-hidden", className)}
-              initial={{ height: 0 }}
-              animate={{ height: "auto" }}
-              exit={{ height: 0 }}
-              // bounce: 0 — a critically damped spring on body height.
-              // spring.moderate has bounce 0.15 which overshoots the
-              // "auto" target by a few px; under an ancestor transform:
-              // scale (e.g. /demo's 1.7x card), that overshoot becomes a
-              // visible pop. Pure height has no aesthetic value in
-              // bouncing, so a smooth approach reads better.
-              transition={{ ...spring.moderate, bounce: 0 }}
-              onUpdate={() => {
-                groupCtx?.remeasure();
-              }}
-              onAnimationComplete={() => {
-                groupCtx?.remeasure();
-              }}
-            >
-              <div className="px-3 pb-3 pt-1 text-[13px] text-muted-foreground">
-                {children}
-              </div>
-            </motion.div>
-          </AccordionPrimitive.Content>
-        )}
-      </AnimatePresence>
+      <AccordionPrimitive.Content forceMount asChild {...props}>
+        <motion.div
+          ref={ref}
+          hidden={!isOpen && exitComplete}
+          className={cn("overflow-hidden", className)}
+          initial={{ height: isOpen ? "auto" : 0 }}
+          animate={{ height: isOpen ? contentHeight ?? 0 : 0 }}
+          // bounce: 0 — a critically damped spring on body height; pure
+          // height has no aesthetic value in bouncing, so a smooth approach
+          // reads better.
+          transition={
+            needsSnap.current
+              ? { duration: 0 }
+              : { ...spring.moderate, bounce: 0 }
+          }
+          onUpdate={() => {
+            groupCtx?.remeasure();
+          }}
+          onAnimationComplete={() => {
+            groupCtx?.remeasure();
+            if (!isOpen) setExitComplete(true);
+          }}
+        >
+          <div
+            ref={measureRef}
+            className="px-3 pb-3 pt-1 text-[13px] text-muted-foreground"
+          >
+            {children}
+          </div>
+        </motion.div>
+      </AccordionPrimitive.Content>
     );
   }
 );

@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useMemo,
   createContext,
@@ -14,6 +15,10 @@ import {
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion";
+
+// SSR-safe layout effect (client components still server-render in Next).
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 import { cn } from "@/lib/utils";
 import { useIcon } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
@@ -775,6 +780,48 @@ const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
     const groupCtx = useAccordionGroup();
     const { isOpen } = useAccordionItemContext();
 
+    // The open height is animated to a self-measured LAYOUT pixel value, not
+    // `height: "auto"`: framer resolves an "auto" target by measuring the
+    // element's *visual* (transformed) size, so under a scaled ancestor
+    // (e.g. /demo's 1.7x card) the animation overshoots to scale× the real
+    // height and snaps back when the final "auto" lands — a visible height
+    // reduction at the end of every open. offsetHeight and ResizeObserver
+    // are transform-immune. See the radix flavor for the identical setup.
+    const innerRef = useRef<HTMLDivElement | null>(null);
+    const roRef = useRef<ResizeObserver | null>(null);
+    const [contentHeight, setContentHeight] = useState<number | null>(null);
+    // Items open at mount render `initial: "auto"` and receive their first
+    // pixel target a commit later; that hand-off must SNAP (duration 0), not
+    // spring — framer would measure the spring's numeric start visually
+    // (scaled) and play a shrink. Items that open later spring normally.
+    const needsSnap = useRef(isOpen);
+
+    const measureRef = useCallback((el: HTMLDivElement | null) => {
+      roRef.current?.disconnect();
+      roRef.current = null;
+      innerRef.current = el;
+      if (!el) return;
+      if (el.offsetHeight > 0) setContentHeight(el.offsetHeight);
+      const ro = new ResizeObserver(() => {
+        // Ignore the 0 that fires while the panel is display:none.
+        if (el.offsetHeight > 0) setContentHeight(el.offsetHeight);
+      });
+      ro.observe(el);
+      roRef.current = ro;
+    }, []);
+
+    // Re-measure synchronously (pre-paint) when opening, so the spring's
+    // target is the fresh layout height from its first frame.
+    useIsoLayoutEffect(() => {
+      if (isOpen && innerRef.current && innerRef.current.offsetHeight > 0) {
+        setContentHeight(innerRef.current.offsetHeight);
+      }
+    }, [isOpen]);
+
+    useEffect(() => {
+      if (contentHeight !== null) needsSnap.current = false;
+    }, [contentHeight]);
+
     // Whether the framer-motion height exit animation has fully finished.
     // Base UI's Panel would apply `hidden` the moment a controlled item
     // closes (useCollapsibleRoot sets `mounted = false` in a layout effect
@@ -783,7 +830,7 @@ const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
     // `display: none` and would freeze the exit animation mid-flight. So we
     // take over the `hidden` attribute below and only apply it once the exit
     // has actually completed.
-    const [exitComplete, setExitComplete] = useState(true);
+    const [exitComplete, setExitComplete] = useState(!isOpen);
     if (isOpen && exitComplete) {
       // Reset during render so the panel is un-hidden before the opening
       // animation's first paint.
@@ -794,8 +841,9 @@ const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
     // element persists through the exit animation and the trigger ↔ panel
     // ARIA contract stays intact: the panel carries `role="region"`,
     // `aria-labelledby` and the id that the Trigger's `aria-controls` points
-    // to. The framer-motion mount/unmount + height animation is unchanged,
-    // one level down inside the persistent panel element.
+    // to. The framer-motion height animation lives one level down inside the
+    // persistent panel element and flips its target with `isOpen` (content
+    // stays mounted so it can be measured).
     return (
       <AccordionPrimitive.Panel
         keepMounted
@@ -814,35 +862,35 @@ const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
           };
           return (
             <div {...restPanel} hidden={!isOpen && exitComplete}>
-              <AnimatePresence
-                initial={false}
-                onExitComplete={() => setExitComplete(true)}
+              <motion.div
+                ref={ref}
+                className={cn("overflow-hidden", className)}
+                initial={{ height: isOpen ? "auto" : 0 }}
+                animate={{ height: isOpen ? contentHeight ?? 0 : 0 }}
+                // bounce: 0 — pure height looks better without overshoot. See
+                // comment in radix flavor.
+                transition={
+                  needsSnap.current
+                    ? { duration: 0 }
+                    : { ...spring.moderate, bounce: 0 }
+                }
+                onUpdate={() => {
+                  groupCtx?.remeasure();
+                }}
+                onAnimationComplete={() => {
+                  groupCtx?.remeasure();
+                  if (!isOpen) setExitComplete(true);
+                }}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                {...(props as any)}
               >
-                {isOpen && (
-                  <motion.div
-                    ref={ref}
-                    className={cn("overflow-hidden", className)}
-                    initial={{ height: 0 }}
-                    animate={{ height: "auto" }}
-                    exit={{ height: 0 }}
-                    // bounce: 0 — pure height looks better without overshoot. See
-                    // comment in radix flavor.
-                    transition={{ ...spring.moderate, bounce: 0 }}
-                    onUpdate={() => {
-                      groupCtx?.remeasure();
-                    }}
-                    onAnimationComplete={() => {
-                      groupCtx?.remeasure();
-                    }}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    {...(props as any)}
-                  >
-                    <div className="px-3 pb-3 pt-1 text-[13px] text-muted-foreground">
-                      {children}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                <div
+                  ref={measureRef}
+                  className="px-3 pb-3 pt-1 text-[13px] text-muted-foreground"
+                >
+                  {children}
+                </div>
+              </motion.div>
             </div>
           );
         }}

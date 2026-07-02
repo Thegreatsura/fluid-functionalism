@@ -2,6 +2,10 @@
 
 import {
   useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useCallback,
   useContext,
   createContext,
   forwardRef,
@@ -10,6 +14,10 @@ import {
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Collapsible } from "@base-ui/react/collapsible";
+
+// SSR-safe layout effect (client components still server-render in Next).
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 import { cn } from "@/lib/utils";
 import { useIcon } from "@/lib/icon-context";
 import type { IconName } from "@/lib/icon-context";
@@ -134,7 +142,47 @@ interface CollapsePanelProps {
  * intact (the trigger's `aria-controls` id lives on it).
  */
 function CollapsePanel({ open, children }: CollapsePanelProps) {
-  const [exitComplete, setExitComplete] = useState(true);
+  // The open height is animated to a self-measured LAYOUT pixel value, not
+  // `height: "auto"`: framer resolves an "auto" target by measuring the
+  // element's *visual* (transformed) size, so under a scaled ancestor
+  // (e.g. /demo's 1.7x card) the animation overshoots to scale× the real
+  // height and snaps back when the final "auto" lands. offsetHeight and
+  // ResizeObserver are transform-immune. Same setup as the accordions.
+  const innerRef = useRef<HTMLDivElement | null>(null);
+  const roRef = useRef<ResizeObserver | null>(null);
+  const [contentHeight, setContentHeight] = useState<number | null>(null);
+  // Panels open at mount render `initial: "auto"` and receive their first
+  // pixel target a commit later; that hand-off must SNAP (duration 0), not
+  // spring. Panels that open later spring normally.
+  const needsSnap = useRef(open);
+
+  const measureRef = useCallback((el: HTMLDivElement | null) => {
+    roRef.current?.disconnect();
+    roRef.current = null;
+    innerRef.current = el;
+    if (!el) return;
+    if (el.offsetHeight > 0) setContentHeight(el.offsetHeight);
+    const ro = new ResizeObserver(() => {
+      // Ignore the 0 that fires while the panel is display:none.
+      if (el.offsetHeight > 0) setContentHeight(el.offsetHeight);
+    });
+    ro.observe(el);
+    roRef.current = ro;
+  }, []);
+
+  // Re-measure synchronously (pre-paint) when opening, so the spring's
+  // target is the fresh layout height from its first frame.
+  useIsoLayoutEffect(() => {
+    if (open && innerRef.current && innerRef.current.offsetHeight > 0) {
+      setContentHeight(innerRef.current.offsetHeight);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (contentHeight !== null) needsSnap.current = false;
+  }, [contentHeight]);
+
+  const [exitComplete, setExitComplete] = useState(!open);
   if (open && exitComplete) {
     // Reset during render so the panel is un-hidden before the opening
     // animation's first paint.
@@ -158,25 +206,27 @@ function CollapsePanel({ open, children }: CollapsePanelProps) {
         };
         return (
           <div {...restPanel} hidden={!open && exitComplete}>
-            <AnimatePresence
-              initial={false}
-              onExitComplete={() => setExitComplete(true)}
+            <motion.div
+              className="overflow-hidden"
+              initial={{ height: open ? "auto" : 0 }}
+              animate={{ height: open ? contentHeight ?? 0 : 0 }}
+              // bounce: 0 — pure height looks better without overshoot.
+              transition={
+                needsSnap.current
+                  ? { duration: 0 }
+                  : { ...spring.moderate, bounce: 0 }
+              }
+              onAnimationComplete={() => {
+                if (!open) setExitComplete(true);
+              }}
             >
-              {open && (
-                <motion.div
-                  className="overflow-hidden"
-                  initial={{ height: 0 }}
-                  animate={{ height: "auto" }}
-                  exit={{ height: 0 }}
-                  // bounce: 0 — pure height looks better without overshoot.
-                  transition={{ ...spring.moderate, bounce: 0 }}
-                >
-                  <div className="px-3 pb-3 pt-1 text-[13px] text-muted-foreground">
-                    {children}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+              <div
+                ref={measureRef}
+                className="px-3 pb-3 pt-1 text-[13px] text-muted-foreground"
+              >
+                {children}
+              </div>
+            </motion.div>
           </div>
         );
       }}

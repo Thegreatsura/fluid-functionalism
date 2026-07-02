@@ -610,7 +610,29 @@
       "name": "mobile-drawer",
       "type": "registry:ui",
       "title": "Mobile Drawer",
-      "description": "Left-anchored navigation drawer built on Base UI Dialog \u2014 modal scroll lock, focus trap and restore, Esc/outside-click dismissal, and a spring-animated slide-in panel with surface-aware elevation.",
+      "description": "Slide-in navigation drawer with scrim, focus trap, and scroll lock. Radix flavor.",
+      "dependencies": [
+        "@radix-ui/react-dialog",
+        "framer-motion"
+      ],
+      "registryDependencies": [
+        "springs",
+        "surface-context",
+        "surface-classes"
+      ],
+      "files": [
+        {
+          "path": "registry/radix/mobile-drawer.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/mobile-drawer.tsx"
+        }
+      ]
+    },
+    {
+      "name": "mobile-drawer-base",
+      "type": "registry:ui",
+      "title": "Mobile Drawer",
+      "description": "Slide-in navigation drawer with scrim, focus trap, and scroll lock. Base UI flavor.",
       "dependencies": [
         "@base-ui/react",
         "framer-motion"
@@ -622,8 +644,9 @@
       ],
       "files": [
         {
-          "path": "registry/default/mobile-drawer.tsx",
-          "type": "registry:ui"
+          "path": "registry/base/mobile-drawer.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/mobile-drawer.tsx"
         }
       ]
     },
@@ -1111,7 +1134,33 @@
       "name": "thinking-steps",
       "type": "registry:ui",
       "title": "Thinking Steps",
-      "description": "Chain-of-thought reasoning display with collapsible steps, sequential animation, source badges, and image support.",
+      "description": "Collapsible AI reasoning steps with animated expand/collapse, per-step icons, sources, and nested details. Radix flavor.",
+      "dependencies": [
+        "@radix-ui/react-collapsible",
+        "framer-motion",
+        "lucide-react"
+      ],
+      "registryDependencies": [
+        "utils",
+        "springs",
+        "font-weight",
+        "shape-context",
+        "icon-context",
+        "badge"
+      ],
+      "files": [
+        {
+          "path": "registry/radix/thinking-steps.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/thinking-steps.tsx"
+        }
+      ]
+    },
+    {
+      "name": "thinking-steps-base",
+      "type": "registry:ui",
+      "title": "Thinking Steps",
+      "description": "Collapsible AI reasoning steps with animated expand/collapse, per-step icons, sources, and nested details. Base UI flavor.",
       "dependencies": [
         "@base-ui/react",
         "framer-motion",
@@ -1127,8 +1176,9 @@
       ],
       "files": [
         {
-          "path": "registry/default/thinking-steps.tsx",
-          "type": "registry:ui"
+          "path": "registry/base/thinking-steps.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/thinking-steps.tsx"
         }
       ]
     },

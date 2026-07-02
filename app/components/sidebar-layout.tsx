@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, type ReactNode } from "react"
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/app/components/sidebar";
 import { useIcon } from "@/lib/icon-context";
-import { MobileDrawer } from "@/registry/default/mobile-drawer";
+import { MobileDrawer } from "@/components/flavored/mobile-drawer";
 import { Button } from "@/registry/radix/button";
 import { RightPanel, SettingsContent, GitHubStarButton } from "@/app/components/right-panel";
 import { systemList, componentList } from "@/lib/docs/components";

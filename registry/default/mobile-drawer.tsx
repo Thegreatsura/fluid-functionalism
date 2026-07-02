@@ -1,16 +1,20 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  type ReactNode,
-  type RefObject,
-} from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { motion } from "framer-motion";
 import { spring } from "@/lib/springs";
 import { useSurface, SurfaceProvider } from "@/lib/surface-context";
 import { surfaceClasses } from "@/lib/surface-classes";
+
+// Built on Base UI Dialog rather than Base UI Drawer: Drawer's
+// swipe-to-dismiss writes inline `transform` + `--drawer-swipe-movement-*`
+// CSS vars onto its Popup and expects CSS-transition choreography (plus a
+// mandatory <Drawer.Viewport>), which fights framer-motion's transform
+// management on the same element. Dialog provides everything we actually
+// need — scroll lock (scrollbar-gap safe, blocks iOS touch scrolling),
+// focus trap, focus restore timed after close, Esc + outside-click
+// dismissal — while leaving the slide animation to framer-motion.
 
 interface MobileDrawerProps {
   open: boolean;
@@ -19,14 +23,17 @@ interface MobileDrawerProps {
   triggerRef?: RefObject<HTMLElement | null>;
 }
 
-const FOCUSABLE_SELECTOR = [
-  'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled]):not([type="hidden"])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-].join(",");
+// Props framer-motion redefines with incompatible signatures; they must not
+// be forwarded from Base UI's render-prop payload onto a motion.div.
+type MotionSafeDivProps = Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  | "onDrag"
+  | "onDragStart"
+  | "onDragEnd"
+  | "onAnimationStart"
+  | "onAnimationEnd"
+  | "onAnimationIteration"
+>;
 
 export function MobileDrawer({
   open,
@@ -34,123 +41,95 @@ export function MobileDrawer({
   children,
   triggerRef,
 }: MobileDrawerProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
   const substrate = useSurface();
   const level = Math.min(substrate + 2, 8);
 
-  const getFocusableElements = useCallback(() => {
-    if (!panelRef.current) return [];
-    return Array.from(
-      panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
-    ).filter((element) => !element.hasAttribute("aria-hidden"));
-  }, []);
+  // With `actionsRef` set, Base UI defers unmounting the portal on close
+  // until `actionsRef.current.unmount()` is called, letting the
+  // framer-motion exit tween below play out first.
+  const actionsRef = useRef<DialogPrimitive.Root.Actions | null>(null);
 
-  // Lock body scroll when open
+  // Fallback release for the deferred unmount: onAnimationComplete on the
+  // panel is the primary signal, but rAF-driven animation callbacks can
+  // stall in throttled/background tabs. The longest exit tween is
+  // spring.moderate.exit (120ms) — 250ms covers it with margin without
+  // holding the portal open perceptibly.
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = "";
-      };
-    }
+    if (open) return;
+    const id = setTimeout(() => actionsRef.current?.unmount(), 250);
+    return () => clearTimeout(id);
   }, [open]);
 
-  // Focus the drawer, trap keyboard navigation, and restore focus on close
-  useEffect(() => {
-    if (!open) return;
-    previousFocusRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-
-    const [firstFocusable] = getFocusableElements();
-    (firstFocusable ?? panelRef.current)?.focus();
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-        return;
-      }
-
-      if (e.key !== "Tab") return;
-
-      const focusableElements = getFocusableElements();
-      if (focusableElements.length === 0) {
-        e.preventDefault();
-        panelRef.current?.focus();
-        return;
-      }
-
-      const first = focusableElements[0];
-      const last = focusableElements[focusableElements.length - 1];
-      const activeElement = document.activeElement;
-
-      if (e.shiftKey) {
-        if (
-          activeElement === first ||
-          !panelRef.current?.contains(activeElement)
-        ) {
-          e.preventDefault();
-          last.focus();
-        }
-        return;
-      }
-
-      if (activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      const restoreTarget = triggerRef?.current ?? previousFocusRef.current;
-      restoreTarget?.focus();
-      previousFocusRef.current = null;
-    };
-  }, [getFocusableElements, onClose, open, triggerRef]);
-
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          {/* Overlay */}
-          <motion.div
-            className="fixed inset-0 bg-black/20 dark:bg-black/40 z-40"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: spring.moderate.exit }}
-            transition={{ duration: 0.16 }}
-            onClick={onClose}
-            aria-hidden="true"
-          />
+    <DialogPrimitive.Root
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onClose();
+      }}
+      actionsRef={actionsRef}
+    >
+      <DialogPrimitive.Portal>
+        {/* Overlay — same scrim as the library's dialogs: an always-on
+            bg-black/40 base that stays visible for system-dark users (the
+            `dark:` variant only matches the explicit .dark class), boosted
+            to /80 in explicit dark mode. */}
+        <DialogPrimitive.Backdrop
+          render={(backdropProps) => {
+            const {
+              style: _style,
+              ...rest
+            } = backdropProps as React.HTMLAttributes<HTMLDivElement>;
+            return (
+              <motion.div
+                {...(rest as MotionSafeDivProps)}
+                className="fixed inset-0 bg-black/40 dark:bg-black/80 z-40"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: open ? 1 : 0 }}
+                transition={open ? { duration: 0.16 } : spring.moderate.exit}
+              />
+            );
+          }}
+        />
 
-          {/* Panel */}
-          <motion.div
-            ref={panelRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Navigation"
-            tabIndex={-1}
-            className={`fixed top-0 left-0 bottom-0 w-64 ${surfaceClasses(level, 3)} z-50 overflow-y-auto p-4`}
-            initial={{ x: "-100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "-100%", transition: spring.moderate.exit }}
-            // Critically damped spring — same perceived duration as
-            // spring.moderate but bounce: 0, so the panel decelerates
-            // into x: 0 without overshooting. The previous bounce: 0.15
-            // briefly pushed the panel past its rest position, exposing
-            // the page background through the gap on the left edge.
-            transition={{ type: "spring", duration: 0.16, bounce: 0 }}
-          >
-            <SurfaceProvider value={level}>{children}</SurfaceProvider>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+        {/* Panel */}
+        <DialogPrimitive.Popup
+          aria-label="Navigation"
+          finalFocus={triggerRef}
+          render={(popupProps) => {
+            const {
+              style: baseStyle,
+              ...rest
+            } = popupProps as React.HTMLAttributes<HTMLDivElement>;
+            return (
+              <motion.div
+                {...(rest as MotionSafeDivProps)}
+                className={`fixed top-0 left-0 bottom-0 w-64 ${surfaceClasses(level, 3)} z-50 overflow-y-auto p-4`}
+                style={baseStyle as React.CSSProperties | undefined}
+                initial={{ x: "-100%" }}
+                animate={{ x: open ? 0 : "-100%" }}
+                // Critically damped spring — same perceived duration as
+                // spring.moderate but bounce: 0, so the panel decelerates
+                // into x: 0 without overshooting. The previous bounce: 0.15
+                // briefly pushed the panel past its rest position, exposing
+                // the page background through the gap on the left edge.
+                transition={
+                  open
+                    ? { type: "spring", duration: 0.16, bounce: 0 }
+                    : spring.moderate.exit
+                }
+                // Release Base UI's deferred unmount once the exit tween has
+                // finished so the close animation fully plays.
+                onAnimationComplete={() => {
+                  if (!open) actionsRef.current?.unmount();
+                }}
+              >
+                <SurfaceProvider value={level}>{children}</SurfaceProvider>
+              </motion.div>
+            );
+          }}
+        />
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }
 

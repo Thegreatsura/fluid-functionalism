@@ -353,7 +353,19 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
                 <motion.div
                   key={`expanded-${idx}`}
                   className={`absolute ${shape.bg} bg-accent/20 dark:bg-accent/12 pointer-events-none`}
-                  initial={false}
+                  // Fade in from the item's current rect: with initial={false}
+                  // a newly-opened item's background would pop in at full
+                  // opacity mid-layout-shift while the previous item's bg is
+                  // still fading out — reads as a glitch when switching items
+                  // (especially under /demo's scaled card). Geometry still
+                  // snaps (duration 0) so the bg hugs the animating item.
+                  initial={{
+                    top: rect.top,
+                    left: rect.left,
+                    width: rect.width,
+                    height: rect.height,
+                    opacity: 0,
+                  }}
                   animate={{
                     top: rect.top,
                     left: rect.left,
@@ -367,7 +379,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
                     left: { duration: 0 },
                     width: { duration: 0 },
                     height: { duration: 0 },
-                    opacity: { duration: 0.08 },
+                    opacity: { duration: 0.12 },
                   }}
                 />
               ))}

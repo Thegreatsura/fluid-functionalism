@@ -3,7 +3,6 @@
 import { useRef, useEffect, forwardRef, type HTMLAttributes } from "react";
 import type { IconComponent } from "@/lib/icon-context";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu } from "@base-ui/react/menu";
 import { useDropdown } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
@@ -48,7 +47,8 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
   ) => {
     const internalRef = useRef<HTMLDivElement>(null);
     const hasMounted = useRef(false);
-    const { registerItem, activeIndex, checkedIndex, inMenu } = useDropdown();
+    const { registerItem, activeIndex, checkedIndex, renderMenuItem } =
+      useDropdown();
 
     useEffect(() => {
       registerItem(index, internalRef.current);
@@ -76,7 +76,9 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
         };
 
     const itemClassName = cn(
-      `relative z-10 flex items-center gap-2 ${shape.item} px-2 py-2 cursor-pointer outline-none`,
+      // Fixed height (was py-2 around a 19.5px line box ≈ 35.5px) so the
+      // text-box trim on the label doesn't shrink the row.
+      `relative z-10 flex h-9 items-center gap-2 ${shape.item} px-2 cursor-pointer outline-none`,
       disabled && "opacity-50 pointer-events-none",
       className
     );
@@ -100,9 +102,11 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
             />
           </span>
         )}
+        {/* Both stacked spans carry the text-box trim so the invisible bold
+            sizer and the visible label keep identical boxes. */}
         <span className="inline-grid flex-1 text-[13px]">
           <span
-            className="col-start-1 row-start-1 invisible"
+            className="col-start-1 row-start-1 invisible [text-box:trim-both_cap_alphabetic]"
             style={{ fontVariationSettings: fontWeights.semibold }}
             aria-hidden="true"
           >
@@ -110,7 +114,7 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
           </span>
           <span
             className={cn(
-              "col-start-1 row-start-1 transition-[color,font-variation-settings] duration-80",
+              "col-start-1 row-start-1 transition-[color,font-variation-settings] duration-80 [text-box:trim-both_cap_alphabetic]",
               isActive || checked
                 ? "text-foreground"
                 : "text-muted-foreground"
@@ -159,43 +163,32 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
       </>
     );
 
-    if (inMenu) {
-      // Inside DropdownContent, Base UI's Menu.Item / Menu.RadioItem owns the
-      // role, aria-checked, tabIndex, roving highlight, typeahead, and
-      // Enter/Space/click activation (activation synthesizes a click, so
-      // handleActivate also fires for keyboard). The render div carries the
-      // Fluid Functionalism visuals and the proximity-hover registration.
-      const renderDiv = (
-        <div
-          ref={mergeRef}
-          data-proximity-index={index}
-          aria-label={label}
-          onClick={handleActivate}
-          className={itemClassName}
-          {...props}
-        />
-      );
-
-      return typeof checked === "boolean" ? (
-        <Menu.RadioItem
-          value={index}
-          disabled={disabled}
-          label={label}
-          closeOnClick={closeOnClick ?? true}
-          render={renderDiv}
-        >
-          {content}
-        </Menu.RadioItem>
-      ) : (
-        <Menu.Item
-          disabled={disabled}
-          label={label}
-          closeOnClick={closeOnClick ?? true}
-          render={renderDiv}
-        >
-          {content}
-        </Menu.Item>
-      );
+    if (renderMenuItem) {
+      // Inside DropdownContent, the flavor's menu-item primitive (supplied by
+      // the surrounding DropdownContent through context) owns the role,
+      // aria-checked, tabIndex, roving highlight, typeahead, and Enter/Space/
+      // click activation (activation synthesizes a click, so handleActivate
+      // also fires for keyboard). The styled div carries the Fluid
+      // Functionalism visuals and the proximity-hover registration; MenuItem
+      // itself imports no primitive.
+      return renderMenuItem({
+        radio: typeof checked === "boolean",
+        value: index,
+        disabled,
+        label,
+        closeOnClick: closeOnClick ?? true,
+        element: (
+          <div
+            ref={mergeRef}
+            data-proximity-index={index}
+            aria-label={label}
+            onClick={handleActivate}
+            className={itemClassName}
+            {...props}
+          />
+        ),
+        children: content,
+      });
     }
 
     return (

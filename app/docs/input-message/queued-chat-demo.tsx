@@ -10,7 +10,7 @@ import { ChatMessage } from "@/registry/default/chat-message";
 import { ThinkingIndicator } from "@/registry/default/thinking-indicator";
 import { FileThumbnail } from "@/registry/default/file-thumbnail";
 import { Button } from "@/registry/radix/button";
-import { Dropdown } from "@/registry/default/dropdown";
+import { Dropdown } from "@/components/flavored/dropdown";
 import { MenuItem } from "@/registry/default/menu-item";
 import { Tooltip } from "@/registry/radix/tooltip";
 import { useIcon } from "@/lib/icon-context";

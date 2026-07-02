@@ -12,7 +12,7 @@ import { fontWeights } from "@/registry/default/lib/font-weight";
 import { useShape } from "@/registry/default/lib/shape-context";
 import { SurfaceProvider } from "@/registry/default/lib/surface-context";
 import { Elevated } from "@/lib/elevated";
-import { Dropdown, useDropdown } from "@/registry/default/dropdown";
+import { Dropdown, useDropdown } from "@/components/flavored/dropdown";
 import { MenuItem } from "@/registry/default/menu-item";
 import { Slider } from "@/registry/radix/slider";
 import {

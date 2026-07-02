@@ -26,7 +26,7 @@ import {
   DialogDescription,
   DialogClose,
 } from "@/registry/radix/dialog";
-import { Dropdown } from "@/registry/default/dropdown";
+import { Dropdown } from "@/components/flavored/dropdown";
 import { MenuItem } from "@/registry/default/menu-item";
 import { InputCopy } from "@/registry/default/input-copy";
 import { InputGroup, InputField } from "@/registry/default/input-group";
@@ -36,7 +36,7 @@ import {
   SelectTrigger,
   SelectContent,
   SelectItem,
-} from "@/registry/default/select";
+} from "@/components/flavored/select";
 import { Slider, SliderComfortable } from "@/registry/radix/slider";
 import { Switch } from "@/registry/radix/switch";
 import {

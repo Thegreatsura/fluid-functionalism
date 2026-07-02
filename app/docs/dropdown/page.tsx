@@ -9,7 +9,7 @@ import {
   DropdownMenu,
   DropdownTrigger,
   DropdownContent,
-} from "@/registry/default/dropdown";
+} from "@/components/flavored/dropdown";
 import { MenuItem } from "@/registry/default/menu-item";
 import { Button } from "@/registry/radix/button";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";

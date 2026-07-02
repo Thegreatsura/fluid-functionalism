@@ -26,9 +26,9 @@ import {
   SelectTrigger,
   SelectContent,
   SelectItem,
-} from "@/registry/default/select";
+} from "@/components/flavored/select";
 import { InputGroup, InputField } from "@/registry/default/input-group";
-import { Dropdown, DropdownLabel, DropdownSeparator } from "@/registry/default/dropdown";
+import { Dropdown, DropdownLabel, DropdownSeparator } from "@/components/flavored/dropdown";
 import { MenuItem } from "@/registry/default/menu-item";
 import { Switch } from "@/registry/radix/switch";
 import { ThinkingIndicator } from "@/registry/default/thinking-indicator";

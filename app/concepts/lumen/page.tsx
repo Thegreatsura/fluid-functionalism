@@ -173,14 +173,12 @@ function TurnView({ turn }: { turn: Turn }) {
         </ThinkingStepsHeader>
         <ThinkingStepsContent>
           <ThinkingStep
-            index={0}
             icon="search"
             label="Searching the web"
             description="stoicism dichotomy of control — primary sources"
             status="complete"
           />
           <ThinkingStep
-            index={1}
             icon="globe"
             label="Reading sources"
             status="complete"
@@ -194,7 +192,6 @@ function TurnView({ turn }: { turn: Turn }) {
             </ThinkingStepSources>
           </ThinkingStep>
           <ThinkingStep
-            index={2}
             icon="brain"
             label={turn.thinking ? "Writing the answer" : "Composed the answer"}
             status={turn.thinking ? "active" : "complete"}

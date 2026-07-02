@@ -1,26 +1,188 @@
 "use client";
 
 import {
-  useRef,
+  useState,
+  useContext,
+  createContext,
   forwardRef,
   type ReactNode,
   type HTMLAttributes,
 } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { Collapsible } from "@base-ui/react/collapsible";
 import { cn } from "@/lib/utils";
 import { useIcon } from "@/lib/icon-context";
 import type { IconName } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/registry/radix/accordion";
 import { Badge } from "@/registry/default/badge";
 import type { BadgeColor } from "@/registry/default/badge";
+
+// ─── Shared collapsible parts ───────────────────────────────────────────────
+//
+// ThinkingSteps and ThinkingStepDetails are both single collapsible sections,
+// built directly on Base UI's Collapsible (Root/Trigger/Panel) with the
+// library's framer-motion springs layered on top.
+
+/** Open state of the nearest ThinkingSteps root, for the header trigger/panel. */
+const ThinkingStepsOpenContext = createContext(false);
+
+interface TriggerRowProps extends HTMLAttributes<HTMLButtonElement> {
+  open: boolean;
+  children: ReactNode;
+}
+
+/**
+ * Trigger row: hover background, dual-layer variable-weight label, and a
+ * chevron that rotates from right (closed) to down (open). Mirrors the
+ * library's accordion trigger styling.
+ */
+const TriggerRow = forwardRef<HTMLButtonElement, TriggerRowProps>(
+  ({ open, children, className, ...props }, ref) => {
+    const ChevronRight = useIcon("chevron-right");
+    const shape = useShape();
+    const [isHovered, setIsHovered] = useState(false);
+    const highlighted = open || isHovered;
+
+    return (
+      <div
+        className="relative w-fit"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <AnimatePresence>
+          {isHovered && (
+            <motion.div
+              className={`absolute inset-0 ${shape.bg} bg-hover pointer-events-none`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: spring.fast.exit }}
+              transition={{ duration: 0.08 }}
+            />
+          )}
+        </AnimatePresence>
+        <Collapsible.Trigger
+          ref={ref}
+          className={cn(
+            `relative z-10 flex items-center gap-2.5 ${shape.item} px-3 py-2 cursor-pointer outline-none select-none`,
+            "focus-visible:ring-1 focus-visible:ring-[#6B97FF] focus-visible:ring-offset-0",
+            className
+          )}
+          {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+        >
+          {/* Label with dual-layer text (invisible bold layer reserves width) */}
+          <span className="inline-grid text-[13px] text-left">
+            <span
+              className="col-start-1 row-start-1 invisible"
+              style={{ fontVariationSettings: fontWeights.semibold }}
+              aria-hidden="true"
+            >
+              {children}
+            </span>
+            <span
+              className={cn(
+                "col-start-1 row-start-1 transition-[color,font-variation-settings] duration-80",
+                highlighted ? "text-foreground" : "text-muted-foreground"
+              )}
+              style={{
+                fontVariationSettings: open
+                  ? fontWeights.semibold
+                  : fontWeights.normal,
+              }}
+            >
+              {children}
+            </span>
+          </span>
+
+          {/* Chevron — right when collapsed, rotates 90° down when expanded */}
+          <motion.span
+            className="shrink-0 inline-flex items-center justify-center"
+            animate={{ rotate: open ? 90 : 0 }}
+            transition={spring.fast}
+          >
+            <ChevronRight
+              size={16}
+              strokeWidth={highlighted ? 2 : 1.5}
+              className={cn(
+                "transition-[color,stroke-width] duration-80",
+                highlighted ? "text-foreground" : "text-muted-foreground"
+              )}
+            />
+          </motion.span>
+        </Collapsible.Trigger>
+      </div>
+    );
+  }
+);
+TriggerRow.displayName = "ThinkingStepsTriggerRow";
+
+interface CollapsePanelProps {
+  open: boolean;
+  children: ReactNode;
+}
+
+/**
+ * Collapsible panel with a framer-motion height + spring animation.
+ *
+ * Base UI's Panel would apply `hidden` the moment a controlled collapsible
+ * closes (it can't observe the JS-driven exit animation), which is
+ * `display: none` and would freeze the exit mid-flight. So we render through
+ * `keepMounted` + `render`, strip Base UI's premature `hidden`, and only
+ * apply the attribute ourselves once the framer exit has actually completed.
+ * The persistent panel element keeps the trigger ↔ panel ARIA contract
+ * intact (the trigger's `aria-controls` id lives on it).
+ */
+function CollapsePanel({ open, children }: CollapsePanelProps) {
+  const [exitComplete, setExitComplete] = useState(true);
+  if (open && exitComplete) {
+    // Reset during render so the panel is un-hidden before the opening
+    // animation's first paint.
+    setExitComplete(false);
+  }
+
+  return (
+    <Collapsible.Panel
+      keepMounted
+      render={(panelProps) => {
+        const {
+          // Applied too early for our exit animation (see above); we
+          // control the attribute ourselves.
+          hidden: _baseHidden,
+          // Only carries the --collapsible-panel-height/width vars, which
+          // stay 'auto' since Base UI never measures JS-driven animations.
+          style: _baseStyle,
+          ...restPanel
+        } = panelProps as React.HTMLAttributes<HTMLDivElement> & {
+          hidden?: boolean;
+        };
+        return (
+          <div {...restPanel} hidden={!open && exitComplete}>
+            <AnimatePresence
+              initial={false}
+              onExitComplete={() => setExitComplete(true)}
+            >
+              {open && (
+                <motion.div
+                  className="overflow-hidden"
+                  initial={{ height: 0 }}
+                  animate={{ height: "auto" }}
+                  exit={{ height: 0 }}
+                  // bounce: 0 — pure height looks better without overshoot.
+                  transition={{ ...spring.moderate, bounce: 0 }}
+                >
+                  <div className="px-3 pb-3 pt-1 text-[13px] text-muted-foreground">
+                    {children}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        );
+      }}
+    />
+  );
+}
 
 // ─── ThinkingSteps (root) ───────────────────────────────────────────────────
 
@@ -32,29 +194,27 @@ interface ThinkingStepsProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const ThinkingSteps = forwardRef<HTMLDivElement, ThinkingStepsProps>(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  ({ defaultOpen = true, open, onOpenChange, children, className, defaultValue: _, ...props }, ref) => {
-    const controlled = open !== undefined;
+  ({ defaultOpen = true, open, onOpenChange, children, className, ...props }, ref) => {
+    // Always drive Base UI as controlled so the header/panel can read the
+    // open state (chevron rotation, framer enter/exit) from context.
+    const [internalOpen, setInternalOpen] = useState(defaultOpen);
+    const isOpen = open ?? internalOpen;
+
     return (
-      <Accordion
+      <Collapsible.Root
         ref={ref}
-        type="single"
-        collapsible
-        {...(controlled
-          ? { value: open ? "thinking" : "" }
-          : { defaultValue: defaultOpen ? "thinking" : "" }
-        )}
-        onValueChange={
-          onOpenChange ? (v: string) => onOpenChange(v === "thinking") : undefined
-        }
+        open={isOpen}
+        onOpenChange={(next: boolean) => {
+          if (open === undefined) setInternalOpen(next);
+          onOpenChange?.(next);
+        }}
         className={cn("w-80 max-w-full", className)}
         {...props}
       >
-        {/* Hide standalone accordion expanded bg */}
-        <AccordionItem value="thinking" className="[&>.absolute]:hidden">
+        <ThinkingStepsOpenContext.Provider value={isOpen}>
           {children}
-        </AccordionItem>
-      </Accordion>
+        </ThinkingStepsOpenContext.Provider>
+      </Collapsible.Root>
     );
   }
 );
@@ -70,16 +230,11 @@ const ThinkingStepsHeader = forwardRef<
   HTMLButtonElement,
   ThinkingStepsHeaderProps
 >(({ children = "Thinking", className, ...props }, ref) => {
+  const isOpen = useContext(ThinkingStepsOpenContext);
   return (
-    <div className="w-fit">
-      <AccordionTrigger
-        ref={ref}
-        className={cn("[&>span:first-child]:flex-none w-auto", className)}
-        {...props}
-      >
-        {children}
-      </AccordionTrigger>
-    </div>
+    <TriggerRow ref={ref} open={isOpen} className={className} {...props}>
+      {children}
+    </TriggerRow>
   );
 });
 ThinkingStepsHeader.displayName = "ThinkingStepsHeader";
@@ -94,8 +249,9 @@ const ThinkingStepsContent = forwardRef<
   HTMLDivElement,
   ThinkingStepsContentProps
 >(({ children, className, ...props }, ref) => {
+  const isOpen = useContext(ThinkingStepsOpenContext);
   return (
-    <AccordionContent>
+    <CollapsePanel open={isOpen}>
       <div
         ref={ref}
         className={cn("flex flex-col", className)}
@@ -103,7 +259,7 @@ const ThinkingStepsContent = forwardRef<
       >
         {children}
       </div>
-    </AccordionContent>
+    </CollapsePanel>
   );
 });
 ThinkingStepsContent.displayName = "ThinkingStepsContent";
@@ -118,7 +274,6 @@ interface ThinkingStepProps {
   label: string;
   description?: string;
   status?: StepStatus;
-  index: number;
   delay?: number;
   isLast?: boolean;
   children?: ReactNode;
@@ -131,8 +286,7 @@ function ThinkingStep({
   label,
   description,
   status = "complete",
-  index,
-  delay = 0,
+  delay = 0.08,
   isLast = false,
   children,
   className,
@@ -156,7 +310,7 @@ function ThinkingStep({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.24, delay: 0.08, ease: "easeOut" }}
+          transition={{ duration: 0.24, delay, ease: "easeOut" }}
         >
           {/* Content row — this is the proximity hover target */}
           <div className={cn("flex gap-2.5 px-2 py-1.5", shape.item)}>
@@ -206,7 +360,7 @@ function ThinkingStep({
     );
 }
 
-// ─── ThinkingStepDetails (nested accordion) ────────────────────────────────
+// ─── ThinkingStepDetails (nested collapsible) ───────────────────────────────
 
 interface ThinkingStepDetailsProps {
   summary: string;
@@ -223,41 +377,31 @@ function ThinkingStepDetails({
   children,
   className,
 }: ThinkingStepDetailsProps) {
-  const shape = useShape();
+  const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <Accordion
-      type="single"
-      collapsible
-      defaultValue={defaultOpen ? "details" : ""}
+    <Collapsible.Root
+      open={open}
+      onOpenChange={setOpen}
       className={cn("mt-1 -ml-3", className)}
     >
-      <AccordionItem value="details" className="[&>.absolute]:hidden">
-        <div className="w-fit">
-          <AccordionTrigger
-            className={cn(
-              "[&>span:first-child]:flex-none w-auto py-1 px-3 gap-1.5",
-              shape.item
-            )}
-          >
-            {summary}
-          </AccordionTrigger>
+      <TriggerRow open={open} className="py-1 px-3 gap-1.5">
+        {summary}
+      </TriggerRow>
+      <CollapsePanel open={open}>
+        <div className="flex flex-col gap-0.5 pt-0.5">
+          {details?.map((item, i) => (
+            <span
+              key={i}
+              className="text-[12px] text-muted-foreground leading-snug"
+            >
+              {item}
+            </span>
+          ))}
+          {children}
         </div>
-        <AccordionContent>
-          <div className="flex flex-col gap-0.5 pt-0.5">
-            {details?.map((item, i) => (
-              <span
-                key={i}
-                className="text-[12px] text-muted-foreground leading-snug"
-              >
-                {item}
-              </span>
-            ))}
-            {children}
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+      </CollapsePanel>
+    </Collapsible.Root>
   );
 }
 

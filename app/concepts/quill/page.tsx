@@ -148,9 +148,9 @@ function AIBlock() {
         <ThinkingSteps defaultOpen className="w-full max-w-full">
           <ThinkingStepsHeader>Drafting with Quill AI</ThinkingStepsHeader>
           <ThinkingStepsContent>
-            <ThinkingStep index={0} icon="square-library" label="Reading the page context" status="complete" />
-            <ThinkingStep index={1} icon="brain" label="Outlining the response" status="complete" />
-            <ThinkingStep index={2} icon="pencil" label="Writing" status="active" isLast />
+            <ThinkingStep icon="square-library" label="Reading the page context" status="complete" />
+            <ThinkingStep icon="brain" label="Outlining the response" status="complete" />
+            <ThinkingStep icon="pencil" label="Writing" status="active" isLast />
           </ThinkingStepsContent>
         </ThinkingSteps>
       )}

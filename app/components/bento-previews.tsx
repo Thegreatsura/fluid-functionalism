@@ -518,13 +518,13 @@ function ThinkingStepsPreview() {
       <ThinkingSteps defaultOpen>
         <ThinkingStepsHeader>Research Agent</ThinkingStepsHeader>
         <ThinkingStepsContent>
-          <ThinkingStep status="complete" index={0} icon="search" label="Searching profiles">
+          <ThinkingStep status="complete" icon="search" label="Searching profiles">
             <ThinkingStepSources>
               <ThinkingStepSource>x.com</ThinkingStepSource>
               <ThinkingStepSource>github.com</ThinkingStepSource>
             </ThinkingStepSources>
           </ThinkingStep>
-          <ThinkingStep status="complete" index={1} icon="globe" label="Reading portfolio">
+          <ThinkingStep status="complete" icon="globe" label="Reading portfolio">
             <ThinkingStepDetails
               summary="Explored 4 pages"
               details={[
@@ -535,13 +535,13 @@ function ThinkingStepsPreview() {
               ]}
             />
           </ThinkingStep>
-          <ThinkingStep status="complete" index={2} icon="search" label="Searching recent work">
+          <ThinkingStep status="complete" icon="search" label="Searching recent work">
             <ThinkingStepSources>
               <ThinkingStepSource>figma.com</ThinkingStepSource>
               <ThinkingStepSource>behance.net</ThinkingStepSource>
             </ThinkingStepSources>
           </ThinkingStep>
-          <ThinkingStep status="active" index={3} icon="brain" label="Analyzing results"
+          <ThinkingStep status="active" icon="brain" label="Analyzing results"
             description="Compiling findings into a summary." isLast />
         </ThinkingStepsContent>
       </ThinkingSteps>

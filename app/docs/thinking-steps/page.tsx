@@ -27,8 +27,8 @@ const basicCode = `import {
 <ThinkingSteps>
   <ThinkingStepsHeader />
   <ThinkingStepsContent>
-    <ThinkingStep index={0} icon="search" label="Searched the web" />
-    <ThinkingStep index={1} icon="globe" label="Read 3 sources">
+    <ThinkingStep icon="search" label="Searched the web" />
+    <ThinkingStep icon="globe" label="Read 3 sources">
       <ThinkingStepDetails
         summary="Explored 6 files"
         details={[
@@ -41,7 +41,7 @@ const basicCode = `import {
         ]}
       />
     </ThinkingStep>
-    <ThinkingStep index={2} icon="check" label="Done" isLast />
+    <ThinkingStep icon="check" label="Done" isLast />
   </ThinkingStepsContent>
 </ThinkingSteps>`;
 
@@ -49,8 +49,8 @@ const minimalCode = `// Two dots — the simplest possible usage.
 <ThinkingSteps>
   <ThinkingStepsHeader />
   <ThinkingStepsContent>
-    <ThinkingStep index={0} showIcon={false} label="Ran a command" />
-    <ThinkingStep index={1} showIcon={false} label="Done" isLast />
+    <ThinkingStep showIcon={false} label="Ran a command" />
+    <ThinkingStep showIcon={false} label="Done" isLast />
   </ThinkingStepsContent>
 </ThinkingSteps>`;
 
@@ -78,7 +78,7 @@ const getStatus = (i: number): StepStatus => {
 <ThinkingSteps open={open} onOpenChange={setOpen}>
   <ThinkingStepsHeader />
   <ThinkingStepsContent>
-    <ThinkingStep index={0} icon="search"
+    <ThinkingStep icon="search"
       label="Searching for micka.design"
       status={getStatus(0)} isLast={visibleSteps <= 1}>
       {visibleSteps > 1 && (
@@ -89,13 +89,13 @@ const getStatus = (i: number): StepStatus => {
         </ThinkingStepSources>
       )}
     </ThinkingStep>
-    <ThinkingStep index={1} icon="globe"
+    <ThinkingStep icon="globe"
       label="Reading sources"
       status={getStatus(1)} isLast={visibleSteps <= 2} />
-    <ThinkingStep index={2} icon="brain"
+    <ThinkingStep icon="brain"
       label="Analyzing portfolio"
       status={getStatus(2)} isLast={visibleSteps <= 3} />
-    <ThinkingStep index={3} icon="check"
+    <ThinkingStep icon="check"
       label="Complete" status={getStatus(3)} isLast />
   </ThinkingStepsContent>
 </ThinkingSteps>`;
@@ -104,7 +104,7 @@ const streamingTextCode = `// Dot mode with long descriptions — text-only, no 
 <ThinkingSteps open={open} onOpenChange={setOpen}>
   <ThinkingStepsHeader />
   <ThinkingStepsContent>
-    <ThinkingStep index={0} showIcon={false}
+    <ThinkingStep showIcon={false}
       label="Loading dataset"
       description="Establishing a connection to the data warehouse and streaming
         2.4 million rows across 47 columns into a memory-mapped buffer.
@@ -113,7 +113,7 @@ const streamingTextCode = `// Dot mode with long descriptions — text-only, no 
         JSON fields that need to be flattened before downstream
         processing can begin."
       status={getStatus(0)} />
-    <ThinkingStep index={1} showIcon={false}
+    <ThinkingStep showIcon={false}
       label="Validating schema"
       description="Running a full schema validation pass against the canonical
         type definitions. Checking that all 47 columns match their
@@ -122,7 +122,7 @@ const streamingTextCode = `// Dot mode with long descriptions — text-only, no 
         correctly against the dimension tables, and flagging any new
         columns that appeared since the last successful run."
       status={getStatus(1)} />
-    <ThinkingStep index={2} showIcon={false}
+    <ThinkingStep showIcon={false}
       label="Transforming records"
       description="Applying the full normalization pipeline: flattening nested
         address objects into discrete columns, deduplicating records
@@ -131,7 +131,7 @@ const streamingTextCode = `// Dot mode with long descriptions — text-only, no 
         ISO 8601 format, and running the currency conversion step for
         the 14 non-USD transaction currencies."
       status={getStatus(2)} />
-    <ThinkingStep index={3} showIcon={false}
+    <ThinkingStep showIcon={false}
       label="Running quality checks"
       description="Executing 23 data quality assertions: verifying output row
         counts fall within the expected 2% tolerance, checking revenue
@@ -140,7 +140,7 @@ const streamingTextCode = `// Dot mode with long descriptions — text-only, no 
         tables, and ensuring no single partition exceeds 40% of total
         volume."
       status={getStatus(3)} />
-    <ThinkingStep index={4} showIcon={false}
+    <ThinkingStep showIcon={false}
       label="Writing output"
       description="Compressing the validated dataset into 847 Snappy-encoded
         Parquet files partitioned by region and date, uploading each
@@ -149,7 +149,7 @@ const streamingTextCode = `// Dot mode with long descriptions — text-only, no 
         triggering the downstream Airflow DAG for incremental merges
         into the production fact table."
       status={getStatus(4)} />
-    <ThinkingStep index={5} showIcon={false}
+    <ThinkingStep showIcon={false}
       label="Pipeline complete"
       status={getStatus(5)} isLast />
   </ThinkingStepsContent>
@@ -159,19 +159,19 @@ const withImagesCode = `// Steps with inline images using ThinkingStepImage.
 <ThinkingSteps open={open} onOpenChange={setOpen}>
   <ThinkingStepsHeader>Vision Agent</ThinkingStepsHeader>
   <ThinkingStepsContent>
-    <ThinkingStep index={0} icon="search"
+    <ThinkingStep icon="search"
       label="Searching for reference"
       status={getStatus(0)} isLast={visibleSteps <= 1} />
-    <ThinkingStep index={1} icon="image"
+    <ThinkingStep icon="image"
       label="Found screenshot"
       status={getStatus(1)} isLast={visibleSteps <= 2}>
       <ThinkingStepImage src="/og.png" caption="Homepage screenshot" />
     </ThinkingStep>
-    <ThinkingStep index={2} icon="brain"
+    <ThinkingStep icon="brain"
       label="Analyzing layout"
       description="Inspecting spacing, typography scale, and color usage."
       status={getStatus(2)} isLast={visibleSteps <= 3} />
-    <ThinkingStep index={3} icon="check"
+    <ThinkingStep icon="check"
       label="Analysis complete"
       status={getStatus(3)} isLast />
   </ThinkingStepsContent>
@@ -181,7 +181,7 @@ const fullCode = `// Kitchen sink: sources, details, descriptions, images, custo
 <ThinkingSteps open={open} onOpenChange={setOpen}>
   <ThinkingStepsHeader>Research Agent</ThinkingStepsHeader>
   <ThinkingStepsContent>
-    <ThinkingStep index={0} icon="search" label="Searching profiles"
+    <ThinkingStep icon="search" label="Searching profiles"
       status={getStatus(0)} isLast={visibleSteps <= 1}>
       <ThinkingStepSources>
         <ThinkingStepSource>x.com</ThinkingStepSource>
@@ -189,12 +189,12 @@ const fullCode = `// Kitchen sink: sources, details, descriptions, images, custo
         <ThinkingStepSource>github.com</ThinkingStepSource>
       </ThinkingStepSources>
     </ThinkingStep>
-    <ThinkingStep index={1} icon="image" label="Found profile photo"
+    <ThinkingStep icon="image" label="Found profile photo"
       description="micka.design profile from x.com"
       status={getStatus(1)} isLast={visibleSteps <= 2}>
       <ThinkingStepImage src="/og.png" caption="Profile card" />
     </ThinkingStep>
-    <ThinkingStep index={2} icon="globe" label="Reading portfolio"
+    <ThinkingStep icon="globe" label="Reading portfolio"
       status={getStatus(2)} isLast={visibleSteps <= 3}>
       <ThinkingStepDetails
         summary="Explored 4 pages"
@@ -206,7 +206,7 @@ const fullCode = `// Kitchen sink: sources, details, descriptions, images, custo
         ]}
       />
     </ThinkingStep>
-    <ThinkingStep index={3} icon="search" label="Searching recent work"
+    <ThinkingStep icon="search" label="Searching recent work"
       status={getStatus(3)} isLast={visibleSteps <= 4}>
       <ThinkingStepSources>
         <ThinkingStepSource>figma.com</ThinkingStepSource>
@@ -214,10 +214,10 @@ const fullCode = `// Kitchen sink: sources, details, descriptions, images, custo
         <ThinkingStepSource>google.com</ThinkingStepSource>
       </ThinkingStepSources>
     </ThinkingStep>
-    <ThinkingStep index={4} icon="brain" label="Analyzing results"
+    <ThinkingStep icon="brain" label="Analyzing results"
       description="Compiling findings into a summary."
       status={getStatus(4)} isLast={visibleSteps <= 5} />
-    <ThinkingStep index={5} icon="check" label="Research complete"
+    <ThinkingStep icon="check" label="Research complete"
       status={getStatus(5)} isLast />
   </ThinkingStepsContent>
 </ThinkingSteps>`;
@@ -241,8 +241,7 @@ const stepProps: PropDef[] = [
   { name: "label", type: "string", description: "Step label text." },
   { name: "description", type: "string", description: "Optional secondary text below the label." },
   { name: "status", type: '"complete" | "active" | "pending"', default: '"complete"', description: "Step state. Pending steps are hidden; active steps show shimmer text." },
-  { name: "index", type: "number", description: "Position index for proximity hover registration." },
-  { name: "delay", type: "number", default: "0", description: "Entrance animation delay in seconds." },
+  { name: "delay", type: "number", default: "0.08", description: "Content fade-in delay in seconds, after the step's height starts expanding." },
   { name: "isLast", type: "boolean", default: "false", description: "Hides the connector line below this step." },
 ];
 
@@ -359,7 +358,6 @@ function StreamingDemo({ playing, onFinished, onResetRef }: DemoProps) {
       <ThinkingStepsHeader />
       <ThinkingStepsContent>
         <ThinkingStep
-          index={0}
           icon="search"
           label="Searching for micka.design"
           status={getStatus(0)}
@@ -374,21 +372,18 @@ function StreamingDemo({ playing, onFinished, onResetRef }: DemoProps) {
           )}
         </ThinkingStep>
         <ThinkingStep
-          index={1}
           icon="globe"
           label="Reading sources"
           status={getStatus(1)}
           isLast={visibleSteps <= 2}
         />
         <ThinkingStep
-          index={2}
           icon="brain"
           label="Analyzing portfolio"
           status={getStatus(2)}
           isLast={visibleSteps <= 3}
         />
         <ThinkingStep
-          index={3}
           icon="check"
           label="Complete"
           status={getStatus(3)}
@@ -465,7 +460,7 @@ function StreamingTextDemo({ playing, onFinished, onResetRef }: DemoProps) {
       <ThinkingStepsHeader />
       <ThinkingStepsContent>
         {labels.map((label, i) => (
-          <ThinkingStep key={i} index={i} showIcon={false} label={label} status={getStatus(i)} isLast={visibleSteps <= i + 1}>
+          <ThinkingStep key={i} showIcon={false} label={label} status={getStatus(i)} isLast={visibleSteps <= i + 1}>
             <StreamingDescription
               text={STREAMING_TEXT_DESCRIPTIONS[i]}
               active={getStatus(i) === "active"}
@@ -473,7 +468,7 @@ function StreamingTextDemo({ playing, onFinished, onResetRef }: DemoProps) {
             />
           </ThinkingStep>
         ))}
-        <ThinkingStep index={5} showIcon={false} label="Pipeline complete" status={getStatus(5)} isLast />
+        <ThinkingStep showIcon={false} label="Pipeline complete" status={getStatus(5)} isLast />
       </ThinkingStepsContent>
     </ThinkingSteps>
   );
@@ -505,14 +500,12 @@ function WithImagesDemo({ playing, onFinished, onResetRef }: DemoProps) {
       <ThinkingStepsHeader>Vision Agent</ThinkingStepsHeader>
       <ThinkingStepsContent>
         <ThinkingStep
-          index={0}
           icon="search"
           label="Searching for reference"
           status={getStatus(0)}
           isLast={visibleSteps <= 1}
         />
         <ThinkingStep
-          index={1}
           icon="image"
           label="Found screenshot"
           status={getStatus(1)}
@@ -523,7 +516,6 @@ function WithImagesDemo({ playing, onFinished, onResetRef }: DemoProps) {
           )}
         </ThinkingStep>
         <ThinkingStep
-          index={2}
           icon="brain"
           label="Analyzing layout"
           description="Inspecting spacing, typography scale, and color usage."
@@ -531,7 +523,6 @@ function WithImagesDemo({ playing, onFinished, onResetRef }: DemoProps) {
           isLast={visibleSteps <= 3}
         />
         <ThinkingStep
-          index={3}
           icon="check"
           label="Analysis complete"
           status={getStatus(3)}
@@ -568,7 +559,6 @@ function FullDemo({ playing, onFinished, onResetRef }: DemoProps) {
       <ThinkingStepsHeader>Research Agent</ThinkingStepsHeader>
       <ThinkingStepsContent>
         <ThinkingStep
-          index={0}
           icon="search"
           label="Searching for profiles"
           status={getStatus(0)}
@@ -583,7 +573,6 @@ function FullDemo({ playing, onFinished, onResetRef }: DemoProps) {
           )}
         </ThinkingStep>
         <ThinkingStep
-          index={1}
           icon="image"
           label="Found profile photo"
           description="micka.design profile from x.com"
@@ -595,7 +584,6 @@ function FullDemo({ playing, onFinished, onResetRef }: DemoProps) {
           )}
         </ThinkingStep>
         <ThinkingStep
-          index={2}
           icon="globe"
           label="Reading portfolio"
           status={getStatus(2)}
@@ -614,7 +602,6 @@ function FullDemo({ playing, onFinished, onResetRef }: DemoProps) {
           )}
         </ThinkingStep>
         <ThinkingStep
-          index={3}
           icon="search"
           label="Searching for recent work"
           status={getStatus(3)}
@@ -629,7 +616,6 @@ function FullDemo({ playing, onFinished, onResetRef }: DemoProps) {
           )}
         </ThinkingStep>
         <ThinkingStep
-          index={4}
           icon="brain"
           label="Analyzing results"
           description="Compiling findings into a summary."
@@ -637,7 +623,6 @@ function FullDemo({ playing, onFinished, onResetRef }: DemoProps) {
           isLast={visibleSteps <= 5}
         />
         <ThinkingStep
-          index={5}
           icon="check"
           label="Research complete"
           status={getStatus(5)}
@@ -760,8 +745,8 @@ export default function ThinkingStepsDoc() {
           <ThinkingSteps>
             <ThinkingStepsHeader />
             <ThinkingStepsContent>
-              <ThinkingStep index={0} icon="search" label="Searched the web" />
-              <ThinkingStep index={1} icon="globe" label="Read 3 sources">
+              <ThinkingStep icon="search" label="Searched the web" />
+              <ThinkingStep icon="globe" label="Read 3 sources">
                 <ThinkingStepDetails
                   summary="Explored 6 files"
                   details={[
@@ -774,7 +759,7 @@ export default function ThinkingStepsDoc() {
                   ]}
                 />
               </ThinkingStep>
-              <ThinkingStep index={2} icon="check" label="Done" isLast />
+              <ThinkingStep icon="check" label="Done" isLast />
             </ThinkingStepsContent>
           </ThinkingSteps>
         </ComponentPreview>
@@ -789,8 +774,8 @@ export default function ThinkingStepsDoc() {
           <ThinkingSteps>
             <ThinkingStepsHeader />
             <ThinkingStepsContent>
-              <ThinkingStep index={0} showIcon={false} label="Ran a command" />
-              <ThinkingStep index={1} showIcon={false} label="Done" isLast />
+              <ThinkingStep showIcon={false} label="Ran a command" />
+              <ThinkingStep showIcon={false} label="Done" isLast />
             </ThinkingStepsContent>
           </ThinkingSteps>
         </ComponentPreview>

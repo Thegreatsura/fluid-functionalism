@@ -11,7 +11,7 @@ import {
   ThinkingStepSource,
   ThinkingStepImage,
   type StepStatus,
-} from "@/registry/default/thinking-steps";
+} from "@/components/flavored/thinking-steps";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";

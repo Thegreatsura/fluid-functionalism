@@ -108,11 +108,17 @@ import {
   TabsSubtleItem as BaseTabsSubtleItem,
 } from "@/registry/base/tabs-subtle";
 import {
-  ThinkingSteps,
-  ThinkingStepsHeader,
-  ThinkingStepsContent,
-  ThinkingStep,
-} from "@/registry/default/thinking-steps";
+  ThinkingSteps as RadixThinkingSteps,
+  ThinkingStepsHeader as RadixThinkingStepsHeader,
+  ThinkingStepsContent as RadixThinkingStepsContent,
+  ThinkingStep as RadixThinkingStep,
+} from "@/registry/radix/thinking-steps";
+import {
+  ThinkingSteps as BaseThinkingSteps,
+  ThinkingStepsHeader as BaseThinkingStepsHeader,
+  ThinkingStepsContent as BaseThinkingStepsContent,
+  ThinkingStep as BaseThinkingStep,
+} from "@/registry/base/thinking-steps";
 import { InputGroup, InputField } from "@/registry/default/input-group";
 import { AskUserQuestions } from "@/registry/default/ask-user-questions";
 import { Search, Mail, SquareLibrary, Clock, Star } from "lucide-react";
@@ -421,6 +427,23 @@ export default function CompareBasesPage() {
         </BaseTabsSubtle>
       </Row>
 
+      <Row label="Thinking Steps">
+        <RadixThinkingSteps>
+          <RadixThinkingStepsHeader />
+          <RadixThinkingStepsContent>
+            <RadixThinkingStep icon="search" label="Searched the web" />
+            <RadixThinkingStep icon="globe" label="Read 3 sources" />
+          </RadixThinkingStepsContent>
+        </RadixThinkingSteps>
+        <BaseThinkingSteps>
+          <BaseThinkingStepsHeader />
+          <BaseThinkingStepsContent>
+            <BaseThinkingStep icon="search" label="Searched the web" />
+            <BaseThinkingStep icon="globe" label="Read 3 sources" />
+          </BaseThinkingStepsContent>
+        </BaseThinkingSteps>
+      </Row>
+
       {/* ── Single-source components ─────────────────────────────────── */}
       <section className="pt-24 pb-4">
         <h2
@@ -431,7 +454,7 @@ export default function CompareBasesPage() {
         </h2>
         <p className="text-sm text-muted-foreground mt-2 max-w-[560px]">
           These components ship as a single source sitting on Base UI
-          primitives — Select, Menu, Popover, Field, Collapsible — and are
+          primitives — Select, Menu, Popover, Field — and are
           used as-is under either flavor.
         </p>
       </section>
@@ -463,16 +486,6 @@ export default function CompareBasesPage() {
 
       <SingleRow label="Color Picker">
         <ColorPickerPopover defaultValue="#6B97FF" />
-      </SingleRow>
-
-      <SingleRow label="Thinking Steps">
-        <ThinkingSteps>
-          <ThinkingStepsHeader />
-          <ThinkingStepsContent>
-            <ThinkingStep icon="search" label="Searched the web" />
-            <ThinkingStep icon="globe" label="Read 3 sources" />
-          </ThinkingStepsContent>
-        </ThinkingSteps>
       </SingleRow>
 
       <SingleRow label="Input Group">

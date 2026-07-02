@@ -23,7 +23,7 @@ import {
   ThinkingStepSources,
   ThinkingStepSource,
   ThinkingStepImage,
-} from "@/registry/default/thinking-steps";
+} from "@/components/flavored/thinking-steps";
 import type { BadgeColor } from "@/registry/default/badge";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────

@@ -61,7 +61,7 @@ import {
   ThinkingStepDetails,
   ThinkingStepSources,
   ThinkingStepSource,
-} from "@/registry/default/thinking-steps";
+} from "@/components/flavored/thinking-steps";
 import { Tooltip } from "@/registry/radix/tooltip";
 import {
   AskUserQuestions,

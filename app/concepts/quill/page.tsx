@@ -30,7 +30,7 @@ import {
   ThinkingStepsHeader,
   ThinkingStepsContent,
   ThinkingStep,
-} from "@/registry/default/thinking-steps";
+} from "@/components/flavored/thinking-steps";
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
 

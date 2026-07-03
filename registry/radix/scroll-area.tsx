@@ -189,13 +189,17 @@ const ScrollBar = forwardRef<
       <ScrollAreaPrimitive.ScrollAreaThumb
         data-slot="scroll-area-thumb"
         className={cn(
-          "relative bg-foreground/25 transition-[background-color,width,height] duration-160 ease-in-out",
-          "group-hover/scrollbar:bg-foreground/45 active:!bg-foreground/60",
+          // Fixed surface-relative overlay ramp (8 → 12 → 16%) — same tint
+          // direction as the menu hover/active tokens, one notch stronger.
+          "relative bg-[rgb(var(--overlay)/0.08)] transition-[background-color,width,height] duration-160 ease-in-out",
+          "group-hover/scrollbar:bg-[rgb(var(--overlay)/0.12)] active:!bg-[rgb(var(--overlay)/0.16)]",
           shape.bg,
+          // -translate nudges the thumb 2px off the container edge; the track
+          // (and its 10px hit target) stays flush so edge-throws still land.
           orientation === "vertical" &&
-            "mx-auto my-1 w-1 group-hover/scrollbar:w-1.5",
+            "mx-auto my-1 w-1 -translate-x-0.5 group-hover/scrollbar:w-1.5",
           orientation === "horizontal" &&
-            "my-auto mx-1 h-1 group-hover/scrollbar:h-1.5"
+            "my-auto mx-1 h-1 -translate-y-0.5 group-hover/scrollbar:h-1.5"
         )}
       />
     </ScrollAreaPrimitive.ScrollAreaScrollbar>

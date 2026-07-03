@@ -6,6 +6,7 @@ import { NavMenu } from "@/components/ui/nav-menu";
 import { NavItem } from "@/components/ui/nav-item";
 import { useIcon } from "@/lib/icon-context";
 import { RightPanel } from "@/app/components/right-panel";
+import { ScrollArea } from "@/registry/base/scroll-area";
 
 interface ConceptFrameProps {
   children: ReactNode;
@@ -49,18 +50,20 @@ function ConceptNav() {
   const Home = useIcon("home");
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col gap-4 overflow-y-auto p-4 lg:flex">
-      <NavMenu activeSlug={pathname} aria-label="Concept screens">
-        <NavItem index={0} href="/" label="Home" icon={Home} />
-        {CONCEPTS.map((c, i) => (
-          <NavItem
-            key={c.slug}
-            index={i + 1}
-            href={`/concepts/${c.slug}`}
-            label={c.name}
-          />
-        ))}
-      </NavMenu>
+    <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col lg:flex">
+      <ScrollArea className="min-h-0 w-full flex-1" viewportClassName="scroll-fade p-4">
+        <NavMenu activeSlug={pathname} aria-label="Concept screens">
+          <NavItem index={0} href="/" label="Home" icon={Home} />
+          {CONCEPTS.map((c, i) => (
+            <NavItem
+              key={c.slug}
+              index={i + 1}
+              href={`/concepts/${c.slug}`}
+              label={c.name}
+            />
+          ))}
+        </NavMenu>
+      </ScrollArea>
     </aside>
   );
 }

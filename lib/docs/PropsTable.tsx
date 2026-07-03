@@ -1,4 +1,5 @@
 import { fontWeights } from "@/registry/default/lib/font-weight";
+import { ScrollArea } from "@/registry/base/scroll-area";
 
 export interface PropDef {
   name: string;
@@ -12,13 +13,19 @@ interface PropsTableProps {
 }
 
 export function PropsTable({ props }: PropsTableProps) {
+  // Horizontal ScrollArea gives narrow viewports the shape-system scrollbar +
+  // a scroll-fade-x edge; min-w keeps columns legible before it scrolls.
   // Drop the Default column when nothing has a default (e.g. token references,
   // or a table where every prop is required) — an all-"—" column is noise.
   const showDefault = props.some((prop) => prop.default !== undefined);
 
   return (
-    <div className="w-full overflow-x-auto">
-      <table className="w-full text-[13px] border-collapse">
+    <ScrollArea
+      orientation="horizontal"
+      viewportClassName="scroll-fade-x"
+      className="w-full"
+    >
+      <table className="w-full min-w-[520px] text-[13px] border-collapse">
         <thead>
           <tr className="border-b border-border">
             <th
@@ -70,6 +77,6 @@ export function PropsTable({ props }: PropsTableProps) {
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollArea>
   );
 }

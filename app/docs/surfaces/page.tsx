@@ -23,6 +23,7 @@ import { useIcon, type IconComponent } from "@/registry/default/lib/icon-context
 import { useThemeContext } from "@/registry/default/lib/theme-context";
 import { surfaceClasses } from "@/registry/default/lib/surface-classes";
 import { cn } from "@/registry/default/lib/utils";
+import { ScrollArea } from "@/registry/base/scroll-area";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
@@ -192,11 +193,17 @@ function TokensDemo() {
           >
             Dark
           </span>
-          <div className="flex gap-3 rounded-2xl bg-background p-4 overflow-x-auto">
-            {LEVELS.map((n) => (
-              <SurfaceChip key={n} level={n} />
-            ))}
-          </div>
+          <ScrollArea
+            orientation="horizontal"
+            viewportClassName="scroll-fade-x"
+            className="rounded-2xl bg-background"
+          >
+            <div className="flex gap-3 p-4 w-max">
+              {LEVELS.map((n) => (
+                <SurfaceChip key={n} level={n} />
+              ))}
+            </div>
+          </ScrollArea>
         </div>
         <div className="light flex flex-col gap-2">
           <span
@@ -205,11 +212,17 @@ function TokensDemo() {
           >
             Light
           </span>
-          <div className="flex gap-3 rounded-2xl bg-background p-4 overflow-x-auto">
-            {LEVELS.map((n) => (
-              <SurfaceChip key={n} level={n} />
-            ))}
-          </div>
+          <ScrollArea
+            orientation="horizontal"
+            viewportClassName="scroll-fade-x"
+            className="rounded-2xl bg-background"
+          >
+            <div className="flex gap-3 p-4 w-max">
+              {LEVELS.map((n) => (
+                <SurfaceChip key={n} level={n} />
+              ))}
+            </div>
+          </ScrollArea>
         </div>
       </div>
     </DarkPreview>

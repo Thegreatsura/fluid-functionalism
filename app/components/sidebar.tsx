@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { NavMenu } from "@/components/ui/nav-menu";
 import { NavItem } from "@/components/ui/nav-item";
 import { componentList, systemList } from "@/lib/docs/components";
-import { cn } from "@/registry/default/lib/utils";
+import { ScrollArea } from "@/registry/base/scroll-area";
 
 
 interface SidebarProps {
@@ -14,15 +14,8 @@ interface SidebarProps {
 export function Sidebar({ mobile }: SidebarProps) {
   const pathname = usePathname();
 
-  return (
-    <aside
-      className={cn(
-        "shrink-0 w-56 overflow-y-auto p-4 flex-col gap-4",
-        mobile
-          ? "w-full flex"
-          : "sticky top-0 h-screen xl-fade-flex"
-      )}
-    >
+  const sections = (
+    <>
       {/* Top-level navigation */}
       <NavMenu activeSlug={pathname === "/" ? "/" : pathname === "/docs" ? "/docs" : null} aria-label="Main navigation">
         <NavItem index={0} href="/" label="Showcase" />
@@ -69,7 +62,30 @@ export function Sidebar({ mobile }: SidebarProps) {
           ))}
         </NavMenu>
       </div>
+    </>
+  );
 
+  // Inside the mobile drawer, which owns the scroll (overflow-y-auto): the
+  // sidebar just flows as a plain column — a nested ScrollArea would
+  // double-scroll and needs a bounded height the drawer doesn't hand it.
+  if (mobile) {
+    return <aside className="flex w-full flex-col gap-4 p-4">{sections}</aside>;
+  }
+
+  // Desktop: the aside is the sticky, full-height rail. ScrollArea gives it the
+  // shape-system scrollbar on hover + a scroll-fade edge — the same trick the
+  // /docs/scrollbars page ships, dogfooded on our own nav.
+  return (
+    <aside
+      // max-xl:fixed — same trick as the right panel: while xl-fade-flex holds
+      // display:flex through the fade-out (allow-discrete), fixed positioning
+      // takes the sidebar out of flow at the breakpoint so the content reflows
+      // once, not again when display flips to none.
+      className="shrink-0 w-56 flex-col sticky top-0 h-screen xl-fade-flex max-xl:fixed max-xl:top-0 max-xl:left-0 max-xl:z-40 max-xl:pointer-events-none"
+    >
+      <ScrollArea className="min-h-0 w-full flex-1" viewportClassName="scroll-fade">
+        <div className="flex flex-col gap-4 p-4">{sections}</div>
+      </ScrollArea>
     </aside>
   );
 }

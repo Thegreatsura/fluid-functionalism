@@ -1,7 +1,8 @@
-// Motion tokens. Each tier's value is the ENTER transition — a spring, with a
-// little bounce on the larger tiers. Its `.exit` is the matching EXIT transition
-// — a plain tween, no bounce, one tier quicker — so a dismissal reads as crisp
-// and final rather than replaying the entrance in reverse.
+// Motion tokens. Each tier's value is the ENTER transition — a critically
+// damped spring, except the largest tier which keeps a little bounce. Its
+// `.exit` is the matching EXIT transition — a plain tween, no bounce, one tier
+// quicker — so a dismissal reads as crisp and final rather than replaying the
+// entrance in reverse.
 //
 //   transition={spring.fast}                              // enter
 //   exit={{ opacity: 0, transition: spring.fast.exit }}   // leave
@@ -15,16 +16,10 @@ export const spring = {
     bounce: 0,
     exit: { duration: 0.06 },
   },
+  // Critically damped: same perceived speed as a bouncier tier, but lands
+  // exactly with no overshoot — for short travel and panels/sheets that must
+  // settle precisely (dropdowns, tabs, drawers, merged selection backgrounds).
   moderate: {
-    type: "spring" as const,
-    duration: 0.16,
-    bounce: 0.08,
-    exit: { duration: 0.12 },
-  },
-  // Critically damped moderate: same perceived speed, no overshoot; for
-  // panels/sheets that must land exactly (drawers, merged selection
-  // backgrounds).
-  settle: {
     type: "spring" as const,
     duration: 0.16,
     bounce: 0,

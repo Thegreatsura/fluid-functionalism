@@ -95,10 +95,10 @@ export function MobileDrawer({
               className={`fixed top-0 left-0 bottom-0 w-64 ${surfaceClasses(level, 3)} z-50 overflow-y-auto p-4`}
               initial={{ x: "-100%" }}
               animate={{ x: open ? 0 : "-100%" }}
-              // spring.settle: critically damped, so the panel decelerates
+              // spring.moderate: critically damped, so the panel decelerates
               // into x: 0 without overshooting (a bounce briefly exposed the
               // page background through the gap on the left edge).
-              transition={open ? spring.settle : spring.settle.exit}
+              transition={open ? spring.moderate : spring.moderate.exit}
               // Release the deferred unmount once the exit tween has
               // finished so the close animation fully plays.
               onAnimationComplete={() => {

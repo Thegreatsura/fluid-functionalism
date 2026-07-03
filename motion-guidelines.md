@@ -12,8 +12,7 @@ does the other.
 | Token | Duration | Bounce | Use for |
 |---|---|---|---|
 | `spring.fast` | 0.08s | 0 | Hover, focus rings, fades, tooltips, selection indicators |
-| `spring.moderate` | 0.16s | 0.08 | Short travel / small expansion: dropdown & tab indicators, switch thumb, accordions |
-| `spring.settle` | 0.16s | 0 | Critically damped moderate — same perceived speed, no overshoot; panels/sheets that must land exactly (mobile drawer, merged selection backgrounds) |
+| `spring.moderate` | 0.16s | 0 | Critically damped — short travel / small expansion (dropdown & tab indicators, switch thumb, accordions) and panels/sheets that must land exactly (mobile drawer, merged selection backgrounds) |
 | `spring.slow` | 0.24s | 0.12 | Large surfaces: dialogs, side panels, stepped flows |
 
 **Rule:** the bigger the thing that moves, the slower the spring. No component
@@ -32,7 +31,6 @@ tokenised).
 |---|---|---|
 | `spring.fast` (0.08s) | `spring.fast.exit` | `{ duration: 0.06 }` |
 | `spring.moderate` (0.16s) | `spring.moderate.exit` | `{ duration: 0.12 }` |
-| `spring.settle` (0.16s) | `spring.settle.exit` | `{ duration: 0.12 }` |
 | `spring.slow` (0.24s) | `spring.slow.exit` | `{ duration: 0.16 }` |
 
 ```tsx
@@ -71,9 +69,9 @@ The Motion page renders a high-level map of which component *leads* with which
 spring, generated from the `REFERENCE_TIERS` array in `app/docs/motion/page.tsx`.
 Keep this table and that array identical.
 
-| fast (0.08s) | moderate (0.16s) | settle (0.16s, no bounce) | slow (0.24s) |
-|---|---|---|---|
-| Hover & focus rings, Checkbox, Radio, Table rows, Tooltip, Input copy, Slider, Select / Color picker open | Dropdown / Select highlight, Tabs indicator, Switch thumb, Accordion, Chat & message bubbles | Mobile drawer, Selection merge / split | Dialog, Ask-user questions, Thinking steps |
+| fast (0.08s) | moderate (0.16s, no bounce) | slow (0.24s) |
+|---|---|---|
+| Hover & focus rings, Checkbox, Radio, Table rows, Tooltip, Input copy, Slider, Select / Color picker open | Dropdown / Select highlight, Tabs indicator, Switch thumb, Accordion, Chat & message bubbles, Mobile drawer, Selection merge / split | Dialog, Ask-user questions, Thinking steps |
 
 Most components *also* use `fast` for their hover and focus states on top of
 their headline tier — the table lists each component once, by its headline

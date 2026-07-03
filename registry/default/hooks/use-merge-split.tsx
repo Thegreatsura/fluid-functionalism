@@ -10,10 +10,10 @@ import type { ItemRect } from "@/hooks/use-proximity-hover";
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// Edge spring for the selected-bg merge/split: spring.settle (critically damped
-// moderate) so converging edges meet exactly instead of overshooting. On a merge
+// Edge spring for the selected-bg merge/split: spring.moderate (critically
+// damped) so converging edges meet exactly instead of overshooting. On a merge
 // the inner corners trail by `cornerDelay`, staying rounded until the halves meet.
-const mergeSpring = spring.settle;
+const mergeSpring = spring.moderate;
 const cornerDelay = 0.07;
 // A boundary resolves after its motion finishes (merge → swap to one block;
 // split → drop), driven by a duration timer rather than onAnimationComplete —

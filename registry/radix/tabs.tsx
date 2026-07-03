@@ -411,7 +411,7 @@ interface TabItemProps
 }
 
 const TabItem = forwardRef<HTMLButtonElement, TabItemProps>(
-  ({ value, icon: Icon, label, _index = 0, className, ...props }, ref) => {
+  ({ value, icon: Icon, label, _index = 0, className, onClick, ...props }, ref) => {
     const internalRef = useRef<HTMLButtonElement>(null);
     const { registerTab, hoveredIndex, selectedValue, setOptimisticIdx } = useTabsList();
 
@@ -425,7 +425,12 @@ const TabItem = forwardRef<HTMLButtonElement, TabItemProps>(
 
     return (
       <TabsPrimitive.Trigger
-        onClick={() => setOptimisticIdx(_index)}
+        // Composed (not spread-overridable): a consumer onClick must not
+        // replace the optimistic indicator jump.
+        onClick={(e) => {
+          setOptimisticIdx(_index);
+          onClick?.(e);
+        }}
         ref={(node) => {
           (
             internalRef as React.MutableRefObject<HTMLButtonElement | null>

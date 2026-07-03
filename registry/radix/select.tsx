@@ -54,8 +54,11 @@ import { Elevated } from "@/lib/elevated";
 //
 // - Radix Select is modal-ish: it scroll-locks the page and disables outside
 //   pointer events while open (the Base UI flavor is non-modal and tracks its
-//   anchor instead). Accepted as flavor behavior. Likewise the Viewport's
-//   injected stylesheet hides its own scrollbar.
+//   anchor instead). Accepted as flavor behavior. The Viewport's injected
+//   stylesheet hides its own scrollbar, which would leave long lists with no
+//   scroll affordance at all (the scroll buttons aren't rendered either) —
+//   overridden with `![scrollbar-width:thin]` on the viewport, which also
+//   makes Chromium/Safari ignore the ::-webkit-scrollbar{display:none} rule.
 // ---------------------------------------------------------------------------
 
 interface SelectContextValue {
@@ -412,7 +415,11 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
                   className={cn(
                     // min-w tracks the trigger via Radix's popper-provided
                     // vars, matching the base flavor's --anchor-width.
-                    `relative flex flex-col gap-0.5 min-w-[var(--radix-select-trigger-width)] max-h-[min(300px,var(--radix-select-content-available-height))] overflow-y-auto ${shape.container} p-1 select-none outline-none`,
+                    // ![scrollbar-width:thin] undoes Radix's injected
+                    // scrollbar-hiding stylesheet (see header comment) so
+                    // long lists keep a visible scrollbar, as in the base
+                    // flavor.
+                    `relative flex flex-col gap-0.5 min-w-[var(--radix-select-trigger-width)] max-h-[min(300px,var(--radix-select-content-available-height))] overflow-y-auto ![scrollbar-width:thin] ${shape.container} p-1 select-none outline-none`,
                     className
                   )}
                 >

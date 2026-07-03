@@ -106,6 +106,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
     const [openItemRects, setOpenItemRects] = useState<Map<number, ItemRect>>(
       new Map()
     );
+    const openItemRectsRef = useRef(openItemRects);
 
     const {
       activeIndex,
@@ -139,6 +140,29 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
           height: el.offsetHeight,
         });
       });
+      // Skip the state update when nothing moved (mirrors the proximity
+      // hook's measureItems guard) — this runs per animation frame via
+      // onUpdate, and an unconditional set would invalidate the group
+      // context and re-render every item even on no-op remeasures.
+      const prev = openItemRectsRef.current;
+      let changed = prev.size !== next.size;
+      if (!changed) {
+        for (const [idx, r] of next) {
+          const p = prev.get(idx);
+          if (
+            !p ||
+            p.top !== r.top ||
+            p.left !== r.left ||
+            p.width !== r.width ||
+            p.height !== r.height
+          ) {
+            changed = true;
+            break;
+          }
+        }
+      }
+      if (!changed) return;
+      openItemRectsRef.current = next;
       setOpenItemRects(next);
     }, []);
 

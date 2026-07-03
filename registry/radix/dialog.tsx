@@ -13,7 +13,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useIcon } from "@/lib/icon-context";
-import { spring } from "@/lib/springs";
+import { spring, exitFallbackMs } from "@/lib/springs";
 import { useShape } from "@/lib/shape-context";
 import { SurfaceProvider, useSurface } from "@/lib/surface-context";
 import { surfaceClasses } from "@/lib/surface-classes";
@@ -76,6 +76,17 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
 
     useEffect(() => {
       if (open) setMounted(true);
+    }, [open]);
+
+    // Fallback release for the deferred unmount: onAnimationComplete on the
+    // panel is the primary signal, but rAF-driven animation callbacks can
+    // stall in throttled/background tabs — leaving an invisible full-screen
+    // overlay (and Radix's scroll lock) in place. Both exit tweens run at
+    // spring.slow.exit, so the fallback tracks that tier.
+    useEffect(() => {
+      if (open) return;
+      const id = setTimeout(() => setMounted(false), exitFallbackMs(spring.slow));
+      return () => clearTimeout(id);
     }, [open]);
 
     const handleExitComplete = () => {

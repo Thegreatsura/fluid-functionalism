@@ -10,7 +10,7 @@ import {
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { spring } from "@/lib/springs";
+import { spring, exitFallbackMs } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 
@@ -138,6 +138,16 @@ function Tooltip({
 
   useEffect(() => {
     if (open) setMounted(true);
+  }, [open]);
+
+  // Fallback release for the deferred unmount: onAnimationComplete is the
+  // primary signal, but rAF-driven animation callbacks can stall in
+  // throttled/background tabs. The exit tween runs at spring.fast.exit, so
+  // the fallback tracks that tier.
+  useEffect(() => {
+    if (open) return;
+    const id = setTimeout(() => setMounted(false), exitFallbackMs(spring.fast));
+    return () => clearTimeout(id);
   }, [open]);
 
   const handleExitComplete = () => {

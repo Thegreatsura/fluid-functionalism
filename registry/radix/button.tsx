@@ -19,7 +19,7 @@ const buttonVariants = cva(
     "group relative isolate inline-flex items-center justify-center outline-none cursor-pointer",
     "transition-colors duration-80",
     "disabled:opacity-50 disabled:pointer-events-none",
-    "focus-visible:ring-1 focus-visible:ring-[#6B97FF]",
+    "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
   ],
   {
     variants: {
@@ -113,6 +113,16 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const label = asChildElement ? asChildElement.props.children : children;
     const isIconOnly = size === "icon" || size === "icon-sm" || size === "icon-lg";
     const iconSize = size === "sm" ? 14 : size === "lg" ? 20 : 16;
+    // Spinner box tracks the button height (sm is h-7, lg/icon are h-9, …) so
+    // the loading glyph stays proportionate across sizes.
+    const spinnerSizeClass =
+      size === "sm"
+        ? "h-7 w-7"
+        : size === "lg" || size === "icon"
+          ? "h-9 w-9"
+          : size === "icon-lg"
+            ? "h-10 w-10"
+            : "h-8 w-8";
     const shape = useShape();
     const bgClass = active
       ? activeBgVariants[variant ?? "primary"]
@@ -141,7 +151,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
               </span>
               <span className="absolute inset-0 flex items-center justify-center">
                 <svg
-                  className="h-8 w-8"
+                  className={spinnerSizeClass}
                   viewBox="0 0 24 24"
                   fill="none"
                 >

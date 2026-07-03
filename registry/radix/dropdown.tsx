@@ -18,7 +18,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { cn } from "@/lib/utils";
-import { spring } from "@/lib/springs";
+import { spring, exitFallbackMs } from "@/lib/springs";
 import { useProximityHover } from "@/hooks/use-proximity-hover";
 import { shapeMap } from "@/lib/shape-context";
 import { Elevated } from "@/lib/elevated";
@@ -205,7 +205,7 @@ const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
           <AnimatePresence>
             {focusRect && (
               <motion.div
-                className={`absolute ${shape.focusRing} pointer-events-none z-20 border border-[#6B97FF]`}
+                className={`absolute ${shape.focusRing} pointer-events-none z-20 border border-[color:var(--focus-ring,#6B97FF)]`}
                 initial={false}
                 animate={{
                   left: focusRect.left - 2,
@@ -418,11 +418,12 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
 
     // Fallback release for the deferred unmount: onAnimationComplete on the
     // motion.div is the primary signal, but rAF-driven animation callbacks
-    // can stall in throttled/background tabs. spring.fast.exit is 60ms —
-    // 150ms covers it with margin without holding the portal open perceptibly.
+    // can stall in throttled/background tabs. The popup exits with
+    // spring.fast, so the fallback tracks that tier's exit duration plus a
+    // safety buffer.
     useEffect(() => {
       if (open) return;
-      const id = setTimeout(() => setMounted(false), 150);
+      const id = setTimeout(() => setMounted(false), exitFallbackMs(spring.fast));
       return () => clearTimeout(id);
     }, [open]);
 
@@ -627,7 +628,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                 <AnimatePresence>
                   {focusRect && (
                     <motion.div
-                      className={`absolute ${shape.focusRing} pointer-events-none z-20 border border-[#6B97FF]`}
+                      className={`absolute ${shape.focusRing} pointer-events-none z-20 border border-[color:var(--focus-ring,#6B97FF)]`}
                       initial={false}
                       animate={{
                         left: focusRect.left - 2,

@@ -153,7 +153,7 @@ function PrimitiveToggle() {
             onClick={() => setBase(o.value)}
             className={cn(
               "relative px-5 py-2 text-[13px] rounded-full outline-none transition-colors duration-150",
-              "focus-visible:ring-1 focus-visible:ring-[#6B97FF] focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)] focus-visible:ring-offset-2 focus-visible:ring-offset-background",
               selected ? "text-background" : "text-muted-foreground hover:text-foreground"
             )}
             style={{ fontVariationSettings: "'wght' 500" }}

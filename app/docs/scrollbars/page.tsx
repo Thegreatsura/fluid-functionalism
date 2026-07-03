@@ -188,7 +188,10 @@ function ProblemDemo() {
           >
             <ReleaseRows />
           </div>
-          <PanelLabel>Native — default OS scrollbar</PanelLabel>
+          <PanelLabel>
+            <span aria-hidden="true">❌</span> MacOS scrollbar — hide until you
+            scroll + clipped list without signifier
+          </PanelLabel>
         </div>
         <div className="flex flex-col gap-2">
           <ScrollArea
@@ -197,7 +200,10 @@ function ProblemDemo() {
           >
             <ReleaseRows />
           </ScrollArea>
-          <PanelLabel>ScrollArea — fade + scrollbar on hover</PanelLabel>
+          <PanelLabel>
+            <span aria-hidden="true">✅</span> Fluid Functionalism — Refined
+            scrollbars on hover + fade
+          </PanelLabel>
         </div>
       </div>
     </ComponentPreview>

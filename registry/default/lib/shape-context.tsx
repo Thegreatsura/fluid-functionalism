@@ -110,6 +110,17 @@ function ShapeProvider({
     [transitionShape]
   );
 
+  // Publish the current element radius as a CSS custom property so plain-CSS
+  // consumers that can't read React context stay in sync with the shape
+  // system — e.g. the @layer base :focus-visible fallback ring in
+  // globals.css. Set on <html> so portalled content sees it too.
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--shape-input-radius",
+      `${shapeMap[shape].bgRadius}px`
+    );
+  }, [shape]);
+
   // Global keyboard shortcut: R to cycle radius
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {

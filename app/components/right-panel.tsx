@@ -223,7 +223,7 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
             href="https://x.com/micka_design"
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded text-muted-foreground hover:text-foreground transition-colors duration-80 outline-none focus-visible:ring-1 focus-visible:ring-[#6B97FF] focus-visible:ring-offset-2"
+            className="rounded text-muted-foreground hover:text-foreground transition-colors duration-80 outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)] focus-visible:ring-offset-2"
           >
             @micka_design
           </a>
@@ -237,7 +237,14 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
 /** Desktop-only right column that mirrors the left sidebar styling. */
 export function RightPanel() {
   return (
-    <aside className="shrink-0 w-64 p-4 sticky top-4 self-start mt-4 mr-4 rounded-lg bg-muted xl-fade-block">
+    // max-xl:fixed — during the xl-fade-block fade-out the panel keeps
+    // display:block for the transition (allow-discrete), which would hold its
+    // 272px of flex space and make the content reflow a second time when
+    // display finally flips to none. Fixed positioning below xl removes it
+    // from flow at the breakpoint (single reflow) while it fades in place:
+    // top-0/right-0 + mt-4/mr-4 land on the same 16px inset as the pinned
+    // sticky state.
+    <aside className="shrink-0 w-64 p-4 sticky top-4 self-start mt-4 mr-4 rounded-lg bg-muted xl-fade-block max-xl:fixed max-xl:top-0 max-xl:right-0 max-xl:z-40 max-xl:pointer-events-none">
       <SurfaceProvider value={2}>
         <div className="flex items-center justify-between pl-1 pt-2 pb-2">
           <h2

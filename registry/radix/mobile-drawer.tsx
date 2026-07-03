@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode, type RefObject } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { motion } from "framer-motion";
-import { spring } from "@/lib/springs";
+import { spring, exitFallbackMs } from "@/lib/springs";
 import { useSurface, SurfaceProvider } from "@/lib/surface-context";
 import { surfaceClasses } from "@/lib/surface-classes";
 
@@ -41,11 +41,12 @@ export function MobileDrawer({
 
   // Fallback release for the deferred unmount: onAnimationComplete on the
   // panel is the primary signal, but rAF-driven animation callbacks can
-  // stall in throttled/background tabs. The longest exit tween is 120ms —
-  // 250ms covers it with margin without holding the portal open perceptibly.
+  // stall in throttled/background tabs. The longest exit tween is
+  // spring.moderate.exit (backdrop), so the fallback tracks that tier's exit
+  // duration plus a safety buffer.
   useEffect(() => {
     if (open) return;
-    const id = setTimeout(() => setMounted(false), 250);
+    const id = setTimeout(() => setMounted(false), exitFallbackMs(spring.moderate));
     return () => clearTimeout(id);
   }, [open]);
 

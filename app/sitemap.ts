@@ -4,8 +4,9 @@ import { join } from "node:path";
 
 const SITE_URL = "https://www.fluidfunctionalism.com";
 
-// Internal/dev-only routes kept out of the sitemap.
-const EXCLUDE = new Set(["/demo", "/compare-bases", "/slider", "/table"]);
+// Internal/dev-only routes, plus noindex pages (see robots metadata in
+// app/concepts/layout.tsx and app/stars/layout.tsx), kept out of the sitemap.
+const EXCLUDE = ["/demo", "/compare-bases", "/slider", "/table", "/concepts", "/stars"];
 
 function collectRoutes(dir: string, base = ""): string[] {
   const routes: string[] = [];
@@ -25,7 +26,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
 
   const routes = ["/", ...collectRoutes(appDir)].filter(
-    (route) => !EXCLUDE.has(route),
+    (route) =>
+      !EXCLUDE.some((prefix) => route === prefix || route.startsWith(`${prefix}/`)),
   );
 
   return routes.map((route) => ({

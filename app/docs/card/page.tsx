@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import {
   Card,
   CardGroup,
@@ -15,22 +14,20 @@ import {
   CardFeature,
   CardButton,
 } from "@/registry/default/card";
-import { cn } from "@/lib/utils";
-import { fontWeights } from "@/registry/default/lib/font-weight";
-import { useRightRailNode } from "@/lib/right-rail";
 import { useIcon, type IconComponent } from "@/lib/icon-context";
-import { Shuffle } from "lucide-react";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
 import { Switch } from "@/registry/radix/switch";
 import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@/components/flavored/select";
-import { SurfaceProvider } from "@/lib/surface-context";
+  PLAY_SWITCH,
+  PlayField,
+  PlaySelect,
+  PlaySection,
+  PlayDivider,
+  PlaygroundPanel,
+  PlaygroundLayout,
+} from "@/lib/docs/playground";
 
 // An inline data-URI banner so the demo needs no asset files (CardImage
 // accepts any src).
@@ -401,69 +398,6 @@ type PlayOrientation = "card" | "inline";
 type PlayBorder = "none" | "outlined";
 type PlayMedia = "icon" | "logo" | "image" | "none";
 
-// Reversed layout turns the library Switch (toggle → label) into a settings
-// row (label ← left, toggle → right) that matches the borderless-select rows.
-const PLAY_SWITCH = "w-full flex-row-reverse justify-between h-9 px-1 py-0";
-
-function PlayField({
-  label,
-  children,
-  disabled = false,
-}: {
-  label: string;
-  children: React.ReactNode;
-  disabled?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex h-9 items-center justify-between px-1",
-        disabled && "opacity-40 pointer-events-none"
-      )}
-    >
-      <span className="text-[13px] text-muted-foreground">{label}</span>
-      {children}
-    </div>
-  );
-}
-
-function PlaySelect({
-  value,
-  onChange,
-  options,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-}) {
-  return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger
-        variant="borderless"
-        className="min-w-0 w-auto h-7 px-2 text-[13px]"
-      />
-      <SelectContent>
-        {options.map((o, i) => (
-          <SelectItem key={o.value} value={o.value} index={i}>
-            {o.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
-function PlaySection({ label }: { label: string }) {
-  return (
-    <div
-      className="px-1 pb-1 pt-1 text-[12px] text-muted-foreground"
-      style={{ fontVariationSettings: fontWeights.semibold }}
-    >
-      {label}
-    </div>
-  );
-}
-
 function buildPlaygroundCode(o: {
   orientation: PlayOrientation;
   cols: number;
@@ -534,20 +468,6 @@ ${inner.filter(Boolean).join("\n")}
 </CardGroup>`;
 }
 
-// True at ≥1280px, where the right rail is visible (below that it's
-// display:none, so controls fall back to rendering inline under the preview).
-function useIsXl() {
-  const [isXl, setIsXl] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1280px)");
-    const sync = () => setIsXl(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
-  return isXl;
-}
-
 function CardPlayground() {
   const Circle = useIcon("circle");
   const Shield = useIcon("shield");
@@ -568,30 +488,6 @@ function CardPlayground() {
   const [description, setDescription] = useState(true);
   const [selectedOn, setSelectedOn] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-
-  // Park the controls in the right rail on wide screens; inline below the
-  // preview otherwise. `mounted` gates the first paint so desktop doesn't flash
-  // the controls inline before the portal target resolves.
-  const railNode = useRightRailNode();
-  const isXl = useIsXl();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  const inRail = isXl && !!railNode;
-
-  // Show the rail controls only while the center playground is on screen —
-  // once it scrolls out of view, the controls in the rail disappear.
-  const playgroundRef = useRef<HTMLDivElement>(null);
-  const [playgroundInView, setPlaygroundInView] = useState(true);
-  useEffect(() => {
-    const el = playgroundRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => setPlaygroundInView(entry.isIntersecting),
-      { rootMargin: "0px 0px -20% 0px" }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
 
   const allItems = [
     { icon: Circle, title: "Fluid motion", description: "Spring-tuned transitions calibrated across three tiers" },
@@ -662,172 +558,142 @@ function CardPlayground() {
   };
 
   const controls = (
-    <SurfaceProvider value={2}>
-      <div className="w-full rounded-lg bg-muted p-3">
-        <div className="flex items-center justify-between px-1 pt-1 pb-2">
-          <h2
-            className="text-[16px] text-foreground leading-none"
-            style={{ fontVariationSettings: fontWeights.semibold }}
-          >
-            Playground variant
-          </h2>
-          <button
-            type="button"
-            onClick={randomize}
-            aria-label="Randomize properties"
-            title="Randomize"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-hover transition-colors duration-80 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]"
-          >
-            <Shuffle size={15} strokeWidth={1.5} />
-          </button>
-        </div>
-
-        {/* Card (per-card props) */}
-        <PlaySection label="Card" />
-        <div>
-          <PlayField label="Media">
-            <PlaySelect
-              value={media}
-              onChange={(v) => setMedia(v as PlayMedia)}
-              options={[
-                { value: "icon", label: "Icon" },
-                { value: "logo", label: "Logo" },
-                { value: "image", label: "Image" },
-                { value: "none", label: "None" },
-              ]}
-            />
-          </PlayField>
-          <Switch
-            label="Description"
-            checked={description}
-            onToggle={() => setDescription((v) => !v)}
-            className={PLAY_SWITCH}
+    <PlaygroundPanel onShuffle={randomize}>
+      {/* Card (per-card props) */}
+      <PlaySection label="Card" />
+      <div>
+        <PlayField label="Media">
+          <PlaySelect
+            value={media}
+            onChange={(v) => setMedia(v as PlayMedia)}
+            options={[
+              { value: "icon", label: "Icon" },
+              { value: "logo", label: "Logo" },
+              { value: "image", label: "Image" },
+              { value: "none", label: "None" },
+            ]}
           />
-          <Switch
-            label="Primary button"
-            checked={primaryBtn}
-            onToggle={() => setPrimaryBtn((v) => !v)}
-            className={PLAY_SWITCH}
-          />
-          <Switch
-            label="Secondary button"
-            checked={secondaryBtn}
-            onToggle={() => setSecondaryBtn((v) => !v)}
-            className={PLAY_SWITCH}
-          />
-          <Switch
-            label="Ghost button"
-            checked={ghostBtn}
-            onToggle={() => setGhostBtn((v) => !v)}
-            className={PLAY_SWITCH}
-          />
-        </div>
-
-        {/* Single separator between the two groups */}
-        <div className="my-2 border-t border-border/60" />
-
-        {/* Card group (layout props) */}
-        <PlaySection label="Card group" />
-        <div>
-          <PlayField label="Orientation">
-            <PlaySelect
-              value={orientation}
-              onChange={(v) => setOrientation(v as PlayOrientation)}
-              options={[
-                { value: "card", label: "Card" },
-                { value: "inline", label: "Inline" },
-              ]}
-            />
-          </PlayField>
-          <PlayField label="Columns" disabled={isInline}>
-            <PlaySelect
-              value={isInline ? "1" : columns}
-              onChange={setColumns}
-              options={[
-                { value: "1", label: "1" },
-                { value: "2", label: "2" },
-                { value: "3", label: "3" },
-              ]}
-            />
-          </PlayField>
-          <PlayField label="Border">
-            <PlaySelect
-              value={border}
-              onChange={(v) => setBorder(v as PlayBorder)}
-              options={[
-                { value: "none", label: "None" },
-                { value: "outlined", label: "Outlined" },
-              ]}
-            />
-          </PlayField>
-          <Switch
-            label="Separated"
-            checked={effectiveSeparated}
-            onToggle={() => setSeparated((v) => !v)}
-            disabled={isImage}
-            className={PLAY_SWITCH}
-          />
-          <Switch
-            label="Proximity hover"
-            checked={proximity}
-            onToggle={() => setProximity((v) => !v)}
-            className={PLAY_SWITCH}
-          />
-          <Switch
-            label="Selected"
-            checked={selectedOn}
-            onToggle={() => setSelectedOn((v) => !v)}
-            className={PLAY_SWITCH}
-          />
-        </div>
+        </PlayField>
+        <Switch
+          label="Description"
+          checked={description}
+          onToggle={() => setDescription((v) => !v)}
+          className={PLAY_SWITCH}
+        />
+        <Switch
+          label="Primary button"
+          checked={primaryBtn}
+          onToggle={() => setPrimaryBtn((v) => !v)}
+          className={PLAY_SWITCH}
+        />
+        <Switch
+          label="Secondary button"
+          checked={secondaryBtn}
+          onToggle={() => setSecondaryBtn((v) => !v)}
+          className={PLAY_SWITCH}
+        />
+        <Switch
+          label="Ghost button"
+          checked={ghostBtn}
+          onToggle={() => setGhostBtn((v) => !v)}
+          className={PLAY_SWITCH}
+        />
       </div>
-    </SurfaceProvider>
+
+      <PlayDivider />
+
+      {/* Card group (layout props) */}
+      <PlaySection label="Card group" />
+      <div>
+        <PlayField label="Orientation">
+          <PlaySelect
+            value={orientation}
+            onChange={(v) => setOrientation(v as PlayOrientation)}
+            options={[
+              { value: "card", label: "Card" },
+              { value: "inline", label: "Inline" },
+            ]}
+          />
+        </PlayField>
+        <PlayField label="Columns" disabled={isInline}>
+          <PlaySelect
+            value={isInline ? "1" : columns}
+            onChange={setColumns}
+            options={[
+              { value: "1", label: "1" },
+              { value: "2", label: "2" },
+              { value: "3", label: "3" },
+            ]}
+          />
+        </PlayField>
+        <PlayField label="Border">
+          <PlaySelect
+            value={border}
+            onChange={(v) => setBorder(v as PlayBorder)}
+            options={[
+              { value: "none", label: "None" },
+              { value: "outlined", label: "Outlined" },
+            ]}
+          />
+        </PlayField>
+        <Switch
+          label="Separated"
+          checked={effectiveSeparated}
+          onToggle={() => setSeparated((v) => !v)}
+          disabled={isImage}
+          className={PLAY_SWITCH}
+        />
+        <Switch
+          label="Proximity hover"
+          checked={proximity}
+          onToggle={() => setProximity((v) => !v)}
+          className={PLAY_SWITCH}
+        />
+        <Switch
+          label="Selected"
+          checked={selectedOn}
+          onToggle={() => setSelectedOn((v) => !v)}
+          className={PLAY_SWITCH}
+        />
+      </div>
+    </PlaygroundPanel>
   );
 
   return (
-    <div ref={playgroundRef}>
-      <ComponentPreview code={code} padding="compact" minHeightClass="min-h-[600px]">
-        <div className="w-full max-w-[560px]">
-          <CardGroup
-            orientation={orientation}
-            columns={cols}
-            border={border}
-            separated={effectiveSeparated}
-            proximityHover={proximity}
-          >
-            {items.map((item, i) => (
-              <Card
-                key={item.title}
-                label={item.title}
-                selected={selectedOn && i === activeSelected}
-                onClick={selectedOn ? () => setSelectedIndex(i) : undefined}
-              >
-                {isImage && <CardImage src={BANNER} />}
-                {isSmall && isInline && renderSmall(item.icon)}
-                <CardHeader>
-                  {isSmall && !isInline && renderSmall(item.icon)}
-                  <CardTitle>{item.title}</CardTitle>
-                  {description && <CardDescription>{item.description}</CardDescription>}
-                </CardHeader>
-                {renderFooter()}
-              </Card>
-            ))}
-          </CardGroup>
-        </div>
-      </ComponentPreview>
-
-      {mounted && inRail && (
-        // Kept mounted so it can cross-fade (the same fade the side panels use)
-        // as the playground scrolls in and out of view, rather than snapping.
-        createPortal(
-          <div className="inview-fade-block" data-shown={playgroundInView}>
-            {controls}
-          </div>,
-          railNode
-        )
-      )}
-      {mounted && !inRail && <div className="mt-3">{controls}</div>}
-    </div>
+    <PlaygroundLayout
+      controls={controls}
+      preview={
+        <ComponentPreview code={code} padding="compact" minHeightClass="min-h-[600px]">
+          <div className="w-full max-w-[560px]">
+            <CardGroup
+              orientation={orientation}
+              columns={cols}
+              border={border}
+              separated={effectiveSeparated}
+              proximityHover={proximity}
+            >
+              {items.map((item, i) => (
+                <Card
+                  key={item.title}
+                  label={item.title}
+                  selected={selectedOn && i === activeSelected}
+                  onClick={selectedOn ? () => setSelectedIndex(i) : undefined}
+                >
+                  {isImage && <CardImage src={BANNER} />}
+                  {isSmall && isInline && renderSmall(item.icon)}
+                  <CardHeader>
+                    {isSmall && !isInline && renderSmall(item.icon)}
+                    <CardTitle>{item.title}</CardTitle>
+                    {description && <CardDescription>{item.description}</CardDescription>}
+                  </CardHeader>
+                  {renderFooter()}
+                </Card>
+              ))}
+            </CardGroup>
+          </div>
+        </ComponentPreview>
+      }
+    />
   );
 }
 

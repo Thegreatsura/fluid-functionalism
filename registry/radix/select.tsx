@@ -693,38 +693,43 @@ const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
           <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
         </span>
 
-        <AnimatePresence>
-          {isChecked && (
-            <motion.svg
-              key="check"
-              width={16}
-              height={16}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="shrink-0 text-foreground"
-              initial={{ opacity: 1 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 1 }}
-            >
-              <motion.path
-                d="M4 12L9 17L20 6"
-                initial={{ pathLength: skipAnimation ? 1 : 0 }}
-                animate={{
-                  pathLength: 1,
-                  transition: { duration: 0.08, ease: "easeOut" },
-                }}
-                exit={{
-                  pathLength: 0,
-                  transition: { duration: 0.04, ease: "easeIn" },
-                }}
-              />
-            </motion.svg>
-          )}
-        </AnimatePresence>
+        {/* Always-rendered fixed slot so the check appearing/disappearing
+            never changes the row's intrinsic width — without it the whole
+            popup resizes when a selection lands. */}
+        <span aria-hidden className="shrink-0 w-4 h-4">
+          <AnimatePresence>
+            {isChecked && (
+              <motion.svg
+                key="check"
+                width={16}
+                height={16}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-foreground"
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 1 }}
+              >
+                <motion.path
+                  d="M4 12L9 17L20 6"
+                  initial={{ pathLength: skipAnimation ? 1 : 0 }}
+                  animate={{
+                    pathLength: 1,
+                    transition: { duration: 0.08, ease: "easeOut" },
+                  }}
+                  exit={{
+                    pathLength: 0,
+                    transition: { duration: 0.04, ease: "easeIn" },
+                  }}
+                />
+              </motion.svg>
+            )}
+          </AnimatePresence>
+        </span>
       </SelectPrimitive.Item>
     );
   }

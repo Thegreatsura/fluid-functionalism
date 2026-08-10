@@ -169,6 +169,18 @@
       ]
     },
     {
+      "name": "size-context",
+      "type": "registry:lib",
+      "title": "Size Context",
+      "description": "React context provider for the two-step size ladder (36px default, 28px compact). Controls control heights, text, icon, and padding scale across all Fluid Functionalism components, and exports the role-based typography scale.",
+      "files": [
+        {
+          "path": "registry/default/lib/size-context.tsx",
+          "type": "registry:lib"
+        }
+      ]
+    },
+    {
       "name": "icon-context",
       "type": "registry:lib",
       "title": "Icon Context",
@@ -240,7 +252,8 @@
         "font-weight",
         "shape-context",
         "icon-context",
-        "use-proximity-hover"
+        "use-proximity-hover",
+        "size-context"
       ],
       "files": [
         {
@@ -266,7 +279,8 @@
         "font-weight",
         "shape-context",
         "icon-context",
-        "use-proximity-hover"
+        "use-proximity-hover",
+        "size-context"
       ],
       "files": [
         {
@@ -280,7 +294,7 @@
       "name": "ask-user-questions",
       "type": "registry:ui",
       "title": "Ask User Questions",
-      "description": "Stepped question flow with numbered options, keyboard shortcuts (1\u20139), single or multi-select, inline 'other' text input, optional skip, proximity-based hover, and multi-question navigation. Auto-advances on selection in single-select.",
+      "description": "Stepped question flow with numbered options, keyboard shortcuts (1–9), single or multi-select, inline 'other' text input, optional skip, proximity-based hover, and multi-question navigation. Auto-advances on selection in single-select.",
       "dependencies": [
         "framer-motion",
         "@base-ui/react"
@@ -293,7 +307,8 @@
         "icon-context",
         "use-proximity-hover",
         "use-merge-split",
-        "button"
+        "button",
+        "size-context"
       ],
       "files": [
         {
@@ -312,7 +327,8 @@
       ],
       "registryDependencies": [
         "utils",
-        "shape-context"
+        "shape-context",
+        "size-context"
       ],
       "files": [
         {
@@ -336,7 +352,8 @@
         "utils",
         "font-weight",
         "shape-context",
-        "icon-context"
+        "icon-context",
+        "size-context"
       ],
       "files": [
         {
@@ -376,7 +393,8 @@
         "utils",
         "font-weight",
         "shape-context",
-        "icon-context"
+        "icon-context",
+        "size-context"
       ],
       "files": [
         {
@@ -419,7 +437,8 @@
         "surface-classes",
         "icon-context",
         "use-proximity-hover",
-        "elevated"
+        "elevated",
+        "size-context"
       ],
       "files": [
         {
@@ -452,7 +471,8 @@
         "surface-classes",
         "icon-context",
         "use-proximity-hover",
-        "elevated"
+        "elevated",
+        "size-context"
       ],
       "files": [
         {
@@ -482,7 +502,8 @@
         "font-weight",
         "shape-context",
         "use-proximity-hover",
-        "use-merge-split"
+        "use-merge-split",
+        "size-context"
       ],
       "files": [
         {
@@ -507,7 +528,8 @@
         "font-weight",
         "shape-context",
         "use-proximity-hover",
-        "use-merge-split"
+        "use-merge-split",
+        "size-context"
       ],
       "files": [
         {
@@ -531,7 +553,8 @@
         "springs",
         "font-weight",
         "shape-context",
-        "use-proximity-hover"
+        "use-proximity-hover",
+        "size-context"
       ],
       "files": [
         {
@@ -555,7 +578,8 @@
         "springs",
         "font-weight",
         "shape-context",
-        "use-proximity-hover"
+        "use-proximity-hover",
+        "size-context"
       ],
       "files": [
         {
@@ -582,7 +606,8 @@
         "surface-context",
         "surface-classes",
         "icon-context",
-        "button"
+        "button",
+        "size-context"
       ],
       "files": [
         {
@@ -609,7 +634,8 @@
         "surface-context",
         "surface-classes",
         "icon-context",
-        "button"
+        "button",
+        "size-context"
       ],
       "files": [
         {
@@ -677,7 +703,8 @@
         "springs",
         "font-weight",
         "shape-context",
-        "icon-context"
+        "icon-context",
+        "size-context"
       ],
       "files": [
         {
@@ -700,7 +727,8 @@
         "font-weight",
         "shape-context",
         "icon-context",
-        "use-proximity-hover"
+        "use-proximity-hover",
+        "size-context"
       ],
       "files": [
         {
@@ -722,6 +750,7 @@
         "springs",
         "font-weight",
         "shape-context",
+        "size-context",
         "icon-context",
         "surface-context",
         "surface-classes",
@@ -768,7 +797,8 @@
         "springs",
         "shape-context",
         "use-touch-primary",
-        "file-thumbnail"
+        "file-thumbnail",
+        "size-context"
       ],
       "files": [
         {
@@ -792,7 +822,8 @@
         "springs",
         "font-weight",
         "icon-context",
-        "use-proximity-hover"
+        "use-proximity-hover",
+        "size-context"
       ],
       "files": [
         {
@@ -817,7 +848,8 @@
         "springs",
         "font-weight",
         "icon-context",
-        "use-proximity-hover"
+        "use-proximity-hover",
+        "size-context"
       ],
       "files": [
         {
@@ -839,7 +871,8 @@
       "registryDependencies": [
         "utils",
         "springs",
-        "font-weight"
+        "font-weight",
+        "size-context"
       ],
       "files": [
         {
@@ -861,7 +894,8 @@
       "registryDependencies": [
         "utils",
         "springs",
-        "font-weight"
+        "font-weight",
+        "size-context"
       ],
       "files": [
         {
@@ -883,7 +917,8 @@
         "utils",
         "springs",
         "font-weight",
-        "use-proximity-hover"
+        "use-proximity-hover",
+        "size-context"
       ],
       "files": [
         {
@@ -906,7 +941,8 @@
         "font-weight",
         "shape-context",
         "icon-context",
-        "use-proximity-hover"
+        "use-proximity-hover",
+        "size-context"
       ],
       "files": [
         {
@@ -928,7 +964,8 @@
         "utils",
         "springs",
         "font-weight",
-        "shape-context"
+        "shape-context",
+        "size-context"
       ],
       "files": [
         {
@@ -951,7 +988,8 @@
         "utils",
         "springs",
         "font-weight",
-        "shape-context"
+        "shape-context",
+        "size-context"
       ],
       "files": [
         {
@@ -977,7 +1015,8 @@
         "font-weight",
         "shape-context",
         "icon-context",
-        "use-proximity-hover"
+        "use-proximity-hover",
+        "size-context"
       ],
       "files": [
         {
@@ -1003,7 +1042,8 @@
         "font-weight",
         "shape-context",
         "icon-context",
-        "use-proximity-hover"
+        "use-proximity-hover",
+        "size-context"
       ],
       "files": [
         {
@@ -1023,7 +1063,8 @@
       ],
       "registryDependencies": [
         "utils",
-        "font-weight"
+        "font-weight",
+        "size-context"
       ],
       "files": [
         {
@@ -1111,7 +1152,8 @@
         "surface-classes",
         "icon-context",
         "use-proximity-hover",
-        "elevated"
+        "elevated",
+        "size-context"
       ],
       "files": [
         {
@@ -1140,7 +1182,8 @@
         "surface-classes",
         "icon-context",
         "use-proximity-hover",
-        "elevated"
+        "elevated",
+        "size-context"
       ],
       "files": [
         {
@@ -1211,6 +1254,7 @@
         "springs",
         "font-weight",
         "shape-context",
+        "size-context",
         "icon-context",
         "badge"
       ],
@@ -1255,6 +1299,7 @@
         "springs",
         "font-weight",
         "shape-context",
+        "size-context",
         "icon-context",
         "badge"
       ],
@@ -1303,7 +1348,8 @@
         "icon-context",
         "use-proximity-hover",
         "elevated",
-        "slider"
+        "slider",
+        "size-context"
       ],
       "files": [
         {

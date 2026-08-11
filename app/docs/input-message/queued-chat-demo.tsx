@@ -57,11 +57,14 @@ export function QueuedChatDemo({
   rich = false,
   minHeightClass = "h-[440px]",
   placeholder = "Send while I’m responding to queue a message…",
+  placeholderSuggestion,
 }: {
   code: string;
   rich?: boolean;
   minHeightClass?: string;
   placeholder?: string;
+  /** Tab-fillable ghost placeholder forwarded to the composer. */
+  placeholderSuggestion?: string;
 }) {
   const shape = useShape();
   const compactStep = useSizeVariant() === "compact";
@@ -775,6 +778,7 @@ export function QueuedChatDemo({
             setChatStatus("idle");
           }}
           placeholder={placeholder}
+          placeholderSuggestion={placeholderSuggestion}
           leftSlot={
             rich
               ? ({ openFilePicker }) => (

@@ -10,6 +10,7 @@ import { IconPlaygroundProvider } from "@/lib/docs/icon-playground";
 import { ShapeShortcut } from "@/lib/docs/shape-shortcut";
 import { SizeShortcut } from "@/lib/docs/size-shortcut";
 import { SizeAttribute } from "@/lib/docs/size-attribute";
+import { SettingsToast } from "@/lib/docs/settings-toast";
 import { BaseProvider } from "@/lib/base-context";
 import { SidebarLayout } from "@/app/components/sidebar-layout";
 
@@ -64,6 +65,7 @@ export default function RootLayout({
                 <IconPlaygroundProvider defaultLibrary="untitledui">
                   <BaseProvider>
                     <SidebarLayout>{children}</SidebarLayout>
+                    <SettingsToast />
                     <Analytics />
                     <SpeedInsights />
                   </BaseProvider>

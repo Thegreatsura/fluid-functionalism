@@ -91,18 +91,40 @@ interface ButtonProps
   active?: boolean;
 }
 
+/* Press effect: the surface layer sits 1px inside the button and a
+   same-color box-shadow spread fills it back out to the full bounds.
+   Pressing collapses the spread, shrinking the surface by exactly 1px per
+   side at any width — a scale would warp (2% of a 400px button is 8px
+   sideways but under 1px vertically). Fill colors are opaque color-mix()es
+   rather than alpha so the fill and its spread ring never seam. */
 const bgVariants: Record<string, string> = {
-  primary: "bg-foreground group-hover:bg-foreground/90 group-active:bg-foreground/80",
-  secondary: "bg-accent group-hover:bg-accent/80 group-active:bg-accent",
-  tertiary: "border border-border bg-transparent group-hover:bg-hover group-active:bg-active",
-  ghost: "bg-transparent group-hover:bg-hover group-active:bg-active",
+  primary:
+    "[--btn-bg:var(--foreground)] group-hover:[--btn-bg:color-mix(in_oklab,var(--foreground)_90%,var(--background))] group-active:[--btn-bg:color-mix(in_oklab,var(--foreground)_80%,var(--background))] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
+  secondary:
+    "[--btn-bg:var(--accent)] group-hover:[--btn-bg:color-mix(in_oklab,var(--accent)_80%,var(--background))] group-active:[--btn-bg:var(--accent)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
+  // The border ring is an outer 1px shadow at rest that hands off to an
+  // inset 1px shadow when pressed, so the ring moves inward with the
+  // surface. The translucent fill only ever reaches the ring's inner edge
+  // (exactly the surface box), so it needs no spread of its own.
+  tertiary:
+    "bg-transparent shadow-[0_0_0_1px_var(--border),inset_0_0_0_0px_var(--border)] group-hover:bg-hover group-active:bg-active group-active:shadow-[0_0_0_0px_var(--border),inset_0_0_0_1px_var(--border)]",
+  // Translucent fill + same-color spread never double up: outer shadows
+  // render only outside the surface box.
+  ghost:
+    "bg-transparent shadow-[0_0_0_1px_transparent] group-hover:bg-hover group-hover:shadow-[0_0_0_1px_var(--hover)] group-active:bg-active group-active:shadow-[0_0_0_0px_var(--active)]",
 };
 
+/* Forced-active (`active` prop): pressed colors at full size; the
+   geometric press-collapse still reacts on top. */
 const activeBgVariants: Record<string, string> = {
-  primary: "bg-foreground/80",
-  secondary: "bg-accent",
-  tertiary: "border border-border bg-active",
-  ghost: "bg-active",
+  primary:
+    "[--btn-bg:color-mix(in_oklab,var(--foreground)_80%,var(--background))] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
+  secondary:
+    "[--btn-bg:var(--accent)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
+  tertiary:
+    "bg-active shadow-[0_0_0_1px_var(--border),inset_0_0_0_0px_var(--border)] group-active:shadow-[0_0_0_0px_var(--border),inset_0_0_0_1px_var(--border)]",
+  ghost:
+    "bg-active shadow-[0_0_0_1px_var(--active)] group-active:shadow-[0_0_0_0px_var(--active)]",
 };
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -159,7 +181,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         <span
           aria-hidden
           className={cn(
-            "absolute inset-0 rounded-[inherit] transition-[background-color,transform] duration-80 group-active:scale-[0.98]",
+            "absolute inset-px rounded-[inherit] transition-[box-shadow,background-color] [transition-duration:180ms,80ms] [transition-timing-function:cubic-bezier(0.23,1,0.32,1),ease] group-active:[transition-duration:80ms,80ms]",
             bgClass
           )}
         />

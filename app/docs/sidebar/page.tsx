@@ -265,7 +265,7 @@ function SidebarShellFrame({
 }
 
 function DemoHeaderRow() {
-  const ChevronsUpDown = useIcon("chevrons-up-down");
+  const ChevronDown = useIcon("chevron-down");
   const icons = useIcons();
   const shape = useShape();
   return (
@@ -290,7 +290,7 @@ function DemoHeaderRow() {
                   Acme Inc
                 </span>
                 <span className="ml-auto inline-flex">
-                  <ChevronsUpDown size={14} strokeWidth={1.5} className="text-muted-foreground" />
+                  <ChevronDown size={14} strokeWidth={1.5} className="text-muted-foreground" />
                 </span>
               </SidebarMenuButton>
             }
@@ -321,8 +321,30 @@ function DemoSearch() {
   );
 }
 
-/** Workspace menu + search — the header block every example shares. */
-function DemoHeader() {
+/** Workspace menu + search — the header block every example shares.
+ *  `search="inline"` swaps the full bar for a round icon button beside the
+ *  workspace row. */
+function DemoHeader({ search = "below" }: { search?: "below" | "inline" }) {
+  const SearchIcon = useIcon("search");
+  if (search === "inline") {
+    return (
+      <SidebarHeader>
+        <div className="flex items-center gap-1">
+          <div className="min-w-0 flex-1">
+            <DemoHeaderRow />
+          </div>
+          <Button
+            variant="ghost"
+            size="icon-compact"
+            aria-label="Search"
+            className="shrink-0 rounded-full"
+          >
+            <SearchIcon />
+          </Button>
+        </div>
+      </SidebarHeader>
+    );
+  }
   return (
     <SidebarHeader>
       <DemoHeaderRow />

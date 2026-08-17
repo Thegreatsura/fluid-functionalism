@@ -30,6 +30,7 @@ import { useIcons } from "@/lib/icon-context";
 import { useShape } from "@/lib/shape-context";
 import { fontWeights } from "@/lib/font-weight";
 import { Switch } from "@/registry/radix/switch";
+import { Button } from "@/registry/radix/button";
 import {
   DropdownMenu,
   DropdownTrigger,
@@ -61,6 +62,8 @@ interface PlayState {
   side: SidebarSide;
   collapsible: SidebarCollapsible;
   open: boolean;
+  /** Search placement: full bar below the header, or an inline icon button. */
+  search: "below" | "inline";
   badges: boolean;
   subMenu: boolean;
   /** Menu-features treatment: hover row actions + collapsible sub-menu. */
@@ -74,6 +77,7 @@ const DEFAULT_STATE: PlayState = {
   side: "left",
   collapsible: "offcanvas",
   open: true,
+  search: "below",
   badges: true,
   subMenu: true,
   actions: true,
@@ -188,6 +192,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       side: pick(["left", "left", "right"] as const),
       collapsible: pick(["offcanvas", "offcanvas", "none"] as const),
       open: true,
+      search: pick(["below", "below", "inline"] as const),
       badges: Math.random() > 0.3,
       subMenu: Math.random() > 0.3,
       actions: Math.random() > 0.4,
@@ -221,6 +226,8 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           className="h-full"
         >
           <SidebarHeader>
+            <div className={state.search === "inline" ? "flex items-center gap-1" : "contents"}>
+            <div className={state.search === "inline" ? "min-w-0 flex-1" : "contents"}>
             <SidebarMenu aria-label="Workspace">
               <SidebarMenuItem>
                 <DropdownMenu>
@@ -242,7 +249,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                           Acme Inc
                         </span>
                         <span className="ml-auto inline-flex">
-                          {createElement(ChevronsUpDown, {
+                          {createElement(icons["chevron-down"], {
                             size: 14,
                             strokeWidth: 1.5,
                             className: "text-muted-foreground",
@@ -260,15 +267,29 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                 </DropdownMenu>
               </SidebarMenuItem>
             </SidebarMenu>
-            <div className="relative">
-              {createElement(icons.search, {
-                size: 14,
-                strokeWidth: 1.5,
-                className:
-                  "pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground",
-              })}
-              <SidebarInput placeholder="Search…" aria-label="Search" className="pl-8" />
             </div>
+            {state.search === "inline" && (
+              <Button
+                variant="ghost"
+                size="icon-compact"
+                aria-label="Search"
+                className="shrink-0 rounded-full"
+              >
+                {createElement(icons.search, {})}
+              </Button>
+            )}
+            </div>
+            {state.search === "below" && (
+              <div className="relative">
+                {createElement(icons.search, {
+                  size: 14,
+                  strokeWidth: 1.5,
+                  className:
+                    "pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground",
+                })}
+                <SidebarInput placeholder="Search…" aria-label="Search" className="pl-8" />
+              </div>
+            )}
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
@@ -433,6 +454,16 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       />
       <PlayDivider />
       <PlaySection label="Content" />
+      <PlayField label="Search">
+        <PlaySelect
+          value={state.search}
+          onChange={(v) => set("search", v as PlayState["search"])}
+          options={[
+            { value: "below", label: "Below" },
+            { value: "inline", label: "Inline" },
+          ]}
+        />
+      </PlayField>
       <Switch
         label="Badges"
         checked={state.badges}

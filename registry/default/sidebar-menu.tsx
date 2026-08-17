@@ -166,15 +166,21 @@ function useMenuScope(
   );
 
   // A row's rect spans the whole <li> — which grows when it hosts an expanded
-  // sub-menu — so overlay heights are clamped to the row's button box.
+  // sub-menu — so overlay heights are clamped to the row's button box. The
+  // 48px fallback (the tallest row, size="lg") guarantees the highlight can
+  // never cover an expanded sub-tree even if the button lookup misses.
   const overlayRect = useCallback(
     (row: HTMLElement | null): ItemRect | null => {
       if (!row) return null;
       const idx = orderedRowsRef.current.indexOf(row);
       const rect = idx === -1 ? null : itemRects[idx];
       if (!rect) return null;
-      const button = rowButtonsRef.current.get(row);
-      const height = button ? Math.min(rect.height, button.offsetHeight) : rect.height;
+      const button =
+        rowButtonsRef.current.get(row) ??
+        row.querySelector<HTMLElement>(
+          ':scope > [data-sidebar="menu-button"], :scope > [data-sidebar="menu-sub-button"]'
+        );
+      const height = Math.min(rect.height, button?.offsetHeight ?? 48);
       return { ...rect, height };
     },
     [itemRects]

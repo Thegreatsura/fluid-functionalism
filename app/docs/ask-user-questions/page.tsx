@@ -9,6 +9,8 @@ import {
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
+import { PlaygroundLayout } from "@/lib/docs/playground";
+import { AskUserQuestionsPlayground } from "@/lib/docs/playgrounds/ask-user-questions";
 import { useIcon } from "@/lib/icon-context";
 
 /**
@@ -54,110 +56,40 @@ function ReplayableExample({
   );
 }
 
+// ── Playground ───────────────────────────────────────────
+// The state + controls live in the shared module (lib/docs/playgrounds) so
+// the /demo slide can drive the same sandbox from its pen menu; this page
+// wraps the live preview in ComponentPreview with the synced code snippet.
+
+function AskUserQuestionsPlaygroundSection() {
+  const RotateIcon = useIcon("rotate-ccw");
+  return (
+    <AskUserQuestionsPlayground>
+      {({ preview, controls, code, onReplay }) => (
+        <PlaygroundLayout
+          controls={controls}
+          preview={
+            <ComponentPreview
+              code={code}
+              align="bottom"
+              minHeightClass="min-h-[560px]"
+              padding="responsive"
+              playbackButton={{
+                icon: <RotateIcon size={16} strokeWidth={1.5} />,
+                tooltip: "Replay",
+                onClick: () => onReplay?.(),
+              }}
+            >
+              {preview}
+            </ComponentPreview>
+          }
+        />
+      )}
+    </AskUserQuestionsPlayground>
+  );
+}
+
 // ── Code snippets ──────────────────────────────────────────────
-
-const exampleCode = `import { AskUserQuestions } from "./components";
-
-const questions = [
-  {
-    id: "role",
-    title: "How do you plan to use Fluid Functionalism?",
-    options: [
-      { id: "design", title: "Designer", description: "Prototyping flows and pages" },
-      { id: "eng", title: "Engineer", description: "Shipping production UI" },
-      { id: "pm", title: "PM", description: "Aligning the team on patterns" },
-      { id: "founder", title: "Founder", description: "Bootstrapping a product" },
-    ],
-  },
-  {
-    id: "name",
-    title: "What should we call your workspace?",
-    freeText: true,
-    freeTextMultiline: false, // single-line; Enter submits
-    freeTextPlaceholder: "e.g. Acme Design",
-  },
-  {
-    id: "shape",
-    title: "Which shape language fits your brand?",
-    options: [
-      { id: "rounded", title: "Rounded", description: "Soft, familiar corners" },
-      { id: "pill", title: "Pill", description: "Fully rounded, friendly" },
-    ],
-  },
-  {
-    id: "components",
-    title: "Which components are you reaching for first?",
-    multiSelect: true,
-    options: [
-      { id: "input", title: "InputMessage", description: "Chat-style composer with attachments" },
-      { id: "thinking", title: "ThinkingSteps", description: "Streamed reasoning steps" },
-      { id: "ask", title: "AskUserQuestions", description: "Stepped question flows" },
-      { id: "tabs", title: "TabsSubtle", description: "Quiet segmented tabs" },
-      { id: "nav", title: "NavMenu", description: "Sidebar navigation" },
-    ],
-    nextLabel: "Continue",
-  },
-  {
-    id: "drew",
-    title: "What drew you to Fluid Functionalism?",
-    options: [
-      { id: "motion", title: "Motion", description: "Springs that feel alive" },
-      { id: "craft", title: "Craft", description: "Pixel-level polish" },
-      { id: "tokens", title: "Tokens", description: "Shape and elevation systems" },
-    ],
-    allowOther: true,
-    otherPlaceholder: "Something else?",
-  },
-  {
-    id: "frameworks",
-    title: "Where will you ship these components?",
-    multiSelect: true,
-    options: [
-      { id: "next", title: "Next.js", description: "App Router projects" },
-      { id: "remix", title: "Remix", description: "Full-stack apps" },
-      { id: "vite", title: "Vite + React", description: "SPAs and dashboards" },
-      { id: "astro", title: "Astro", description: "Content-first sites" },
-    ],
-  },
-  {
-    id: "themes",
-    title: "Which theme mode do you support?",
-    options: [
-      { id: "light", title: "Light only" },
-      { id: "dark", title: "Dark only" },
-      { id: "system", title: "System-aware" },
-      { id: "toggle", title: "User toggle" },
-    ],
-  },
-  {
-    id: "missing",
-    title: "What's missing from the registry today?",
-    multiSelect: true,
-    options: [
-      { id: "data", title: "Data table", description: "Sortable, filterable rows" },
-      { id: "calendar", title: "Calendar", description: "Date picker and range" },
-      { id: "command", title: "Command menu", description: "Fast keyboard launcher" },
-    ],
-    allowOther: true,
-    otherPlaceholder: "Tell us what to build next…",
-    nextLabel: "Send feedback",
-  },
-  {
-    id: "recommend",
-    title: "Would you recommend Fluid Functionalism to a teammate?",
-    skippable: false,
-    options: [
-      { id: "yes", title: "Yes", description: "Already have" },
-      { id: "soon", title: "Soon", description: "Once it covers more ground" },
-      { id: "unsure", title: "Not sure yet", description: "Still evaluating" },
-    ],
-  },
-];
-
-<AskUserQuestions
-  questions={questions}
-  onComplete={(answers) => console.log(answers)}
-/>`;
 
 const multipleCode = `const questions = [
   {
@@ -744,102 +676,6 @@ const answerProps: PropDef[] = [
 
 // ── Page ───────────────────────────────────────────────────────
 
-const exampleQuestions: AskUserQuestion[] = [
-  {
-    id: "role",
-    title: "How do you plan to use Fluid Functionalism?",
-    options: [
-      { id: "design", title: "Designer", description: "Prototyping flows and pages" },
-      { id: "eng", title: "Engineer", description: "Shipping production UI" },
-      { id: "pm", title: "PM", description: "Aligning the team on patterns" },
-      { id: "founder", title: "Founder", description: "Bootstrapping a product" },
-    ],
-  },
-  {
-    id: "name",
-    title: "What should we call your workspace?",
-    freeText: true,
-    freeTextMultiline: false,
-    freeTextPlaceholder: "e.g. Acme Design",
-  },
-  {
-    id: "shape",
-    title: "Which shape language fits your brand?",
-    options: [
-      { id: "rounded", title: "Rounded", description: "Soft, familiar corners" },
-      { id: "pill", title: "Pill", description: "Fully rounded, friendly" },
-    ],
-  },
-  {
-    id: "components",
-    title: "Which components are you reaching for first?",
-    multiSelect: true,
-    options: [
-      { id: "input", title: "InputMessage", description: "Chat-style composer with attachments" },
-      { id: "thinking", title: "ThinkingSteps", description: "Streamed reasoning steps" },
-      { id: "ask", title: "AskUserQuestions", description: "Stepped question flows" },
-      { id: "tabs", title: "TabsSubtle", description: "Quiet segmented tabs" },
-      { id: "nav", title: "NavMenu", description: "Sidebar navigation" },
-    ],
-    nextLabel: "Continue",
-  },
-  {
-    id: "drew",
-    title: "What drew you to Fluid Functionalism?",
-    options: [
-      { id: "motion", title: "Motion", description: "Springs that feel alive" },
-      { id: "craft", title: "Craft", description: "Pixel-level polish" },
-      { id: "tokens", title: "Tokens", description: "Shape and elevation systems" },
-    ],
-    allowOther: true,
-    otherPlaceholder: "Something else?",
-  },
-  {
-    id: "frameworks",
-    title: "Where will you ship these components?",
-    multiSelect: true,
-    options: [
-      { id: "next", title: "Next.js", description: "App Router projects" },
-      { id: "remix", title: "Remix", description: "Full-stack apps" },
-      { id: "vite", title: "Vite + React", description: "SPAs and dashboards" },
-      { id: "astro", title: "Astro", description: "Content-first sites" },
-    ],
-  },
-  {
-    id: "themes",
-    title: "Which theme mode do you support?",
-    options: [
-      { id: "light", title: "Light only" },
-      { id: "dark", title: "Dark only" },
-      { id: "system", title: "System-aware" },
-      { id: "toggle", title: "User toggle" },
-    ],
-  },
-  {
-    id: "missing",
-    title: "What's missing from the registry today?",
-    multiSelect: true,
-    options: [
-      { id: "data", title: "Data table", description: "Sortable, filterable rows" },
-      { id: "calendar", title: "Calendar", description: "Date picker and range" },
-      { id: "command", title: "Command menu", description: "Fast keyboard launcher" },
-    ],
-    allowOther: true,
-    otherPlaceholder: "Tell us what to build next…",
-    nextLabel: "Send feedback",
-  },
-  {
-    id: "recommend",
-    title: "Would you recommend Fluid Functionalism to a teammate?",
-    skippable: false,
-    options: [
-      { id: "yes", title: "Yes", description: "Already have" },
-      { id: "soon", title: "Soon", description: "Once it covers more ground" },
-      { id: "unsure", title: "Not sure yet", description: "Still evaluating" },
-    ],
-  },
-];
-
 const multipleQuestions: AskUserQuestion[] = [
   {
     id: "role",
@@ -1347,14 +1183,8 @@ export default function AskUserQuestionsDoc() {
       slug="ask-user-questions"
       description="Stepped question flow with 2–5 options, single or multi-select, inline 'other' input, optional skip, and multi-question navigation."
     >
-      <DocSection title="Example">
-        <ReplayableExample
-          code={exampleCode}
-          align="bottom"
-          minHeightClass="min-h-[560px]"
-        >
-          {(k) => <AskUserQuestions key={k} questions={exampleQuestions} />}
-        </ReplayableExample>
+      <DocSection title="Playground">
+        <AskUserQuestionsPlaygroundSection />
       </DocSection>
 
       <DocSection title="Multiple questions">

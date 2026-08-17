@@ -20,6 +20,9 @@ export interface PlaygroundParts {
   controls: ReactNode;
   /** Source snippet kept in sync with the controls, for the doc Code tab. */
   code: string;
+  /** Restart the live preview from its initial state (e.g. stepped flows).
+   *  The doc page wires this to ComponentPreview's playback (replay) button. */
+  onReplay?: () => void;
 }
 
 export interface PlaygroundProps {

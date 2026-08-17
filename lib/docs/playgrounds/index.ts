@@ -1,3 +1,4 @@
+import { AskUserQuestionsPlayground } from "./ask-user-questions";
 import { ButtonPlayground } from "./button";
 import { CardPlayground } from "./card";
 import { InputMessagePlayground } from "./input-message";
@@ -17,6 +18,7 @@ export type { PlaygroundParts, PlaygroundProps, PlaygroundComponent } from "./ty
 // ---------------------------------------------------------------------------
 
 export const playgroundMap: Record<string, PlaygroundComponent> = {
+  "ask-user-questions": AskUserQuestionsPlayground,
   button: ButtonPlayground,
   card: CardPlayground,
   "input-message": InputMessagePlayground,

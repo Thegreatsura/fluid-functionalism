@@ -251,7 +251,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                       </SidebarMenuButton>
                     }
                   />
-                  <DropdownContent align="start" sideOffset={4} checkedIndex={0}>
+                  <DropdownContent className="min-w-0 w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]" align="start" sideOffset={4} checkedIndex={0}>
                     <MenuItem index={0} icon={icons["square-library"]} label="Acme Inc" checked onSelect={() => {}} />
                     <MenuItem index={1} icon={icons.rocket} label="Fluid Labs" onSelect={() => {}} />
                     <MenuItem index={2} icon={icons.user} label="Personal" onSelect={() => {}} />
@@ -364,7 +364,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                         </SidebarMenuButton>
                       }
                     />
-                    <DropdownContent side="top" align="start" sideOffset={6}>
+                    <DropdownContent className="min-w-0 w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]" side="top" align="start" sideOffset={6}>
                       <MenuItem index={0} icon={icons.user} label="Profile" onSelect={() => {}} />
                       <MenuItem index={1} icon={icons.settings} label="Settings" onSelect={() => {}} />
                       <MenuItem index={2} icon={icons["arrow-left"]} label="Log out" onSelect={() => {}} />

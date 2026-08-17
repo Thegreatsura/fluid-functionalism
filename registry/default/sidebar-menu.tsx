@@ -61,6 +61,8 @@ interface MenuItemContextValue {
   rowRef: RefObject<HTMLLIElement | null>;
   isHovered: boolean;
   isActiveRow: boolean;
+  /** True inside SidebarMenuSubItem — actions center on the shorter row. */
+  isSubRow: boolean;
   setActive: (active: boolean) => void;
   setButtonEl: (el: HTMLElement | null) => void;
 }
@@ -402,7 +404,7 @@ SidebarMenu.displayName = "SidebarMenu";
 
 export type SidebarMenuItemProps = LiHTMLAttributes<HTMLLIElement>;
 
-function useMenuRow(rowRef: RefObject<HTMLLIElement | null>) {
+function useMenuRow(rowRef: RefObject<HTMLLIElement | null>, isSubRow = false) {
   const scope = useContext(MenuScopeContext);
   const registerRow = scope?.registerRow;
   const setRowButton = scope?.setRowButton;
@@ -432,8 +434,8 @@ function useMenuRow(rowRef: RefObject<HTMLLIElement | null>) {
   const isActiveRow = rowRef.current !== null && scope?.activeRowEl === rowRef.current;
 
   return useMemo(
-    () => ({ rowRef, isHovered, isActiveRow, setActive, setButtonEl }),
-    [rowRef, isHovered, isActiveRow, setActive, setButtonEl]
+    () => ({ rowRef, isHovered, isActiveRow, isSubRow, setActive, setButtonEl }),
+    [rowRef, isHovered, isActiveRow, isSubRow, setActive, setButtonEl]
   );
 }
 
@@ -466,7 +468,7 @@ export type SidebarMenuSubItemProps = LiHTMLAttributes<HTMLLIElement>;
 const SidebarMenuSubItem = forwardRef<HTMLLIElement, SidebarMenuSubItemProps>(
   ({ className, children, ...props }, ref) => {
     const rowRef = useRef<HTMLLIElement>(null);
-    const item = useMenuRow(rowRef);
+    const item = useMenuRow(rowRef, true);
     return (
       <MenuItemContext.Provider value={item}>
         <li
@@ -697,6 +699,7 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
   ({ className, showOnHover = false, render, asChild, children, onClick, ...props }, ref) => {
     const shape = useShape();
     const sizeClasses = useSize();
+    const item = useContext(MenuItemContext);
     const { template, content } = resolveSlotTemplate(render, asChild, children);
     return slotElement(
       template,
@@ -707,13 +710,13 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
         "data-sidebar": "menu-action",
         className: cn(
           "absolute right-1 z-10 flex size-6 items-center justify-center text-muted-foreground outline-none",
-          sizeClasses.variant === "compact" ? "top-0.5" : "top-1",
+          item?.isSubRow || sizeClasses.variant === "compact" ? "top-0.5" : "top-1",
           "hover:bg-hover hover:text-foreground transition-[color,background-color,opacity] duration-80",
           "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
           "[&_svg]:size-3.5 [&_svg]:shrink-0",
           shape.item,
           showOnHover &&
-            "opacity-0 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100 data-[state=open]:opacity-100 aria-expanded:opacity-100",
+            "opacity-0 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100 group-hover/menu-sub-item:opacity-100 group-focus-within/menu-sub-item:opacity-100 data-[state=open]:opacity-100 aria-expanded:opacity-100",
           className
         ),
         onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -854,7 +857,7 @@ const SidebarMenuSub = forwardRef<HTMLUListElement, SidebarMenuSubProps>(
             data-state={open ? "open" : "closed"}
             aria-hidden={open ? undefined : true}
             className={cn(
-              "relative mx-3.5 flex min-w-0 translate-x-px flex-col gap-0.5 border-l border-border px-2.5 py-0.5 select-none",
+              "relative ml-3.5 flex min-w-0 translate-x-px flex-col gap-0.5 border-l border-border py-0.5 pl-2.5 select-none",
               className
             )}
             {...containerProps}
@@ -920,6 +923,7 @@ const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonP
         tabIndex: tabIdx,
         className: cn(
           "relative z-10 flex w-full cursor-pointer select-none items-center gap-2 px-2 text-left outline-none",
+          "group-has-[[data-sidebar=menu-action]]/menu-sub-item:pr-8 group-has-[[data-sidebar=menu-badge]]/menu-sub-item:pr-8",
           size === "sm" ? "h-6" : sizeClasses.variant === "compact" ? "h-6" : "h-7",
           shape.item,
           className

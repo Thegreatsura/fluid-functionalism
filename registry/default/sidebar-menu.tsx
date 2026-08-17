@@ -196,15 +196,31 @@ function useMenuScope(
     [containerRef]
   );
 
+  // While a popup anchored in the sidebar is open (a row action's or the
+  // header/footer rows' dropdown), hover tracking freezes across every menu
+  // scope — otherwise a non-modal popup lets rows underneath keep
+  // highlighting. Popup triggers are detected by the primitives' open
+  // attributes (Radix data-state, Base UI data-popup-open); collapsible rows
+  // only set aria-expanded, so they never match.
+  const popupOpen = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return false;
+    const root = container.closest('[data-slot="sidebar-wrapper"]') ?? container;
+    return !!root.querySelector(
+      '[data-sidebar="menu-button"][data-state="open"], [data-sidebar="menu-button"][data-popup-open], [data-sidebar="menu-action"][data-state="open"], [data-sidebar="menu-action"][data-popup-open]'
+    );
+  }, [containerRef]);
+
   const onMouseMove = useCallback(
     (e: React.MouseEvent) => {
+      if (popupOpen()) return;
       if (isForeign(e.target as HTMLElement)) {
         setActiveIndex(null);
         return;
       }
       handlers.onMouseMove(e);
     },
-    [isForeign, setActiveIndex, handlers]
+    [popupOpen, isForeign, setActiveIndex, handlers]
   );
 
   const onFocus = useCallback(
@@ -255,6 +271,9 @@ function useMenuScope(
       const currentIdx = items.indexOf(e.target as HTMLElement);
       if (currentIdx === -1) return;
       e.preventDefault();
+      // Keep handled arrows from also reaching window-level listeners (the
+      // docs site's ←/→ page navigation) — same rule as AskUserQuestions.
+      e.stopPropagation();
       if (e.key === "Home") items[0]?.focus();
       else if (e.key === "End") items[items.length - 1]?.focus();
       else {
@@ -846,10 +865,17 @@ const SidebarMenuSub = forwardRef<HTMLUListElement, SidebarMenuSubProps>(
     return (
       <motion.div
         data-slot="sidebar-menu-sub-wrapper"
-        className="overflow-hidden"
+        // `animate` stays defined from the first render — framer ignores an
+        // animate prop that appears later in the element's life. Until the
+        // content is measured, a closed sub collapses via the h-0 class and
+        // an open one keeps its natural height.
+        className={cn("overflow-hidden", !measured && !open && "h-0")}
         initial={false}
-        style={measured ? undefined : { height: open ? "auto" : 0 }}
-        animate={measured ? { height: open ? contentHeight : 0, opacity: open ? 1 : 0 } : undefined}
+        animate={
+          measured
+            ? { height: open ? contentHeight : 0, opacity: open ? 1 : 0 }
+            : { opacity: open ? 1 : 0 }
+        }
         transition={open ? spring.moderate : spring.moderate.exit}
       >
         <MenuScopeContext.Provider value={value}>

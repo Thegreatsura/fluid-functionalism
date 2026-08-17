@@ -77,6 +77,15 @@ export interface SidebarContextValue {
   setIsResizing: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+// Mounted-provider registry for the global toggle shortcut. The listener has
+// to be global (the key should work without focus in the sidebar), but only
+// ONE provider may answer a keypress: the innermost one containing focus, or —
+// when focus is outside every provider — the OUTERMOST mounted one (the
+// app-shell provider that wraps everything else; mount order can't be used
+// because a persistent layout provider mounts once while demos mount later
+// on navigation). Same pattern as AskUserQuestions' 1-9 shortcuts.
+const mountedProviders: HTMLElement[] = [];
+
 const SidebarContext = createContext<SidebarContextValue | null>(null);
 
 export function useSidebar(): SidebarContextValue {
@@ -138,6 +147,17 @@ const SidebarProvider = forwardRef<HTMLDivElement, SidebarProviderProps>(
     const isMobile = useIsMobile(mobileBreakpoint);
     const [openMobile, setOpenMobile] = useState(false);
     const [side, setSide] = useState<SidebarSide>("left");
+    const wrapperRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+      const el = wrapperRef.current;
+      if (!el) return;
+      mountedProviders.push(el);
+      return () => {
+        const i = mountedProviders.indexOf(el);
+        if (i !== -1) mountedProviders.splice(i, 1);
+      };
+    }, []);
     const registerSide = useCallback((next: SidebarSide) => setSide(next), []);
 
     // Live width: the prop is the starting point, the rail's drag-resize
@@ -192,6 +212,29 @@ const SidebarProvider = forwardRef<HTMLDivElement, SidebarProviderProps>(
           target.isContentEditable
         )
           return;
+        // Only one mounted provider answers (see mountedProviders). Providers
+        // can NEST (an app shell wrapping doc previews), so containment alone
+        // isn't enough: the innermost provider containing focus wins.
+        const root = wrapperRef.current;
+        if (!root) return;
+        if (root.contains(target)) {
+          if (
+            mountedProviders.some(
+              (el) => el !== root && root.contains(el) && el.contains(target)
+            )
+          )
+            return;
+        } else {
+          if (mountedProviders.some((el) => el !== root && el.contains(target)))
+            return;
+          // Focus outside every provider: the OUTERMOST one answers — mount
+          // order is unreliable here (a persistent app-shell provider mounts
+          // once, while doc demos mount later on client-side navigation).
+          const outermost = mountedProviders.find(
+            (el) => !mountedProviders.some((other) => other !== el && other.contains(el))
+          );
+          if (outermost !== root) return;
+        }
         event.preventDefault();
         toggleSidebar();
       };
@@ -237,7 +280,11 @@ const SidebarProvider = forwardRef<HTMLDivElement, SidebarProviderProps>(
     return (
       <SidebarContext.Provider value={value}>
         <div
-          ref={ref}
+          ref={(node) => {
+            wrapperRef.current = node;
+            if (typeof ref === "function") ref(node);
+            else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+          }}
           data-slot="sidebar-wrapper"
           className={cn("group/sidebar-wrapper relative flex min-h-svh w-full", className)}
           style={
@@ -400,7 +447,10 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
         data-variant={variant}
         data-side={side}
         className={cn(
-          "group peer shrink-0 sticky top-0 h-svh overflow-hidden",
+          // No bare `group` here: an unnamed group on the whole rail would
+          // fire every descendant's group-hover (Button fills, icon strokes)
+          // on rail hover. Named groups (menu-item etc.) handle row states.
+          "peer shrink-0 sticky top-0 h-svh overflow-hidden",
           // Flex order (not DOM order) decides the side, so consumers can
           // keep Sidebar before SidebarInset regardless of `side`.
           side === "right" && "order-last",
@@ -416,7 +466,10 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
           className={cn(
             "absolute inset-y-0 flex h-full flex-col",
             side === "left" ? "left-0" : "right-0",
-            variant !== "sidebar" && "p-2"
+            // Floating floats its card inside a full gutter; inset only needs
+            // the vertical inset (horizontal room belongs to the nav rows).
+            variant === "floating" && "p-2",
+            variant === "inset" && "py-2"
           )}
           style={{ width }}
           initial={false}
@@ -597,6 +650,7 @@ const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(
       <Tooltip
         side={side === "left" ? "right" : "left"}
         sideOffset={8}
+        followCursor="y"
         forceOpen={dragging ? false : undefined}
         content={
           <span className="flex flex-col items-start gap-1 py-0.5">

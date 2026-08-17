@@ -211,7 +211,7 @@ const providerProps: PropDef[] = [
   { name: "open", type: "boolean", description: "Controlled open state — pair with onOpenChange." },
   { name: "onOpenChange", type: "(open: boolean) => void", description: "Called when the trigger, rail, or shortcut wants to change the open state." },
   { name: "persist", type: "boolean", default: "true", description: "Write the desktop open state to the sidebar_state cookie (7 days). Mobile sheet state never persists." },
-  { name: "shortcut", type: "string | null", default: '"[" left · "]" right', description: "Bare-key toggle shortcut, side-aware by default. null disables it." },
+  { name: "shortcut", type: "string | null", default: '"[" left · "]" right', description: "Bare-key toggle shortcut, side-aware by default; null disables it. Focus-scoped across providers: the innermost one containing focus answers, else the app-level (last-mounted) one." },
   { name: "mobileBreakpoint", type: "number", default: "768", description: "Viewport width (px) below which the sidebar renders as a modal sheet." },
   { name: "width", type: "string", default: '"16rem"', description: "Expanded rail width. Also published as --sidebar-width." },
   { name: "widthMobile", type: "string", default: '"18rem"', description: "Sheet width on mobile. Also published as --sidebar-width-mobile." },
@@ -412,7 +412,7 @@ function DemoInsetHeader({
   title = "Dashboard",
   triggerSide = "left",
 }: {
-  title?: string;
+  title?: ReactNode;
   triggerSide?: "left" | "right";
 }) {
   // A right-hand sidebar puts its trigger at the bar's far end; the trigger
@@ -436,26 +436,25 @@ function DemoInsetBody() {
   );
 }
 
-/** Standard demo shell: provider scoped to the frame, no cookie writes, no
- *  keyboard shortcut (each preview would otherwise catch the same ⌘B). */
+/** Standard demo shell: provider scoped to the frame, no cookie writes. The
+ *  toggle key needs no opt-out: only the innermost provider containing focus
+ *  answers a keypress (mounted-provider registry). */
 function DemoShell({
   height,
   side,
   variant,
-  shortcut = null,
   sidebarChildren,
   insetTitle,
 }: {
   height?: string;
   side?: "left" | "right";
   variant?: "sidebar" | "floating" | "inset";
-  shortcut?: string | null;
   sidebarChildren?: ReactNode;
-  insetTitle?: string;
+  insetTitle?: ReactNode;
 }) {
   return (
     <SidebarShellFrame height={height}>
-      <SidebarProvider className="h-full min-h-0" persist={false} shortcut={shortcut}>
+      <SidebarProvider className="h-full min-h-0" persist={false}>
         <Sidebar side={side} variant={variant} className="h-full">
           {sidebarChildren ?? (
             <>
@@ -469,7 +468,10 @@ function DemoShell({
             </>
           )}
         </Sidebar>
-        <SidebarInset className="min-h-0">
+        {/* The floating card sits in a p-2 gutter — pad the main region's
+            top so its header lines up with the card's. The inset variant's
+            main is itself the card (own m-2), so it needs no extra padding. */}
+        <SidebarInset className={variant === "floating" ? "min-h-0 pt-2" : "min-h-0"}>
           <DemoInsetHeader title={insetTitle} triggerSide={side} />
           <DemoInsetBody />
         </SidebarInset>
@@ -491,7 +493,13 @@ function CollapsePreview() {
           </SidebarContent>
         </Sidebar>
         <SidebarInset className="min-h-0">
-          <DemoInsetHeader title="Press [ to toggle" />
+          <DemoInsetHeader
+            title={
+              <>
+                Press <code>[</code> to toggle
+              </>
+            }
+          />
           <DemoInsetBody />
         </SidebarInset>
       </SidebarProvider>
@@ -504,7 +512,7 @@ function GroupsPreview() {
   const icons = useIcons();
   return (
     <SidebarShellFrame height="h-[420px]">
-      <SidebarProvider className="h-full min-h-0" persist={false} shortcut={null}>
+      <SidebarProvider className="h-full min-h-0" persist={false}>
         <Sidebar className="h-full">
           <SidebarContent>
             <SidebarGroup>
@@ -555,7 +563,7 @@ function MenuFeaturesPreview() {
   const [current, setCurrent] = useState<string>(SIDEBAR_PROJECTS[0]);
   return (
     <SidebarShellFrame height="h-[460px]">
-      <SidebarProvider className="h-full min-h-0" persist={false} shortcut={null}>
+      <SidebarProvider className="h-full min-h-0" persist={false}>
         <Sidebar collapsible="none" className="h-full">
           <SidebarContent>
             <SidebarGroup>
@@ -622,8 +630,8 @@ function MenuFeaturesPreview() {
         </Sidebar>
         <SidebarInset className="min-h-0">
           <div className="flex h-full items-center justify-center p-6 text-center text-[13px] text-muted-foreground">
-            Hover the rows — one highlight travels. The action shows on hover;
-            the Projects row collapses its sub-menu.
+            One highlight travels between rows. Actions show on hover; Projects
+            collapses its sub-menu.
           </div>
         </SidebarInset>
       </SidebarProvider>
@@ -634,7 +642,7 @@ function MenuFeaturesPreview() {
 function LoadingPreview() {
   return (
     <SidebarShellFrame height="h-[320px]">
-      <SidebarProvider className="h-full min-h-0" persist={false} shortcut={null}>
+      <SidebarProvider className="h-full min-h-0" persist={false}>
         <Sidebar collapsible="none" className="h-full">
           <SidebarContent>
             <SidebarGroup>
@@ -719,7 +727,7 @@ export default function SidebarDoc() {
   return (
     <DocPage
       title="Sidebar"
-      description="Composable app-shell sidebar with offcanvas collapse, floating and inset variants, a mobile sheet, and cookie-persisted state — menu rows carry the proximity-hover traveling highlight, weight-animated labels, and an animated focus ring."
+      description="An app-shell sidebar that collapses offcanvas, resizes from its edge, and becomes a sheet on mobile. One highlight travels between rows instead of many flashing on and off."
       slug="sidebar"
     >
       <DocSection title="Playground">
@@ -734,10 +742,10 @@ export default function SidebarDoc() {
 
       <DocSection title="Collapse & trigger">
         <p className="text-body text-muted-foreground">
-          The trigger, the built-in rail handle on the sidebar&apos;s edge (drag to
-          resize, click to collapse), and the bare <code>[</code> key all drive the same
-          state. This is the one preview on this page with the shortcut enabled — the
-          collapse persists to a cookie in real apps (disabled here).
+          Three ways to toggle: the trigger, the rail on the sidebar&apos;s edge (drag
+          to resize, click to collapse), and the <code>[</code> key — <code>]</code> for
+          a right sidebar. The key goes to the sidebar that has focus. State persists
+          to a cookie.
         </p>
         <ComponentPreview code={collapseCode} padding="none" minHeightClass="h-[380px]">
           <CollapsePreview />
@@ -746,7 +754,15 @@ export default function SidebarDoc() {
 
       <DocSection title="Right side">
         <ComponentPreview code={rightSideCode} padding="none" minHeightClass="h-[360px]">
-          <DemoShell height="h-[360px]" side="right" insetTitle="Notes" />
+          <DemoShell
+            height="h-[360px]"
+            side="right"
+            insetTitle={
+              <>
+                Press <code>]</code> to toggle
+              </>
+            }
+          />
         </ComponentPreview>
       </DocSection>
 
@@ -800,12 +816,7 @@ export default function SidebarDoc() {
 
       <DocSection title="API Reference — Parts">
         <p className="text-body text-muted-foreground">
-          SidebarHeader, SidebarFooter, SidebarContent, SidebarGroup,
-          SidebarGroupLabel, SidebarGroupAction, SidebarGroupContent,
-          SidebarSeparator, SidebarInput, SidebarRail, SidebarTrigger,
-          SidebarInset, SidebarMenu, SidebarMenuItem, SidebarMenuAction,
-          SidebarMenuBadge, SidebarMenuSkeleton, and the SidebarMenuSub family
-          all forward standard HTML props. The notable extras:
+          Every part forwards standard HTML props. The notable extras:
         </p>
         <PropsTable props={partsProps} />
       </DocSection>

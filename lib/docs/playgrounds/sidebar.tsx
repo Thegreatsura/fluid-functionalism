@@ -174,6 +174,14 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   return lines.join("\n");
 }
 
+// Second group: four collapsible sub-menu examples under their own title.
+const TEAM_GROUPS = [
+  { icon: "users", label: "Engineering", children: ["Frontend", "Backend", "Infrastructure"] },
+  { icon: "palette", label: "Design", children: ["Brand", "Product", "Website"] },
+  { icon: "rocket", label: "Marketing", children: ["Campaigns", "Social", "Newsletter"] },
+  { icon: "globe", label: "Support", children: ["Inbox", "Knowledge base", "Escalations"] },
+] as const;
+
 function pick<T>(options: readonly T[]): T {
   return options[Math.floor(Math.random() * options.length)];
 }
@@ -181,6 +189,9 @@ function pick<T>(options: readonly T[]): T {
 export function SidebarPlayground({ children }: PlaygroundProps) {
   const [state, setState] = useState<PlayState>(DEFAULT_STATE);
   const [projectsOpen, setProjectsOpen] = useState(true);
+  const [openTeams, setOpenTeams] = useState<Record<string, boolean>>({ Engineering: true });
+  const toggleTeam = (label: string) =>
+    setOpenTeams((prev) => ({ ...prev, [label]: !prev[label] }));
   const icons = useIcons();
   const shape = useShape();
   const set = <K extends keyof PlayState>(key: K, value: PlayState[K]) =>
@@ -215,7 +226,6 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       <SidebarProvider
         className="h-full min-h-0"
         persist={false}
-        shortcut={null}
         open={state.collapsible === "offcanvas" ? state.open : true}
         onOpenChange={(next) => set("open", next)}
       >
@@ -358,6 +368,42 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                 )}
               </SidebarMenu>
             </SidebarGroup>
+            {!state.loading && state.subMenu && (
+              <SidebarGroup>
+                <SidebarGroupLabel>Teams</SidebarGroupLabel>
+                <SidebarMenu>
+                  {TEAM_GROUPS.map((team) => (
+                    <SidebarMenuItem key={team.label}>
+                      <SidebarMenuButton
+                        icon={icons[team.icon]}
+                        onClick={() => toggleTeam(team.label)}
+                        aria-expanded={!!openTeams[team.label]}
+                      >
+                        {team.label}
+                        <span className="ml-auto inline-flex">
+                          {createElement(icons["chevron-down"], {
+                            size: 14,
+                            strokeWidth: 1.5,
+                            className: `text-muted-foreground transition-transform duration-80 ${
+                              openTeams[team.label] ? "" : "-rotate-90"
+                            }`,
+                          })}
+                        </span>
+                      </SidebarMenuButton>
+                      <SidebarMenuSub open={!!openTeams[team.label]}>
+                        {team.children.map((c) => (
+                          <SidebarMenuSubItem key={c}>
+                            <SidebarMenuSubButton href="#" onClick={(e) => e.preventDefault()}>
+                              {c}
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroup>
+            )}
           </SidebarContent>
           {state.footerUser && (
             <SidebarFooter>
@@ -396,7 +442,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
             </SidebarFooter>
           )}
         </Sidebar>
-        <SidebarInset className="min-h-0">
+        <SidebarInset className={state.variant === "floating" ? "min-h-0 pt-2" : "min-h-0"}>
           <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2">
             {state.collapsible === "offcanvas" && <SidebarTrigger />}
             <span className="text-[13px] text-muted-foreground">Dashboard</span>

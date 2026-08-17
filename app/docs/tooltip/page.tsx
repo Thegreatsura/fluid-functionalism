@@ -41,6 +41,18 @@ const delayCode = `import { Tooltip } from "./components";
 <Tooltip content="Instant" delayDuration={0}>...</Tooltip>
 <Tooltip content="Slow" delayDuration={500}>...</Tooltip>`;
 
+const followCursorCode = `// For tall or wide triggers, a centered tooltip sits far from the
+// pointer — followCursor tracks it along one axis while the other stays
+// anchored by \`side\`. The Sidebar's rail handle uses followCursor="y".
+
+<Tooltip content="Following x" side="top" followCursor="x">
+  <div className="h-12 w-64 …" />
+</Tooltip>
+
+<Tooltip content="Following y" side="right" followCursor="y">
+  <div className="h-40 w-12 …" />
+</Tooltip>`;
+
 // ---------------------------------------------------------------------------
 // Props table
 // ---------------------------------------------------------------------------
@@ -73,6 +85,11 @@ const tooltipProps: PropDef[] = [
     type: "number",
     default: "200",
     description: "Milliseconds to wait before showing the tooltip on hover.",
+  },
+  {
+    name: "followCursor",
+    type: '"x" | "y"',
+    description: "Track the cursor along one axis while hovering the trigger; the other axis stays anchored by side. Used by the Sidebar rail.",
   },
   {
     name: "className",
@@ -133,6 +150,23 @@ export default function TooltipDoc() {
           >
             <Button>Save</Button>
           </Tooltip>
+        </ComponentPreview>
+      </DocSection>
+
+      <DocSection title="Follow cursor">
+        <ComponentPreview code={followCursorCode} minHeightClass="min-h-[220px]">
+          <div className="flex flex-wrap items-center justify-center gap-6">
+            <Tooltip content="Following x" side="top" followCursor="x">
+              <div className="flex h-12 w-64 cursor-default items-center justify-center rounded-lg border border-border text-[12px] text-muted-foreground">
+                Move along me
+              </div>
+            </Tooltip>
+            <Tooltip content="Following y" side="right" followCursor="y">
+              <div className="flex h-40 w-12 cursor-default items-center justify-center rounded-lg border border-border text-[12px] text-muted-foreground">
+                <span className="rotate-90 whitespace-nowrap">Move along me</span>
+              </div>
+            </Tooltip>
+          </div>
         </ComponentPreview>
       </DocSection>
 

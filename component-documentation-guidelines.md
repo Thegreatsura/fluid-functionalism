@@ -168,6 +168,44 @@ Reference implementations: `menu-item.tsx`, `nav-item.tsx`, `tabs-subtle.tsx`, `
 
 ---
 
+## Global Keyboard Shortcuts — the Mounted-Instance Registry Pattern
+
+When a component owns a **global** key (AskUserQuestions' 1-9 digits, Sidebar's
+`[` / `]` toggle), the listener must be window/document-level so the key works
+without focus in the component — but doc pages mount many instances, and the
+site may add its own. Without scoping, every instance answers the same
+keypress. The established pattern (source: `ask-user-questions.tsx`
+`mountedInstances`, replicated in `sidebar-core.tsx` `mountedProviders`):
+
+1. **Module-level registry**: `const mountedInstances: HTMLElement[] = []`.
+   Each instance pushes its root element in a mount effect and splices it out
+   on unmount.
+2. **Exactly one instance answers a keypress**, resolved in the global handler:
+   - the instance **containing focus** (`root.contains(e.target)`) — and when
+     instances can NEST (an app-shell provider wrapping doc previews), only
+     the **innermost** containing instance (skip if another registered root
+     inside yours also contains the target);
+   - if focus is inside a *different* instance → return (that one answers);
+   - if focus is outside every instance → when instances can nest, the
+     **outermost** registered instance answers (the one not contained by any
+     other) — do NOT use mount order for this: a persistent app-shell
+     instance mounts once while doc demos mount later on client-side
+     navigation, so "most recently mounted" picks a demo.
+     (AskUserQuestions' flat sibling demos use most-recently-mounted, which
+     is fine there because its instances never nest.)
+3. **Standard guards first**: bail on `metaKey`/`ctrlKey`/`altKey` and on
+   editable targets (INPUT / TEXTAREA / SELECT / `isContentEditable`).
+4. **Handled arrows call `e.stopPropagation()`** so window-level listeners
+   (the docs site's ←/→ page navigation in `sidebar-layout.tsx`) don't also
+   fire — roles like `radiogroup`/`menu` are auto-skipped by that handler, but
+   unrole'd containers (multi-select groups, `data-sidebar` menus) are not.
+
+With this scoping in place, doc previews do NOT need to disable the shortcut —
+a focused preview answers its own key while the site-level instance answers
+everywhere else.
+
+---
+
 ## Documentation Page Conventions
 
 ### Imports

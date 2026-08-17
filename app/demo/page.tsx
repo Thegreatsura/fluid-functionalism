@@ -57,6 +57,7 @@ function DemoPageInner() {
     "slider",
     "ask-user-questions",
     "input-message",
+    "sidebar",
     "button",
     "color-picker",
     "input-group",

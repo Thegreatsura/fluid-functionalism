@@ -954,6 +954,92 @@
       ]
     },
     {
+      "name": "sidebar",
+      "type": "registry:ui",
+      "title": "Sidebar",
+      "description": "Composable app sidebar with offcanvas collapse, floating and inset variants, a mobile sheet, cookie-persisted state, keyboard shortcut, and proximity-hover menus with traveling selection, hover, and focus indicators. Radix flavor.",
+      "dependencies": [
+        "@radix-ui/react-dialog",
+        "framer-motion",
+        "lucide-react",
+        "class-variance-authority"
+      ],
+      "registryDependencies": [
+        "utils",
+        "springs",
+        "font-weight",
+        "shape-context",
+        "size-context",
+        "surface-context",
+        "surface-classes",
+        "icon-context",
+        "use-proximity-hover",
+        "tooltip",
+        "scroll-area",
+        "button"
+      ],
+      "files": [
+        {
+          "path": "registry/radix/sidebar.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/sidebar.tsx"
+        },
+        {
+          "path": "registry/default/sidebar-core.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/sidebar-core.tsx"
+        },
+        {
+          "path": "registry/default/sidebar-menu.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/sidebar-menu.tsx"
+        }
+      ]
+    },
+    {
+      "name": "sidebar-base",
+      "type": "registry:ui",
+      "title": "Sidebar",
+      "description": "Composable app sidebar with offcanvas collapse, floating and inset variants, a mobile sheet, cookie-persisted state, keyboard shortcut, and proximity-hover menus with traveling selection, hover, and focus indicators. Base UI flavor.",
+      "dependencies": [
+        "@base-ui/react",
+        "framer-motion",
+        "lucide-react",
+        "class-variance-authority"
+      ],
+      "registryDependencies": [
+        "utils",
+        "springs",
+        "font-weight",
+        "shape-context",
+        "size-context",
+        "surface-context",
+        "surface-classes",
+        "icon-context",
+        "use-proximity-hover",
+        "tooltip",
+        "scroll-area",
+        "button"
+      ],
+      "files": [
+        {
+          "path": "registry/base/sidebar.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/sidebar.tsx"
+        },
+        {
+          "path": "registry/default/sidebar-core.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/sidebar-core.tsx"
+        },
+        {
+          "path": "registry/default/sidebar-menu.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/sidebar-menu.tsx"
+        }
+      ]
+    },
+    {
       "name": "slider",
       "type": "registry:ui",
       "title": "Slider",

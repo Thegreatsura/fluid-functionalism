@@ -81,6 +81,7 @@ const REFERENCE_TIERS = [
       { label: "Accordion",               slug: "/docs/accordion" },
       { label: "Chat bubbles",            slug: "/docs/chat-message" },
       { label: "Mobile drawer",           slug: null },
+      { label: "Sidebar",                 slug: "/docs/sidebar" },
       { label: "Selection merge / split", slug: "/docs/checkbox-group" },
     ],
   },

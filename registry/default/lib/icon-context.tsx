@@ -53,6 +53,12 @@ import {
   SkipForward,
   CornerDownRight,
   CornerDownLeft,
+  PanelLeft,
+  PanelRight,
+  ChevronsUpDown,
+  Ellipsis,
+  Calendar,
+  Folder,
 } from "lucide-react";
 
 export interface IconComponentProps {
@@ -75,7 +81,8 @@ export type IconName =
   | "image" | "link" | "check" | "rotate-ccw"
   | "play" | "pause" | "pipette"
   | "home" | "message-circle" | "inbox"
-  | "pencil" | "scaling" | "skip-forward" | "corner-down-right" | "corner-down-left";
+  | "pencil" | "scaling" | "skip-forward" | "corner-down-right" | "corner-down-left"
+  | "panel-left" | "panel-right" | "chevrons-up-down" | "more-horizontal" | "calendar" | "folder";
 
 export const defaultIcons: Record<IconName, IconComponent> = {
   "chevron-right": ChevronRight,
@@ -128,6 +135,12 @@ export const defaultIcons: Record<IconName, IconComponent> = {
   "skip-forward": SkipForward,
   "corner-down-right": CornerDownRight,
   "corner-down-left": CornerDownLeft,
+  "panel-left": PanelLeft,
+  "panel-right": PanelRight,
+  "chevrons-up-down": ChevronsUpDown,
+  "more-horizontal": Ellipsis,
+  "calendar": Calendar,
+  "folder": Folder,
 };
 
 const IconContext = createContext<Record<IconName, IconComponent> | null>(null);

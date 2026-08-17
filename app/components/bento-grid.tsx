@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
  * left/right band by band.
  *
  * The size mix is balanced so the grid fills with NO holes at both md and xl:
- * smalls needed = 2·(larges) + 1·(mediums) = 2·6 + 2 = 14 = smalls available
+ * smalls needed = 2·(larges) + 1·(mediums) = 2·5 + 4 = 14 = smalls available
  * (and an even small count keeps md's half-width pairs complete). Adding a
  * card or changing a gridSize breaks that equation — rebalance before
  * shipping or the bottom rows develop holes again.
@@ -23,24 +23,25 @@ import { cn } from "@/lib/utils";
 const displayOrder: { slug: string; side?: "right" }[] = [
   { slug: "input-message" },                 // band 1 · medium left
   { slug: "thinking-indicator" },
-  { slug: "card", side: "right" },           // band 2 · large right
+  { slug: "sidebar", side: "right" },        // band 2 · medium right
   { slug: "radio-group" },
+  { slug: "card" },                          // band 3 · large left
   { slug: "switch" },
-  { slug: "ask-user-questions" },            // band 3 · large left
-  { slug: "slider" },
   { slug: "select" },
   { slug: "thinking-steps", side: "right" }, // band 4 · large right
   { slug: "tabs-subtle" },
   { slug: "checkbox-group" },
-  { slug: "tabs" },                          // band 5 · medium left
+  { slug: "ask-user-questions" },            // band 5 · large left
+  { slug: "slider" },
   { slug: "dropdown" },
-  { slug: "accordion", side: "right" },      // band 6 · large right
+  { slug: "tabs", side: "right" },           // band 6 · medium right
   { slug: "input-copy" },
+  { slug: "accordion" },                     // band 7 · large left
   { slug: "input-group" },
-  { slug: "color-picker" },                  // band 7 · large left
   { slug: "button" },
+  { slug: "table", side: "right" },          // band 8 · medium right
   { slug: "dialog" },
-  { slug: "table", side: "right" },          // band 8 · large right
+  { slug: "color-picker" },                  // band 9 · large left
   { slug: "tooltip" },
   { slug: "badge" },
 ];

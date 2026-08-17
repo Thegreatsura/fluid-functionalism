@@ -55,21 +55,39 @@ function GitHubIcon({ size = 16, className }: { size?: number; className?: strin
 }
 
 /** Standalone GitHub star-count button — rendered next to the "Make them yours" heading. */
+// One fetch per page load, shared by every instance (right panel + the
+// sidebar sheet's footer). Without the cache, each sheet open remounted the
+// button and refired the unauthenticated API call — GitHub rate-limits those
+// per IP, after which the count silently disappeared.
+let cachedStars: number | null = null;
+let starsPromise: Promise<number | null> | null = null;
+
+function fetchStars(): Promise<number | null> {
+  starsPromise ??= fetch(`https://api.github.com/repos/${REPO}`, {
+    headers: { Accept: "application/vnd.github.v3+json" },
+  })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      if (data?.stargazers_count != null) cachedStars = data.stargazers_count;
+      return cachedStars;
+    })
+    .catch(() => null);
+  return starsPromise;
+}
+
 export function GitHubStarButton() {
   const shapeCtx = useShape();
-  const [stars, setStars] = useState<number | null>(null);
+  const [stars, setStars] = useState<number | null>(cachedStars);
 
   useEffect(() => {
-    fetch(`https://api.github.com/repos/${REPO}`, {
-      headers: { Accept: "application/vnd.github.v3+json" },
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.stargazers_count != null) {
-          setStars(data.stargazers_count);
-        }
-      })
-      .catch(() => {});
+    if (cachedStars !== null) return;
+    let cancelled = false;
+    fetchStars().then((count) => {
+      if (!cancelled && count !== null) setStars(count);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (

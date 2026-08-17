@@ -67,6 +67,12 @@ import {
   IconPlayerSkipForward,
   IconCornerDownRight,
   IconCornerDownLeft,
+  IconLayoutSidebar,
+  IconLayoutSidebarRight,
+  IconSelector,
+  IconDots,
+  IconCalendar,
+  IconFolder,
 } from "@tabler/icons-react";
 
 // ── Phosphor ────────────────────────────────────────────────
@@ -121,6 +127,11 @@ import {
   SkipForward as PhSkipForward,
   ArrowElbowDownRight as PhArrowElbowDownRight,
   ArrowElbowDownLeft as PhArrowElbowDownLeft,
+  SidebarSimple as PhSidebarSimple,
+  CaretUpDown as PhCaretUpDown,
+  DotsThree as PhDotsThree,
+  CalendarBlank as PhCalendarBlank,
+  FolderSimple as PhFolderSimple,
 } from "@phosphor-icons/react";
 
 // ── HugeIcons ───────────────────────────────────────────────
@@ -172,6 +183,12 @@ import HiScaling from "@hugeicons/core-free-icons/Resize01Icon";
 import HiSkipForward from "@hugeicons/core-free-icons/NextIcon";
 import HiCornerDownRight from "@hugeicons/core-free-icons/ArrowMoveDownRightIcon";
 import HiCornerDownLeft from "@hugeicons/core-free-icons/ArrowMoveDownLeftIcon";
+import HiPanelLeft from "@hugeicons/core-free-icons/SidebarLeft01Icon";
+import HiPanelRight from "@hugeicons/core-free-icons/SidebarRight01Icon";
+import HiChevronsUpDown from "@hugeicons/core-free-icons/UnfoldMoreIcon";
+import HiMoreHorizontal from "@hugeicons/core-free-icons/MoreHorizontalIcon";
+import HiCalendar from "@hugeicons/core-free-icons/Calendar01Icon";
+import HiFolder from "@hugeicons/core-free-icons/Folder01Icon";
 
 // ── Untitled UI ─────────────────────────────────────────────
 // Aliased with a Uui prefix to avoid collisions with the Lucide imports above.
@@ -223,6 +240,12 @@ import {
   SkipForward as UuiSkipForward,
   CornerDownRight as UuiCornerDownRight,
   CornerDownLeft as UuiCornerDownLeft,
+  LayoutLeft as UuiLayoutLeft,
+  LayoutRight as UuiLayoutRight,
+  ChevronSelectorVertical as UuiChevronSelectorVertical,
+  DotsHorizontal as UuiDotsHorizontal,
+  Calendar as UuiCalendar,
+  Folder as UuiFolder,
 } from "@untitledui/icons";
 
 
@@ -254,6 +277,14 @@ function phosphor(Icon: ComponentType<{ size?: number; weight?: PhosphorWeight; 
   return function PhosphorAdapter({ size, strokeWidth, className }: IconComponentProps) {
     const weight: PhosphorWeight = strokeWidth != null && strokeWidth >= 1.75 ? "regular" : "light";
     return <Icon size={size} weight={weight} className={className} />;
+  };
+}
+
+// Phosphor ships no right-hand sidebar glyph — mirror the left one.
+function phosphorFlipped(Icon: ComponentType<{ size?: number; weight?: PhosphorWeight; className?: string }>): IconComponent {
+  return function PhosphorFlippedAdapter({ size, strokeWidth, className }: IconComponentProps) {
+    const weight: PhosphorWeight = strokeWidth != null && strokeWidth >= 1.75 ? "regular" : "light";
+    return <Icon size={size} weight={weight} className={`-scale-x-100 ${className ?? ""}`} />;
   };
 }
 
@@ -333,6 +364,12 @@ const tablerMap: Record<IconName, IconComponent> = {
   "skip-forward": tabler(IconPlayerSkipForward),
   "corner-down-right": tabler(IconCornerDownRight),
   "corner-down-left": tabler(IconCornerDownLeft),
+  "panel-left": tabler(IconLayoutSidebar),
+  "panel-right": tabler(IconLayoutSidebarRight),
+  "chevrons-up-down": tabler(IconSelector),
+  "more-horizontal": tabler(IconDots),
+  "calendar": tabler(IconCalendar),
+  "folder": tabler(IconFolder),
 };
 
 const phosphorMap: Record<IconName, IconComponent> = {
@@ -386,6 +423,12 @@ const phosphorMap: Record<IconName, IconComponent> = {
   "skip-forward": phosphor(PhSkipForward),
   "corner-down-right": phosphor(PhArrowElbowDownRight),
   "corner-down-left": phosphor(PhArrowElbowDownLeft),
+  "panel-left": phosphor(PhSidebarSimple),
+  "panel-right": phosphorFlipped(PhSidebarSimple),
+  "chevrons-up-down": phosphor(PhCaretUpDown),
+  "more-horizontal": phosphor(PhDotsThree),
+  "calendar": phosphor(PhCalendarBlank),
+  "folder": phosphor(PhFolderSimple),
 };
 
 const hugeiconsMap: Record<IconName, IconComponent> = {
@@ -439,6 +482,12 @@ const hugeiconsMap: Record<IconName, IconComponent> = {
   "skip-forward": hugeicons(HiSkipForward),
   "corner-down-right": hugeicons(HiCornerDownRight),
   "corner-down-left": hugeicons(HiCornerDownLeft),
+  "panel-left": hugeicons(HiPanelLeft),
+  "panel-right": hugeicons(HiPanelRight),
+  "chevrons-up-down": hugeicons(HiChevronsUpDown),
+  "more-horizontal": hugeicons(HiMoreHorizontal),
+  "calendar": hugeicons(HiCalendar),
+  "folder": hugeicons(HiFolder),
 };
 
 const untitleduiMap: Record<IconName, IconComponent> = {
@@ -496,6 +545,12 @@ const untitleduiMap: Record<IconName, IconComponent> = {
   "skip-forward": untitledui(UuiSkipForward),
   "corner-down-right": untitledui(UuiCornerDownRight),
   "corner-down-left": untitledui(UuiCornerDownLeft),
+  "panel-left": untitledui(UuiLayoutLeft),
+  "panel-right": untitledui(UuiLayoutRight),
+  "chevrons-up-down": untitledui(UuiChevronSelectorVertical),
+  "more-horizontal": untitledui(UuiDotsHorizontal),
+  "calendar": untitledui(UuiCalendar),
+  "folder": untitledui(UuiFolder),
 };
 
 // ── Unified Map ─────────────────────────────────────────────

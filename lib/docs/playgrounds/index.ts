@@ -2,6 +2,7 @@ import { AskUserQuestionsPlayground } from "./ask-user-questions";
 import { ButtonPlayground } from "./button";
 import { CardPlayground } from "./card";
 import { InputMessagePlayground } from "./input-message";
+import { SidebarPlayground } from "./sidebar";
 import type { PlaygroundComponent } from "./types";
 
 export type { PlaygroundParts, PlaygroundProps, PlaygroundComponent } from "./types";
@@ -22,4 +23,5 @@ export const playgroundMap: Record<string, PlaygroundComponent> = {
   button: ButtonPlayground,
   card: CardPlayground,
   "input-message": InputMessagePlayground,
+  sidebar: SidebarPlayground,
 };

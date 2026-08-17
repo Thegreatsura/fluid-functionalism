@@ -1,94 +1,139 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NavMenu } from "@/components/ui/nav-menu";
-import { NavItem } from "@/components/ui/nav-item";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  useSidebar,
+} from "@/components/flavored/sidebar";
 import { componentList, systemList } from "@/lib/docs/components";
-import { ScrollArea } from "@/registry/base/scroll-area";
+import { GitHubStarButton, SettingsContent } from "@/app/components/right-panel";
 
-
-interface SidebarProps {
-  mobile?: boolean;
+interface NavEntry {
+  slug: string;
+  name: string;
+  isNew?: boolean;
+  isUpdated?: boolean;
+  dotColor?: string;
 }
 
-export function Sidebar({ mobile }: SidebarProps) {
-  const pathname = usePathname();
-
-  const sections = (
-    <>
-      {/* Top-level navigation */}
-      <NavMenu activeSlug={pathname === "/" ? "/" : pathname === "/docs" ? "/docs" : null} aria-label="Main navigation">
-        <NavItem index={0} href="/" label="Showcase" />
-        <NavItem index={1} href="/docs" label="Introduction" />
-      </NavMenu>
-
-      {/* System section */}
-      <div>
-        <span className="text-body text-muted-foreground/50 pl-1 pb-1.5 flex items-center gap-2">
-          System
-          <span className="text-[11px]">{systemList.length}</span>
-        </span>
-        <NavMenu activeSlug={pathname} aria-label="System navigation">
-          {systemList.map((s, i) => (
-            <NavItem
-              key={s.slug}
-              index={i}
-              href={`/docs/${s.slug}`}
-              label={s.name}
-              isNew={s.isNew}
-              isUpdated={s.isUpdated}
-            />
-          ))}
-        </NavMenu>
-      </div>
-
-      {/* Components section */}
-      <div>
-        <span className="text-body text-muted-foreground/50 pl-1 pb-1.5 flex items-center gap-2">
-          Components
-          <span className="text-[11px]">{componentList.length}</span>
-        </span>
-        <NavMenu activeSlug={pathname} aria-label="Component navigation">
-          {componentList.map((c, i) => (
-            <NavItem
-              key={c.slug}
-              index={i}
-              href={`/docs/${c.slug}`}
-              label={c.name}
-              isNew={c.isNew}
-              isUpdated={c.isUpdated}
-              dotColorClass={c.dotColor}
-            />
-          ))}
-        </NavMenu>
-      </div>
-    </>
-  );
-
-  // Inside the mobile drawer, which owns the scroll (overflow-y-auto): the
-  // sidebar just flows as a plain column — a nested ScrollArea would
-  // double-scroll and needs a bounded height the drawer doesn't hand it.
-  if (mobile) {
-    return <aside className="flex w-full flex-col gap-4 p-4">{sections}</aside>;
+/** The isNew/isUpdated dot, rendered as a trailing child inside the row's
+ *  weight-animated label span (same markup the old NavItem used). */
+function StatusDot({ entry }: { entry: NavEntry }) {
+  // Rendered as a flex sibling of the weight-animated label (the row's gap
+  // provides the spacing), matching the old NavItem dot's visual position.
+  if (entry.isUpdated) {
+    return <span className="inline-block size-1.5 shrink-0 rounded-full bg-blue-500" />;
   }
+  if (entry.isNew) {
+    return (
+      <span
+        className={`inline-block size-1.5 shrink-0 rounded-full ${entry.dotColor ?? "bg-blue-500"}`}
+      />
+    );
+  }
+  return null;
+}
 
-  // Desktop: the aside is the sticky, full-height rail. ScrollArea gives it the
-  // shape-system scrollbar on hover + a scroll-fade edge — the same trick the
-  // /docs/scrollbars page ships, dogfooded on our own nav.
+function NavGroup({
+  label,
+  entries,
+  pathname,
+  ariaLabel,
+}: {
+  label?: string;
+  entries: NavEntry[];
+  pathname: string;
+  ariaLabel: string;
+}) {
   return (
-    <aside
-      // max-xl:fixed — same trick as the right panel: while xl-fade-flex holds
-      // display:flex through the fade-out (allow-discrete), fixed positioning
-      // takes the sidebar out of flow at the breakpoint so the content reflows
-      // once, not again when display flips to none. ml-2 mirrors the right
-      // panel's mr-2 inset so both sides land on the same 8px gap.
-      className="shrink-0 w-64 ml-2 flex-col sticky top-0 h-screen xl-fade-flex max-xl:fixed max-xl:top-0 max-xl:left-0 max-xl:z-40 max-xl:pointer-events-none"
-    >
-      <ScrollArea className="min-h-0 w-full flex-1" viewportClassName="scroll-fade">
-        <div className="flex flex-col gap-4 p-4">{sections}</div>
-      </ScrollArea>
-    </aside>
+    <SidebarGroup>
+      {label && (
+        <SidebarGroupLabel>
+          {label}
+          <span className="text-[11px]">{entries.length}</span>
+        </SidebarGroupLabel>
+      )}
+      <SidebarMenu aria-label={ariaLabel}>
+        {entries.map((entry) => {
+          const href = `/docs/${entry.slug}`;
+          return (
+            <SidebarMenuItem key={entry.slug}>
+              <SidebarMenuButton render={<Link href={href} />} isActive={pathname === href}>
+                {entry.name}
+                <StatusDot entry={entry} />
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          );
+        })}
+      </SidebarMenu>
+    </SidebarGroup>
   );
 }
 
-export default Sidebar;
+/** The site's own navigation rail — the Sidebar component, dogfooded. */
+export function SiteSidebar() {
+  const pathname = usePathname();
+  const { isMobile } = useSidebar();
+
+  return (
+    <Sidebar collapsible="offcanvas" className="ml-2">
+      <SidebarContent className="py-2">
+        {/* Top-level navigation */}
+        <SidebarGroup>
+          <SidebarMenu aria-label="Main navigation">
+            <SidebarMenuItem>
+              <SidebarMenuButton render={<Link href="/" />} isActive={pathname === "/"}>
+                Showcase
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton render={<Link href="/docs" />} isActive={pathname === "/docs"}>
+                Introduction
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <NavGroup
+          label="System"
+          entries={systemList}
+          pathname={pathname}
+          ariaLabel="System navigation"
+        />
+        <NavGroup
+          label="Components"
+          entries={componentList}
+          pathname={pathname}
+          ariaLabel="Component navigation"
+        />
+      </SidebarContent>
+
+      {/* The settings block only ships in the mobile sheet — on desktop it
+          lives in the right panel. */}
+      {isMobile && (
+        <SidebarFooter className="p-4 pt-2">
+          <div className="flex items-center justify-between pt-2 pb-2">
+            <h2
+              className="text-title text-foreground leading-none"
+              style={{ fontVariationSettings: "'wght' 600" }}
+            >
+              Make them yours
+            </h2>
+            <GitHubStarButton />
+          </div>
+          <SettingsContent tooltipSide="right" />
+        </SidebarFooter>
+      )}
+    </Sidebar>
+  );
+}
+
+export default SiteSidebar;

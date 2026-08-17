@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Sidebar } from "@/app/components/sidebar";
-import { useIcon } from "@/lib/icon-context";
-import { useSizeVariant } from "@/lib/size-context";
-import { MobileDrawer } from "@/components/flavored/mobile-drawer";
-import { Button } from "@/registry/radix/button";
-import { RightPanel, SettingsContent, GitHubStarButton } from "@/app/components/right-panel";
+import {
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarInset,
+  useSidebar,
+} from "@/components/flavored/sidebar";
+import { SiteSidebar } from "@/app/components/sidebar";
+import { RightPanel } from "@/app/components/right-panel";
 import { RightRailProvider } from "@/lib/right-rail";
 import { systemList, componentList } from "@/lib/docs/components";
 
@@ -18,25 +20,24 @@ const pageOrder = [
   ...componentList.map((c) => `/docs/${c.slug}`),
 ];
 
-interface SidebarLayoutProps {
-  children: ReactNode;
+/** Closes the mobile sheet whenever the route changes. */
+function CloseSheetOnNavigate() {
+  const { setOpenMobile } = useSidebar();
+  const pathname = usePathname();
+  useEffect(() => {
+    setOpenMobile(false);
+  }, [pathname, setOpenMobile]);
+  return null;
 }
 
-export function SidebarLayout({ children }: SidebarLayoutProps) {
-  const MenuIcon = useIcon("menu");
-  // Square icon buttons follow the site-wide size step (see /docs/sizes).
-  const iconSize =
-    useSizeVariant() === "compact" ? ("icon-compact" as const) : ("icon" as const);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
+interface SidebarLayoutProps {
+  children: ReactNode;
+  /** Server-read sidebar_state cookie value (see app/layout.tsx). */
+  defaultOpen?: boolean;
+}
+
+export function SidebarLayout({ children, defaultOpen = true }: SidebarLayoutProps) {
   const pathname = usePathname();
-
-  // Close drawer on route change
-  useEffect(() => {
-    setDrawerOpen(false);
-  }, [pathname]);
-
-  const handleClose = useCallback(() => setDrawerOpen(false), []);
   const router = useRouter();
   const isFullscreen =
     pathname === "/demo" ||
@@ -101,51 +102,28 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 
   return (
     <RightRailProvider>
-      <div className="flex min-h-screen">
-        {/* Desktop sidebar */}
-        <Sidebar />
+      {/* The Sidebar component, dogfooded: the provider owns the desktop
+          collapse (⌘B + cookie persistence via app/layout.tsx) and the
+          mobile sheet. The site switches rail ↔ sheet at xl, so the
+          breakpoint is 1280 instead of the component's 768 default. */}
+      <SidebarProvider defaultOpen={defaultOpen} mobileBreakpoint={1280} className="min-h-screen">
+        <SiteSidebar />
+        <CloseSheetOnNavigate />
 
-      {/* Mobile hamburger */}
-      <Button
-        ref={menuButtonRef}
-        variant="ghost"
-        size={iconSize}
-        className="xl:hidden fixed top-4 left-4 z-50"
-        onClick={() => setDrawerOpen(true)}
-        aria-label="Open navigation"
-      >
-        <MenuIcon />
-      </Button>
+        {/* Mobile trigger for the sheet; desktop collapse uses ⌘B or the rail */}
+        <SidebarTrigger
+          className="xl:hidden fixed top-4 left-4 z-50"
+          aria-label="Open navigation"
+        />
 
-      {/* Mobile drawer */}
-      <MobileDrawer
-        open={drawerOpen}
-        onClose={handleClose}
-        triggerRef={menuButtonRef}
-      >
-        <Sidebar mobile />
-        <div className="mt-auto pt-4">
-          <div className="flex items-center justify-between pt-2 pb-2">
-            <h2
-              className="text-title text-foreground leading-none"
-              style={{ fontVariationSettings: "'wght' 600" }}
-            >
-              Make them yours
-            </h2>
-            <GitHubStarButton />
-          </div>
-          <SettingsContent tooltipSide="right" />
-        </div>
-      </MobileDrawer>
-
-      {/* Main content */}
-      <main className="flex-1 min-w-0">
-        {children}
-      </main>
+        {/* Main content */}
+        <SidebarInset className="min-w-0">
+          {children}
+        </SidebarInset>
 
         {/* Desktop right panel */}
         <RightPanel />
-      </div>
+      </SidebarProvider>
     </RightRailProvider>
   );
 }

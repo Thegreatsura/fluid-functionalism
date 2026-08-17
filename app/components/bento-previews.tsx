@@ -15,6 +15,8 @@ import {
   SELECT_DEFAULT,
   SELECT_PLACEHOLDER,
   SELECT_ROLES,
+  SIDEBAR_GROUP_LABEL,
+  SIDEBAR_ITEMS,
   SLIDER_OPACITY,
   SLIDER_VOLUME,
   SWITCH_ITEMS,
@@ -42,6 +44,18 @@ import {
   CardMedia,
 } from "@/registry/default/card";
 import { InputMessage } from "@/registry/default/input-message";
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarMenuBadge,
+  SidebarInset,
+} from "@/components/flavored/sidebar";
 import {
   CheckboxGroup,
   CheckboxItem,
@@ -598,8 +612,45 @@ function ColorPickerPreview() {
   );
 }
 
+function SidebarPreview() {
+  const icons = useIcons();
+  return (
+    <div className="flex h-[200px] w-full max-w-[440px] overflow-hidden rounded-xl border border-border bg-background">
+      {/* collapsible="none" keeps the mini shell static — it never becomes
+          the full-viewport sheet on phones. */}
+      <SidebarProvider className="h-full min-h-0" persist={false} shortcut={null} width="11rem">
+        <Sidebar collapsible="none" className="h-full">
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>{SIDEBAR_GROUP_LABEL}</SidebarGroupLabel>
+              <SidebarMenu size="compact">
+                {SIDEBAR_ITEMS.slice(0, 4).map((item) => (
+                  <SidebarMenuItem key={item.label}>
+                    <SidebarMenuButton icon={icons[item.icon]} isActive={item.active}>
+                      {item.label}
+                    </SidebarMenuButton>
+                    {item.badge && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset className="min-h-0">
+          <div className="flex flex-col gap-2 p-3">
+            <div className="h-3 w-2/3 rounded-md bg-hover" />
+            <div className="h-3 w-1/2 rounded-md bg-hover" />
+            <div className="h-16 rounded-lg bg-hover" />
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    </div>
+  );
+}
+
 export const previewMap: Record<string, React.FC> = {
   "input-message": InputMessagePreview,
+  sidebar: SidebarPreview,
   card: CardPreview,
   accordion: AccordionPreview,
   "ask-user-questions": AskUserQuestionsPreview,

@@ -118,6 +118,27 @@ export const SELECT_PLACEHOLDER = "Select role...";
 export const SELECT_ROLES = ["Owner", "Editor", "Viewer", "Guest"] as const;
 export const SELECT_DEFAULT = "Viewer";
 
+export const SIDEBAR_GROUP_LABEL = "Platform";
+
+export const SIDEBAR_ITEMS: readonly {
+  icon: IconName;
+  label: string;
+  badge?: string;
+  active?: boolean;
+}[] = [
+  { icon: "home", label: "Home", active: true },
+  { icon: "inbox", label: "Inbox", badge: "12" },
+  { icon: "calendar", label: "Calendar" },
+  { icon: "search", label: "Search" },
+  { icon: "settings", label: "Settings" },
+];
+
+export const SIDEBAR_PROJECTS = [
+  "Design system",
+  "Marketing site",
+  "Travel app",
+] as const;
+
 export const SLIDER_OPACITY = { label: "Opacity", initial: 35 } as const;
 export const SLIDER_VOLUME = { label: "Volume", initial: 60 } as const;
 

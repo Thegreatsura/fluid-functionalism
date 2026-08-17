@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { MotionConfig } from "framer-motion";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
@@ -42,11 +43,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Server-side read of the sidebar's persisted open state so the rail
+  // renders in its last position with no post-hydration flicker. A missing
+  // cookie means open — the component's own default.
+  const cookieStore = await cookies();
+  const sidebarDefaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
+
   return (
     <html lang="en">
       {/* Font smoothing (antialiased/grayscale) is set globally in globals.css */}
@@ -64,7 +71,7 @@ export default function RootLayout({
               <ThemeProvider>
                 <IconPlaygroundProvider defaultLibrary="untitledui">
                   <BaseProvider>
-                    <SidebarLayout>{children}</SidebarLayout>
+                    <SidebarLayout defaultOpen={sidebarDefaultOpen}>{children}</SidebarLayout>
                     <SettingsToast />
                     <Analytics />
                     <SpeedInsights />

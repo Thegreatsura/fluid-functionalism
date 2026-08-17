@@ -25,12 +25,16 @@ interface BentoCardProps {
    *  `layout="position"` nodes — framer scale-corrects nested layout nodes,
    *  so the content stays crisp instead of stretching with the box. */
   animateLayout?: boolean;
+  /** Optional control pinned to the preview area's bottom-right corner —
+   *  the /demo page puts the playground pen menu here. Rendered outside the
+   *  (possibly scaled) preview content so it keeps its natural size. */
+  action?: ReactNode;
   className?: string;
   style?: CSSProperties;
   children: ReactNode;
 }
 
-export function BentoCard({ slug, name, isNew, gridSize = "small", animateLayout = false, className: extraClassName, style, children }: BentoCardProps) {
+export function BentoCard({ slug, name, isNew, gridSize = "small", animateLayout = false, action, className: extraClassName, style, children }: BentoCardProps) {
   // No click-to-focus wiring here. Previously a mousedown on empty space
   // inside the card routed focus to the preview's first interactive element
   // (so the user could keyboard-drive the demo afterwards). In practice it
@@ -88,19 +92,33 @@ export function BentoCard({ slug, name, isNew, gridSize = "small", animateLayout
         {children}
       </motion.div>
 
-      {slug ? (
-        <Link
-          href={`/docs/${slug}`}
-          aria-label={`View ${name} documentation`}
-          className="group/link shrink-0 flex items-center gap-2 px-4 py-3 border-t border-border/40 rounded-b-xl transition-colors duration-80 hover:bg-hover outline-none focus-visible:shadow-[inset_0_0_0_1px_var(--focus-ring,#6B97FF)]"
-        >
-          {footerLabel}
-        </Link>
-      ) : (
-        <div className="shrink-0 flex items-center gap-2 px-4 py-3 border-t border-border/40">
-          {footerLabel}
-        </div>
-      )}
+      {/* Footer row: the name (a link to the docs when `slug` is set) on the
+          left, the optional action pinned to the right.
+
+          The link spans the FULL row so its hover fill runs the whole footer
+          edge-to-edge; the action is layered on top of it, absolutely
+          positioned, rather than sitting beside it as a flex sibling. It has to
+          stay outside the anchor — a button nested in an anchor is invalid
+          markup, and a click on the pen must not navigate — so overlaying is
+          what buys the link its full width. */}
+      <div className="relative shrink-0 border-t border-border/40">
+        {slug ? (
+          <Link
+            href={`/docs/${slug}`}
+            aria-label={`View ${name} documentation`}
+            className="group/link flex items-center gap-2 px-4 py-3 rounded-b-xl transition-colors duration-80 hover:bg-hover outline-none focus-visible:shadow-[inset_0_0_0_1px_var(--focus-ring,#6B97FF)]"
+          >
+            {footerLabel}
+          </Link>
+        ) : (
+          <div className="flex items-center gap-2 px-4 py-3">{footerLabel}</div>
+        )}
+        {action && (
+          <div className="absolute inset-y-0 right-2 z-10 flex items-center">
+            {action}
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 }

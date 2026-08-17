@@ -132,11 +132,13 @@ export interface SidebarProps
   variant?: SidebarVariant;
   /** `"icon"` collapse is intentionally not supported — offcanvas or none. */
   collapsible?: SidebarCollapsible;
+  /** The `sidebar` variant's inner-edge border. Default true. */
+  bordered?: boolean;
 }
 
 const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
   (
-    { side = "left", variant = "sidebar", collapsible = "offcanvas", className, style, children, ...props },
+    { side = "left", variant = "sidebar", collapsible = "offcanvas", bordered = true, className, style, children, ...props },
     ref
   ) => {
     const { isMobile, openMobile, setOpenMobile, width, registerSide } = useSidebar();
@@ -164,7 +166,8 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
             data-sidebar="sidebar"
             className={cn(
               "flex h-full w-full min-h-0 flex-col",
-              variant === "sidebar" &&
+              bordered &&
+                variant === "sidebar" &&
                 (side === "left" ? "border-r border-border" : "border-l border-border")
             )}
           >
@@ -183,7 +186,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
     }
 
     return (
-      <SidebarShell ref={ref} side={side} variant={variant} className={className} style={style} {...props}>
+      <SidebarShell ref={ref} side={side} variant={variant} bordered={bordered} className={className} style={style} {...props}>
         {children}
       </SidebarShell>
     );

@@ -368,6 +368,8 @@ type MotionSafeDivProps = Omit<
 export interface SidebarShellProps extends MotionSafeDivProps {
   side: SidebarSide;
   variant: SidebarVariant;
+  /** The `sidebar` variant's inner-edge border. Default true. */
+  bordered?: boolean;
 }
 
 /** Internal: the expanded/collapsed desktop rail. An in-flow sticky column
@@ -376,7 +378,7 @@ export interface SidebarShellProps extends MotionSafeDivProps {
  *  the whole sidebar works inside any bounded frame, not just the viewport.
  *  Ships the resize/collapse rail handle on its inner edge by default. */
 const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
-  ({ side, variant, className, children, ...props }, ref) => {
+  ({ side, variant, bordered = true, className, children, ...props }, ref) => {
     const { open, width, mobileBreakpoint, isResizing } = useSidebar();
     const shape = useShape();
     const substrate = useSurface();
@@ -437,7 +439,8 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
               data-sidebar="sidebar"
               className={cn(
                 "flex h-full w-full min-h-0 flex-col",
-                variant === "sidebar" &&
+                bordered &&
+                  variant === "sidebar" &&
                   (side === "left" ? "border-r border-border" : "border-l border-border")
               )}
             >

@@ -221,6 +221,7 @@ const sidebarProps: PropDef[] = [
   { name: "side", type: '"left" | "right"', default: '"left"', description: "Which edge the rail lives on. Flex order handles placement, so JSX order stays the same." },
   { name: "variant", type: '"sidebar" | "floating" | "inset"', default: '"sidebar"', description: "Transparent rail, elevated floating card, or the inset pairing where SidebarInset becomes the card." },
   { name: "collapsible", type: '"offcanvas" | "none"', default: '"offcanvas"', description: "Offcanvas slides the rail away; none renders a static, always-open column. (The icon-rail mode is intentionally not supported.)" },
+  { name: "bordered", type: "boolean", default: "true", description: "The sidebar variant's inner-edge border. Set false for a borderless rail (the rail handle's hover hairline still shows)." },
 ];
 
 const menuButtonProps: PropDef[] = [

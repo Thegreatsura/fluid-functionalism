@@ -84,7 +84,7 @@ export function SiteSidebar() {
   const { isMobile } = useSidebar();
 
   return (
-    <Sidebar collapsible="offcanvas" className="ml-2">
+    <Sidebar collapsible="offcanvas" bordered={false} className="ml-2">
       <SidebarContent className="py-2">
         {/* Top-level navigation */}
         <SidebarGroup>

@@ -134,17 +134,18 @@ export const SIDEBAR_ITEMS: readonly {
 ];
 
 /** Thread-style rows for the status-dot leading treatment — discussion
- *  titles, not page names. Filled dot = the active thread. */
+ *  titles, not page names, with the semantic status vocabulary
+ *  (active/unread → filled dot, idle → ring). */
 export const SIDEBAR_THREADS: readonly {
   label: string;
   badge?: string;
-  active?: boolean;
+  status: "active" | "unread" | "idle";
 }[] = [
-  { label: "Sidebar component height in demo", active: true },
-  { label: "Sidebar component creation" },
-  { label: "Dark mode token audit", badge: "3" },
-  { label: "Scrollbar fade regression" },
-  { label: "Registry deploy pipeline" },
+  { label: "Sidebar component height in demo", status: "active" },
+  { label: "Sidebar component creation", status: "idle" },
+  { label: "Dark mode token audit", badge: "3", status: "unread" },
+  { label: "Scrollbar fade regression", status: "idle" },
+  { label: "Registry deploy pipeline", status: "unread" },
 ];
 
 export const SIDEBAR_PROJECTS = [

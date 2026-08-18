@@ -160,12 +160,12 @@ const groupsCode = `<SidebarContent>
     </SidebarGroupActions>
     <SidebarMenu>
       <SidebarMenuItem>
-        <SidebarMenuButton dot="filled" isActive>
+        <SidebarMenuButton status="active">
           Sidebar component height in demo
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem>
-        <SidebarMenuButton dot="ring">Sidebar component creation</SidebarMenuButton>
+        <SidebarMenuButton status="unread">Sidebar component creation</SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>
   </SidebarGroup>
@@ -267,7 +267,8 @@ const partsProps: PropDef[] = [
   { name: "SidebarContent viewportClassName", type: "string", description: "Extra classes for the desktop scroll viewport (a ScrollArea with the scroll-fade edge treatment built in)." },
   { name: "SidebarGroup collapsible", type: "boolean", default: "false", description: "The group's label becomes an accordion toggle for everything after it — hover raises the label's contrast and reveals a chevron. Uncontrolled via defaultOpen; controlled via open / onOpenChange." },
   { name: "SidebarGroupActions", type: "—", description: "Cluster of 1–3 SidebarGroupAction buttons on the label row's right edge. A collapsible label keeps its chevron clear of the cluster automatically." },
-  { name: "SidebarMenuButton dot", type: '"filled" | "ring"', description: "Status dot in the icon column for thread-style rows — filled reads active/unread, ring reads idle. Ignored when icon is set." },
+  { name: "SidebarMenuButton status", type: '"active" | "unread" | "idle"', description: "Semantic thread state: drives the status dot (active/unread → filled, idle → ring), stamps data-status on the button, appends visually-hidden \"unread\" text for screen readers, and active implies isActive." },
+  { name: "SidebarMenuButton dot", type: '"filled" | "ring"', description: "Visual-only status dot — the escape hatch when the semantic status vocabulary doesn't fit. Overrides the status-derived dot; ignored when icon is set." },
   { name: "SidebarMenu size", type: '"default" | "compact"', description: "Pins the menu's rows to one step of the size ladder; omitted, rows follow the surrounding SizeProvider." },
   { name: "SidebarMenuSub open", type: "boolean", default: "true", description: "Built-in measured-height collapse — wire to state alongside a toggling row for a collapsible tree." },
   { name: "SidebarMenuSubButton size", type: '"sm" | "md"', default: '"md"', description: "Sub-row height (24 / 28px) — text stays at the parent rows' size. Renders an <a> by default; also accepts icon, render / asChild, and isActive." },
@@ -593,15 +594,15 @@ function GroupsPreview() {
               </SidebarGroupActions>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton dot="filled" isActive>
+                  <SidebarMenuButton status="active">
                     Sidebar component height in demo
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton dot="ring">Sidebar component creation</SidebarMenuButton>
+                  <SidebarMenuButton status="idle">Sidebar component creation</SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton dot="ring">Dark mode token audit</SidebarMenuButton>
+                  <SidebarMenuButton status="unread">Dark mode token audit</SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroup>
@@ -661,7 +662,7 @@ function MenuFeaturesPreview() {
                     aria-expanded={projectsOpen}
                   >
                     Projects
-                    <span className="ml-auto inline-flex">
+                    <span className="ml-auto -mr-0.5 inline-flex w-6 justify-center">
                       <ChevronDown
                         size={14}
                         strokeWidth={1.5}

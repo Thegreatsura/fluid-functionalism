@@ -73,6 +73,7 @@ import {
   IconDots,
   IconCalendar,
   IconFolder,
+  IconAdjustmentsHorizontal,
 } from "@tabler/icons-react";
 
 // ── Phosphor ────────────────────────────────────────────────
@@ -130,6 +131,7 @@ import {
   SidebarSimple as PhSidebarSimple,
   CaretUpDown as PhCaretUpDown,
   DotsThree as PhDotsThree,
+  SlidersHorizontal as PhSlidersHorizontal,
   CalendarBlank as PhCalendarBlank,
   FolderSimple as PhFolderSimple,
 } from "@phosphor-icons/react";
@@ -189,6 +191,7 @@ import HiChevronsUpDown from "@hugeicons/core-free-icons/UnfoldMoreIcon";
 import HiMoreHorizontal from "@hugeicons/core-free-icons/MoreHorizontalIcon";
 import HiCalendar from "@hugeicons/core-free-icons/Calendar01Icon";
 import HiFolder from "@hugeicons/core-free-icons/Folder01Icon";
+import HiSliders from "@hugeicons/core-free-icons/SlidersHorizontalIcon";
 
 // ── Untitled UI ─────────────────────────────────────────────
 // Aliased with a Uui prefix to avoid collisions with the Lucide imports above.
@@ -244,6 +247,7 @@ import {
   LayoutRight as UuiLayoutRight,
   ChevronSelectorVertical as UuiChevronSelectorVertical,
   DotsHorizontal as UuiDotsHorizontal,
+  Sliders01 as UuiSliders,
   Calendar as UuiCalendar,
   Folder as UuiFolder,
 } from "@untitledui/icons";
@@ -370,6 +374,7 @@ const tablerMap: Record<IconName, IconComponent> = {
   "more-horizontal": tabler(IconDots),
   "calendar": tabler(IconCalendar),
   "folder": tabler(IconFolder),
+  "sliders-horizontal": tabler(IconAdjustmentsHorizontal),
 };
 
 const phosphorMap: Record<IconName, IconComponent> = {
@@ -429,6 +434,7 @@ const phosphorMap: Record<IconName, IconComponent> = {
   "more-horizontal": phosphor(PhDotsThree),
   "calendar": phosphor(PhCalendarBlank),
   "folder": phosphor(PhFolderSimple),
+  "sliders-horizontal": phosphor(PhSlidersHorizontal),
 };
 
 const hugeiconsMap: Record<IconName, IconComponent> = {
@@ -488,6 +494,7 @@ const hugeiconsMap: Record<IconName, IconComponent> = {
   "more-horizontal": hugeicons(HiMoreHorizontal),
   "calendar": hugeicons(HiCalendar),
   "folder": hugeicons(HiFolder),
+  "sliders-horizontal": hugeicons(HiSliders),
 };
 
 const untitleduiMap: Record<IconName, IconComponent> = {
@@ -551,6 +558,7 @@ const untitleduiMap: Record<IconName, IconComponent> = {
   "more-horizontal": untitledui(UuiDotsHorizontal),
   "calendar": untitledui(UuiCalendar),
   "folder": untitledui(UuiFolder),
+  "sliders-horizontal": untitledui(UuiSliders),
 };
 
 // ── Unified Map ─────────────────────────────────────────────

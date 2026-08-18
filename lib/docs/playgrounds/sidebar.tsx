@@ -151,8 +151,9 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
     lines.push(`          {items.map((item) => (`);
     lines.push(`            <SidebarMenuItem key={item.label}>`);
     if (o.leading === "dot") {
-      lines.push(`              {/* thread-style rows: status dot instead of an icon */}`);
-      lines.push(`              <SidebarMenuButton dot={item.active ? "filled" : "ring"} isActive={item.active}>`);
+      lines.push(`              {/* thread rows: semantic status drives the dot, `);
+      lines.push(`                  data-status, and SR "unread" text */}`);
+      lines.push(`              <SidebarMenuButton status={item.status}>`);
     } else {
       lines.push(`              <SidebarMenuButton icon={item.icon} isActive={item.active}>`);
     }
@@ -174,6 +175,9 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   if (!o.loading && o.subMenu) {
     lines.push(`      <SidebarGroup collapsible>`);
     lines.push(`        <SidebarGroupLabel>Teams</SidebarGroupLabel>`);
+    if (o.groupActions > 0) {
+      lines.push(`        <SidebarGroupActions>{/* same actions */}</SidebarGroupActions>`);
+    }
     lines.push(`        <SidebarMenu>`);
     lines.push(`          {teams.map((team) => (`);
     lines.push(`            <SidebarMenuItem key={team.label}>`);
@@ -183,8 +187,16 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
     lines.push(`              </SidebarMenuButton>`);
     lines.push(`              <SidebarMenuSub open={openTeams[team.label]}>`);
     lines.push(`                {team.children.map((c) => (`);
-    lines.push(`                  <SidebarMenuSubItem key={c}>`);
-    lines.push(`                    <SidebarMenuSubButton href="#">{c}</SidebarMenuSubButton>`);
+    lines.push(`                  <SidebarMenuSubItem key={c.label}>`);
+    lines.push(`                    <SidebarMenuSubButton href="#">{c.label}</SidebarMenuSubButton>`);
+    if (o.badges) {
+      lines.push(`                    {c.badge && <SidebarMenuBadge>{c.badge}</SidebarMenuBadge>}`);
+    }
+    if (o.actions) {
+      lines.push(`                    <SidebarMenuAction showOnHover aria-label="More options">`);
+      lines.push(`                      <MoreIcon />`);
+      lines.push(`                    </SidebarMenuAction>`);
+    }
     lines.push(`                  </SidebarMenuSubItem>`);
     lines.push(`                ))}`);
     lines.push(`              </SidebarMenuSub>`);
@@ -212,16 +224,36 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
 // "Label actions" control (1–3).
 const GROUP_ACTION_SET = [
   { icon: "plus", label: "Add item" },
+  { icon: "sliders-horizontal", label: "Section settings" },
   { icon: "more-horizontal", label: "More options" },
-  { icon: "pencil", label: "Edit section" },
 ] as const;
 
 // Second group: four collapsible sub-menu examples under their own title.
 const TEAM_GROUPS = [
-  { icon: "users", label: "Engineering", children: ["Frontend", "Backend", "Infrastructure"] },
-  { icon: "palette", label: "Design", children: ["Brand", "Product", "Website"] },
-  { icon: "rocket", label: "Marketing", children: ["Campaigns", "Social", "Newsletter"] },
-  { icon: "globe", label: "Support", children: ["Inbox", "Knowledge base", "Escalations"] },
+  {
+    icon: "users",
+    label: "Engineering",
+    children: [
+      { label: "Frontend", badge: "4" },
+      { label: "Backend" },
+      { label: "Infrastructure" },
+    ],
+  },
+  {
+    icon: "palette",
+    label: "Design",
+    children: [{ label: "Brand" }, { label: "Product", badge: "2" }, { label: "Website" }],
+  },
+  {
+    icon: "rocket",
+    label: "Marketing",
+    children: [{ label: "Campaigns" }, { label: "Social" }, { label: "Newsletter" }],
+  },
+  {
+    icon: "globe",
+    label: "Support",
+    children: [{ label: "Inbox", badge: "9" }, { label: "Knowledge base" }, { label: "Escalations" }],
+  },
 ] as const;
 
 function pick<T>(options: readonly T[]): T {
@@ -361,24 +393,27 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                     ))
                   : (state.leading === "dot"
                       ? // Status dots read as thread state, so the rows carry
-                        // discussion titles instead of page names.
+                        // discussion titles (with semantic status) instead of
+                        // page names.
                         SIDEBAR_THREADS.map((item) => ({
+                          badge: undefined,
                           ...item,
                           key: item.label,
                           icon: undefined,
-                          dot: (item.active ? "filled" : "ring") as "filled" | "ring",
+                          active: undefined,
                         }))
                       : SIDEBAR_ITEMS.map((item) => ({
+                          badge: undefined,
                           ...item,
                           key: item.label,
                           icon: icons[item.icon],
-                          dot: undefined,
+                          status: undefined,
                         }))
                     ).map((item) => (
                       <SidebarMenuItem key={item.key}>
                         <SidebarMenuButton
                           icon={item.icon}
-                          dot={item.dot}
+                          status={item.status}
                           isActive={item.active}
                         >
                           {item.label}
@@ -412,6 +447,15 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
             {!state.loading && state.subMenu && (
               <SidebarGroup collapsible>
                 <SidebarGroupLabel>Teams</SidebarGroupLabel>
+                {state.groupActions > 0 && (
+                  <SidebarGroupActions>
+                    {GROUP_ACTION_SET.slice(0, state.groupActions).map((a) => (
+                      <SidebarGroupAction key={a.icon} aria-label={a.label}>
+                        {createElement(icons[a.icon], {})}
+                      </SidebarGroupAction>
+                    ))}
+                  </SidebarGroupActions>
+                )}
                 <SidebarMenu>
                   {TEAM_GROUPS.map((team) => (
                     <SidebarMenuItem key={team.label}>
@@ -421,7 +465,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                         aria-expanded={!!openTeams[team.label]}
                       >
                         {team.label}
-                        <span className="ml-auto inline-flex">
+                        <span className="ml-auto -mr-0.5 inline-flex w-6 justify-center">
                           {createElement(icons["chevron-down"], {
                             size: 14,
                             strokeWidth: 1.5,
@@ -433,10 +477,29 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                       </SidebarMenuButton>
                       <SidebarMenuSub open={!!openTeams[team.label]}>
                         {team.children.map((c) => (
-                          <SidebarMenuSubItem key={c}>
+                          <SidebarMenuSubItem key={c.label}>
                             <SidebarMenuSubButton href="#" onClick={(e) => e.preventDefault()}>
-                              {c}
+                              {c.label}
                             </SidebarMenuSubButton>
+                            {state.badges && "badge" in c && c.badge && (
+                              <SidebarMenuBadge>{c.badge}</SidebarMenuBadge>
+                            )}
+                            {state.actions && !("badge" in c && c.badge) && (
+                              <DropdownMenu>
+                                <DropdownTrigger
+                                  render={
+                                    <SidebarMenuAction showOnHover aria-label="More options">
+                                      {createElement(icons["more-horizontal"], {})}
+                                    </SidebarMenuAction>
+                                  }
+                                />
+                                <DropdownContent className="min-w-0 w-[240px]" align="start" sideOffset={4}>
+                                  <MenuItem index={0} icon={icons.pencil} label="Rename" onSelect={() => {}} />
+                                  <MenuItem index={1} icon={icons.link} label="Share" onSelect={() => {}} />
+                                  <MenuItem index={2} icon={icons.x} label="Delete" onSelect={() => {}} />
+                                </DropdownContent>
+                              </DropdownMenu>
+                            )}
                           </SidebarMenuSubItem>
                         ))}
                       </SidebarMenuSub>

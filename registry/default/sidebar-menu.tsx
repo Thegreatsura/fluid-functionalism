@@ -602,7 +602,7 @@ function MenuRowLabel({
 // ─── SidebarMenuButton ───────────────────────────────────────────────────────
 
 export const sidebarMenuButtonVariants = cva(
-  "peer/menu-button relative z-10 flex w-full cursor-pointer select-none items-center gap-2 px-2 text-left outline-none group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 group-has-[[data-sidebar=menu-badge]]/menu-item:pr-8",
+  "peer/menu-button relative z-10 flex w-full cursor-pointer select-none items-center gap-2 px-2 text-left outline-none group-has-[>[data-sidebar=menu-action]]/menu-item:pr-8 group-has-[>[data-sidebar=menu-badge]]/menu-item:pr-8",
   {
     variants: {
       variant: {
@@ -620,9 +620,14 @@ export interface SidebarMenuButtonProps
   isActive?: boolean;
   size?: "default" | "sm" | "lg";
   icon?: IconComponent;
-  /** Status dot in the icon column — for thread-style navigation where rows
-   *  carry state instead of an icon ("filled" reads active/unread, "ring"
-   *  reads idle). Ignored when `icon` is set. */
+  /** Semantic thread state for status-dot navigation. Drives the dot
+   *  visuals (`active`/`unread` → filled, `idle` → ring), stamps
+   *  `data-status` on the button, appends visually-hidden "unread" text for
+   *  screen readers, and `"active"` implies `isActive`. */
+  status?: "active" | "unread" | "idle";
+  /** Visual-only dot in the icon column — the escape hatch when the
+   *  semantic `status` vocabulary doesn't fit. Overrides the dot derived
+   *  from `status`. Ignored when `icon` is set. */
   dot?: "filled" | "ring";
   render?: ReactElement;
   asChild?: boolean;
@@ -635,6 +640,7 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
       size = "default",
       variant,
       icon: Icon,
+      status,
       dot,
       render,
       asChild,
@@ -650,19 +656,24 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
     const sizeClasses = useSize();
     const buttonRef = useRef<HTMLElement | null>(null);
 
+    // status="active" implies the row-active treatment; an explicit dot
+    // overrides the status-derived one.
+    const effectiveActive = isActive || status === "active";
+
     const setActive = item?.setActive;
     useIsoLayoutEffect(() => {
-      setActive?.(isActive);
+      setActive?.(effectiveActive);
       return () => setActive?.(false);
-    }, [isActive, setActive]);
+    }, [effectiveActive, setActive]);
 
     const setButtonEl = item?.setButtonEl;
     useIsoLayoutEffect(() => {
       setButtonEl?.(buttonRef.current);
       return () => setButtonEl?.(null);
     }, [setButtonEl]);
-
-    const lit = isActive || (item?.isHovered ?? false);
+    const resolvedDot =
+      dot ?? (status ? (status === "idle" ? "ring" : "filled") : undefined);
+    const lit = effectiveActive || (item?.isHovered ?? false);
     const heightClass =
       size === "sm"
         ? "h-7"
@@ -676,7 +687,7 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
     // Roving tabindex: the active row's button is the menu's tab stop; with no
     // active row, the root scope's first row keeps the menu keyboard-reachable.
     const row = item?.rowRef.current ?? null;
-    const tabIdx = isActive
+    const tabIdx = effectiveActive
       ? 0
       : scope?.hasActive
         ? -1
@@ -698,7 +709,7 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
             )}
           />
         )}
-        {!Icon && dot && (
+        {!Icon && resolvedDot && (
           <span
             className="flex shrink-0 items-center justify-center"
             style={{ width: sizeClasses.icon, height: sizeClasses.icon }}
@@ -706,7 +717,7 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
             <span
               className={cn(
                 "size-2 rounded-full transition-colors duration-80",
-                dot === "filled"
+                resolvedDot === "filled"
                   ? lit
                     ? "bg-foreground/60"
                     : "bg-muted-foreground/50"
@@ -717,7 +728,8 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
             />
           </span>
         )}
-        <MenuRowLabel content={content} lit={lit} emphasized={isActive} textClass={textClass} />
+        <MenuRowLabel content={content} lit={lit} emphasized={effectiveActive} textClass={textClass} />
+        {status === "unread" && <span className="sr-only">, unread</span>}
       </>
     );
 
@@ -733,8 +745,9 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
         type: template ? undefined : "button",
         "data-sidebar": "menu-button",
         "data-size": size,
-        "data-active": isActive ? "true" : undefined,
-        "aria-current": isActive ? "page" : undefined,
+        "data-active": effectiveActive ? "true" : undefined,
+        "data-status": status,
+        "aria-current": effectiveActive ? "page" : undefined,
         tabIndex: tabIdx,
         className: cn(
           sidebarMenuButtonVariants({ variant }),
@@ -998,7 +1011,7 @@ const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonP
         tabIndex: tabIdx,
         className: cn(
           "relative z-10 flex w-full cursor-pointer select-none items-center gap-2 px-2 text-left outline-none",
-          "group-has-[[data-sidebar=menu-action]]/menu-sub-item:pr-8 group-has-[[data-sidebar=menu-badge]]/menu-sub-item:pr-8",
+          "group-has-[>[data-sidebar=menu-action]]/menu-sub-item:pr-8 group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:pr-8",
           size === "sm" ? "h-6" : sizeClasses.variant === "compact" ? "h-6" : "h-7",
           shape.item,
           className

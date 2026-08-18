@@ -59,6 +59,7 @@ import {
   Ellipsis,
   Calendar,
   Folder,
+  SlidersHorizontal,
 } from "lucide-react";
 
 export interface IconComponentProps {
@@ -82,7 +83,8 @@ export type IconName =
   | "play" | "pause" | "pipette"
   | "home" | "message-circle" | "inbox"
   | "pencil" | "scaling" | "skip-forward" | "corner-down-right" | "corner-down-left"
-  | "panel-left" | "panel-right" | "chevrons-up-down" | "more-horizontal" | "calendar" | "folder";
+  | "panel-left" | "panel-right" | "chevrons-up-down" | "more-horizontal" | "calendar" | "folder"
+  | "sliders-horizontal";
 
 export const defaultIcons: Record<IconName, IconComponent> = {
   "chevron-right": ChevronRight,
@@ -141,6 +143,7 @@ export const defaultIcons: Record<IconName, IconComponent> = {
   "more-horizontal": Ellipsis,
   "calendar": Calendar,
   "folder": Folder,
+  "sliders-horizontal": SlidersHorizontal,
 };
 
 const IconContext = createContext<Record<IconName, IconComponent> | null>(null);

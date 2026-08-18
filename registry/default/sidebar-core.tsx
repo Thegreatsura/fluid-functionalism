@@ -958,6 +958,27 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
     const ChevronDownIcon = useIcon("chevron-down");
     const { template, content } = resolveSlotTemplate(render, asChild, children);
 
+    // Truncate only the leading text; element children (count badges,
+    // trailing controls) stay flex siblings so the row's gap keeps spacing
+    // them — same split MenuRowLabel does for menu rows.
+    const nodes = Children.toArray(content);
+    let textEnd = 0;
+    while (
+      textEnd < nodes.length &&
+      (typeof nodes[textEnd] === "string" || typeof nodes[textEnd] === "number")
+    ) {
+      textEnd++;
+    }
+    const leadingText = nodes.slice(0, textEnd).join("");
+    const labelContent = leadingText ? (
+      <>
+        <span className="min-w-0 truncate">{leadingText}</span>
+        {nodes.slice(textEnd)}
+      </>
+    ) : (
+      content
+    );
+
     // Inside a collapsible group the label becomes the toggle. Design
     // treatment is unchanged — hover only raises the label's contrast and
     // reveals a chevron (kept visible while collapsed as the reopen cue).
@@ -989,7 +1010,7 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
           ...props,
         },
         <>
-          <span className="min-w-0 flex-1 truncate">{content}</span>
+          {labelContent}
           <ChevronDownIcon
             size={14}
             strokeWidth={1.5}
@@ -1017,7 +1038,7 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
         ),
         ...props,
       },
-      <span className="min-w-0 flex-1 truncate">{content}</span>
+      labelContent
     );
   }
 );

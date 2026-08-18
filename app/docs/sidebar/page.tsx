@@ -248,6 +248,7 @@ const providerProps: PropDef[] = [
   { name: "persist", type: "boolean", default: "true", description: "Write the desktop open state to the sidebar_state cookie (7 days). Mobile sheet state never persists." },
   { name: "shortcut", type: "string | null", default: '"[" left · "]" right', description: "Bare-key toggle shortcut, side-aware by default; null disables it. Focus-scoped across providers: the innermost one containing focus answers, else the app-level (last-mounted) one." },
   { name: "mobileBreakpoint", type: "number", default: "768", description: "Viewport width (px) below which the sidebar renders as a modal sheet." },
+  { name: "peek", type: '"hover" | "click" | "none"', default: '"none"', description: "While collapsed, an edge strip reveals the sidebar as a floating overlay card — on hover (with intent delay) or on click. Escape or an outside press dismisses; peeking never pins the sidebar or writes the cookie." },
   { name: "width", type: "string", default: '"16rem"', description: "Expanded rail width. Also published as --sidebar-width." },
   { name: "widthMobile", type: "string", default: '"18rem"', description: "Sheet width on mobile. Also published as --sidebar-width-mobile." },
 ];
@@ -373,7 +374,7 @@ function DemoHeader({ search = "below" }: { search?: "below" | "inline" }) {
             variant="ghost"
             size="icon-compact"
             aria-label="Search"
-            className="shrink-0 rounded-full"
+            className="shrink-0"
           >
             <SearchIcon />
           </Button>

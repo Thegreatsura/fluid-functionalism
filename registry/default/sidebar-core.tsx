@@ -21,7 +21,7 @@ import {
   type HTMLAttributes,
   type Ref,
 } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
@@ -73,6 +73,12 @@ export interface SidebarContextValue {
   registerSide: (side: SidebarSide) => void;
   /** The resolved toggle key ("[" / "]" / custom / null when disabled). */
   shortcut: string | null;
+  /** Collapsed-peek mode: reveal the sidebar as a floating overlay from the
+   *  collapsed edge on hover or click, without pinning it open. */
+  peek: "hover" | "click" | "none";
+  /** True while the collapsed sidebar is peeking as an overlay. */
+  isPeeking: boolean;
+  setIsPeeking: React.Dispatch<React.SetStateAction<boolean>>;
   /** Internal: true while the rail is being drag-resized (disables the
    *  width spring so the panel tracks the pointer 1:1). */
   isResizing: boolean;
@@ -124,6 +130,10 @@ export interface SidebarProviderProps extends HTMLAttributes<HTMLDivElement> {
   shortcut?: string | null;
   /** Viewport width (px) below which the sidebar renders as a sheet. */
   mobileBreakpoint?: number;
+  /** While collapsed, reveal the sidebar as a floating overlay from the
+   *  edge — on hover (with intent delay) or on click of the edge strip.
+   *  Peeking never pins the sidebar or writes the cookie. @default "none" */
+  peek?: "hover" | "click" | "none";
   width?: string;
   widthMobile?: string;
 }
@@ -137,6 +147,7 @@ const SidebarProvider = forwardRef<HTMLDivElement, SidebarProviderProps>(
       persist = true,
       shortcut: shortcutProp,
       mobileBreakpoint = 768,
+      peek = "none",
       width: widthProp = SIDEBAR_WIDTH,
       widthMobile = SIDEBAR_WIDTH_MOBILE,
       className,
@@ -197,6 +208,13 @@ const SidebarProvider = forwardRef<HTMLDivElement, SidebarProviderProps>(
       if (isMobile) setOpenMobile((prev) => !prev);
       else setOpen((prev) => !prev);
     }, [isMobile, setOpen]);
+
+    // Collapsed-peek overlay state. Pinning the sidebar open (or disabling
+    // the mode) always dismisses the peek.
+    const [isPeeking, setIsPeeking] = useState(false);
+    useEffect(() => {
+      if (open || peek === "none") setIsPeeking(false);
+    }, [open, peek]);
 
     // The bare shortcut key toggles the sidebar app-wide. Bound to the
     // provider's lifetime (not a docs-only global), skipped while typing, and
@@ -260,6 +278,9 @@ const SidebarProvider = forwardRef<HTMLDivElement, SidebarProviderProps>(
         side,
         registerSide,
         shortcut,
+        peek,
+        isPeeking,
+        setIsPeeking,
         isResizing,
         setIsResizing,
       }),
@@ -275,6 +296,8 @@ const SidebarProvider = forwardRef<HTMLDivElement, SidebarProviderProps>(
         side,
         registerSide,
         shortcut,
+        peek,
+        isPeeking,
         isResizing,
       ]
     );
@@ -428,8 +451,51 @@ export interface SidebarShellProps extends MotionSafeDivProps {
  *  Ships the resize/collapse rail handle on its inner edge by default. */
 const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
   ({ side, variant, bordered = true, className, children, ...props }, ref) => {
-    const { open, width, mobileBreakpoint, isResizing } = useSidebar();
+    const {
+      open,
+      width,
+      mobileBreakpoint,
+      isResizing,
+      peek,
+      isPeeking,
+      setIsPeeking,
+    } = useSidebar();
     const shape = useShape();
+    const shellRef = useRef<HTMLDivElement | null>(null);
+
+    // Collapsed-peek: the edge strip reveals the sidebar as a floating
+    // overlay without pinning it. Hover mode uses small intent/leave delays;
+    // both modes dismiss on Escape or an outside press.
+    const peekEnabled = peek !== "none" && !open;
+    const peekTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const clearPeekTimer = useCallback(() => {
+      if (peekTimer.current) clearTimeout(peekTimer.current);
+      peekTimer.current = null;
+    }, []);
+    const schedulePeek = useCallback(() => {
+      clearPeekTimer();
+      peekTimer.current = setTimeout(() => setIsPeeking(true), 150);
+    }, [clearPeekTimer, setIsPeeking]);
+    const scheduleDismiss = useCallback(() => {
+      clearPeekTimer();
+      peekTimer.current = setTimeout(() => setIsPeeking(false), 250);
+    }, [clearPeekTimer, setIsPeeking]);
+    useEffect(() => clearPeekTimer, [clearPeekTimer]);
+    useEffect(() => {
+      if (!(peekEnabled && isPeeking)) return;
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.key === "Escape") setIsPeeking(false);
+      };
+      const onPointerDown = (event: PointerEvent) => {
+        if (!shellRef.current?.contains(event.target as Node)) setIsPeeking(false);
+      };
+      document.addEventListener("keydown", onKeyDown);
+      document.addEventListener("pointerdown", onPointerDown);
+      return () => {
+        document.removeEventListener("keydown", onKeyDown);
+        document.removeEventListener("pointerdown", onPointerDown);
+      };
+    }, [peekEnabled, isPeeking, setIsPeeking]);
     const substrate = useSurface();
     const floatingLevel = Math.min(substrate + 1, 8);
     // Drag-resize needs the panel glued to the pointer; the spring resumes
@@ -442,7 +508,11 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
 
     return (
       <motion.div
-        ref={ref}
+        ref={(node: HTMLDivElement | null) => {
+          shellRef.current = node;
+          if (typeof ref === "function") ref(node);
+          else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        }}
         data-slot="sidebar"
         data-state={open ? "expanded" : "collapsed"}
         data-collapsible={open ? "" : "offcanvas"}
@@ -452,7 +522,11 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
           // No bare `group` here: an unnamed group on the whole rail would
           // fire every descendant's group-hover (Button fills, icon strokes)
           // on rail hover. Named groups (menu-item etc.) handle row states.
-          "peer shrink-0 sticky top-0 h-svh overflow-hidden",
+          "peer shrink-0 sticky top-0 h-svh",
+          // While peek is armed the 0-width shell must not clip the edge
+          // strip or the overlay card — and the shell must rise above the
+          // inset (a later sibling) so the card paints over it.
+          peekEnabled ? "z-40" : "overflow-hidden",
           // Flex order (not DOM order) decides the side, so consumers can
           // keep Sidebar before SidebarInset regardless of `side`.
           side === "right" && "order-last",
@@ -462,8 +536,79 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
         initial={false}
         animate={{ width: open ? width : "0rem" }}
         transition={widthTransition}
+        // Hover-mode dismissal lives on the shell root: the pointer can land
+        // on the overlay without ever crossing it (the card slides in under
+        // a stationary cursor), so per-element leave events are unreliable —
+        // leaving the shell subtree is the signal that matters.
+        onPointerEnter={peekEnabled && peek === "hover" ? clearPeekTimer : undefined}
+        onPointerLeave={
+          peekEnabled && peek === "hover"
+            ? () => {
+                if (isPeeking) scheduleDismiss();
+                else clearPeekTimer();
+              }
+            : undefined
+        }
         {...props}
       >
+        {peekEnabled ? (
+          <>
+            {/* Edge strip: the collapsed sidebar's reveal affordance. A thin
+                hairline brightens on hover; hover mode peeks after a short
+                intent delay, click mode on press. */}
+            <button
+              type="button"
+              aria-label="Peek sidebar"
+              aria-expanded={isPeeking}
+              className={cn(
+                "group/peek-strip absolute inset-y-0 z-40 w-3 cursor-pointer outline-none",
+                side === "left" ? "left-0" : "right-0"
+              )}
+              onPointerEnter={
+                peek === "hover"
+                  ? (event) => {
+                      if (event.pointerType === "mouse") schedulePeek();
+                    }
+                  : undefined
+              }
+              onClick={() => {
+                clearPeekTimer();
+                setIsPeeking(true);
+              }}
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "absolute inset-y-0 w-px bg-border opacity-0 transition-opacity duration-80 group-hover/peek-strip:opacity-100 group-focus-visible/peek-strip:opacity-100",
+                  side === "left" ? "left-0" : "right-0"
+                )}
+              />
+            </button>
+            <AnimatePresence>
+              {isPeeking && (
+                <motion.div
+                  data-sidebar="peek"
+                  className={cn(
+                    "absolute inset-y-2 z-50 flex flex-col overflow-hidden",
+                    side === "left" ? "left-2" : "right-2",
+                    shape.container,
+                    surfaceClasses(floatingLevel, 3)
+                  )}
+                  style={{ width: `calc(${width} - 1rem)` }}
+                  initial={{ x: side === "left" ? "-108%" : "108%" }}
+                  animate={{ x: 0 }}
+                  exit={{
+                    x: side === "left" ? "-108%" : "108%",
+                    transition: spring.moderate.exit,
+                  }}
+                  transition={spring.moderate}
+                >
+                  <SurfaceProvider value={floatingLevel}>{children}</SurfaceProvider>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        ) : (
         <motion.div
           className={cn(
             "absolute inset-y-0 flex h-full flex-col",
@@ -526,6 +671,7 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
             }
           />
         </motion.div>
+        )}
       </motion.div>
     );
   }

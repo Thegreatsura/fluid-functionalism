@@ -66,6 +66,9 @@ interface PlayState {
   side: SidebarSide;
   collapsible: SidebarCollapsible;
   open: boolean;
+  /** Collapsed-peek overlay: reveal the collapsed sidebar on edge hover or
+   *  click without pinning it. */
+  peek: "none" | "hover" | "click";
   /** Search placement: full bar below the header, or an inline icon button. */
   search: "below" | "inline";
   /** Leading treatment for the Platform rows: icon column, or thread-style
@@ -82,14 +85,15 @@ interface PlayState {
 }
 
 const DEFAULT_STATE: PlayState = {
-  variant: "sidebar",
+  variant: "inset",
   side: "left",
   collapsible: "offcanvas",
   open: true,
-  search: "below",
-  leading: "icon",
-  groupActions: 0,
-  badges: true,
+  peek: "none",
+  search: "inline",
+  leading: "dot",
+  groupActions: 1,
+  badges: false,
   subMenu: true,
   actions: true,
   footerUser: true,
@@ -119,7 +123,9 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   lines.push(`  ${menuExtras.join(", ")},`);
   lines.push(`} from "./components";`);
   lines.push(``);
-  const providerProps = o.collapsible === "offcanvas" ? ` open={open} onOpenChange={setOpen}` : ``;
+  const providerProps =
+    (o.collapsible === "offcanvas" ? ` open={open} onOpenChange={setOpen}` : ``) +
+    (o.peek !== "none" ? ` peek="${o.peek}"` : ``);
   lines.push(`<SidebarProvider${providerProps}>`);
   const sidebarProps = [
     o.side !== "left" ? `side="${o.side}"` : null,
@@ -291,6 +297,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       side: pick(["left", "left", "right"] as const),
       collapsible: pick(["offcanvas", "offcanvas", "none"] as const),
       open: true,
+      peek: pick(["none", "none", "hover", "click"] as const),
       search: pick(["below", "below", "inline"] as const),
       leading: pick(["icon", "icon", "dot"] as const),
       groupActions: pick([0, 0, 1, 2, 3] as const),
@@ -374,6 +381,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
         persist={false}
         open={state.collapsible === "offcanvas" ? state.open : true}
         onOpenChange={(next) => set("open", next)}
+        peek={state.peek}
       >
         <Sidebar
           side={state.side}
@@ -426,7 +434,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                 variant="ghost"
                 size="icon-compact"
                 aria-label="Search"
-                className="shrink-0 rounded-full"
+                className="shrink-0"
               >
                 {createElement(icons.search, {})}
               </Button>
@@ -629,8 +637,19 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
         disabled={state.collapsible !== "offcanvas"}
         className={PLAY_SWITCH}
       />
+      <PlayField label="Collapsed peek">
+        <PlaySelect
+          value={state.peek}
+          onChange={(v) => set("peek", v as PlayState["peek"])}
+          options={[
+            { value: "none", label: "None" },
+            { value: "hover", label: "On hover" },
+            { value: "click", label: "On click" },
+          ]}
+        />
+      </PlayField>
       <PlayDivider />
-      <PlaySection label="Content" />
+      <PlaySection label="Header" />
       <PlayField label="Search">
         <PlaySelect
           value={state.search}
@@ -641,17 +660,9 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           ]}
         />
       </PlayField>
-      <PlayField label="Leading">
-        <PlaySelect
-          value={state.leading}
-          onChange={(v) => set("leading", v as PlayState["leading"])}
-          options={[
-            { value: "icon", label: "Icon" },
-            { value: "dot", label: "Status dot" },
-          ]}
-        />
-      </PlayField>
-      <PlayField label="Label actions">
+      <PlayDivider />
+      <PlaySection label="Sections" />
+      <PlayField label="Section actions">
         <PlaySelect
           value={String(state.groupActions)}
           onChange={(v) => set("groupActions", Number(v) as PlayState["groupActions"])}
@@ -664,24 +675,38 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
         />
       </PlayField>
       <Switch
+        label="Sub-menus"
+        checked={state.leading === "icon" && state.subMenu}
+        onToggle={() => set("subMenu", !state.subMenu)}
+        disabled={state.leading !== "icon"}
+        className={PLAY_SWITCH}
+      />
+      <PlayDivider />
+      <PlaySection label="Rows" />
+      <PlayField label="Leading">
+        <PlaySelect
+          value={state.leading}
+          onChange={(v) => set("leading", v as PlayState["leading"])}
+          options={[
+            { value: "icon", label: "Icon" },
+            { value: "dot", label: "Status dot" },
+          ]}
+        />
+      </PlayField>
+      <Switch
         label="Badges"
         checked={state.badges}
         onToggle={() => set("badges", !state.badges)}
         className={PLAY_SWITCH}
       />
       <Switch
-        label="Sub-menu"
-        checked={state.leading === "icon" && state.subMenu}
-        onToggle={() => set("subMenu", !state.subMenu)}
-        disabled={state.leading !== "icon"}
-        className={PLAY_SWITCH}
-      />
-      <Switch
-        label="Menu actions"
+        label="Row actions"
         checked={state.actions}
         onToggle={() => set("actions", !state.actions)}
         className={PLAY_SWITCH}
       />
+      <PlayDivider />
+      <PlaySection label="Footer & state" />
       <Switch
         label="Footer user"
         checked={state.footerUser}

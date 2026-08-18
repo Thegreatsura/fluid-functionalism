@@ -133,6 +133,20 @@ export const SIDEBAR_ITEMS: readonly {
   { icon: "star", label: "Favorites" },
 ];
 
+/** Thread-style rows for the status-dot leading treatment — discussion
+ *  titles, not page names. Filled dot = the active thread. */
+export const SIDEBAR_THREADS: readonly {
+  label: string;
+  badge?: string;
+  active?: boolean;
+}[] = [
+  { label: "Sidebar component height in demo", active: true },
+  { label: "Sidebar component creation" },
+  { label: "Dark mode token audit", badge: "3" },
+  { label: "Scrollbar fade regression" },
+  { label: "Registry deploy pipeline" },
+];
+
 export const SIDEBAR_PROJECTS = [
   "Design system",
   "Marketing site",

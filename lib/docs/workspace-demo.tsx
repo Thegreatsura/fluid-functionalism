@@ -17,10 +17,16 @@ export function WorkspaceMenuItems() {
   const icons = useIcons();
   const shape = useShape();
 
+  // `className` must flow through: MenuItem stacks the icon in a grid cell
+  // via `col-start-1 row-start-1` classes — dropping them would land the
+  // visible tile in a second grid row, below the invisible sizer.
   const letterTile = (letter: string, colorClasses: string) =>
-    function LetterTile({ size = 16 }: IconComponentProps) {
+    function LetterTile({ size = 16, className }: IconComponentProps) {
       return (
-        <span className="relative flex shrink-0" style={{ width: size, height: size }}>
+        <span
+          className={`relative flex shrink-0 ${className ?? ""}`}
+          style={{ width: size, height: size }}
+        >
           <span
             className={`absolute top-1/2 -left-1 flex size-5 -translate-y-1/2 items-center justify-center text-[10px] ${
               shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"

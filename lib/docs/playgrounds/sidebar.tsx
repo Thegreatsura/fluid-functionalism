@@ -48,6 +48,7 @@ import {
 import {
   SIDEBAR_GROUP_LABEL,
   SIDEBAR_ITEMS,
+  SIDEBAR_THREADS,
 } from "@/app/components/demo-data";
 import { WorkspaceMenuItems } from "@/lib/docs/workspace-demo";
 import type { PlaygroundProps } from "./types";
@@ -118,7 +119,9 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   lines.push(`    <SidebarHeader>{/* workspace row */}</SidebarHeader>`);
   lines.push(`    <SidebarContent>`);
   lines.push(`      <SidebarGroup collapsible>`);
-  lines.push(`        <SidebarGroupLabel>Platform</SidebarGroupLabel>`);
+  lines.push(
+    `        <SidebarGroupLabel>${o.leading === "dot" ? "fluid-functionalism" : "Platform"}</SidebarGroupLabel>`
+  );
   lines.push(`        <SidebarMenu>`);
   if (o.loading) {
     lines.push(`          {items.map((item) => (`);
@@ -310,23 +313,34 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup collapsible>
-              <SidebarGroupLabel>{SIDEBAR_GROUP_LABEL}</SidebarGroupLabel>
+              <SidebarGroupLabel>
+                {state.leading === "dot" ? "fluid-functionalism" : SIDEBAR_GROUP_LABEL}
+              </SidebarGroupLabel>
               <SidebarMenu>
                 {state.loading
                   ? SIDEBAR_ITEMS.map((item) => (
                       <SidebarMenuSkeleton key={item.label} showIcon />
                     ))
-                  : SIDEBAR_ITEMS.map((item) => (
-                      <SidebarMenuItem key={item.label}>
+                  : (state.leading === "dot"
+                      ? // Status dots read as thread state, so the rows carry
+                        // discussion titles instead of page names.
+                        SIDEBAR_THREADS.map((item) => ({
+                          ...item,
+                          key: item.label,
+                          icon: undefined,
+                          dot: (item.active ? "filled" : "ring") as "filled" | "ring",
+                        }))
+                      : SIDEBAR_ITEMS.map((item) => ({
+                          ...item,
+                          key: item.label,
+                          icon: icons[item.icon],
+                          dot: undefined,
+                        }))
+                    ).map((item) => (
+                      <SidebarMenuItem key={item.key}>
                         <SidebarMenuButton
-                          icon={state.leading === "icon" ? icons[item.icon] : undefined}
-                          dot={
-                            state.leading === "dot"
-                              ? item.active
-                                ? "filled"
-                                : "ring"
-                              : undefined
-                          }
+                          icon={item.icon}
+                          dot={item.dot}
                           isActive={item.active}
                         >
                           {item.label}

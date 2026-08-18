@@ -176,7 +176,12 @@ const menuFeaturesCode = `const [projectsOpen, setProjectsOpen] = useState(true)
 <SidebarMenu>
   <SidebarMenuItem>
     <SidebarMenuButton icon={InboxIcon}>Inbox</SidebarMenuButton>
+    {/* badge + action coexist: badge keeps the rightmost spot,
+        the action reveals left of it */}
     <SidebarMenuBadge>12</SidebarMenuBadge>
+    <SidebarMenuAction showOnHover aria-label="More options">
+      <MoreIcon />
+    </SidebarMenuAction>
   </SidebarMenuItem>
   <SidebarMenuItem>
     <SidebarMenuButton icon={ClockIcon}>Recent</SidebarMenuButton>
@@ -634,7 +639,23 @@ function MenuFeaturesPreview() {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton icon={icons.inbox}>Inbox</SidebarMenuButton>
+                  {/* Badge and action share the row — the badge keeps the
+                      rightmost spot, the ellipsis reveals left of it. */}
                   <SidebarMenuBadge>12</SidebarMenuBadge>
+                  <DropdownMenu>
+                    <DropdownTrigger
+                      render={
+                        <SidebarMenuAction showOnHover aria-label="More options">
+                          <MoreIcon />
+                        </SidebarMenuAction>
+                      }
+                    />
+                    <DropdownContent className="min-w-0 w-[240px]" align="start" sideOffset={4}>
+                      <MenuItem index={0} icon={icons.pencil} label="Rename" onSelect={() => {}} />
+                      <MenuItem index={1} icon={icons.link} label="Share" onSelect={() => {}} />
+                      <MenuItem index={2} icon={icons.x} label="Delete" onSelect={() => {}} />
+                    </DropdownContent>
+                  </DropdownMenu>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton icon={icons.clock}>Recent</SidebarMenuButton>

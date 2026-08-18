@@ -602,7 +602,7 @@ function MenuRowLabel({
 // ─── SidebarMenuButton ───────────────────────────────────────────────────────
 
 export const sidebarMenuButtonVariants = cva(
-  "peer/menu-button relative z-10 flex w-full cursor-pointer select-none items-center gap-2 px-2 text-left outline-none group-has-[>[data-sidebar=menu-action]]/menu-item:pr-8 group-has-[>[data-sidebar=menu-badge]]/menu-item:pr-8",
+  "peer/menu-button relative z-10 flex w-full cursor-pointer select-none items-center gap-2 px-2 text-left outline-none transition-[padding] duration-80 group-has-[>[data-sidebar=menu-action]:not([data-show-on-hover])]/menu-item:pr-8 group-has-[>[data-sidebar=menu-badge]]/menu-item:pr-8 group-has-[>[data-sidebar=menu-action]:not([data-show-on-hover])]/menu-item:group-has-[>[data-sidebar=menu-badge]]/menu-item:pr-14 group-hover/menu-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-item:pr-8 group-focus-within/menu-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-item:pr-8 group-has-[>[data-sidebar=menu-action][data-show-on-hover]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-item:pr-8 group-hover/menu-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-item:group-has-[>[data-sidebar=menu-badge]]/menu-item:pr-14 group-focus-within/menu-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-item:group-has-[>[data-sidebar=menu-badge]]/menu-item:pr-14 group-has-[>[data-sidebar=menu-action][data-show-on-hover]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-item:group-has-[>[data-sidebar=menu-badge]]/menu-item:pr-14",
   {
     variants: {
       variant: {
@@ -784,17 +784,28 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
         ref: ref as Ref<HTMLElement>,
         type: template ? undefined : "button",
         "data-sidebar": "menu-action",
+        "data-show-on-hover": showOnHover ? "" : undefined,
         className: cn(
           // right-1.5 centers the 24px hit-box on the same axis as the badge
           // (right-2 + min-w-5): both land 18px from the row's right edge.
+          // With a badge on the same row the badge keeps that rightmost spot
+          // and the action slides left of it (right-8 = the pr-14 gutter).
           "absolute right-1.5 z-10 flex size-6 items-center justify-center text-muted-foreground outline-none",
+          item?.isSubRow
+            ? "group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:right-8"
+            : "group-has-[>[data-sidebar=menu-badge]]/menu-item:right-8",
           item?.isSubRow || sizeClasses.variant === "compact" ? "top-0.5" : "top-1",
           "hover:bg-hover hover:text-foreground transition-[color,background-color,opacity] duration-80",
           "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
           "[&_svg]:size-3.5 [&_svg]:shrink-0",
           shape.item,
+          // Reveal on the OWN row only. A sub action must not use the
+          // menu-item group — its nearest one is the parent li, which would
+          // light every sibling sub action on any hover inside the sub-tree.
           showOnHover &&
-            "opacity-0 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100 group-hover/menu-sub-item:opacity-100 group-focus-within/menu-sub-item:opacity-100 data-[state=open]:opacity-100 aria-expanded:opacity-100",
+            (item?.isSubRow
+              ? "opacity-0 group-hover/menu-sub-item:opacity-100 group-focus-within/menu-sub-item:opacity-100 data-[state=open]:opacity-100 aria-expanded:opacity-100"
+              : "opacity-0 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100 data-[state=open]:opacity-100 aria-expanded:opacity-100"),
           className
         ),
         onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -1011,7 +1022,7 @@ const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonP
         tabIndex: tabIdx,
         className: cn(
           "relative z-10 flex w-full cursor-pointer select-none items-center gap-2 px-2 text-left outline-none",
-          "group-has-[>[data-sidebar=menu-action]]/menu-sub-item:pr-8 group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:pr-8",
+          "transition-[padding] duration-80 group-has-[>[data-sidebar=menu-action]:not([data-show-on-hover])]/menu-sub-item:pr-8 group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:pr-8 group-has-[>[data-sidebar=menu-action]:not([data-show-on-hover])]/menu-sub-item:group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:pr-14 group-hover/menu-sub-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-sub-item:pr-8 group-focus-within/menu-sub-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-sub-item:pr-8 group-has-[>[data-sidebar=menu-action][data-show-on-hover]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-sub-item:pr-8 group-hover/menu-sub-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-sub-item:group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:pr-14 group-focus-within/menu-sub-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-sub-item:group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:pr-14 group-has-[>[data-sidebar=menu-action][data-show-on-hover]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-sub-item:group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:pr-14",
           size === "sm" ? "h-6" : sizeClasses.variant === "compact" ? "h-6" : "h-7",
           shape.item,
           className

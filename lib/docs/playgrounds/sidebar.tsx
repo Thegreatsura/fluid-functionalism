@@ -28,7 +28,7 @@ import {
   type SidebarVariant,
   type SidebarCollapsible,
 } from "@/components/flavored/sidebar";
-import { useIcons } from "@/lib/icon-context";
+import { useIcons, type IconComponent } from "@/lib/icon-context";
 import { useShape } from "@/lib/shape-context";
 import { fontWeights } from "@/lib/font-weight";
 import { Switch } from "@/registry/radix/switch";
@@ -51,6 +51,7 @@ import {
   SIDEBAR_GROUP_LABEL,
   SIDEBAR_ITEMS,
   SIDEBAR_THREADS,
+  SIDEBAR_THREADS_ALT,
 } from "@/app/components/demo-data";
 import { WorkspaceMenuItems } from "@/lib/docs/workspace-demo";
 import type { PlaygroundProps } from "./types";
@@ -110,7 +111,9 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
     "SidebarMenuButton",
     ...(o.badges ? ["SidebarMenuBadge"] : []),
     ...(o.actions ? ["SidebarMenuAction"] : []),
-    ...(o.subMenu ? ["SidebarMenuSub", "SidebarMenuSubItem", "SidebarMenuSubButton"] : []),
+    ...(o.subMenu && o.leading === "icon"
+      ? ["SidebarMenuSub", "SidebarMenuSubItem", "SidebarMenuSubButton"]
+      : []),
     ...(o.loading ? ["SidebarMenuSkeleton"] : []),
   ];
   lines.push(`  ${menuExtras.join(", ")},`);
@@ -172,7 +175,19 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   }
   lines.push(`        </SidebarMenu>`);
   lines.push(`      </SidebarGroup>`);
-  if (!o.loading && o.subMenu) {
+  if (!o.loading && o.leading === "dot") {
+    lines.push(`      <SidebarGroup collapsible>`);
+    lines.push(`        <SidebarGroupLabel>portfolio-site</SidebarGroupLabel>`);
+    lines.push(`        <SidebarMenu>`);
+    lines.push(`          {moreThreads.map((item) => (`);
+    lines.push(`            <SidebarMenuItem key={item.label}>`);
+    lines.push(`              <SidebarMenuButton status={item.status}>{item.label}</SidebarMenuButton>`);
+    lines.push(`            </SidebarMenuItem>`);
+    lines.push(`          ))}`);
+    lines.push(`        </SidebarMenu>`);
+    lines.push(`      </SidebarGroup>`);
+  }
+  if (!o.loading && o.leading === "icon" && o.subMenu) {
     lines.push(`      <SidebarGroup collapsible>`);
     lines.push(`        <SidebarGroupLabel>Teams</SidebarGroupLabel>`);
     if (o.groupActions > 0) {
@@ -235,24 +250,24 @@ const TEAM_GROUPS = [
     label: "Engineering",
     children: [
       { label: "Frontend", badge: "4" },
-      { label: "Backend" },
-      { label: "Infrastructure" },
+      { label: "Backend", badge: "6" },
+      { label: "Infrastructure", badge: "2" },
     ],
   },
   {
     icon: "palette",
     label: "Design",
-    children: [{ label: "Brand" }, { label: "Product", badge: "2" }, { label: "Website" }],
+    children: [{ label: "Brand", badge: "1" }, { label: "Product", badge: "2" }, { label: "Website", badge: "5" }],
   },
   {
     icon: "rocket",
     label: "Marketing",
-    children: [{ label: "Campaigns" }, { label: "Social" }, { label: "Newsletter" }],
+    children: [{ label: "Campaigns", badge: "3" }, { label: "Social", badge: "8" }, { label: "Newsletter", badge: "1" }],
   },
   {
     icon: "globe",
     label: "Support",
-    children: [{ label: "Inbox", badge: "9" }, { label: "Knowledge base" }, { label: "Escalations" }],
+    children: [{ label: "Inbox", badge: "9" }, { label: "Knowledge base", badge: "4" }, { label: "Escalations", badge: "2" }],
   },
 ] as const;
 
@@ -288,6 +303,63 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
   };
 
   const ChevronsUpDown = icons["chevrons-up-down"];
+
+  // One row for both leading modes; group 1 and the dot-mode second category
+  // share it. The 240px more-menu matches the workspace/user rows' trigger
+  // width (16rem sidebar minus the p-2 header) so all menus read as one
+  // family.
+  const menuRow = (item: {
+    key: string;
+    label: string;
+    icon?: IconComponent;
+    status?: "active" | "unread" | "idle";
+    active?: boolean;
+    badge?: string;
+  }) => (
+    <SidebarMenuItem key={item.key}>
+      <SidebarMenuButton icon={item.icon} status={item.status} isActive={item.active}>
+        {item.label}
+      </SidebarMenuButton>
+      {state.badges && item.badge && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
+      {state.actions && (
+        <DropdownMenu>
+          <DropdownTrigger
+            render={
+              <SidebarMenuAction showOnHover aria-label="More options">
+                {createElement(icons["more-horizontal"], {})}
+              </SidebarMenuAction>
+            }
+          />
+          <DropdownContent className="min-w-0 w-[240px]" align="start" sideOffset={4}>
+            <MenuItem index={0} icon={icons.pencil} label="Rename" onSelect={() => {}} />
+            <MenuItem index={1} icon={icons.link} label="Share" onSelect={() => {}} />
+            <MenuItem index={2} icon={icons.x} label="Delete" onSelect={() => {}} />
+          </DropdownContent>
+        </DropdownMenu>
+      )}
+    </SidebarMenuItem>
+  );
+
+  const threadItems = (list: typeof SIDEBAR_THREADS) =>
+    list.map((item) => ({
+      badge: undefined,
+      ...item,
+      key: item.label,
+      icon: undefined,
+      active: undefined,
+    }));
+
+  // Shared header cluster for both groups.
+  const groupActionCluster =
+    state.groupActions > 0 ? (
+      <SidebarGroupActions>
+        {GROUP_ACTION_SET.slice(0, state.groupActions).map((a) => (
+          <SidebarGroupAction key={a.icon} aria-label={a.label}>
+            {createElement(icons[a.icon], {})}
+          </SidebarGroupAction>
+        ))}
+      </SidebarGroupActions>
+    ) : null;
 
   // The doc page's ComponentPreview already draws the frame; only the /demo
   // card's standalone preview brings its own border.
@@ -377,15 +449,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
               <SidebarGroupLabel>
                 {state.leading === "dot" ? "fluid-functionalism" : SIDEBAR_GROUP_LABEL}
               </SidebarGroupLabel>
-              {state.groupActions > 0 && (
-                <SidebarGroupActions>
-                  {GROUP_ACTION_SET.slice(0, state.groupActions).map((a) => (
-                    <SidebarGroupAction key={a.icon} aria-label={a.label}>
-                      {createElement(icons[a.icon], {})}
-                    </SidebarGroupAction>
-                  ))}
-                </SidebarGroupActions>
-              )}
+              {groupActionCluster}
               <SidebarMenu>
                 {state.loading
                   ? SIDEBAR_ITEMS.map((item) => (
@@ -395,13 +459,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                       ? // Status dots read as thread state, so the rows carry
                         // discussion titles (with semantic status) instead of
                         // page names.
-                        SIDEBAR_THREADS.map((item) => ({
-                          badge: undefined,
-                          ...item,
-                          key: item.label,
-                          icon: undefined,
-                          active: undefined,
-                        }))
+                        threadItems(SIDEBAR_THREADS)
                       : SIDEBAR_ITEMS.map((item) => ({
                           badge: undefined,
                           ...item,
@@ -409,55 +467,24 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                           icon: icons[item.icon],
                           status: undefined,
                         }))
-                    ).map((item) => (
-                      <SidebarMenuItem key={item.key}>
-                        <SidebarMenuButton
-                          icon={item.icon}
-                          status={item.status}
-                          isActive={item.active}
-                        >
-                          {item.label}
-                        </SidebarMenuButton>
-                        {state.badges && item.badge && (
-                          <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
-                        )}
-                        {state.actions && !item.badge && (
-                          <DropdownMenu>
-                            <DropdownTrigger
-                              render={
-                                <SidebarMenuAction showOnHover aria-label="More options">
-                                  {createElement(icons["more-horizontal"], {})}
-                                </SidebarMenuAction>
-                              }
-                            />
-                            {/* Fixed 240px = the workspace/user rows' trigger
-                                width (16rem sidebar minus the p-2 header), so
-                                all three menus read as one family. */}
-                            <DropdownContent className="min-w-0 w-[240px]" align="start" sideOffset={4}>
-                              <MenuItem index={0} icon={icons.pencil} label="Rename" onSelect={() => {}} />
-                              <MenuItem index={1} icon={icons.link} label="Share" onSelect={() => {}} />
-                              <MenuItem index={2} icon={icons.x} label="Delete" onSelect={() => {}} />
-                            </DropdownContent>
-                          </DropdownMenu>
-                        )}
-                      </SidebarMenuItem>
-                    ))}
+                    ).map(menuRow)}
               </SidebarMenu>
             </SidebarGroup>
-            {!state.loading && state.subMenu && (
+            {!state.loading && state.leading === "dot" && (
+              // Second thread category — flat rows; sub-menu trees belong to
+              // icon mode only.
+              <SidebarGroup collapsible>
+                <SidebarGroupLabel>portfolio-site</SidebarGroupLabel>
+                {groupActionCluster}
+                <SidebarMenu>{threadItems(SIDEBAR_THREADS_ALT).map(menuRow)}</SidebarMenu>
+              </SidebarGroup>
+            )}
+            {!state.loading && state.leading === "icon" && state.subMenu && (
               <SidebarGroup collapsible>
                 <SidebarGroupLabel>Teams</SidebarGroupLabel>
-                {state.groupActions > 0 && (
-                  <SidebarGroupActions>
-                    {GROUP_ACTION_SET.slice(0, state.groupActions).map((a) => (
-                      <SidebarGroupAction key={a.icon} aria-label={a.label}>
-                        {createElement(icons[a.icon], {})}
-                      </SidebarGroupAction>
-                    ))}
-                  </SidebarGroupActions>
-                )}
+                {groupActionCluster}
                 <SidebarMenu>
-                  {TEAM_GROUPS.map((team) => (
+                  {TEAM_GROUPS.slice(0, 2).map((team) => (
                     <SidebarMenuItem key={team.label}>
                       <SidebarMenuButton
                         icon={icons[team.icon]}
@@ -484,7 +511,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                             {state.badges && "badge" in c && c.badge && (
                               <SidebarMenuBadge>{c.badge}</SidebarMenuBadge>
                             )}
-                            {state.actions && !("badge" in c && c.badge) && (
+                            {state.actions && (
                               <DropdownMenu>
                                 <DropdownTrigger
                                   render={
@@ -644,8 +671,9 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       />
       <Switch
         label="Sub-menu"
-        checked={state.subMenu}
+        checked={state.leading === "icon" && state.subMenu}
         onToggle={() => set("subMenu", !state.subMenu)}
+        disabled={state.leading !== "icon"}
         className={PLAY_SWITCH}
       />
       <Switch

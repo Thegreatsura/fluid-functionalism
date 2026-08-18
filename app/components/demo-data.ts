@@ -126,11 +126,11 @@ export const SIDEBAR_ITEMS: readonly {
   badge?: string;
   active?: boolean;
 }[] = [
-  { icon: "home", label: "Home", active: true },
+  { icon: "home", label: "Home", active: true, badge: "3" },
   { icon: "inbox", label: "Inbox", badge: "12" },
-  { icon: "calendar", label: "Calendar" },
-  { icon: "bell", label: "Notifications" },
-  { icon: "star", label: "Favorites" },
+  { icon: "calendar", label: "Calendar", badge: "5" },
+  { icon: "bell", label: "Notifications", badge: "8" },
+  { icon: "star", label: "Favorites", badge: "2" },
 ];
 
 /** Thread-style rows for the status-dot leading treatment — discussion
@@ -141,11 +141,23 @@ export const SIDEBAR_THREADS: readonly {
   badge?: string;
   status: "active" | "unread" | "idle";
 }[] = [
-  { label: "Sidebar component height in demo", status: "active" },
-  { label: "Sidebar component creation", status: "idle" },
+  { label: "Sidebar component height in demo", status: "active", badge: "2" },
+  { label: "Sidebar component creation", status: "idle", badge: "5" },
   { label: "Dark mode token audit", badge: "3", status: "unread" },
-  { label: "Scrollbar fade regression", status: "idle" },
-  { label: "Registry deploy pipeline", status: "unread" },
+  { label: "Scrollbar fade regression", status: "idle", badge: "1" },
+  { label: "Registry deploy pipeline", status: "unread", badge: "7" },
+];
+
+/** Second thread category for the status-dot leading treatment — a second
+ *  repo's discussions, so dot mode shows two categories like icon mode. */
+export const SIDEBAR_THREADS_ALT: readonly {
+  label: string;
+  badge?: string;
+  status: "active" | "unread" | "idle";
+}[] = [
+  { label: "Hero animation polish", status: "unread", badge: "4" },
+  { label: "Contact form validation", status: "idle", badge: "2" },
+  { label: "Lighthouse performance pass", status: "idle", badge: "6" },
 ];
 
 export const SIDEBAR_PROJECTS = [

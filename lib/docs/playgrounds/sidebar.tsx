@@ -652,6 +652,12 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           ]}
         />
       </PlayField>
+      <Switch
+        label="Loading"
+        checked={state.loading}
+        onToggle={() => set("loading", !state.loading)}
+        className={PLAY_SWITCH}
+      />
       <PlayDivider />
       <PlaySection label="Header" />
       <PlayField label="Search">
@@ -716,17 +722,11 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
         className={PLAY_SWITCH}
       />
       <PlayDivider />
-      <PlaySection label="Footer & state" />
+      <PlaySection label="Footer" />
       <Switch
         label="Footer user"
         checked={state.footerUser}
         onToggle={() => set("footerUser", !state.footerUser)}
-        className={PLAY_SWITCH}
-      />
-      <Switch
-        label="Loading"
-        checked={state.loading}
-        onToggle={() => set("loading", !state.loading)}
         className={PLAY_SWITCH}
       />
     </PlaygroundPanel>

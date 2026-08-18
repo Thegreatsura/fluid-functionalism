@@ -12,6 +12,8 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarGroupAction,
+  SidebarGroupActions,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
@@ -68,6 +70,8 @@ interface PlayState {
   /** Leading treatment for the Platform rows: icon column, or thread-style
    *  status dot (filled = active, ring = idle). */
   leading: "icon" | "dot";
+  /** Header action buttons clustered on the first group's label (0–3). */
+  groupActions: 0 | 1 | 2 | 3;
   badges: boolean;
   subMenu: boolean;
   /** Menu-features treatment: hover row actions + collapsible sub-menu. */
@@ -83,6 +87,7 @@ const DEFAULT_STATE: PlayState = {
   open: true,
   search: "below",
   leading: "icon",
+  groupActions: 0,
   badges: true,
   subMenu: true,
   actions: true,
@@ -95,7 +100,12 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   lines.push(`import {`);
   lines.push(`  SidebarProvider, Sidebar, SidebarTrigger, SidebarInset,`);
   lines.push(`  SidebarHeader, SidebarContent, SidebarFooter,`);
-  lines.push(`  SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem,`);
+  lines.push(
+    o.groupActions > 0
+      ? `  SidebarGroup, SidebarGroupLabel, SidebarGroupActions, SidebarGroupAction,`
+      : `  SidebarGroup, SidebarGroupLabel,`
+  );
+  lines.push(`  SidebarMenu, SidebarMenuItem,`);
   const menuExtras = [
     "SidebarMenuButton",
     ...(o.badges ? ["SidebarMenuBadge"] : []),
@@ -122,6 +132,16 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   lines.push(
     `        <SidebarGroupLabel>${o.leading === "dot" ? "fluid-functionalism" : "Platform"}</SidebarGroupLabel>`
   );
+  if (o.groupActions > 0) {
+    lines.push(`        {/* 1-3 header actions on the label row */}`);
+    lines.push(`        <SidebarGroupActions>`);
+    for (const action of GROUP_ACTION_SET.slice(0, o.groupActions)) {
+      lines.push(`          <SidebarGroupAction aria-label="${action.label}">`);
+      lines.push(`            <${action.icon.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join("")}Icon />`);
+      lines.push(`          </SidebarGroupAction>`);
+    }
+    lines.push(`        </SidebarGroupActions>`);
+  }
   lines.push(`        <SidebarMenu>`);
   if (o.loading) {
     lines.push(`          {items.map((item) => (`);
@@ -188,6 +208,14 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   return lines.join("\n");
 }
 
+// Header action cluster options for the first group's label, sliced by the
+// "Label actions" control (1–3).
+const GROUP_ACTION_SET = [
+  { icon: "plus", label: "Add item" },
+  { icon: "more-horizontal", label: "More options" },
+  { icon: "pencil", label: "Edit section" },
+] as const;
+
 // Second group: four collapsible sub-menu examples under their own title.
 const TEAM_GROUPS = [
   { icon: "users", label: "Engineering", children: ["Frontend", "Backend", "Infrastructure"] },
@@ -218,6 +246,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       open: true,
       search: pick(["below", "below", "inline"] as const),
       leading: pick(["icon", "icon", "dot"] as const),
+      groupActions: pick([0, 0, 1, 2, 3] as const),
       badges: Math.random() > 0.3,
       subMenu: Math.random() > 0.3,
       actions: Math.random() > 0.4,
@@ -316,6 +345,15 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
               <SidebarGroupLabel>
                 {state.leading === "dot" ? "fluid-functionalism" : SIDEBAR_GROUP_LABEL}
               </SidebarGroupLabel>
+              {state.groupActions > 0 && (
+                <SidebarGroupActions>
+                  {GROUP_ACTION_SET.slice(0, state.groupActions).map((a) => (
+                    <SidebarGroupAction key={a.icon} aria-label={a.label}>
+                      {createElement(icons[a.icon], {})}
+                    </SidebarGroupAction>
+                  ))}
+                </SidebarGroupActions>
+              )}
               <SidebarMenu>
                 {state.loading
                   ? SIDEBAR_ITEMS.map((item) => (
@@ -520,6 +558,18 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           options={[
             { value: "icon", label: "Icon" },
             { value: "dot", label: "Status dot" },
+          ]}
+        />
+      </PlayField>
+      <PlayField label="Label actions">
+        <PlaySelect
+          value={String(state.groupActions)}
+          onChange={(v) => set("groupActions", Number(v) as PlayState["groupActions"])}
+          options={[
+            { value: "0", label: "None" },
+            { value: "1", label: "One" },
+            { value: "2", label: "Two" },
+            { value: "3", label: "Three" },
           ]}
         />
       </PlayField>

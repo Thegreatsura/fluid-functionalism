@@ -292,7 +292,10 @@ export function RightPanel() {
     // xl-fade-block sets display:block at ≥xl, so the flex column lives on an
     // inner wrapper (else it would override `flex` and drop the gap).
     <div className="shrink-0 w-64 sticky top-4 self-start mt-4 mr-2 xl-fade-block max-xl:fixed max-xl:top-0 max-xl:right-0 max-xl:z-40 max-xl:pointer-events-none">
-      <div className="flex flex-col gap-3">
+      {/* Taller stacks (settings + playground controls) scroll within the
+          viewport instead of running past it; scroll-fade dissolves the
+          clipped edge. */}
+      <div className="flex max-h-[calc(100svh-2rem)] flex-col gap-3 overflow-y-auto scroll-fade [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <aside className="p-4 rounded-lg bg-muted">
           <SurfaceProvider value={2}>
             <div className="flex items-center justify-between pt-2 pb-2">

@@ -76,6 +76,8 @@ interface PlayState {
   leading: "icon" | "dot";
   /** Header action buttons clustered on the first group's label (0–3). */
   groupActions: 0 | 1 | 2 | 3;
+  /** Section labels act as accordion toggles (SidebarGroup collapsible). */
+  collapsibleGroups: boolean;
   badges: boolean;
   subMenu: boolean;
   /** Menu-features treatment: hover row actions + collapsible sub-menu. */
@@ -93,6 +95,7 @@ const DEFAULT_STATE: PlayState = {
   search: "inline",
   leading: "dot",
   groupActions: 1,
+  collapsibleGroups: true,
   badges: false,
   subMenu: true,
   actions: true,
@@ -137,7 +140,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   lines.push(`  <Sidebar${sidebarProps ? ` ${sidebarProps}` : ""}>`);
   lines.push(`    <SidebarHeader>{/* workspace row */}</SidebarHeader>`);
   lines.push(`    <SidebarContent>`);
-  lines.push(`      <SidebarGroup collapsible>`);
+  lines.push(`      <SidebarGroup${o.collapsibleGroups ? " collapsible" : ""}>`);
   lines.push(
     `        <SidebarGroupLabel>${o.leading === "dot" ? "fluid-functionalism" : "Platform"}</SidebarGroupLabel>`
   );
@@ -182,7 +185,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   lines.push(`        </SidebarMenu>`);
   lines.push(`      </SidebarGroup>`);
   if (!o.loading && o.leading === "dot") {
-    lines.push(`      <SidebarGroup collapsible>`);
+    lines.push(`      <SidebarGroup${o.collapsibleGroups ? " collapsible" : ""}>`);
     lines.push(`        <SidebarGroupLabel>portfolio-site</SidebarGroupLabel>`);
     lines.push(`        <SidebarMenu>`);
     lines.push(`          {moreThreads.map((item) => (`);
@@ -194,7 +197,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
     lines.push(`      </SidebarGroup>`);
   }
   if (!o.loading && o.leading === "icon" && o.subMenu) {
-    lines.push(`      <SidebarGroup collapsible>`);
+    lines.push(`      <SidebarGroup${o.collapsibleGroups ? " collapsible" : ""}>`);
     lines.push(`        <SidebarGroupLabel>Teams</SidebarGroupLabel>`);
     if (o.groupActions > 0) {
       lines.push(`        <SidebarGroupActions>{/* same actions */}</SidebarGroupActions>`);
@@ -301,6 +304,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       search: pick(["below", "below", "inline"] as const),
       leading: pick(["icon", "icon", "dot"] as const),
       groupActions: pick([0, 0, 1, 2, 3] as const),
+      collapsibleGroups: Math.random() > 0.25,
       badges: Math.random() > 0.3,
       subMenu: Math.random() > 0.3,
       actions: Math.random() > 0.4,
@@ -453,7 +457,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
             )}
           </SidebarHeader>
           <SidebarContent>
-            <SidebarGroup collapsible>
+            <SidebarGroup collapsible={state.collapsibleGroups}>
               <SidebarGroupLabel>
                 {state.leading === "dot" ? "fluid-functionalism" : SIDEBAR_GROUP_LABEL}
               </SidebarGroupLabel>
@@ -481,14 +485,14 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
             {!state.loading && state.leading === "dot" && (
               // Second thread category — flat rows; sub-menu trees belong to
               // icon mode only.
-              <SidebarGroup collapsible>
+              <SidebarGroup collapsible={state.collapsibleGroups}>
                 <SidebarGroupLabel>portfolio-site</SidebarGroupLabel>
                 {groupActionCluster}
                 <SidebarMenu>{threadItems(SIDEBAR_THREADS_ALT).map(menuRow)}</SidebarMenu>
               </SidebarGroup>
             )}
             {!state.loading && state.leading === "icon" && state.subMenu && (
-              <SidebarGroup collapsible>
+              <SidebarGroup collapsible={state.collapsibleGroups}>
                 <SidebarGroupLabel>Teams</SidebarGroupLabel>
                 {groupActionCluster}
                 <SidebarMenu>
@@ -674,6 +678,12 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           ]}
         />
       </PlayField>
+      <Switch
+        label="Collapsible sections"
+        checked={state.collapsibleGroups}
+        onToggle={() => set("collapsibleGroups", !state.collapsibleGroups)}
+        className={PLAY_SWITCH}
+      />
       <Switch
         label="Sub-menus"
         checked={state.leading === "icon" && state.subMenu}

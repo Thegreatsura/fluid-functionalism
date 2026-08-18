@@ -85,6 +85,7 @@ interface MenuScope {
     onMouseLeave: () => void;
     onFocus: (e: React.FocusEvent) => void;
     onBlur: (e: React.FocusEvent) => void;
+    onPointerDown: () => void;
     onKeyDown?: (e: React.KeyboardEvent) => void;
   };
   overlays: ReactNode;
@@ -246,6 +247,10 @@ function useMenuScope(
     [isForeign, setActiveIndex]
   );
 
+  const onPointerDown = useCallback(() => {
+    setFocusedRowEl(null);
+  }, []);
+
   const onBlur = useCallback(
     (e: React.FocusEvent) => {
       if (containerRef.current?.contains(e.relatedTarget as Node)) return;
@@ -382,6 +387,10 @@ function useMenuScope(
       onMouseLeave: handlers.onMouseLeave,
       onFocus,
       onBlur,
+      // Pointer interaction switches modality back to pointer. Clicking the
+      // already-focused row never re-fires focus, so without this the
+      // keyboard ring would stick until focus left the menu.
+      onPointerDown,
       onKeyDown: isRoot ? onKeyDown : undefined,
     },
     overlays,
@@ -559,9 +568,14 @@ function MenuRowLabel({
   return (
     <>
       <span className={cn("inline-grid min-w-0 text-left", textClass)}>
-        {/* Ghost: reserves width at the heaviest weight, hidden from AT */}
+        {/* Ghost: reserves width at the heaviest weight, hidden from AT.
+            Both cells truncate so a long label clips with an ellipsis
+            instead of wrapping the row. The trim box ends at the alphabetic
+            baseline, so the overflow clip would crop descenders — the
+            padding extends the clip box past them and the negative margin
+            cancels it out of the row's height. */}
         <span
-          className="col-start-1 row-start-1 invisible [text-box:trim-both_cap_alphabetic]"
+          className="col-start-1 row-start-1 invisible truncate pb-[0.25em] -mb-[0.25em] [text-box:trim-both_cap_alphabetic]"
           style={{ fontVariationSettings: fontWeights.semibold }}
           aria-hidden="true"
         >
@@ -570,7 +584,7 @@ function MenuRowLabel({
         {/* Visible: animates between weights in the same cell */}
         <span
           className={cn(
-            "col-start-1 row-start-1 transition-[color,font-variation-settings] duration-80 [text-box:trim-both_cap_alphabetic]",
+            "col-start-1 row-start-1 truncate pb-[0.25em] -mb-[0.25em] transition-[color,font-variation-settings] duration-80 [text-box:trim-both_cap_alphabetic]",
             lit ? "text-foreground" : "text-muted-foreground"
           )}
           style={{
@@ -606,6 +620,10 @@ export interface SidebarMenuButtonProps
   isActive?: boolean;
   size?: "default" | "sm" | "lg";
   icon?: IconComponent;
+  /** Status dot in the icon column — for thread-style navigation where rows
+   *  carry state instead of an icon ("filled" reads active/unread, "ring"
+   *  reads idle). Ignored when `icon` is set. */
+  dot?: "filled" | "ring";
   render?: ReactElement;
   asChild?: boolean;
 }
@@ -617,6 +635,7 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
       size = "default",
       variant,
       icon: Icon,
+      dot,
       render,
       asChild,
       className,
@@ -679,6 +698,25 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
             )}
           />
         )}
+        {!Icon && dot && (
+          <span
+            className="flex shrink-0 items-center justify-center"
+            style={{ width: sizeClasses.icon, height: sizeClasses.icon }}
+          >
+            <span
+              className={cn(
+                "size-2 rounded-full transition-colors duration-80",
+                dot === "filled"
+                  ? lit
+                    ? "bg-foreground/60"
+                    : "bg-muted-foreground/50"
+                  : lit
+                    ? "border border-foreground/60"
+                    : "border border-muted-foreground/50"
+              )}
+            />
+          </span>
+        )}
         <MenuRowLabel content={content} lit={lit} emphasized={isActive} textClass={textClass} />
       </>
     );
@@ -734,7 +772,9 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
         type: template ? undefined : "button",
         "data-sidebar": "menu-action",
         className: cn(
-          "absolute right-1 z-10 flex size-6 items-center justify-center text-muted-foreground outline-none",
+          // right-1.5 centers the 24px hit-box on the same axis as the badge
+          // (right-2 + min-w-5): both land 18px from the row's right edge.
+          "absolute right-1.5 z-10 flex size-6 items-center justify-center text-muted-foreground outline-none",
           item?.isSubRow || sizeClasses.variant === "compact" ? "top-0.5" : "top-1",
           "hover:bg-hover hover:text-foreground transition-[color,background-color,opacity] duration-80",
           "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
@@ -889,7 +929,10 @@ const SidebarMenuSub = forwardRef<HTMLUListElement, SidebarMenuSubProps>(
             data-state={open ? "open" : "closed"}
             aria-hidden={open ? undefined : true}
             className={cn(
-              "relative ml-3.5 flex min-w-0 translate-x-px flex-col gap-0.5 border-l border-border py-0.5 pl-2.5 select-none",
+              // pl-2 lands the sub-row label (pl-2 + the row's own px-2 = 24px
+              // + border/translate) exactly on the parent label's x (px-2 +
+              // 16px icon + gap-2 = 32px).
+              "relative ml-3.5 flex min-w-0 translate-x-px flex-col gap-0.5 border-l border-border py-0.5 pl-2 select-none",
               className
             )}
             {...containerProps}

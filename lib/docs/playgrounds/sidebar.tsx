@@ -48,8 +48,8 @@ import {
 import {
   SIDEBAR_GROUP_LABEL,
   SIDEBAR_ITEMS,
-  SIDEBAR_PROJECTS,
 } from "@/app/components/demo-data";
+import { WorkspaceMenuItems } from "@/lib/docs/workspace-demo";
 import type { PlaygroundProps } from "./types";
 
 // ── Sidebar playground ───────────────────────────────────
@@ -64,6 +64,9 @@ interface PlayState {
   open: boolean;
   /** Search placement: full bar below the header, or an inline icon button. */
   search: "below" | "inline";
+  /** Leading treatment for the Platform rows: icon column, or thread-style
+   *  status dot (filled = active, ring = idle). */
+  leading: "icon" | "dot";
   badges: boolean;
   subMenu: boolean;
   /** Menu-features treatment: hover row actions + collapsible sub-menu. */
@@ -78,6 +81,7 @@ const DEFAULT_STATE: PlayState = {
   collapsible: "offcanvas",
   open: true,
   search: "below",
+  leading: "icon",
   badges: true,
   subMenu: true,
   actions: true,
@@ -113,7 +117,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   lines.push(`  <Sidebar${sidebarProps ? ` ${sidebarProps}` : ""}>`);
   lines.push(`    <SidebarHeader>{/* workspace row */}</SidebarHeader>`);
   lines.push(`    <SidebarContent>`);
-  lines.push(`      <SidebarGroup>`);
+  lines.push(`      <SidebarGroup collapsible>`);
   lines.push(`        <SidebarGroupLabel>Platform</SidebarGroupLabel>`);
   lines.push(`        <SidebarMenu>`);
   if (o.loading) {
@@ -123,7 +127,12 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   } else {
     lines.push(`          {items.map((item) => (`);
     lines.push(`            <SidebarMenuItem key={item.label}>`);
-    lines.push(`              <SidebarMenuButton icon={item.icon} isActive={item.active}>`);
+    if (o.leading === "dot") {
+      lines.push(`              {/* thread-style rows: status dot instead of an icon */}`);
+      lines.push(`              <SidebarMenuButton dot={item.active ? "filled" : "ring"} isActive={item.active}>`);
+    } else {
+      lines.push(`              <SidebarMenuButton icon={item.icon} isActive={item.active}>`);
+    }
     lines.push(`                {item.label}`);
     lines.push(`              </SidebarMenuButton>`);
     if (o.badges) {
@@ -136,29 +145,31 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
     }
     lines.push(`            </SidebarMenuItem>`);
     lines.push(`          ))}`);
-    if (o.subMenu) {
-      lines.push(`          <SidebarMenuItem>`);
-      if (o.actions) {
-        lines.push(`            <SidebarMenuButton icon={FolderIcon} onClick={() => setProjectsOpen((v) => !v)}>`);
-        lines.push(`              Projects`);
-        lines.push(`              <ChevronIcon className={projectsOpen ? "" : "-rotate-90"} />`);
-        lines.push(`            </SidebarMenuButton>`);
-        lines.push(`            <SidebarMenuSub open={projectsOpen}>`);
-      } else {
-        lines.push(`            <SidebarMenuButton icon={FolderIcon}>Projects</SidebarMenuButton>`);
-        lines.push(`            <SidebarMenuSub>`);
-      }
-      lines.push(`              {projects.map((p) => (`);
-      lines.push(`                <SidebarMenuSubItem key={p}>`);
-      lines.push(`                  <SidebarMenuSubButton href="#">{p}</SidebarMenuSubButton>`);
-      lines.push(`                </SidebarMenuSubItem>`);
-      lines.push(`              ))}`);
-      lines.push(`            </SidebarMenuSub>`);
-      lines.push(`          </SidebarMenuItem>`);
-    }
   }
   lines.push(`        </SidebarMenu>`);
   lines.push(`      </SidebarGroup>`);
+  if (!o.loading && o.subMenu) {
+    lines.push(`      <SidebarGroup collapsible>`);
+    lines.push(`        <SidebarGroupLabel>Teams</SidebarGroupLabel>`);
+    lines.push(`        <SidebarMenu>`);
+    lines.push(`          {teams.map((team) => (`);
+    lines.push(`            <SidebarMenuItem key={team.label}>`);
+    lines.push(`              <SidebarMenuButton icon={team.icon} onClick={() => toggleTeam(team.label)}>`);
+    lines.push(`                {team.label}`);
+    lines.push(`                <ChevronIcon className={openTeams[team.label] ? "" : "-rotate-90"} />`);
+    lines.push(`              </SidebarMenuButton>`);
+    lines.push(`              <SidebarMenuSub open={openTeams[team.label]}>`);
+    lines.push(`                {team.children.map((c) => (`);
+    lines.push(`                  <SidebarMenuSubItem key={c}>`);
+    lines.push(`                    <SidebarMenuSubButton href="#">{c}</SidebarMenuSubButton>`);
+    lines.push(`                  </SidebarMenuSubItem>`);
+    lines.push(`                ))}`);
+    lines.push(`              </SidebarMenuSub>`);
+    lines.push(`            </SidebarMenuItem>`);
+    lines.push(`          ))}`);
+    lines.push(`        </SidebarMenu>`);
+    lines.push(`      </SidebarGroup>`);
+  }
   lines.push(`    </SidebarContent>`);
   if (o.footerUser) {
     lines.push(`    <SidebarFooter>{/* user row */}</SidebarFooter>`);
@@ -188,7 +199,6 @@ function pick<T>(options: readonly T[]): T {
 
 export function SidebarPlayground({ children }: PlaygroundProps) {
   const [state, setState] = useState<PlayState>(DEFAULT_STATE);
-  const [projectsOpen, setProjectsOpen] = useState(true);
   const [openTeams, setOpenTeams] = useState<Record<string, boolean>>({ Engineering: true });
   const toggleTeam = (label: string) =>
     setOpenTeams((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -204,6 +214,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       collapsible: pick(["offcanvas", "offcanvas", "none"] as const),
       open: true,
       search: pick(["below", "below", "inline"] as const),
+      leading: pick(["icon", "icon", "dot"] as const),
       badges: Math.random() > 0.3,
       subMenu: Math.random() > 0.3,
       actions: Math.random() > 0.4,
@@ -212,7 +223,6 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
     });
   };
 
-  const FolderIcon = icons["folder"];
   const ChevronsUpDown = icons["chevrons-up-down"];
 
   // The doc page's ComponentPreview already draws the frame; only the /demo
@@ -253,7 +263,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                           A
                         </span>
                         <span
-                          className="text-[13px] text-foreground"
+                          className="min-w-0 truncate text-[13px] text-foreground"
                           style={{ fontVariationSettings: fontWeights.semibold }}
                         >
                           Acme Inc
@@ -269,10 +279,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                     }
                   />
                   <DropdownContent className="min-w-0 w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]" align="start" sideOffset={4} checkedIndex={0}>
-                    <MenuItem index={0} icon={icons["square-library"]} label="Acme Inc" checked onSelect={() => {}} />
-                    <MenuItem index={1} icon={icons.rocket} label="Fluid Labs" onSelect={() => {}} />
-                    <MenuItem index={2} icon={icons.user} label="Personal" onSelect={() => {}} />
-                    <MenuItem index={3} icon={icons.plus} label="New workspace" onSelect={() => {}} />
+                    <WorkspaceMenuItems />
                   </DropdownContent>
                 </DropdownMenu>
               </SidebarMenuItem>
@@ -302,7 +309,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
             )}
           </SidebarHeader>
           <SidebarContent>
-            <SidebarGroup>
+            <SidebarGroup collapsible>
               <SidebarGroupLabel>{SIDEBAR_GROUP_LABEL}</SidebarGroupLabel>
               <SidebarMenu>
                 {state.loading
@@ -311,7 +318,17 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                     ))
                   : SIDEBAR_ITEMS.map((item) => (
                       <SidebarMenuItem key={item.label}>
-                        <SidebarMenuButton icon={icons[item.icon]} isActive={item.active}>
+                        <SidebarMenuButton
+                          icon={state.leading === "icon" ? icons[item.icon] : undefined}
+                          dot={
+                            state.leading === "dot"
+                              ? item.active
+                                ? "filled"
+                                : "ring"
+                              : undefined
+                          }
+                          isActive={item.active}
+                        >
                           {item.label}
                         </SidebarMenuButton>
                         {state.badges && item.badge && (
@@ -326,7 +343,10 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                                 </SidebarMenuAction>
                               }
                             />
-                            <DropdownContent align="start" sideOffset={4}>
+                            {/* Fixed 240px = the workspace/user rows' trigger
+                                width (16rem sidebar minus the p-2 header), so
+                                all three menus read as one family. */}
+                            <DropdownContent className="min-w-0 w-[240px]" align="start" sideOffset={4}>
                               <MenuItem index={0} icon={icons.pencil} label="Rename" onSelect={() => {}} />
                               <MenuItem index={1} icon={icons.link} label="Share" onSelect={() => {}} />
                               <MenuItem index={2} icon={icons.x} label="Delete" onSelect={() => {}} />
@@ -335,41 +355,10 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                         )}
                       </SidebarMenuItem>
                     ))}
-                {!state.loading && state.subMenu && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      icon={FolderIcon}
-                      onClick={state.actions ? () => setProjectsOpen((v) => !v) : undefined}
-                      aria-expanded={state.actions ? projectsOpen : undefined}
-                    >
-                      Projects
-                      {state.actions && (
-                        <span className="ml-auto inline-flex">
-                          {createElement(icons["chevron-down"], {
-                            size: 14,
-                            strokeWidth: 1.5,
-                            className: `text-muted-foreground transition-transform duration-80 ${
-                              projectsOpen ? "" : "-rotate-90"
-                            }`,
-                          })}
-                        </span>
-                      )}
-                    </SidebarMenuButton>
-                    <SidebarMenuSub open={state.actions ? projectsOpen : true}>
-                      {SIDEBAR_PROJECTS.map((p) => (
-                        <SidebarMenuSubItem key={p}>
-                          <SidebarMenuSubButton href="#" onClick={(e) => e.preventDefault()}>
-                            {p}
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </SidebarMenuItem>
-                )}
               </SidebarMenu>
             </SidebarGroup>
             {!state.loading && state.subMenu && (
-              <SidebarGroup>
+              <SidebarGroup collapsible>
                 <SidebarGroupLabel>Teams</SidebarGroupLabel>
                 <SidebarMenu>
                   {TEAM_GROUPS.map((team) => (
@@ -420,7 +409,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                             height={20}
                             className="size-5 shrink-0 rounded-full"
                           />
-                          <span className="text-[13px] text-foreground">Micka Touillaud</span>
+                          <span className="min-w-0 truncate text-[13px] text-foreground">Micka Touillaud</span>
                           <span className="ml-auto inline-flex">
                             {createElement(ChevronsUpDown, {
                               size: 14,
@@ -510,6 +499,16 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           ]}
         />
       </PlayField>
+      <PlayField label="Leading">
+        <PlaySelect
+          value={state.leading}
+          onChange={(v) => set("leading", v as PlayState["leading"])}
+          options={[
+            { value: "icon", label: "Icon" },
+            { value: "dot", label: "Status dot" },
+          ]}
+        />
+      </PlayField>
       <Switch
         label="Badges"
         checked={state.badges}
@@ -548,7 +547,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
     // between fixed widths (never height/width "auto"), so it stays correct
     // under the /demo page's scaled card.
     preview: shell("h-[560px]"),
-    demoPreview: <div className="w-full max-w-[460px]">{shell("h-[280px]", true)}</div>,
+    demoPreview: <div className="w-full max-w-[460px]">{shell("h-[480px]", true)}</div>,
     controls,
     code: buildSidebarPlaygroundCode(state),
   });

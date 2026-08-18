@@ -129,8 +129,8 @@ export const SIDEBAR_ITEMS: readonly {
   { icon: "home", label: "Home", active: true },
   { icon: "inbox", label: "Inbox", badge: "12" },
   { icon: "calendar", label: "Calendar" },
-  { icon: "search", label: "Search" },
-  { icon: "settings", label: "Settings" },
+  { icon: "bell", label: "Notifications" },
+  { icon: "star", label: "Favorites" },
 ];
 
 export const SIDEBAR_PROJECTS = [

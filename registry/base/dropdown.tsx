@@ -478,14 +478,19 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
           className="z-50 outline-none"
         >
           <motion.div
-            initial={{ opacity: 0, y: -4, scaleY: 0.96 }}
+            // A popup opening upward grows from its bottom edge — the edge
+            // anchored to the trigger — so the offset and origin flip with
+            // `side`.
+            initial={{ opacity: 0, y: side === "top" ? 4 : -4, scaleY: 0.96 }}
             animate={
               open
                 ? { opacity: 1, y: 0, scaleY: 1 }
-                : { opacity: 0, y: -4, scaleY: 0.96 }
+                : { opacity: 0, y: side === "top" ? 4 : -4, scaleY: 0.96 }
             }
             transition={open ? spring.fast : spring.fast.exit}
-            style={{ transformOrigin: "top center" }}
+            style={{
+              transformOrigin: side === "top" ? "bottom center" : "top center",
+            }}
             // Base UI defers unmount while actionsRef is set; release it once
             // the exit spring has finished so the close animation fully plays.
             onAnimationComplete={() => {

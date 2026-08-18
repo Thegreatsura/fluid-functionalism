@@ -269,6 +269,7 @@ export {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupAction,
+  SidebarGroupActions,
   SidebarGroupContent,
   SIDEBAR_COOKIE_NAME,
   SIDEBAR_COOKIE_MAX_AGE,

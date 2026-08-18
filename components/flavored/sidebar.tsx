@@ -34,6 +34,7 @@ export {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupAction,
+  SidebarGroupActions,
   SidebarGroupContent,
   SIDEBAR_COOKIE_NAME,
 } from "@/registry/default/sidebar-core";

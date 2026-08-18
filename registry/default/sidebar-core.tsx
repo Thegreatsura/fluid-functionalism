@@ -5,9 +5,11 @@ import {
   useContext,
   useState,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useMemo,
   useRef,
+  useId,
   forwardRef,
   cloneElement,
   isValidElement,
@@ -806,15 +808,140 @@ SidebarSeparator.displayName = "SidebarSeparator";
 
 // ─── SidebarGroup family ─────────────────────────────────────────────────────
 
-const SidebarGroup = forwardRef<HTMLDivElement, SidebarSectionProps>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      data-sidebar="group"
-      className={cn("relative flex w-full min-w-0 flex-col p-2", className)}
-      {...props}
-    />
-  )
+// SSR-safe layout effect (client components still server-render in Next).
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+interface SidebarGroupContextValue {
+  open: boolean;
+  toggle: () => void;
+  contentId: string;
+  /** How many header action buttons overlay the label's right edge — the
+   *  collapsible label pads itself so its chevron clears them. */
+  actionsCount: number;
+}
+
+const SidebarGroupContext = createContext<SidebarGroupContextValue | null>(null);
+
+export interface SidebarGroupProps extends SidebarSectionProps {
+  /** Makes the group's SidebarGroupLabel a toggle that collapses everything
+   *  rendered after it — a group-level accordion. Uncontrolled by default;
+   *  pass `open`/`onOpenChange` to control it. */
+  collapsible?: boolean;
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>(
+  (
+    {
+      className,
+      collapsible = false,
+      open: openProp,
+      defaultOpen = true,
+      onOpenChange,
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+    const open = openProp ?? uncontrolledOpen;
+    const contentId = useId();
+    const toggle = useCallback(() => {
+      const next = !(openProp ?? uncontrolledOpen);
+      setUncontrolledOpen(next);
+      onOpenChange?.(next);
+    }, [openProp, uncontrolledOpen, onOpenChange]);
+    // Measured-height collapse: animate between 0 and the content's real
+    // offsetHeight — never to "auto", which framer measures wrong under a
+    // scaled ancestor.
+    const contentRef = useRef<HTMLDivElement>(null);
+    const [contentHeight, setContentHeight] = useState<number | null>(null);
+    useIsoLayoutEffect(() => {
+      if (!collapsible) return;
+      const el = contentRef.current;
+      if (!el || typeof ResizeObserver === "undefined") return;
+      const measure = () => setContentHeight(el.offsetHeight);
+      measure();
+      const ro = new ResizeObserver(measure);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }, [collapsible]);
+    const measured = contentHeight !== null;
+
+    // The label and any header actions stay put; everything else after the
+    // label rides in the collapse wrapper. If no SidebarGroupLabel child is
+    // found the group renders untouched.
+    const isHeaderAction = (k: ReactNode) =>
+      isValidElement(k) &&
+      (k.type === SidebarGroupAction || k.type === SidebarGroupActions);
+    let inner: ReactNode = children;
+    let actionsCount = 0;
+    if (collapsible) {
+      const kids = Children.toArray(children);
+      const labelIdx = kids.findIndex(
+        (k) => isValidElement(k) && k.type === SidebarGroupLabel
+      );
+      if (labelIdx !== -1) {
+        const tail = kids.slice(labelIdx + 1);
+        const headerActions = tail.filter(isHeaderAction);
+        const rest = tail.filter((k) => !isHeaderAction(k));
+        actionsCount = headerActions.reduce<number>(
+          (n, k) =>
+            n +
+            (isValidElement(k) && k.type === SidebarGroupActions
+              ? Children.count(
+                  (k.props as { children?: ReactNode }).children
+                )
+              : 1),
+          0
+        );
+        inner = (
+          <>
+            {kids.slice(0, labelIdx + 1)}
+            {headerActions}
+            <motion.div
+              id={contentId}
+              aria-hidden={open ? undefined : true}
+              className={cn("overflow-hidden", !measured && !open && "h-0")}
+              initial={false}
+              animate={
+                measured
+                  ? { height: open ? contentHeight : 0, opacity: open ? 1 : 0 }
+                  : { opacity: open ? 1 : 0 }
+              }
+              transition={open ? spring.moderate : spring.moderate.exit}
+            >
+              <div ref={contentRef} className="flex w-full min-w-0 flex-col">
+                {rest}
+              </div>
+            </motion.div>
+          </>
+        );
+      }
+    }
+
+    const ctx = useMemo(
+      () => ({ open, toggle, contentId, actionsCount }),
+      [open, toggle, contentId, actionsCount]
+    );
+
+    return (
+      <div
+        ref={ref}
+        data-sidebar="group"
+        data-state={collapsible ? (open ? "open" : "closed") : undefined}
+        className={cn("relative flex w-full min-w-0 flex-col p-2", className)}
+        {...props}
+      >
+        <SidebarGroupContext.Provider value={collapsible ? ctx : null}>
+          {inner}
+        </SidebarGroupContext.Provider>
+      </div>
+    );
+  }
 );
 SidebarGroup.displayName = "SidebarGroup";
 
@@ -826,7 +953,57 @@ export interface SidebarGroupLabelProps extends HTMLAttributes<HTMLDivElement> {
 const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
   ({ className, render, asChild, children, ...props }, ref) => {
     const sizeVariant = useSizeVariant();
+    const group = useContext(SidebarGroupContext);
+    const shape = useShape();
+    const ChevronDownIcon = useIcon("chevron-down");
     const { template, content } = resolveSlotTemplate(render, asChild, children);
+
+    // Inside a collapsible group the label becomes the toggle. Design
+    // treatment is unchanged — hover only raises the label's contrast and
+    // reveals a chevron (kept visible while collapsed as the reopen cue).
+    if (group) {
+      return slotElement(
+        template,
+        "button",
+        {
+          ref: ref as Ref<HTMLElement>,
+          type: template ? undefined : "button",
+          "data-sidebar": "group-label",
+          "aria-expanded": group.open,
+          "aria-controls": group.contentId,
+          onClick: group.toggle,
+          // Header actions overlay the label's right edge — pad past the
+          // cluster (24px per size-5 action + gap) so the chevron clears it.
+          style:
+            group.actionsCount > 0
+              ? { paddingRight: group.actionsCount * 24 + 4 }
+              : undefined,
+          className: cn(
+            "group/group-label flex h-8 w-full shrink-0 cursor-pointer select-none items-center gap-2 px-2 text-left text-muted-foreground/70 outline-none",
+            "transition-colors duration-80 hover:text-muted-foreground",
+            "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
+            shape.item,
+            sizeVariant === "compact" ? "text-[11px]" : "text-[12px]",
+            className
+          ),
+          ...props,
+        },
+        <>
+          <span className="min-w-0 flex-1 truncate">{content}</span>
+          <ChevronDownIcon
+            size={14}
+            strokeWidth={1.5}
+            className={cn(
+              "ml-auto shrink-0 transition-[opacity,transform] duration-80",
+              group.open
+                ? "opacity-0 group-hover/group-label:opacity-100 group-focus-visible/group-label:opacity-100"
+                : "-rotate-90 opacity-100"
+            )}
+          />
+        </>
+      );
+    }
+
     return slotElement(
       template,
       "div",
@@ -840,7 +1017,7 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
         ),
         ...props,
       },
-      content
+      <span className="min-w-0 flex-1 truncate">{content}</span>
     );
   }
 );
@@ -851,9 +1028,14 @@ export interface SidebarGroupActionProps extends HTMLAttributes<HTMLButtonElemen
   asChild?: boolean;
 }
 
+/** True while rendering inside a SidebarGroupActions cluster, where each
+ *  action sits in the flex row instead of positioning itself absolutely. */
+const GroupActionsContext = createContext(false);
+
 const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps>(
   ({ className, render, asChild, children, ...props }, ref) => {
     const shape = useShape();
+    const inCluster = useContext(GroupActionsContext);
     const { template, content } = resolveSlotTemplate(render, asChild, children);
     return slotElement(
       template,
@@ -863,7 +1045,9 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
         type: template ? undefined : "button",
         "data-sidebar": "group-action",
         className: cn(
-          "absolute right-3 top-3.5 flex size-5 items-center justify-center text-muted-foreground outline-none",
+          inCluster
+            ? "relative flex size-5 items-center justify-center text-muted-foreground outline-none"
+            : "absolute right-3 top-3.5 flex size-5 items-center justify-center text-muted-foreground outline-none",
           "hover:bg-hover hover:text-foreground transition-[color,background-color] duration-80",
           "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
           "[&_svg]:size-3.5 [&_svg]:shrink-0",
@@ -877,6 +1061,30 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
   }
 );
 SidebarGroupAction.displayName = "SidebarGroupAction";
+
+/** Header action cluster: 1–3 SidebarGroupActions laid out in a row over the
+ *  group label's right edge. Use instead of a lone SidebarGroupAction when a
+ *  section needs several controls. */
+export type SidebarGroupActionsProps = HTMLAttributes<HTMLDivElement>;
+
+const SidebarGroupActions = forwardRef<HTMLDivElement, SidebarGroupActionsProps>(
+  ({ className, children, ...props }, ref) => (
+    <div
+      ref={ref}
+      data-sidebar="group-actions"
+      className={cn(
+        "absolute right-3 top-2 z-10 flex h-8 items-center gap-1",
+        className
+      )}
+      {...props}
+    >
+      <GroupActionsContext.Provider value={true}>
+        {children}
+      </GroupActionsContext.Provider>
+    </div>
+  )
+);
+SidebarGroupActions.displayName = "SidebarGroupActions";
 
 const SidebarGroupContent = forwardRef<HTMLDivElement, SidebarSectionProps>(
   ({ className, ...props }, ref) => (
@@ -903,5 +1111,6 @@ export {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupAction,
+  SidebarGroupActions,
   SidebarGroupContent,
 };

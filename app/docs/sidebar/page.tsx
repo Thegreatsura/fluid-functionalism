@@ -15,6 +15,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupAction,
+  SidebarGroupActions,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuItem,
@@ -42,6 +43,7 @@ import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
 import { PlaygroundLayout } from "@/lib/docs/playground";
 import { SidebarPlayground } from "@/lib/docs/playgrounds/sidebar";
+import { WorkspaceMenuItems } from "@/lib/docs/workspace-demo";
 import {
   SIDEBAR_GROUP_LABEL,
   SIDEBAR_ITEMS,
@@ -127,17 +129,45 @@ const insetCode = `<Sidebar variant="inset">…</Sidebar>
 const groupsCode = `<SidebarContent>
   <SidebarGroup>
     <SidebarGroupLabel>Platform</SidebarGroupLabel>
-    <SidebarGroupAction aria-label="Add project" onClick={addProject}>
-      <PlusIcon />
-    </SidebarGroupAction>
+    {/* 1–3 header actions, clustered on the label row */}
+    <SidebarGroupActions>
+      <SidebarGroupAction aria-label="Add project" onClick={addProject}>
+        <PlusIcon />
+      </SidebarGroupAction>
+      <SidebarGroupAction aria-label="More options">
+        <MoreIcon />
+      </SidebarGroupAction>
+    </SidebarGroupActions>
     <SidebarGroupContent>
       <SidebarMenu>…</SidebarMenu>
     </SidebarGroupContent>
   </SidebarGroup>
   <SidebarSeparator />
-  <SidebarGroup>
+  {/* collapsible: the label becomes the group's accordion toggle —
+      hover raises its contrast and reveals a chevron */}
+  <SidebarGroup collapsible>
     <SidebarGroupLabel>Workspace</SidebarGroupLabel>
     <SidebarMenu>…</SidebarMenu>
+  </SidebarGroup>
+  <SidebarSeparator />
+  {/* thread-style rows: a status dot instead of an icon */}
+  <SidebarGroup collapsible>
+    <SidebarGroupLabel>fluid-functionalism</SidebarGroupLabel>
+    <SidebarGroupActions>
+      <SidebarGroupAction aria-label="New thread">
+        <PlusIcon />
+      </SidebarGroupAction>
+    </SidebarGroupActions>
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton dot="filled" isActive>
+          Sidebar component height in demo
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+      <SidebarMenuItem>
+        <SidebarMenuButton dot="ring">Sidebar component creation</SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
   </SidebarGroup>
 </SidebarContent>`;
 
@@ -149,7 +179,7 @@ const menuFeaturesCode = `const [projectsOpen, setProjectsOpen] = useState(true)
     <SidebarMenuBadge>12</SidebarMenuBadge>
   </SidebarMenuItem>
   <SidebarMenuItem>
-    <SidebarMenuButton icon={SettingsIcon}>Settings</SidebarMenuButton>
+    <SidebarMenuButton icon={ClockIcon}>Recent</SidebarMenuButton>
     {/* showOnHover reveals the action on row hover or focus; compose a
         Dropdown via render={<DropdownTrigger/>} for a real menu */}
     <SidebarMenuAction showOnHover aria-label="More options">
@@ -235,6 +265,9 @@ const menuButtonProps: PropDef[] = [
 
 const partsProps: PropDef[] = [
   { name: "SidebarContent viewportClassName", type: "string", description: "Extra classes for the desktop scroll viewport (a ScrollArea with the scroll-fade edge treatment built in)." },
+  { name: "SidebarGroup collapsible", type: "boolean", default: "false", description: "The group's label becomes an accordion toggle for everything after it — hover raises the label's contrast and reveals a chevron. Uncontrolled via defaultOpen; controlled via open / onOpenChange." },
+  { name: "SidebarGroupActions", type: "—", description: "Cluster of 1–3 SidebarGroupAction buttons on the label row's right edge. A collapsible label keeps its chevron clear of the cluster automatically." },
+  { name: "SidebarMenuButton dot", type: '"filled" | "ring"', description: "Status dot in the icon column for thread-style rows — filled reads active/unread, ring reads idle. Ignored when icon is set." },
   { name: "SidebarMenu size", type: '"default" | "compact"', description: "Pins the menu's rows to one step of the size ladder; omitted, rows follow the surrounding SizeProvider." },
   { name: "SidebarMenuSub open", type: "boolean", default: "true", description: "Built-in measured-height collapse — wire to state alongside a toggling row for a collapsible tree." },
   { name: "SidebarMenuSubButton size", type: '"sm" | "md"', default: '"md"', description: "Sub-row height (24 / 28px) — text stays at the parent rows' size. Renders an <a> by default; also accepts icon, render / asChild, and isActive." },
@@ -267,7 +300,6 @@ function SidebarShellFrame({
 
 function DemoHeaderRow() {
   const ChevronDown = useIcon("chevron-down");
-  const icons = useIcons();
   const shape = useShape();
   return (
     <SidebarMenu aria-label="Workspace">
@@ -285,7 +317,7 @@ function DemoHeaderRow() {
                   A
                 </span>
                 <span
-                  className="text-[13px] text-foreground"
+                  className="min-w-0 truncate text-[13px] text-foreground"
                   style={{ fontVariationSettings: fontWeights.semibold }}
                 >
                   Acme Inc
@@ -297,10 +329,7 @@ function DemoHeaderRow() {
             }
           />
           <DropdownContent className="min-w-0 w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]" align="start" sideOffset={4} checkedIndex={0}>
-            <MenuItem index={0} icon={icons["square-library"]} label="Acme Inc" checked onSelect={() => {}} />
-            <MenuItem index={1} icon={icons.rocket} label="Fluid Labs" onSelect={() => {}} />
-            <MenuItem index={2} icon={icons.user} label="Personal" onSelect={() => {}} />
-            <MenuItem index={3} icon={icons.plus} label="New workspace" onSelect={() => {}} />
+            <WorkspaceMenuItems />
           </DropdownContent>
         </DropdownMenu>
       </SidebarMenuItem>
@@ -371,7 +400,7 @@ function DemoFooterUser() {
                   height={20}
                   className="size-5 shrink-0 rounded-full"
                 />
-                <span className="text-[13px] text-foreground">Micka Touillaud</span>
+                <span className="min-w-0 truncate text-[13px] text-foreground">Micka Touillaud</span>
                 <span className="ml-auto inline-flex">
                   <ChevronsUpDown size={14} strokeWidth={1.5} className="text-muted-foreground" />
                 </span>
@@ -509,17 +538,24 @@ function CollapsePreview() {
 
 function GroupsPreview() {
   const PlusIcon = useIcon("plus");
+  const MoreIcon = useIcon("more-horizontal");
   const icons = useIcons();
   return (
-    <SidebarShellFrame height="h-[420px]">
+    <SidebarShellFrame height="h-[520px]">
       <SidebarProvider className="h-full min-h-0" persist={false}>
         <Sidebar className="h-full">
           <SidebarContent>
             <SidebarGroup>
               <SidebarGroupLabel>{SIDEBAR_GROUP_LABEL}</SidebarGroupLabel>
-              <SidebarGroupAction aria-label="Add project">
-                <PlusIcon />
-              </SidebarGroupAction>
+              {/* Cluster of 1–3 header actions on the label row. */}
+              <SidebarGroupActions>
+                <SidebarGroupAction aria-label="Add project">
+                  <PlusIcon />
+                </SidebarGroupAction>
+                <SidebarGroupAction aria-label="More options">
+                  <MoreIcon />
+                </SidebarGroupAction>
+              </SidebarGroupActions>
               <SidebarGroupContent>
                 <SidebarMenu>
                   {SIDEBAR_ITEMS.slice(0, 3).map((item) => (
@@ -533,7 +569,9 @@ function GroupsPreview() {
               </SidebarGroupContent>
             </SidebarGroup>
             <SidebarSeparator />
-            <SidebarGroup>
+            {/* Collapsible: the label itself is the toggle — hover raises its
+                contrast and reveals the chevron. */}
+            <SidebarGroup collapsible>
               <SidebarGroupLabel>Workspace</SidebarGroupLabel>
               <SidebarMenu>
                 {SIDEBAR_ITEMS.slice(3).map((item) => (
@@ -541,6 +579,30 @@ function GroupsPreview() {
                     <SidebarMenuButton icon={icons[item.icon]}>{item.label}</SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+              </SidebarMenu>
+            </SidebarGroup>
+            <SidebarSeparator />
+            {/* Thread-style rows: a status dot instead of an icon — filled
+                reads active, ring reads idle. Collapsible label + one action. */}
+            <SidebarGroup collapsible>
+              <SidebarGroupLabel>fluid-functionalism</SidebarGroupLabel>
+              <SidebarGroupActions>
+                <SidebarGroupAction aria-label="New thread">
+                  <PlusIcon />
+                </SidebarGroupAction>
+              </SidebarGroupActions>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton dot="filled" isActive>
+                    Sidebar component height in demo
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton dot="ring">Sidebar component creation</SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton dot="ring">Dark mode token audit</SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroup>
           </SidebarContent>
@@ -574,7 +636,7 @@ function MenuFeaturesPreview() {
                   <SidebarMenuBadge>12</SidebarMenuBadge>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton icon={icons.settings}>Settings</SidebarMenuButton>
+                  <SidebarMenuButton icon={icons.clock}>Recent</SidebarMenuButton>
                   <DropdownMenu>
                     <DropdownTrigger
                       render={
@@ -583,7 +645,9 @@ function MenuFeaturesPreview() {
                         </SidebarMenuAction>
                       }
                     />
-                    <DropdownContent align="start" sideOffset={4}>
+                    {/* Fixed 240px = the header/footer rows' trigger width, so
+                        every sidebar menu reads as one family. */}
+                    <DropdownContent className="min-w-0 w-[240px]" align="start" sideOffset={4}>
                       <MenuItem index={0} icon={icons.pencil} label="Rename" onSelect={() => {}} />
                       <MenuItem index={1} icon={icons.link} label="Share" onSelect={() => {}} />
                       <MenuItem index={2} icon={icons.x} label="Delete" onSelect={() => {}} />
@@ -767,19 +831,27 @@ export default function SidebarDoc() {
       </DocSection>
 
       <DocSection title="Floating">
+        <p className="text-body text-muted-foreground">
+          Elevate the sidebar. The rail floats as its own card over the canvas —
+          use it when navigation should read as a distinct layer.
+        </p>
         <ComponentPreview code={floatingCode} padding="none" minHeightClass="h-[360px]">
           <DemoShell height="h-[360px]" variant="floating" />
         </ComponentPreview>
       </DocSection>
 
       <DocSection title="Inset">
+        <p className="text-body text-muted-foreground">
+          Elevate the content. The main region becomes the card while the sidebar
+          recedes into the canvas — use it when the content is the star.
+        </p>
         <ComponentPreview code={insetCode} padding="none" minHeightClass="h-[360px]">
           <DemoShell height="h-[360px]" variant="inset" />
         </ComponentPreview>
       </DocSection>
 
       <DocSection title="Groups">
-        <ComponentPreview code={groupsCode} padding="none" minHeightClass="h-[420px]">
+        <ComponentPreview code={groupsCode} padding="none" minHeightClass="h-[520px]">
           <GroupsPreview />
         </ComponentPreview>
       </DocSection>

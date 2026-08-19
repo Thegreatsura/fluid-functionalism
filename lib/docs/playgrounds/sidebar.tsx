@@ -32,6 +32,7 @@ import { useShape } from "@/lib/shape-context";
 import { fontWeights } from "@/lib/font-weight";
 import { Switch } from "@/registry/radix/switch";
 import { Button } from "@/registry/radix/button";
+import { Tooltip } from "@/registry/radix/tooltip";
 import {
   DropdownMenu,
   DropdownTrigger,
@@ -67,8 +68,17 @@ interface PlayState {
   /** Collapsed-peek overlay: reveal the collapsed sidebar on edge hover or
    *  click without pinning it. */
   peek: "none" | "hover" | "click";
-  /** Search placement: full bar below the header, or an inline icon button. */
-  search: "below" | "inline";
+  /** Header brand row: the workspace switcher, or a plain logo lockup. */
+  brand: "workspace" | "logo";
+  /** How the header's search and actions relate to the brand row: stacked
+   *  underneath as full-width rows, or sharing its line as icon buttons. */
+  headerStack: "vertical" | "horizontal";
+  /** Header action rows / icon buttons (New, Invite). */
+  headerActions: 0 | 1 | 2;
+  /** Same stacking rule for the footer's actions against the user row. */
+  footerStack: "vertical" | "horizontal";
+  /** Footer action rows / icon buttons (Settings, Theme). */
+  footerActions: 0 | 1 | 2;
   /** Leading treatment for the Platform rows: icon column, or thread-style
    *  status dot (filled = active, ring = idle). */
   leading: "icon" | "dot";
@@ -89,7 +99,11 @@ const DEFAULT_STATE: PlayState = {
   collapsible: "offcanvas",
   open: true,
   peek: "none",
-  search: "inline",
+  brand: "workspace",
+  headerStack: "horizontal",
+  headerActions: 2,
+  footerStack: "horizontal",
+  footerActions: 2,
   leading: "dot",
   groupActions: 1,
   collapsibleGroups: true,
@@ -99,6 +113,16 @@ const DEFAULT_STATE: PlayState = {
   footerUser: true,
   loading: false,
 };
+
+/** "more-horizontal" → "MoreHorizontalIcon", for the generated snippet. */
+function iconTag(name: string): string {
+  return (
+    name
+      .split("-")
+      .map((w) => w[0].toUpperCase() + w.slice(1))
+      .join("") + "Icon"
+  );
+}
 
 export function buildSidebarPlaygroundCode(o: PlayState): string {
   const lines: string[] = [];
@@ -134,7 +158,41 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
     .filter(Boolean)
     .join(" ");
   lines.push(`  <Sidebar${sidebarProps ? ` ${sidebarProps}` : ""}>`);
-  lines.push(`    <SidebarHeader>{/* workspace row */}</SidebarHeader>`);
+  const headerActions = HEADER_ACTION_SET.slice(0, o.headerActions);
+  const brandComment =
+    o.brand === "logo" ? `{/* logo lockup */}` : `{/* workspace switcher */}`;
+  lines.push(`    <SidebarHeader>`);
+  if (o.headerStack === "horizontal") {
+    lines.push(`      {/* horizontal: search + actions share the brand line */}`);
+    lines.push(`      <div className="flex items-center gap-1">`);
+    lines.push(`        ${brandComment}`);
+    lines.push(`        <Button variant="ghost" size="icon-compact" aria-label="Search">`);
+    lines.push(`          <SearchIcon />`);
+    lines.push(`        </Button>`);
+    for (const action of headerActions) {
+      lines.push(`        <Button variant="ghost" size="icon-compact" aria-label="${action.label}">`);
+      lines.push(`          <${iconTag(action.icon)} />`);
+      lines.push(`        </Button>`);
+    }
+    lines.push(`      </div>`);
+  } else {
+    lines.push(`      ${brandComment}`);
+    lines.push(`      <SidebarInput placeholder="Search…" />`);
+    if (headerActions.length > 0) {
+      lines.push(`      <SidebarMenu>`);
+      for (const action of headerActions) {
+        lines.push(`        <SidebarMenuItem>`);
+        lines.push(`          <SidebarMenuButton icon={${iconTag(action.icon)}}>`);
+        lines.push(`            ${action.label}`);
+        lines.push(`            {/* shortcut chip, revealed on row hover */}`);
+        lines.push(`            <kbd>${action.shortcut}</kbd>`);
+        lines.push(`          </SidebarMenuButton>`);
+        lines.push(`        </SidebarMenuItem>`);
+      }
+      lines.push(`      </SidebarMenu>`);
+    }
+  }
+  lines.push(`    </SidebarHeader>`);
   lines.push(`    <SidebarContent>`);
   lines.push(`      <SidebarGroup${o.collapsibleGroups ? " collapsible" : ""}>`);
   lines.push(
@@ -145,7 +203,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
     lines.push(`        <SidebarGroupActions>`);
     for (const action of GROUP_ACTION_SET.slice(0, o.groupActions)) {
       lines.push(`          <SidebarGroupAction aria-label="${action.label}">`);
-      lines.push(`            <${action.icon.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join("")}Icon />`);
+      lines.push(`            <${iconTag(action.icon)} />`);
       lines.push(`          </SidebarGroupAction>`);
     }
     lines.push(`        </SidebarGroupActions>`);
@@ -227,7 +285,36 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   }
   lines.push(`    </SidebarContent>`);
   if (o.footerUser) {
-    lines.push(`    <SidebarFooter>{/* user row */}</SidebarFooter>`);
+    const footerActions = FOOTER_ACTION_SET.slice(0, o.footerActions);
+    lines.push(`    <SidebarFooter>`);
+    if (o.footerStack === "horizontal") {
+      if (footerActions.length > 0) {
+        lines.push(`      {/* horizontal: actions share the user row's line */}`);
+        lines.push(`      <div className="flex items-center gap-1">`);
+        lines.push(`        {/* user row */}`);
+        for (const action of footerActions) {
+          lines.push(`        <Button variant="ghost" size="icon-compact" aria-label="${action.label}">`);
+          lines.push(`          <${iconTag(action.icon)} />`);
+          lines.push(`        </Button>`);
+        }
+        lines.push(`      </div>`);
+      } else {
+        lines.push(`      {/* user row */}`);
+      }
+    } else {
+      if (footerActions.length > 0) {
+        lines.push(`      {/* vertical: actions stack above the user row */}`);
+        lines.push(`      <SidebarMenu>`);
+        for (const action of footerActions) {
+          lines.push(`        <SidebarMenuItem>`);
+          lines.push(`          <SidebarMenuButton icon={${iconTag(action.icon)}}>${action.label}</SidebarMenuButton>`);
+          lines.push(`        </SidebarMenuItem>`);
+        }
+        lines.push(`      </SidebarMenu>`);
+      }
+      lines.push(`      {/* user row */}`);
+    }
+    lines.push(`    </SidebarFooter>`);
   }
   lines.push(`  </Sidebar>`);
   lines.push(`  <SidebarInset>`);
@@ -246,6 +333,21 @@ const GROUP_ACTION_SET = [
   { icon: "plus", label: "Add item" },
   { icon: "sliders-horizontal", label: "Section settings" },
   { icon: "more-horizontal", label: "More options" },
+] as const;
+
+// Header actions, sliced by the "Header actions" control. Vertical stacking
+// renders them as labelled rows (shortcut chip revealed on hover);
+// horizontal stacking collapses them to icon buttons beside the brand.
+const HEADER_ACTION_SET = [
+  { icon: "plus", label: "New", shortcut: "⇧⌘O" },
+  { icon: "users", label: "Invite", shortcut: "⇧⌘I" },
+] as const;
+
+// Footer actions, sliced by the "Footer actions" control — same two
+// treatments, driven by the footer's own stacking rule.
+const FOOTER_ACTION_SET = [
+  { icon: "settings", label: "Settings" },
+  { icon: "moon", label: "Theme" },
 ] as const;
 
 // Second group: four collapsible sub-menu examples under their own title.
@@ -296,7 +398,11 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       collapsible: pick(["offcanvas", "offcanvas", "none"] as const),
       open: true,
       peek: pick(["none", "none", "hover", "click"] as const),
-      search: pick(["below", "below", "inline"] as const),
+      brand: pick(["workspace", "workspace", "logo"] as const),
+      headerStack: pick(["vertical", "vertical", "horizontal"] as const),
+      headerActions: pick([0, 1, 2, 2] as const),
+      footerStack: pick(["vertical", "horizontal", "horizontal"] as const),
+      footerActions: pick([0, 1, 2, 2] as const),
       leading: pick(["icon", "icon", "dot"] as const),
       groupActions: pick([0, 0, 1, 2, 3] as const),
       collapsibleGroups: Math.random() > 0.25,
@@ -355,14 +461,21 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       active: undefined,
     }));
 
+  const headerHorizontal = state.headerStack === "horizontal";
+  const footerHorizontal = state.footerStack === "horizontal";
+  const headerActionSet = HEADER_ACTION_SET.slice(0, state.headerActions);
+  const footerActionSet = FOOTER_ACTION_SET.slice(0, state.footerActions);
+
   // Shared header cluster for both groups.
   const groupActionCluster =
     state.groupActions > 0 ? (
       <SidebarGroupActions>
         {GROUP_ACTION_SET.slice(0, state.groupActions).map((a) => (
-          <SidebarGroupAction key={a.icon} aria-label={a.label}>
-            {createElement(icons[a.icon], {})}
-          </SidebarGroupAction>
+          <Tooltip key={a.icon} content={a.label} side="top">
+            <SidebarGroupAction aria-label={a.label}>
+              {createElement(icons[a.icon], {})}
+            </SidebarGroupAction>
+          </Tooltip>
         ))}
       </SidebarGroupActions>
     ) : null;
@@ -388,65 +501,127 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           className="h-full"
         >
           <SidebarHeader>
-            <div className={state.search === "inline" ? "flex items-center gap-1" : "contents"}>
-            <div className={state.search === "inline" ? "min-w-0 flex-1" : "contents"}>
-            <SidebarMenu aria-label="Workspace">
-              <SidebarMenuItem>
-                <DropdownMenu>
-                  <DropdownTrigger
-                    render={
-                      <SidebarMenuButton aria-label="Switch workspace">
-                        <span
-                          className={`flex size-5 shrink-0 items-center justify-center bg-foreground text-[10px] text-background ${
-                            shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
-                          }`}
-                          style={{ fontVariationSettings: fontWeights.semibold }}
-                        >
-                          A
-                        </span>
-                        <span
-                          className="min-w-0 truncate text-[13px] text-foreground"
-                          style={{ fontVariationSettings: fontWeights.semibold }}
-                        >
-                          Acme Inc
-                        </span>
-                        <span className="ml-auto inline-flex">
-                          {createElement(icons["chevron-down"], {
-                            size: 14,
-                            strokeWidth: 1.5,
-                            className: "text-muted-foreground",
-                          })}
-                        </span>
-                      </SidebarMenuButton>
-                    }
-                  />
-                  <DropdownContent className="min-w-0 w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]" align="start" sideOffset={4} checkedIndex={0}>
-                    <WorkspaceMenuItems />
-                  </DropdownContent>
-                </DropdownMenu>
-              </SidebarMenuItem>
-            </SidebarMenu>
+            {/* Stacking rule: vertical keeps the brand row on its own line
+                with search and actions stacked beneath as full-width rows;
+                horizontal collapses them to icon buttons sharing its line. */}
+            <div className={headerHorizontal ? "flex items-center gap-1" : "contents"}>
+              <div className={headerHorizontal ? "min-w-0 flex-1" : "contents"}>
+                {state.brand === "logo" ? (
+                  // Logo lockup: not interactive, so it renders OUTSIDE
+                  // SidebarMenu — a menu row would track the traveling hover
+                  // background and light up like a control.
+                  <div className="flex h-8 items-center gap-2 px-2">
+                    <span
+                      className={`flex size-5 shrink-0 items-center justify-center bg-foreground text-[10px] text-background ${
+                        shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
+                      }`}
+                      style={{ fontVariationSettings: fontWeights.semibold }}
+                    >
+                      A
+                    </span>
+                    <span
+                      className="min-w-0 truncate text-[13px] text-foreground"
+                      style={{ fontVariationSettings: fontWeights.semibold }}
+                    >
+                      Acme Inc
+                    </span>
+                  </div>
+                ) : (
+                  <SidebarMenu aria-label="Workspace">
+                    <SidebarMenuItem>
+                      <DropdownMenu>
+                        <DropdownTrigger
+                          render={
+                            <SidebarMenuButton aria-label="Switch workspace">
+                              <span
+                                className={`flex size-5 shrink-0 items-center justify-center bg-foreground text-[10px] text-background ${
+                                  shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
+                                }`}
+                                style={{ fontVariationSettings: fontWeights.semibold }}
+                              >
+                                A
+                              </span>
+                              <span
+                                className="min-w-0 truncate text-[13px] text-foreground"
+                                style={{ fontVariationSettings: fontWeights.semibold }}
+                              >
+                                Acme Inc
+                              </span>
+                              <span className="ml-auto inline-flex">
+                                {createElement(icons["chevron-down"], {
+                                  size: 14,
+                                  strokeWidth: 1.5,
+                                  className: "text-muted-foreground",
+                                })}
+                              </span>
+                            </SidebarMenuButton>
+                          }
+                        />
+                        <DropdownContent className="min-w-0 w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]" align="start" sideOffset={4} checkedIndex={0}>
+                          <WorkspaceMenuItems />
+                        </DropdownContent>
+                      </DropdownMenu>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                )}
+              </div>
+              {headerHorizontal && (
+                <>
+                  <Tooltip content="Search" side="bottom">
+                    <Button
+                      variant="ghost"
+                      size="icon-compact"
+                      aria-label="Search"
+                      className="shrink-0"
+                    >
+                      {createElement(icons.search, {})}
+                    </Button>
+                  </Tooltip>
+                  {headerActionSet.map((a) => (
+                    <Tooltip key={a.icon} content={a.label} side="bottom">
+                      <Button
+                        variant="ghost"
+                        size="icon-compact"
+                        aria-label={a.label}
+                        className="shrink-0"
+                      >
+                        {createElement(icons[a.icon], {})}
+                      </Button>
+                    </Tooltip>
+                  ))}
+                </>
+              )}
             </div>
-            {state.search === "inline" && (
-              <Button
-                variant="ghost"
-                size="icon-compact"
-                aria-label="Search"
-                className="shrink-0"
-              >
-                {createElement(icons.search, {})}
-              </Button>
-            )}
-            </div>
-            {state.search === "below" && (
-              <div className="relative">
-                {createElement(icons.search, {
-                  size: 14,
-                  strokeWidth: 1.5,
-                  className:
-                    "pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground",
-                })}
-                <SidebarInput placeholder="Search…" aria-label="Search" className="pl-8" />
+            {!headerHorizontal && (
+              // Search and the action rows are ONE block: the header's gap-2
+              // separates it from the brand row, while inside it the search
+              // field reads as the list's first row (menu row rhythm).
+              <div className="flex flex-col gap-0.5">
+                <div className="relative">
+                  {createElement(icons.search, {
+                    size: 14,
+                    strokeWidth: 1.5,
+                    className:
+                      "pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground",
+                  })}
+                  <SidebarInput placeholder="Search…" aria-label="Search" className="pl-8" />
+                </div>
+                {headerActionSet.length > 0 && (
+                  // The shortcut chip is hover-revealed, so the label owns
+                  // the row at rest.
+                  <SidebarMenu aria-label="Actions">
+                    {headerActionSet.map((a) => (
+                      <SidebarMenuItem key={a.icon}>
+                        <SidebarMenuButton icon={icons[a.icon]}>
+                          {a.label}
+                          <span className="ml-auto inline-flex opacity-0 transition-opacity duration-80 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100">
+                            <kbd className="font-sans text-[11px] text-muted-foreground">{a.shortcut}</kbd>
+                          </span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                )}
               </div>
             )}
           </SidebarHeader>
@@ -544,38 +719,68 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           </SidebarContent>
           {state.footerUser && (
             <SidebarFooter>
-              <SidebarMenu aria-label="User">
-                <SidebarMenuItem>
-                  <DropdownMenu>
-                    <DropdownTrigger
-                      render={
-                        <SidebarMenuButton aria-label="Open user menu">
-                          <Image
-                            src="/micka.png"
-                            alt=""
-                            width={20}
-                            height={20}
-                            className="size-5 shrink-0 rounded-full"
-                          />
-                          <span className="min-w-0 truncate text-[13px] text-foreground">Micka Touillaud</span>
-                          <span className="ml-auto inline-flex">
-                            {createElement(ChevronsUpDown, {
-                              size: 14,
-                              strokeWidth: 1.5,
-                              className: "text-muted-foreground",
-                            })}
-                          </span>
-                        </SidebarMenuButton>
-                      }
-                    />
-                    <DropdownContent className="min-w-0 w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]" side="top" align="start" sideOffset={6}>
-                      <MenuItem index={0} icon={icons.user} label="Profile" onSelect={() => {}} />
-                      <MenuItem index={1} icon={icons.settings} label="Settings" onSelect={() => {}} />
-                      <MenuItem index={2} icon={icons["arrow-left"]} label="Log out" onSelect={() => {}} />
-                    </DropdownContent>
-                  </DropdownMenu>
-                </SidebarMenuItem>
-              </SidebarMenu>
+              {/* Vertical stacking puts the actions above the user row, so
+                  identity stays anchored to the sidebar's outer edge —
+                  mirroring the brand row at the top. */}
+              {!footerHorizontal && footerActionSet.length > 0 && (
+                <SidebarMenu aria-label="Footer actions">
+                  {footerActionSet.map((a) => (
+                    <SidebarMenuItem key={a.icon}>
+                      <SidebarMenuButton icon={icons[a.icon]}>{a.label}</SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              )}
+              <div className={footerHorizontal ? "flex items-center gap-1" : "contents"}>
+                <SidebarMenu
+                  aria-label="User"
+                  className={footerHorizontal ? "min-w-0 flex-1" : undefined}
+                >
+                  <SidebarMenuItem>
+                    <DropdownMenu>
+                      <DropdownTrigger
+                        render={
+                          <SidebarMenuButton aria-label="Open user menu">
+                            <Image
+                              src="/micka.png"
+                              alt=""
+                              width={20}
+                              height={20}
+                              className="size-5 shrink-0 rounded-full"
+                            />
+                            <span className="min-w-0 truncate text-[13px] text-foreground">Micka Touillaud</span>
+                            <span className="ml-auto inline-flex">
+                              {createElement(ChevronsUpDown, {
+                                size: 14,
+                                strokeWidth: 1.5,
+                                className: "text-muted-foreground",
+                              })}
+                            </span>
+                          </SidebarMenuButton>
+                        }
+                      />
+                      <DropdownContent className="min-w-0 w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]" side="top" align="start" sideOffset={6}>
+                        <MenuItem index={0} icon={icons.user} label="Profile" onSelect={() => {}} />
+                        <MenuItem index={1} icon={icons.settings} label="Settings" onSelect={() => {}} />
+                        <MenuItem index={2} icon={icons["arrow-left"]} label="Log out" onSelect={() => {}} />
+                      </DropdownContent>
+                    </DropdownMenu>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+                {footerHorizontal &&
+                  footerActionSet.map((a) => (
+                    <Tooltip key={a.icon} content={a.label} side="top">
+                      <Button
+                        variant="ghost"
+                        size="icon-compact"
+                        aria-label={a.label}
+                        className="shrink-0"
+                      >
+                        {createElement(icons[a.icon], {})}
+                      </Button>
+                    </Tooltip>
+                  ))}
+              </div>
             </SidebarFooter>
           )}
         </Sidebar>
@@ -644,13 +849,34 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       />
       <PlayDivider />
       <PlaySection label="Header" />
-      <PlayField label="Search">
+      <PlayField label="Brand">
         <PlaySelect
-          value={state.search}
-          onChange={(v) => set("search", v as PlayState["search"])}
+          value={state.brand}
+          onChange={(v) => set("brand", v as PlayState["brand"])}
           options={[
-            { value: "below", label: "Below" },
-            { value: "inline", label: "Inline" },
+            { value: "workspace", label: "Workspace" },
+            { value: "logo", label: "Logo" },
+          ]}
+        />
+      </PlayField>
+      <PlayField label="Stacking">
+        <PlaySelect
+          value={state.headerStack}
+          onChange={(v) => set("headerStack", v as PlayState["headerStack"])}
+          options={[
+            { value: "vertical", label: "Vertical" },
+            { value: "horizontal", label: "Horizontal" },
+          ]}
+        />
+      </PlayField>
+      <PlayField label="Header actions">
+        <PlaySelect
+          value={String(state.headerActions)}
+          onChange={(v) => set("headerActions", Number(v) as PlayState["headerActions"])}
+          options={[
+            { value: "0", label: "None" },
+            { value: "1", label: "One" },
+            { value: "2", label: "Two" },
           ]}
         />
       </PlayField>
@@ -707,6 +933,27 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       />
       <PlayDivider />
       <PlaySection label="Footer" />
+      <PlayField label="Stacking">
+        <PlaySelect
+          value={state.footerStack}
+          onChange={(v) => set("footerStack", v as PlayState["footerStack"])}
+          options={[
+            { value: "vertical", label: "Vertical" },
+            { value: "horizontal", label: "Horizontal" },
+          ]}
+        />
+      </PlayField>
+      <PlayField label="Footer actions">
+        <PlaySelect
+          value={String(state.footerActions)}
+          onChange={(v) => set("footerActions", Number(v) as PlayState["footerActions"])}
+          options={[
+            { value: "0", label: "None" },
+            { value: "1", label: "One" },
+            { value: "2", label: "Two" },
+          ]}
+        />
+      </PlayField>
       <Switch
         label="Footer user"
         checked={state.footerUser}
@@ -720,7 +967,9 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
     // Doc-page preview and /demo card share one state; the collapse animates
     // between fixed widths (never height/width "auto"), so it stays correct
     // under the /demo page's scaled card.
-    preview: shell("h-[560px]"),
+    // Fills the ComponentPreview stage edge to edge (the stage sets the
+    // height; the shell stretches into it).
+    preview: shell("h-full self-stretch"),
     demoPreview: <div className="w-full max-w-[460px]">{shell("h-[480px]", true)}</div>,
     controls,
     code: buildSidebarPlaygroundCode(state),

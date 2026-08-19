@@ -227,48 +227,62 @@ function CustomTrigger() {
 }`;
 
 // ── Props tables ─────────────────────────────────────────
+// Grouped the way the sidebar is built — shell, sections, rows — so a prop
+// is where you'd look for the part it belongs to.
 
 const providerProps: PropDef[] = [
-  { name: "defaultOpen", type: "boolean", default: "true", description: "Uncontrolled initial open state. Read the sidebar_state cookie in a server layout to restore the last visit." },
   { name: "open", type: "boolean", description: "Controlled open state — pair with onOpenChange." },
-  { name: "onOpenChange", type: "(open: boolean) => void", description: "Called when the trigger, rail, or shortcut wants to change the open state." },
-  { name: "persist", type: "boolean", default: "true", description: "Write the desktop open state to the sidebar_state cookie (7 days). Mobile sheet state never persists." },
-  { name: "shortcut", type: "string | null", default: '"[" left · "]" right', description: "Bare-key toggle shortcut, side-aware by default; null disables it. Focus-scoped across providers: the innermost one containing focus answers, else the app-level (last-mounted) one." },
-  { name: "mobileBreakpoint", type: "number", default: "768", description: "Viewport width (px) below which the sidebar renders as a modal sheet." },
-  { name: "peek", type: '"hover" | "click" | "none"', default: '"none"', description: "While collapsed, an edge strip reveals the sidebar as a floating overlay card — on hover (with intent delay) or on click. Escape or an outside press dismisses; peeking never pins the sidebar or writes the cookie." },
-  { name: "width", type: "string", default: '"16rem"', description: "Expanded rail width. Also published as --sidebar-width." },
-  { name: "widthMobile", type: "string", default: '"18rem"', description: "Sheet width on mobile. Also published as --sidebar-width-mobile." },
+  { name: "onOpenChange", type: "(open: boolean) => void", description: "Fires when the trigger, rail, or shortcut wants to toggle." },
+  { name: "defaultOpen", type: "boolean", default: "true", description: "Uncontrolled initial state. Read the sidebar_state cookie in a server layout to restore the last visit." },
+  { name: "persist", type: "boolean", default: "true", description: "Write the desktop state to the sidebar_state cookie (7 days). Mobile sheet state never persists." },
+  { name: "peek", type: '"none" | "hover" | "click"', default: '"none"', description: "What the collapsed edge does: an edge strip reveals the sidebar as a floating overlay, on hover or on click. Escape or an outside press dismisses; peeking never pins it or writes the cookie." },
+  { name: "shortcut", type: "string | null", default: '"[" left · "]" right', description: "Bare-key toggle, side-aware; null disables. Focus-scoped: the innermost provider containing focus answers." },
+  { name: "mobileBreakpoint", type: "number", default: "768", description: "Width (px) below which the sidebar becomes a modal sheet." },
+  { name: "width / widthMobile", type: "string", default: '"16rem" / "18rem"', description: "Rail and sheet widths, also published as --sidebar-width and --sidebar-width-mobile." },
 ];
 
 const sidebarProps: PropDef[] = [
   { name: "variant", type: '"sidebar" | "floating" | "inset"', default: '"sidebar"', description: "Transparent rail, elevated floating card, or the inset pairing where SidebarInset becomes the card." },
   { name: "collapsible", type: '"offcanvas" | "none"', default: '"offcanvas"', description: "Offcanvas slides the rail away; none renders a static, always-open column. (The icon-rail mode is intentionally not supported.)" },
-  { name: "bordered", type: "boolean", default: "true", description: "The sidebar variant's inner-edge border. Set false for a borderless rail (the rail handle's hover hairline still shows)." },
+  { name: "rail", type: "boolean", default: "true", description: "The built-in resize/collapse handle. false hides it and disables drag-resize; the trigger and shortcut still toggle." },
+  { name: "bordered", type: "boolean", default: "true", description: "The sidebar variant's inner-edge border." },
 ];
 
+/** Sections — SidebarGroup and its label row. */
+const sectionProps: PropDef[] = [
+  { name: "SidebarGroup collapsible", type: "boolean", default: "false", description: "Turns the group's label into an accordion toggle for everything after it. Hover raises the label's contrast and reveals a chevron." },
+  { name: "SidebarGroup open / defaultOpen / onOpenChange", type: "boolean · (open) => void", description: "Control the accordion, or leave it uncontrolled." },
+  { name: "SidebarGroupActions", type: "part", description: "Clusters 1–3 SidebarGroupAction buttons on the label row. A collapsible label keeps its chevron clear of them." },
+  { name: "SidebarGroupLabel / SidebarGroupAction render", type: "ReactElement", description: "Both accept render / asChild for composition." },
+];
+
+/** Rows — the button that leads a row, at any level. */
 const menuButtonProps: PropDef[] = [
   { name: "isActive", type: "boolean", default: "false", description: "Marks the current row: aria-current, the traveling active background, and the semibold weight shift." },
-  { name: "icon", type: "IconComponent", description: "Leading icon — stroke width animates 1.5 → 2 with the row's hover/active state." },
+  { name: "icon", type: "IconComponent", description: "Leading icon — stroke width animates 1.5 → 2 with the row's state." },
+  { name: "status", type: '"active" | "unread" | "idle"', description: "Thread-style rows: drives the status dot (active/unread → filled, idle → ring), stamps data-status, adds visually-hidden \"unread\" text, and active implies isActive." },
+  { name: "dot", type: '"filled" | "ring"', description: "Visual-only dot for when the status vocabulary doesn't fit. Overrides the status-derived dot; ignored when icon is set." },
   { name: "size", type: '"default" | "sm" | "lg"', default: '"default"', description: "Row height. default follows the size ladder (32px, 28px compact); lg is a 48px two-line row." },
   { name: "variant", type: '"default" | "outline"', default: '"default"', description: "Outline adds a border and opaque background for standalone rows." },
-  { name: "render", type: "ReactElement", description: "Render into a custom element, e.g. render={<Link href=…/>}." },
-  { name: "asChild", type: "boolean", default: "false", description: "shadcn-style alternative to render: merge into the single child element." },
+  { name: "render / asChild", type: "ReactElement · boolean", description: "Render into a custom element, e.g. render={<Link href=…/>}." },
 ];
 
+/** Row parts — what a row can carry beside its button. */
+const rowPartsProps: PropDef[] = [
+  { name: "SidebarMenuBadge", type: "part", description: "Trailing count. Keeps the rightmost slot when the row also has actions." },
+  { name: "SidebarMenuAction showOnHover", type: "boolean", default: "false", description: "Hide the action until the row is hovered or focused. The row reserves its gutter only while revealed, so the label owns the full width at rest." },
+  { name: "SidebarMenuActions", type: "part", description: "Clusters more than one action on a row and publishes the count, so the row reserves the exact gutter the cluster needs." },
+  { name: "SidebarMenuSub open", type: "boolean", default: "true", description: "Built-in measured-height collapse — wire to state alongside a toggling row for a nested tree." },
+  { name: "SidebarMenuSubButton", type: '{ size, icon, isActive }', description: "Nested row: 24 / 28px tall, text stays at the parent rows' size. Renders an <a> by default; also accepts render / asChild." },
+];
+
+/** Everything else the shell ships. */
 const partsProps: PropDef[] = [
-  { name: "SidebarContent viewportClassName", type: "string", description: "Extra classes for the desktop scroll viewport (a ScrollArea with the scroll-fade edge treatment built in)." },
-  { name: "SidebarGroup collapsible", type: "boolean", default: "false", description: "The group's label becomes an accordion toggle for everything after it — hover raises the label's contrast and reveals a chevron. Uncontrolled via defaultOpen; controlled via open / onOpenChange." },
-  { name: "SidebarGroupActions", type: "—", description: "Cluster of 1–3 SidebarGroupAction buttons on the label row's right edge. A collapsible label keeps its chevron clear of the cluster automatically." },
-  { name: "SidebarMenuButton status", type: '"active" | "unread" | "idle"', description: "Semantic thread state: drives the status dot (active/unread → filled, idle → ring), stamps data-status on the button, appends visually-hidden \"unread\" text for screen readers, and active implies isActive." },
-  { name: "SidebarMenuButton dot", type: '"filled" | "ring"', description: "Visual-only status dot — the escape hatch when the semantic status vocabulary doesn't fit. Overrides the status-derived dot; ignored when icon is set." },
-  { name: "SidebarMenu size", type: '"default" | "compact"', description: "Pins the menu's rows to one step of the size ladder; omitted, rows follow the surrounding SizeProvider." },
-  { name: "SidebarMenuSub open", type: "boolean", default: "true", description: "Built-in measured-height collapse — wire to state alongside a toggling row for a collapsible tree." },
-  { name: "SidebarMenuSubButton size", type: '"sm" | "md"', default: '"md"', description: "Sub-row height (24 / 28px) — text stays at the parent rows' size. Renders an <a> by default; also accepts icon, render / asChild, and isActive." },
-  { name: "SidebarMenuAction showOnHover", type: "boolean", default: "false", description: "Hide the row action until the row is hovered or focused." },
-  { name: "SidebarRail", type: "—", description: "Built into the desktop shell: drag to resize (192–360px), click to collapse, tooltip with the shortcut key. Hovering brightens the edge border." },
-  { name: "SidebarTrigger", type: "ButtonProps", description: "Ghost icon button calling toggleSidebar(). While collapsed, hovering it shows an “Expand sidebar” tooltip with the shortcut key by default." },
-  { name: "SidebarMenuSkeleton showIcon", type: "boolean", default: "false", description: "Adds the leading icon placeholder. Text widths are deterministic, so SSR and client agree." },
-  { name: "SidebarGroupLabel / SidebarGroupAction render", type: "ReactElement", description: "Both group parts accept render / asChild for composition (e.g. a collapsible group trigger)." },
+  { name: "SidebarTrigger", type: "ButtonProps", description: "Ghost icon button calling toggleSidebar(). Its tooltip carries the shortcut key." },
+  { name: "SidebarRail", type: "part", description: "In the desktop shell by default: drag to resize (192–360px), click to collapse, drag past the minimum to collapse." },
+  { name: "SidebarContent viewportClassName", type: "string", description: "Extra classes for the scroll viewport (a ScrollArea with the scroll-fade edge treatment built in)." },
+  { name: "SidebarMenu size", type: '"default" | "compact"', description: "Pins the menu's rows to one step of the size ladder; omitted, they follow the surrounding SizeProvider." },
+  { name: "SidebarMenuSkeleton showIcon", type: "boolean", default: "false", description: "Adds the leading icon placeholder. Widths are deterministic, so SSR and client agree." },
 ];
 
 // ── Shared demo scaffolding ──────────────────────────────
@@ -877,8 +891,16 @@ export default function SidebarDoc() {
         <PropsTable props={sidebarProps} />
       </DocSection>
 
-      <DocSection title="API Reference — SidebarMenuButton">
+      <DocSection title="API Reference — Sections">
+        <PropsTable props={sectionProps} />
+      </DocSection>
+
+      <DocSection title="API Reference — Rows">
         <PropsTable props={menuButtonProps} />
+      </DocSection>
+
+      <DocSection title="API Reference — Row parts">
+        <PropsTable props={rowPartsProps} />
       </DocSection>
 
       <DocSection title="API Reference — Parts">

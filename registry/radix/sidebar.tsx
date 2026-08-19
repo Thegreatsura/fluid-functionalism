@@ -134,11 +134,13 @@ export interface SidebarProps
   collapsible?: SidebarCollapsible;
   /** The `sidebar` variant's inner-edge border. Default true. */
   bordered?: boolean;
+  /** Render the built-in resize/collapse rail. Default true. */
+  rail?: boolean;
 }
 
 const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
   (
-    { side = "left", variant = "sidebar", collapsible = "offcanvas", bordered = true, className, style, children, ...props },
+    { side = "left", variant = "sidebar", collapsible = "offcanvas", bordered = true, rail = true, className, style, children, ...props },
     ref
   ) => {
     const { isMobile, openMobile, setOpenMobile, width, registerSide } = useSidebar();
@@ -186,7 +188,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
     }
 
     return (
-      <SidebarShell ref={ref} side={side} variant={variant} bordered={bordered} className={className} style={style} {...props}>
+      <SidebarShell ref={ref} side={side} variant={variant} bordered={bordered} rail={rail} className={className} style={style} {...props}>
         {children}
       </SidebarShell>
     );

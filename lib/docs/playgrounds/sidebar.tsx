@@ -24,7 +24,6 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
   SidebarInset,
-  type SidebarSide,
   type SidebarVariant,
   type SidebarCollapsible,
 } from "@/components/flavored/sidebar";
@@ -63,7 +62,6 @@ import type { PlaygroundProps } from "./types";
 
 interface PlayState {
   variant: SidebarVariant;
-  side: SidebarSide;
   collapsible: SidebarCollapsible;
   open: boolean;
   /** Collapsed-peek overlay: reveal the collapsed sidebar on edge hover or
@@ -88,7 +86,6 @@ interface PlayState {
 
 const DEFAULT_STATE: PlayState = {
   variant: "inset",
-  side: "left",
   collapsible: "offcanvas",
   open: true,
   peek: "none",
@@ -131,7 +128,6 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
     (o.peek !== "none" ? ` peek="${o.peek}"` : ``);
   lines.push(`<SidebarProvider${providerProps}>`);
   const sidebarProps = [
-    o.side !== "left" ? `side="${o.side}"` : null,
     o.variant !== "sidebar" ? `variant="${o.variant}"` : null,
     o.collapsible !== "offcanvas" ? `collapsible="${o.collapsible}"` : null,
   ]
@@ -297,7 +293,6 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
   const randomize = () => {
     setState({
       variant: pick(["sidebar", "floating", "inset"] as const),
-      side: pick(["left", "left", "right"] as const),
       collapsible: pick(["offcanvas", "offcanvas", "none"] as const),
       open: true,
       peek: pick(["none", "none", "hover", "click"] as const),
@@ -388,7 +383,6 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
         peek={state.peek}
       >
         <Sidebar
-          side={state.side}
           variant={state.variant}
           collapsible={state.collapsible}
           className="h-full"
@@ -611,16 +605,6 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
             { value: "sidebar", label: "Sidebar" },
             { value: "floating", label: "Floating" },
             { value: "inset", label: "Inset" },
-          ]}
-        />
-      </PlayField>
-      <PlayField label="Side">
-        <PlaySelect
-          value={state.side}
-          onChange={(v) => set("side", v as SidebarSide)}
-          options={[
-            { value: "left", label: "Left" },
-            { value: "right", label: "Right" },
           ]}
         />
       </PlayField>

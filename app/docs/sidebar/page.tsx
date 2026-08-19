@@ -107,19 +107,6 @@ const collapseCode = `// The bare "[" key toggles a left sidebar, "]" a right on
   </SidebarInset>
 </SidebarProvider>`;
 
-const rightSideCode = `<SidebarProvider>
-  <Sidebar side="right">…</Sidebar>
-  <SidebarInset>
-    <header>
-      …
-      {/* trigger shows the right-panel icon automatically */}
-      <SidebarTrigger className="ml-auto" />
-    </header>
-  </SidebarInset>
-</SidebarProvider>
-// Flex order handles the side — Sidebar can stay first in the JSX,
-// and the "]" key becomes the default toggle.`;
-
 const floatingCode = `<Sidebar variant="floating">…</Sidebar>`;
 
 const insetCode = `<Sidebar variant="inset">…</Sidebar>
@@ -254,7 +241,6 @@ const providerProps: PropDef[] = [
 ];
 
 const sidebarProps: PropDef[] = [
-  { name: "side", type: '"left" | "right"', default: '"left"', description: "Which edge the rail lives on. Flex order handles placement, so JSX order stays the same." },
   { name: "variant", type: '"sidebar" | "floating" | "inset"', default: '"sidebar"', description: "Transparent rail, elevated floating card, or the inset pairing where SidebarInset becomes the card." },
   { name: "collapsible", type: '"offcanvas" | "none"', default: '"offcanvas"', description: "Offcanvas slides the rail away; none renders a static, always-open column. (The icon-rail mode is intentionally not supported.)" },
   { name: "bordered", type: "boolean", default: "true", description: "The sidebar variant's inner-edge border. Set false for a borderless rail (the rail handle's hover hairline still shows)." },
@@ -290,7 +276,7 @@ const partsProps: PropDef[] = [
 /** Bounded app-shell frame every preview runs inside — the provider fills it
  *  instead of the viewport. */
 function SidebarShellFrame({
-  height = "h-[420px]",
+  height = "h-[640px]",
   children,
 }: {
   height?: string;
@@ -520,7 +506,7 @@ function DemoShell({
 
 function CollapsePreview() {
   return (
-    <SidebarShellFrame height="h-[380px]">
+    <SidebarShellFrame height="h-[640px]">
       <SidebarProvider className="h-full min-h-0" persist={false}>
         <Sidebar className="h-full">
           <DemoHeader />
@@ -548,7 +534,7 @@ function GroupsPreview() {
   const MoreIcon = useIcon("more-horizontal");
   const icons = useIcons();
   return (
-    <SidebarShellFrame height="h-[520px]">
+    <SidebarShellFrame height="h-[640px]">
       <SidebarProvider className="h-full min-h-0" persist={false}>
         <Sidebar className="h-full">
           <SidebarContent>
@@ -631,7 +617,7 @@ function MenuFeaturesPreview() {
   const [projectsOpen, setProjectsOpen] = useState(true);
   const [current, setCurrent] = useState<string>(SIDEBAR_PROJECTS[0]);
   return (
-    <SidebarShellFrame height="h-[460px]">
+    <SidebarShellFrame height="h-[640px]">
       <SidebarProvider className="h-full min-h-0" persist={false}>
         <Sidebar collapsible="none" className="h-full">
           <SidebarContent>
@@ -728,7 +714,7 @@ function MenuFeaturesPreview() {
 
 function LoadingPreview() {
   return (
-    <SidebarShellFrame height="h-[320px]">
+    <SidebarShellFrame height="h-[640px]">
       <SidebarProvider className="h-full min-h-0" persist={false}>
         <Sidebar collapsible="none" className="h-full">
           <SidebarContent>
@@ -765,7 +751,7 @@ function ControlledStateReadout() {
 function ControlledPreview() {
   const [open, setOpen] = useState(true);
   return (
-    <SidebarShellFrame height="h-[360px]">
+    <SidebarShellFrame height="h-[640px]">
       <SidebarProvider
         className="h-full min-h-0"
         persist={false}
@@ -798,7 +784,7 @@ function SidebarPlaygroundSection() {
         <PlaygroundLayout
           controls={controls}
           preview={
-            <ComponentPreview code={code} padding="none" minHeightClass="h-[560px]">
+            <ComponentPreview code={code} padding="none" minHeightClass="h-[640px]">
               {preview}
             </ComponentPreview>
           }
@@ -822,7 +808,7 @@ export default function SidebarDoc() {
       </DocSection>
 
       <DocSection title="Basic">
-        <ComponentPreview code={basicCode} padding="none" minHeightClass="h-[420px]">
+        <ComponentPreview code={basicCode} padding="none" minHeightClass="h-[640px]">
           <DemoShell />
         </ComponentPreview>
       </DocSection>
@@ -834,22 +820,8 @@ export default function SidebarDoc() {
           a right sidebar. The key goes to the sidebar that has focus. State persists
           to a cookie.
         </p>
-        <ComponentPreview code={collapseCode} padding="none" minHeightClass="h-[380px]">
+        <ComponentPreview code={collapseCode} padding="none" minHeightClass="h-[640px]">
           <CollapsePreview />
-        </ComponentPreview>
-      </DocSection>
-
-      <DocSection title="Right side">
-        <ComponentPreview code={rightSideCode} padding="none" minHeightClass="h-[360px]">
-          <DemoShell
-            height="h-[360px]"
-            side="right"
-            insetTitle={
-              <>
-                Press <code>]</code> to toggle
-              </>
-            }
-          />
         </ComponentPreview>
       </DocSection>
 
@@ -858,8 +830,8 @@ export default function SidebarDoc() {
           Elevate the sidebar. The rail floats as its own card over the canvas —
           use it when navigation should read as a distinct layer.
         </p>
-        <ComponentPreview code={floatingCode} padding="none" minHeightClass="h-[360px]">
-          <DemoShell height="h-[360px]" variant="floating" />
+        <ComponentPreview code={floatingCode} padding="none" minHeightClass="h-[640px]">
+          <DemoShell height="h-[640px]" variant="floating" />
         </ComponentPreview>
       </DocSection>
 
@@ -868,31 +840,31 @@ export default function SidebarDoc() {
           Elevate the content. The main region becomes the card while the sidebar
           recedes into the canvas — use it when the content is the star.
         </p>
-        <ComponentPreview code={insetCode} padding="none" minHeightClass="h-[360px]">
-          <DemoShell height="h-[360px]" variant="inset" />
+        <ComponentPreview code={insetCode} padding="none" minHeightClass="h-[640px]">
+          <DemoShell height="h-[640px]" variant="inset" />
         </ComponentPreview>
       </DocSection>
 
       <DocSection title="Groups">
-        <ComponentPreview code={groupsCode} padding="none" minHeightClass="h-[520px]">
+        <ComponentPreview code={groupsCode} padding="none" minHeightClass="h-[640px]">
           <GroupsPreview />
         </ComponentPreview>
       </DocSection>
 
       <DocSection title="Menu features">
-        <ComponentPreview code={menuFeaturesCode} padding="none" minHeightClass="h-[460px]">
+        <ComponentPreview code={menuFeaturesCode} padding="none" minHeightClass="h-[640px]">
           <MenuFeaturesPreview />
         </ComponentPreview>
       </DocSection>
 
       <DocSection title="Loading">
-        <ComponentPreview code={loadingCode} padding="none" minHeightClass="h-[320px]">
+        <ComponentPreview code={loadingCode} padding="none" minHeightClass="h-[640px]">
           <LoadingPreview />
         </ComponentPreview>
       </DocSection>
 
       <DocSection title="Controlled & useSidebar">
-        <ComponentPreview code={controlledCode} padding="none" minHeightClass="h-[360px]">
+        <ComponentPreview code={controlledCode} padding="none" minHeightClass="h-[640px]">
           <ControlledPreview />
         </ComponentPreview>
       </DocSection>

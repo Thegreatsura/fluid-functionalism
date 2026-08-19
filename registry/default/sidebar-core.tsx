@@ -46,6 +46,10 @@ export const SIDEBAR_KEYBOARD_SHORTCUT_RIGHT = "]";
 /** Drag-resize clamp for the built-in rail handle (px). */
 export const SIDEBAR_MIN_WIDTH = 192;
 export const SIDEBAR_MAX_WIDTH = 360;
+/** Dragging this far past the minimum width collapses the sidebar instead of
+ *  bottoming out — the same "throw it at the edge to dismiss" affordance
+ *  native apps use. */
+export const SIDEBAR_COLLAPSE_SLOP = 56;
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 
@@ -442,6 +446,9 @@ export interface SidebarShellProps extends MotionSafeDivProps {
   variant: SidebarVariant;
   /** The `sidebar` variant's inner-edge border. Default true. */
   bordered?: boolean;
+  /** Render the built-in resize/collapse rail handle. `false` hides it and
+   *  disables drag-resize — the trigger and keyboard shortcut still toggle. */
+  rail?: boolean;
 }
 
 /** Internal: the expanded/collapsed desktop rail. An in-flow sticky column
@@ -450,7 +457,7 @@ export interface SidebarShellProps extends MotionSafeDivProps {
  *  the whole sidebar works inside any bounded frame, not just the viewport.
  *  Ships the resize/collapse rail handle on its inner edge by default. */
 const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
-  ({ side, variant, bordered = true, className, children, ...props }, ref) => {
+  ({ side, variant, bordered = true, rail = true, className, children, ...props }, ref) => {
     const {
       open,
       width,
@@ -647,6 +654,7 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
               {children}
             </div>
           )}
+          {rail && (
           <SidebarRail
             className={cn(
               // The floating card sits inside the panel's p-2 gutter, so the
@@ -670,6 +678,7 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
                 : undefined
             }
           />
+          )}
         </motion.div>
         )}
       </motion.div>
@@ -754,7 +763,7 @@ export type SidebarRailProps = HTMLAttributes<HTMLButtonElement>;
  *  brightens the edge border. */
 const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(
   ({ className, ...props }, ref) => {
-    const { toggleSidebar, setWidth, side, setIsResizing } = useSidebar();
+    const { toggleSidebar, setOpen, setWidth, side, setIsResizing } = useSidebar();
     const shortcutKey = useShortcutKey();
     const railRef = useRef<HTMLButtonElement | null>(null);
     const dragRef = useRef<{ startX: number; startWidth: number; moved: boolean } | null>(null);
@@ -778,7 +787,19 @@ const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(
         setIsResizing(true);
       }
       const delta = side === "left" ? dx : -dx;
-      const next = Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, drag.startWidth + delta));
+      const raw = drag.startWidth + delta;
+      // Dragged well past the minimum, toward the edge: collapse and end the
+      // drag rather than pinning at the min width.
+      if (raw < SIDEBAR_MIN_WIDTH - SIDEBAR_COLLAPSE_SLOP) {
+        dragRef.current = null;
+        event.currentTarget.releasePointerCapture(event.pointerId);
+        setDragging(false);
+        setIsResizing(false);
+        setWidth(`${SIDEBAR_MIN_WIDTH}px`);
+        setOpen(false);
+        return;
+      }
+      const next = Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, raw));
       setWidth(`${next}px`);
     };
 
@@ -1016,6 +1037,13 @@ const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>(
       return () => ro.disconnect();
     }, [collapsible]);
     const measured = contentHeight !== null;
+    // The collapse wrapper must clip while animating, but a permanently
+    // clipped box shaves the 2px focus ring off a group's first and last
+    // rows — so clipping lifts once an open group has settled.
+    const [settled, setSettled] = useState(open);
+    useEffect(() => {
+      if (!open) setSettled(false);
+    }, [open]);
 
     // The label and any header actions stay put; everything else after the
     // label rides in the collapse wrapper. If no SidebarGroupLabel child is
@@ -1051,7 +1079,10 @@ const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>(
             <motion.div
               id={contentId}
               aria-hidden={open ? undefined : true}
-              className={cn("overflow-hidden", !measured && !open && "h-0")}
+              className={cn(
+                open && settled ? "overflow-visible" : "overflow-hidden",
+                !measured && !open && "h-0"
+              )}
               initial={false}
               animate={
                 measured
@@ -1059,6 +1090,9 @@ const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>(
                   : { opacity: open ? 1 : 0 }
               }
               transition={open ? spring.moderate : spring.moderate.exit}
+              onAnimationComplete={() => {
+                if (open) setSettled(true);
+              }}
             >
               <div ref={contentRef} className="flex w-full min-w-0 flex-col">
                 {rest}

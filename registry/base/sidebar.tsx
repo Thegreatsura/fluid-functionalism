@@ -1,8 +1,10 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useRef,
+  useState,
   forwardRef,
   type ReactNode,
   type CSSProperties,
@@ -57,32 +59,41 @@ function SidebarSheet({ side, open, onClose, children }: SidebarSheetProps) {
   const substrate = useSurface();
   const level = Math.min(substrate + 2, 8);
 
-  // With `actionsRef` set, Base UI defers unmounting the portal on close
-  // until `actionsRef.current.unmount()` is called, letting the framer-motion
-  // exit tween below play out first.
-  const actionsRef = useRef<DialogPrimitive.Root.Actions | null>(null);
+  // The primitive tears its portal down the moment it closes — an outside
+  // press would snap the panel away with no exit. So the dialog is held OPEN
+  // through the exit: `closing` slides the panel offscreen first, and only
+  // when the spring lands does the real close propagate.
+  const [closing, setClosing] = useState(false);
+  const visible = open && !closing;
 
-  // Fallback release for the deferred unmount: onAnimationComplete on the
-  // panel is the primary signal, but rAF-driven animation callbacks can stall
-  // in throttled/background tabs.
+  const finishClose = useCallback(() => {
+    setClosing(false);
+    onClose();
+  }, [onClose]);
+
+  // A parent-driven close (trigger, shortcut, route change) gets the same
+  // exit as a primitive-driven one.
+  const wasOpen = useRef(open);
   useEffect(() => {
-    if (open) return;
-    const id = setTimeout(
-      () => actionsRef.current?.unmount(),
-      exitFallbackMs(spring.moderate)
-    );
-    return () => clearTimeout(id);
+    if (wasOpen.current && !open) setClosing(true);
+    wasOpen.current = open;
   }, [open]);
+
+  // Fallback: rAF-driven animation callbacks stall in throttled tabs.
+  useEffect(() => {
+    if (!closing) return;
+    const id = setTimeout(finishClose, exitFallbackMs(spring.moderate));
+    return () => clearTimeout(id);
+  }, [closing, finishClose]);
 
   const offscreen = side === "left" ? "-100%" : "100%";
 
   return (
     <DialogPrimitive.Root
-      open={open}
+      open={open || closing}
       onOpenChange={(nextOpen) => {
-        if (!nextOpen) onClose();
+        if (!nextOpen) setClosing(true);
       }}
-      actionsRef={actionsRef}
     >
       <DialogPrimitive.Portal>
         {/* Scrim: an always-on bg-black/40 base that stays visible for
@@ -97,8 +108,8 @@ function SidebarSheet({ side, open, onClose, children }: SidebarSheetProps) {
                 {...(rest as MotionSafeDivProps)}
                 className="fixed inset-0 bg-black/40 dark:bg-black/80 z-40"
                 initial={{ opacity: 0 }}
-                animate={{ opacity: open ? 1 : 0 }}
-                transition={open ? { duration: 0.16 } : spring.moderate.exit}
+                animate={{ opacity: visible ? 1 : 0 }}
+                transition={visible ? { duration: 0.16 } : spring.moderate.exit}
               />
             );
           }}
@@ -117,6 +128,7 @@ function SidebarSheet({ side, open, onClose, children }: SidebarSheetProps) {
                 data-side={side}
                 className={cn(
                   "fixed inset-y-0 z-50 flex flex-col overflow-hidden",
+                  !visible && "pointer-events-none",
                   side === "left" ? "left-0" : "right-0",
                   surfaceClasses(level, 3)
                 )}
@@ -128,10 +140,10 @@ function SidebarSheet({ side, open, onClose, children }: SidebarSheetProps) {
                 // spring.moderate: critically damped, so the panel decelerates
                 // into x: 0 without overshooting and exposing the page behind
                 // its leading edge.
-                animate={{ x: open ? 0 : offscreen }}
-                transition={open ? spring.moderate : spring.moderate.exit}
+                animate={{ x: visible ? 0 : offscreen }}
+                transition={visible ? spring.moderate : spring.moderate.exit}
                 onAnimationComplete={() => {
-                  if (!open) actionsRef.current?.unmount();
+                  if (closing) finishClose();
                 }}
               >
                 <SurfaceProvider value={level}>{children}</SurfaceProvider>
@@ -157,11 +169,13 @@ export interface SidebarProps
   collapsible?: SidebarCollapsible;
   /** The `sidebar` variant's inner-edge border. Default true. */
   bordered?: boolean;
+  /** Render the built-in resize/collapse rail. Default true. */
+  rail?: boolean;
 }
 
 const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
   (
-    { side = "left", variant = "sidebar", collapsible = "offcanvas", bordered = true, className, style, children, ...props },
+    { side = "left", variant = "sidebar", collapsible = "offcanvas", bordered = true, rail = true, className, style, children, ...props },
     ref
   ) => {
     const { isMobile, openMobile, setOpenMobile, width, registerSide } = useSidebar();
@@ -209,7 +223,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
     }
 
     return (
-      <SidebarShell ref={ref} side={side} variant={variant} bordered={bordered} className={className} style={style} {...props}>
+      <SidebarShell ref={ref} side={side} variant={variant} bordered={bordered} rail={rail} className={className} style={style} {...props}>
         {children}
       </SidebarShell>
     );

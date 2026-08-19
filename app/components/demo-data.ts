@@ -148,18 +148,6 @@ export const SIDEBAR_THREADS: readonly {
   { label: "Registry deploy pipeline", status: "unread", badge: "7" },
 ];
 
-/** Second thread category for the status-dot leading treatment — a second
- *  repo's discussions, so dot mode shows two categories like icon mode. */
-export const SIDEBAR_THREADS_ALT: readonly {
-  label: string;
-  badge?: string;
-  status: "active" | "unread" | "idle";
-}[] = [
-  { label: "Hero animation polish", status: "unread", badge: "4" },
-  { label: "Contact form validation", status: "idle", badge: "2" },
-  { label: "Lighthouse performance pass", status: "idle", badge: "6" },
-];
-
 export const SIDEBAR_PROJECTS = [
   "Design system",
   "Marketing site",

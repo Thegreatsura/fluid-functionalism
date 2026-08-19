@@ -14,6 +14,7 @@ import {
   Children,
   type ReactNode,
   type ReactElement,
+  type CSSProperties,
   type HTMLAttributes,
   type LiHTMLAttributes,
   type AnchorHTMLAttributes,
@@ -65,9 +66,20 @@ interface MenuItemContextValue {
   isSubRow: boolean;
   setActive: (active: boolean) => void;
   setButtonEl: (el: HTMLElement | null) => void;
+  /** Trailing controls on this row, registered by the action / badge parts.
+   *  The button turns them into an exact padding-right reservation. */
+  actionCount: number;
+  actionsShowOnHover: boolean;
+  hasBadge: boolean;
+  setActions: (count: number, showOnHover: boolean) => void;
+  setHasBadge: (hasBadge: boolean) => void;
 }
 
 const MenuItemContext = createContext<MenuItemContextValue | null>(null);
+
+/** True while rendering inside a SidebarMenuActions cluster, where each
+ *  action flows in the wrapper's row instead of positioning itself. */
+const MenuActionsClusterContext = createContext(false);
 
 function byDomOrder(a: HTMLElement, b: HTMLElement) {
   return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
@@ -467,10 +479,63 @@ function useMenuRow(rowRef: RefObject<HTMLLIElement | null>, isSubRow = false) {
   const isHovered = rowRef.current !== null && scope?.hoveredRowEl === rowRef.current;
   const isActiveRow = rowRef.current !== null && scope?.activeRowEl === rowRef.current;
 
-  return useMemo(
-    () => ({ rowRef, isHovered, isActiveRow, isSubRow, setActive, setButtonEl }),
-    [rowRef, isHovered, isActiveRow, isSubRow, setActive, setButtonEl]
+  const [trailing, setTrailing] = useState({
+    actionCount: 0,
+    actionsShowOnHover: false,
+    hasBadge: false,
+  });
+  const setActions = useCallback(
+    (count: number, showOnHover: boolean) =>
+      setTrailing((prev) =>
+        prev.actionCount === count && prev.actionsShowOnHover === showOnHover
+          ? prev
+          : { ...prev, actionCount: count, actionsShowOnHover: showOnHover }
+      ),
+    []
   );
+  const setHasBadge = useCallback(
+    (hasBadge: boolean) =>
+      setTrailing((prev) => (prev.hasBadge === hasBadge ? prev : { ...prev, hasBadge })),
+    []
+  );
+
+  return useMemo(
+    () => ({
+      rowRef,
+      isHovered,
+      isActiveRow,
+      isSubRow,
+      setActive,
+      setButtonEl,
+      ...trailing,
+      setActions,
+      setHasBadge,
+    }),
+    [
+      rowRef,
+      isHovered,
+      isActiveRow,
+      isSubRow,
+      setActive,
+      setButtonEl,
+      trailing,
+      setActions,
+      setHasBadge,
+    ]
+  );
+}
+
+// ─── Trailing-gutter math ────────────────────────────────────────────────────
+//
+// One action is 24px; a badge claims another 24px slot to its right; 8px is
+// the row's own px-2. Calibrated so a single action (32px) and a single
+// action beside a badge (56px) reproduce the hand-tuned values they replace.
+const ROW_BASE_PAD = 8;
+const ROW_SLOT = 24;
+
+function rowGutter(actionCount: number, hasBadge: boolean) {
+  if (!actionCount && !hasBadge) return ROW_BASE_PAD;
+  return actionCount * ROW_SLOT + (hasBadge ? ROW_SLOT : 0) + ROW_BASE_PAD;
 }
 
 const SidebarMenuItem = forwardRef<HTMLLIElement, SidebarMenuItemProps>(
@@ -602,7 +667,11 @@ function MenuRowLabel({
 // ─── SidebarMenuButton ───────────────────────────────────────────────────────
 
 export const sidebarMenuButtonVariants = cva(
-  "peer/menu-button relative z-10 flex w-full cursor-pointer select-none items-center gap-2 px-2 text-left outline-none transition-[padding] duration-80 group-has-[>[data-sidebar=menu-action]:not([data-show-on-hover])]/menu-item:pr-8 group-has-[>[data-sidebar=menu-badge]]/menu-item:pr-8 group-has-[>[data-sidebar=menu-action]:not([data-show-on-hover])]/menu-item:group-has-[>[data-sidebar=menu-badge]]/menu-item:pr-14 group-hover/menu-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-item:pr-8 group-focus-within/menu-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-item:pr-8 group-has-[>[data-sidebar=menu-action][data-show-on-hover]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-item:pr-8 group-hover/menu-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-item:group-has-[>[data-sidebar=menu-badge]]/menu-item:pr-14 group-focus-within/menu-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-item:group-has-[>[data-sidebar=menu-badge]]/menu-item:pr-14 group-has-[>[data-sidebar=menu-action][data-show-on-hover]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-item:group-has-[>[data-sidebar=menu-badge]]/menu-item:pr-14",
+  // The trailing gutter is an exact reservation published by the row (see
+  // rowGutter): --row-gutter at rest, --row-gutter-hover once hover-revealed
+  // actions are showing. One rule per state instead of a class per
+  // count/badge/reveal combination.
+  "peer/menu-button relative z-10 flex w-full cursor-pointer select-none items-center gap-2 pl-2 text-left outline-none transition-[padding] duration-80 pr-[var(--row-gutter)] group-hover/menu-item:pr-[var(--row-gutter-hover)] group-focus-within/menu-item:pr-[var(--row-gutter-hover)] group-hover/menu-sub-item:pr-[var(--row-gutter-hover)] group-focus-within/menu-sub-item:pr-[var(--row-gutter-hover)] group-has-[[data-sidebar=menu-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-item:pr-[var(--row-gutter-hover)] group-has-[[data-sidebar=menu-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-sub-item:pr-[var(--row-gutter-hover)]",
   {
     variants: {
       variant: {
@@ -695,6 +764,18 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
           ? 0
           : -1;
 
+    // Exact trailing reservation: at rest, hover-revealed actions claim no
+    // width (the label owns the row); once revealed the row widens to
+    // --row-gutter-hover.
+    const gutterHover = rowGutter(item?.actionCount ?? 0, item?.hasBadge ?? false);
+    const gutterRest = item?.actionsShowOnHover
+      ? rowGutter(0, item?.hasBadge ?? false)
+      : gutterHover;
+    const gutterVars = {
+      "--row-gutter": `${gutterRest}px`,
+      "--row-gutter-hover": `${gutterHover}px`,
+    } as CSSProperties;
+
     const { template, content } = resolveSlotTemplate(render, asChild, children);
 
     const inner = (
@@ -749,6 +830,7 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
         "data-status": status,
         "aria-current": effectiveActive ? "page" : undefined,
         tabIndex: tabIdx,
+        style: { ...gutterVars, ...(props.style ?? {}) },
         className: cn(
           sidebarMenuButtonVariants({ variant }),
           heightClass,
@@ -776,7 +858,17 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
     const shape = useShape();
     const sizeClasses = useSize();
     const item = useContext(MenuItemContext);
+    const inCluster = useContext(MenuActionsClusterContext);
     const { template, content } = resolveSlotTemplate(render, asChild, children);
+
+    // A lone action registers its own slot; inside a cluster the wrapper
+    // registers the whole count and each action flows in its row.
+    const setActions = item?.setActions;
+    useIsoLayoutEffect(() => {
+      if (inCluster || !setActions) return;
+      setActions(1, showOnHover);
+      return () => setActions(0, false);
+    }, [inCluster, setActions, showOnHover]);
     return slotElement(
       template,
       "button",
@@ -789,12 +881,17 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
           // right-1.5 centers the 24px hit-box on the same axis as the badge
           // (right-2 + min-w-5): both land 18px from the row's right edge.
           // With a badge on the same row the badge keeps that rightmost spot
-          // and the action slides left of it (right-8 = the pr-14 gutter).
-          "absolute right-1.5 z-10 flex size-6 items-center justify-center text-muted-foreground outline-none",
-          item?.isSubRow
-            ? "group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:right-8"
-            : "group-has-[>[data-sidebar=menu-badge]]/menu-item:right-8",
-          item?.isSubRow || sizeClasses.variant === "compact" ? "top-0.5" : "top-1",
+          // and the action slides left of it. Inside a cluster the wrapper
+          // owns the positioning and actions simply flow.
+          inCluster
+            ? "relative flex size-6 shrink-0 items-center justify-center text-muted-foreground outline-none"
+            : "absolute right-1.5 z-10 flex size-6 items-center justify-center text-muted-foreground outline-none",
+          !inCluster &&
+            (item?.isSubRow
+              ? "group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:right-8"
+              : "group-has-[>[data-sidebar=menu-badge]]/menu-item:right-8"),
+          !inCluster &&
+            (item?.isSubRow || sizeClasses.variant === "compact" ? "top-0.5" : "top-1"),
           "hover:bg-hover hover:text-foreground transition-[color,background-color,opacity] duration-80",
           "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
           "[&_svg]:size-3.5 [&_svg]:shrink-0",
@@ -802,7 +899,8 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
           // Reveal on the OWN row only. A sub action must not use the
           // menu-item group — its nearest one is the parent li, which would
           // light every sibling sub action on any hover inside the sub-tree.
-          showOnHover &&
+          !inCluster &&
+            showOnHover &&
             (item?.isSubRow
               ? "opacity-0 group-hover/menu-sub-item:opacity-100 group-focus-within/menu-sub-item:opacity-100 data-[state=open]:opacity-100 aria-expanded:opacity-100"
               : "opacity-0 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100 data-[state=open]:opacity-100 aria-expanded:opacity-100"),
@@ -822,6 +920,56 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
 );
 SidebarMenuAction.displayName = "SidebarMenuAction";
 
+// ─── SidebarMenuActions ──────────────────────────────────────────────────────
+
+export interface SidebarMenuActionsProps extends HTMLAttributes<HTMLDivElement> {
+  /** Hide the cluster until the row is hovered or focused. */
+  showOnHover?: boolean;
+}
+
+/** Row-level cluster for more than one SidebarMenuAction. It owns the
+ *  positioning and publishes the whole count to the row, so the button
+ *  reserves the exact gutter the cluster occupies. */
+const SidebarMenuActions = forwardRef<HTMLDivElement, SidebarMenuActionsProps>(
+  ({ className, showOnHover = false, children, ...props }, ref) => {
+    const item = useContext(MenuItemContext);
+    const sizeClasses = useSize();
+    const count = Children.count(children);
+
+    const setActions = item?.setActions;
+    useIsoLayoutEffect(() => {
+      setActions?.(count, showOnHover);
+      return () => setActions?.(0, false);
+    }, [setActions, count, showOnHover]);
+
+    return (
+      <div
+        ref={ref}
+        data-sidebar="menu-actions"
+        className={cn(
+          "absolute right-1.5 z-10 flex items-center gap-0.5",
+          // The badge keeps the rightmost slot; the cluster sits left of it.
+          item?.isSubRow
+            ? "group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:right-8"
+            : "group-has-[>[data-sidebar=menu-badge]]/menu-item:right-8",
+          item?.isSubRow || sizeClasses.variant === "compact" ? "top-0.5" : "top-1",
+          showOnHover &&
+            (item?.isSubRow
+              ? "opacity-0 transition-opacity duration-80 group-hover/menu-sub-item:opacity-100 group-focus-within/menu-sub-item:opacity-100 has-[[data-state=open]]:opacity-100 has-[[data-popup-open]]:opacity-100"
+              : "opacity-0 transition-opacity duration-80 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100 has-[[data-state=open]]:opacity-100 has-[[data-popup-open]]:opacity-100"),
+          className
+        )}
+        {...props}
+      >
+        <MenuActionsClusterContext.Provider value={true}>
+          {children}
+        </MenuActionsClusterContext.Provider>
+      </div>
+    );
+  }
+);
+SidebarMenuActions.displayName = "SidebarMenuActions";
+
 // ─── SidebarMenuBadge ────────────────────────────────────────────────────────
 
 export type SidebarMenuBadgeProps = HTMLAttributes<HTMLDivElement>;
@@ -831,6 +979,12 @@ const SidebarMenuBadge = forwardRef<HTMLDivElement, SidebarMenuBadgeProps>(
     const item = useContext(MenuItemContext);
     const sizeClasses = useSize();
     const lit = item?.isActiveRow ?? false;
+
+    const setHasBadge = item?.setHasBadge;
+    useIsoLayoutEffect(() => {
+      setHasBadge?.(true);
+      return () => setHasBadge?.(false);
+    }, [setHasBadge]);
     return (
       <div
         ref={ref}
@@ -1004,6 +1158,15 @@ const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonP
     const lit = isActive || (item?.isHovered ?? false);
     const tabIdx = isActive ? 0 : -1;
 
+    const gutterHover = rowGutter(item?.actionCount ?? 0, item?.hasBadge ?? false);
+    const gutterRest = item?.actionsShowOnHover
+      ? rowGutter(0, item?.hasBadge ?? false)
+      : gutterHover;
+    const gutterVars = {
+      "--row-gutter": `${gutterRest}px`,
+      "--row-gutter-hover": `${gutterHover}px`,
+    } as CSSProperties;
+
     const { template, content } = resolveSlotTemplate(render, asChild, children);
 
     return slotElement(
@@ -1020,9 +1183,10 @@ const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonP
         "data-active": isActive ? "true" : undefined,
         "aria-current": isActive ? "page" : undefined,
         tabIndex: tabIdx,
+        style: { ...gutterVars, ...(props.style ?? {}) },
         className: cn(
-          "relative z-10 flex w-full cursor-pointer select-none items-center gap-2 px-2 text-left outline-none",
-          "transition-[padding] duration-80 group-has-[>[data-sidebar=menu-action]:not([data-show-on-hover])]/menu-sub-item:pr-8 group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:pr-8 group-has-[>[data-sidebar=menu-action]:not([data-show-on-hover])]/menu-sub-item:group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:pr-14 group-hover/menu-sub-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-sub-item:pr-8 group-focus-within/menu-sub-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-sub-item:pr-8 group-has-[>[data-sidebar=menu-action][data-show-on-hover]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-sub-item:pr-8 group-hover/menu-sub-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-sub-item:group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:pr-14 group-focus-within/menu-sub-item:group-has-[>[data-sidebar=menu-action][data-show-on-hover]]/menu-sub-item:group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:pr-14 group-has-[>[data-sidebar=menu-action][data-show-on-hover]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-sub-item:group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:pr-14",
+          "relative z-10 flex w-full cursor-pointer select-none items-center gap-2 pl-2 text-left outline-none",
+          "transition-[padding] duration-80 pr-[var(--row-gutter)] group-hover/menu-sub-item:pr-[var(--row-gutter-hover)] group-focus-within/menu-sub-item:pr-[var(--row-gutter-hover)] group-has-[[data-sidebar=menu-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-sub-item:pr-[var(--row-gutter-hover)]",
           size === "sm" ? "h-6" : sizeClasses.variant === "compact" ? "h-6" : "h-7",
           shape.item,
           className
@@ -1059,6 +1223,7 @@ export {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarMenuAction,
+  SidebarMenuActions,
   SidebarMenuBadge,
   SidebarMenuSkeleton,
   SidebarMenuSub,

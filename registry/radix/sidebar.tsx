@@ -278,6 +278,7 @@ export {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarMenuAction,
+  SidebarMenuActions,
   SidebarMenuBadge,
   SidebarMenuSkeleton,
   SidebarMenuSub,

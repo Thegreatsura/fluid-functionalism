@@ -208,7 +208,7 @@ function FooterCallout({
       {/* On the icon row the dismiss control floats over the text rather than
           over a banner, so that row reserves the 36px it occupies plus air. */}
       <CardHeader
-        className={variant === "media" ? "gap-0 pt-4" : "gap-0 py-2 pr-10"}
+        className={variant === "media" ? "gap-0 pt-4" : "gap-0 py-3 pr-10"}
       >
         <CardTitle className="truncate">Sidebar is here</CardTitle>
         <CardDescription className="truncate">
@@ -436,7 +436,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
       lines.push(media);
       lines.push(
         o.footerCallout === "icon"
-          ? `        <CardHeader className="gap-0 py-2 pr-10">`
+          ? `        <CardHeader className="gap-0 py-3 pr-10">`
           : `        <CardHeader className="gap-0 pt-4">`
       );
       lines.push(`          <CardTitle className="truncate">Sidebar is here</CardTitle>`);

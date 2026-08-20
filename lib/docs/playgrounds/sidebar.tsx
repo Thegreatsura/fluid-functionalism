@@ -585,7 +585,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
             }
           />
           <DropdownContent
-            className="min-w-0 w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]"
+            className="min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]"
             align="start"
             sideOffset={4}
             checkedIndex={0}
@@ -838,7 +838,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                           }
                         />
                         <DropdownContent
-                          className="min-w-0 w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]"
+                          className="min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]"
                           side="top"
                           align="start"
                           sideOffset={6}

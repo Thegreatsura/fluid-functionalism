@@ -527,15 +527,31 @@ function useMenuRow(rowRef: RefObject<HTMLLIElement | null>, isSubRow = false) {
 
 // ─── Trailing-gutter math ────────────────────────────────────────────────────
 //
-// One action is 24px; a badge claims another 24px slot to its right; 8px is
-// the row's own px-2. Calibrated so a single action (32px) and a single
-// action beside a badge (56px) reproduce the hand-tuned values they replace.
+// The label reserves exactly the trailing run it has to clear, plus one gap
+// — the same rule the section header's label follows, so a row's chevron and
+// a section header's chevron each sit one 4px gap from their action run.
+// A run is: the badge's 24px slot (rightmost when present), the action
+// cluster (24px apiece, 4px between), and a gap where both appear.
 const ROW_BASE_PAD = 8;
 const ROW_SLOT = 24;
+const ROW_GAP = 4;
+/** Where the run's rightmost element sits, measured from the row's right
+ *  edge: a badge at right-2, an action cluster at right-1.5 (its wider box
+ *  puts both on the same centre line). */
+const ROW_BADGE_INSET = 8;
+const ROW_ACTION_INSET = 6;
 
 function rowGutter(actionCount: number, hasBadge: boolean) {
   if (!actionCount && !hasBadge) return ROW_BASE_PAD;
-  return actionCount * ROW_SLOT + (hasBadge ? ROW_SLOT : 0) + ROW_BASE_PAD;
+  const actionsWidth = actionCount
+    ? actionCount * ROW_SLOT + (actionCount - 1) * ROW_GAP
+    : 0;
+  const runWidth =
+    (hasBadge ? ROW_SLOT : 0) +
+    actionsWidth +
+    (hasBadge && actionCount ? ROW_GAP : 0);
+  const inset = hasBadge ? ROW_BADGE_INSET : ROW_ACTION_INSET;
+  return inset + runWidth + ROW_GAP;
 }
 
 const SidebarMenuItem = forwardRef<HTMLLIElement, SidebarMenuItemProps>(
@@ -950,7 +966,7 @@ const SidebarMenuActions = forwardRef<HTMLDivElement, SidebarMenuActionsProps>(
         ref={ref}
         data-sidebar="menu-actions"
         className={cn(
-          "absolute right-1.5 z-10 flex items-center gap-0.5",
+          "absolute right-1.5 z-10 flex items-center gap-1",
           // The badge keeps the rightmost slot; the cluster sits left of it.
           item?.isSubRow
             ? "group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:right-8"

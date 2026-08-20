@@ -179,8 +179,9 @@ function FooterPromo({ onDismiss }: { onDismiss: () => void }) {
         2
       )}`}
     >
-      <CardImage src={BANNER} />
-      <CardHeader>
+      {/* Capped so a drag-resized rail doesn't grow the banner with it. */}
+      <CardImage src={BANNER} className="aspect-[2/1] max-h-28" />
+      <CardHeader className="gap-0 pt-4">
         <CardTitle>See what&apos;s new</CardTitle>
         <CardDescription>Fresh in Fluid Functionalism</CardDescription>
       </CardHeader>
@@ -375,7 +376,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
     if (o.footerPromo) {
       lines.push(`      {/* anchored promo: Card on a surface one step above */}`);
       lines.push(`      <Card size="compact" dismissible onDismiss={hide} href="/docs">`);
-      lines.push(`        <CardImage src={banner} />`);
+      lines.push(`        <CardImage src={banner} className="aspect-[2/1] max-h-28" />`);
       lines.push(`        <CardHeader>`);
       lines.push(`          <CardTitle>See what's new</CardTitle>`);
       lines.push(`          <CardDescription>Fresh in Fluid Functionalism</CardDescription>`);

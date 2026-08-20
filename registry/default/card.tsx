@@ -498,7 +498,14 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
               onClick={onDismiss}
               aria-label="Dismiss"
               className={cn(
-                "absolute right-2 top-2 z-30 flex h-7 w-7 items-center justify-center text-muted-foreground hover:text-foreground hover:bg-hover cursor-pointer outline-none transition-colors duration-80 focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
+                "absolute right-2 top-2 z-30 flex h-7 w-7 items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer outline-none transition-colors duration-80 focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
+                // Over media the control needs its own ground, or the icon
+                // reads against whatever the image happens to be. Elsewhere
+                // the usual hover fill is enough. The chip takes the button
+                // radius either way.
+                hasImage
+                  ? "bg-card/70 backdrop-blur-sm hover:bg-card"
+                  : "hover:bg-hover",
                 shape.button
               )}
             >

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, createElement, type ReactNode } from "react";
+import { useState, createElement, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
 import {
   SidebarProvider,
@@ -757,6 +757,16 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                       isActive={row.active}
                       onClick={hasChildren ? () => toggleRow(key) : undefined}
                       aria-expanded={hasChildren ? isRowOpen(key) : undefined}
+                      // A row holding a chevron pins its gutter to the hover
+                      // value: the chevron rides the label's padding edge, so
+                      // letting that padding grow on hover would slide the
+                      // chevron sideways. A section header's is static for
+                      // the same reason — its actions never hide.
+                      style={
+                        hasChildren
+                          ? ({ "--row-gutter": "var(--row-gutter-hover)" } as CSSProperties)
+                          : undefined
+                      }
                     >
                       {row.label}
                       {hasChildren && chevron(isRowOpen(key))}

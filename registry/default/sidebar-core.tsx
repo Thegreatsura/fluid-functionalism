@@ -1263,10 +1263,6 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
         ref: ref as Ref<HTMLElement>,
         type: template ? undefined : "button",
         "data-sidebar": "group-action",
-        style: {
-          ...({ "--icon-size": `${sizeClasses.icon}px` } as CSSProperties),
-          ...(props.style ?? {}),
-        },
         className: cn(
           inCluster
             ? "relative flex size-6 items-center justify-center text-muted-foreground outline-none"
@@ -1281,6 +1277,12 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
           className
         ),
         ...props,
+        // After ...props: the spread would otherwise replace this object
+        // wholesale and drop the icon-size the glyph is sized from.
+        style: {
+          ...({ "--icon-size": `${sizeClasses.icon}px` } as CSSProperties),
+          ...(props.style ?? {}),
+        },
       },
       content
     );

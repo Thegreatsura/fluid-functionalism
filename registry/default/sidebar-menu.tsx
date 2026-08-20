@@ -846,7 +846,6 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
         "data-status": status,
         "aria-current": effectiveActive ? "page" : undefined,
         tabIndex: tabIdx,
-        style: { ...gutterVars, ...(props.style ?? {}) },
         className: cn(
           sidebarMenuButtonVariants({ variant }),
           heightClass,
@@ -854,6 +853,7 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
           className
         ),
         ...props,
+        style: { ...gutterVars, ...(props.style ?? {}) },
       },
       inner
     );
@@ -893,7 +893,6 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
         type: template ? undefined : "button",
         "data-sidebar": "menu-action",
         "data-show-on-hover": showOnHover ? "" : undefined,
-        style: { ...({ "--icon-size": `${sizeClasses.icon}px` } as CSSProperties), ...(props.style ?? {}) },
         className: cn(
           // right-1.5 centers the 24px hit-box on the same axis as the badge
           // (right-2 + min-w-5): both land 18px from the row's right edge.
@@ -932,6 +931,7 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
           onClick?.(event);
         },
         ...props,
+        style: { ...({ "--icon-size": `${sizeClasses.icon}px` } as CSSProperties), ...(props.style ?? {}) },
       },
       content
     );
@@ -1202,7 +1202,6 @@ const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonP
         "data-active": isActive ? "true" : undefined,
         "aria-current": isActive ? "page" : undefined,
         tabIndex: tabIdx,
-        style: { ...gutterVars, ...(props.style ?? {}) },
         className: cn(
           "relative z-10 flex w-full cursor-pointer select-none items-center gap-2 pl-2 text-left outline-none",
           "transition-[padding] duration-80 pr-[var(--row-gutter)] group-hover/menu-sub-item:pr-[var(--row-gutter-hover)] group-focus-within/menu-sub-item:pr-[var(--row-gutter-hover)] group-has-[[data-sidebar=menu-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-sub-item:pr-[var(--row-gutter-hover)]",
@@ -1211,6 +1210,7 @@ const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonP
           className
         ),
         ...props,
+        style: { ...gutterVars, ...(props.style ?? {}) },
       },
       <>
         {Icon && (

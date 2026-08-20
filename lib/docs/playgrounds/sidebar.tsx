@@ -41,7 +41,9 @@ import {
 import { MenuItem } from "@/registry/default/menu-item";
 import {
   Card,
+  CardGroup,
   CardImage,
+  CardMedia,
   CardHeader,
   CardTitle,
   CardDescription,
@@ -97,8 +99,8 @@ interface PlayState {
   footerPrimary: "dropdown" | "none";
   footerStack: Stack;
   footerActions: Count2;
-  /** Anchored promo card above the footer rows. */
-  footerPromo: boolean;
+  /** Anchored callout above the footer rows: a leading icon, or a banner. */
+  footerCallout: "none" | "icon" | "media";
 }
 
 const DEFAULT_STATE: PlayState = {
@@ -120,7 +122,7 @@ const DEFAULT_STATE: PlayState = {
   footerPrimary: "dropdown",
   footerStack: "horizontal",
   footerActions: 2,
-  footerPromo: true,
+  footerCallout: "media",
 };
 
 // ── Content sets ─────────────────────────────────────────
@@ -162,30 +164,65 @@ const SECTION_LABELS = {
   menu: ["Platform", "Workspace"],
 } as const;
 
-/** Anchored footer promo — the Card component on a surface one step above
- *  the sidebar it sits in, so it reads as a card resting on the rail. */
-function FooterPromo({ onDismiss }: { onDismiss: () => void }) {
+/** Anchored footer callout — the Card component on a surface one step above
+ *  the sidebar it sits in, so it reads as a card resting on the rail.
+ *  "media" leads with the gradient banner; "icon" leads with an icon tile on
+ *  a single inline row, for when the footer has less room to give. */
+function FooterCallout({
+  variant,
+  onDismiss,
+}: {
+  variant: "icon" | "media";
+  onDismiss: () => void;
+}) {
   const substrate = useSurface();
   const shape = useShape();
-  return (
+  const icons = useIcons();
+  const surface = `${shape.container} overflow-hidden ${surfaceClasses(
+    Math.min(substrate + 1, 8),
+    2
+  )}`;
+
+  const card = (
     <Card
       size="compact"
       dismissible
       onDismiss={onDismiss}
       href="/docs"
       label="See what's new in Fluid Functionalism"
-      className={`${shape.container} overflow-hidden ${surfaceClasses(
-        Math.min(substrate + 1, 8),
-        2
-      )}`}
+      className={surface}
     >
-      {/* Capped so a drag-resized rail doesn't grow the banner with it. */}
-      <CardImage src={BANNER} className="aspect-[2/1] max-h-28" />
-      <CardHeader className="gap-0 pt-4">
-        <CardTitle>See what&apos;s new</CardTitle>
-        <CardDescription>Fresh in Fluid Functionalism</CardDescription>
-      </CardHeader>
+      {variant === "media" ? (
+        <>
+          {/* Capped so a drag-resized rail doesn't grow the banner with it. */}
+          <CardImage src={BANNER} className="aspect-[2/1] max-h-28" />
+          <CardHeader className="gap-0 pt-4">
+            <CardTitle>See what&apos;s new</CardTitle>
+            <CardDescription>Fresh in Fluid Functionalism</CardDescription>
+          </CardHeader>
+        </>
+      ) : (
+        <>
+          <CardMedia icon={icons.rocket} size={18} />
+          {/* The dismiss control floats over the row here (no banner to sit
+              on), so the text reserves the 36px it occupies plus air — which
+              leaves room for a short line, keeping the row two lines tall. */}
+          <CardHeader className="gap-0 pr-10">
+            <CardTitle>See what&apos;s new</CardTitle>
+            <CardDescription>Latest updates</CardDescription>
+          </CardHeader>
+        </>
+      )}
     </Card>
+  );
+
+  // Inline orientation (leading media, text beside it) comes from the group.
+  return variant === "icon" ? (
+    <CardGroup orientation="inline" proximityHover={false}>
+      {card}
+    </CardGroup>
+  ) : (
+    card
   );
 }
 
@@ -370,24 +407,45 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   lines.push(`    </SidebarContent>`);
 
   // Footer
-  if (o.footerPrimary === "dropdown" || o.footerActions > 0 || o.footerPromo) {
+  if (o.footerPrimary === "dropdown" || o.footerActions > 0 || o.footerCallout !== "none") {
     const footerActions = FOOTER_ACTION_SET.slice(0, o.footerActions);
-    const promoOnly =
-      o.footerPromo && o.footerPrimary === "none" && footerActions.length === 0;
+    // Flush to the edge only in the inset variant (see the shell).
+    const calloutOnly =
+      o.footerCallout !== "none" &&
+      o.footerPrimary === "none" &&
+      footerActions.length === 0 &&
+      o.design === "inset";
     lines.push(
-      promoOnly
+      calloutOnly
         ? `    {/* nothing under the card — it sits flush on the edge */}\n    <SidebarFooter className="pb-0">`
         : `    <SidebarFooter>`
     );
-    if (o.footerPromo) {
-      lines.push(`      {/* anchored promo: Card on a surface one step above */}`);
+    if (o.footerCallout !== "none") {
+      const media =
+        o.footerCallout === "media"
+          ? `        <CardImage src={banner} className="aspect-[2/1] max-h-28" />`
+          : `        <CardMedia icon={RocketIcon} size={18} />`;
+      lines.push(`      {/* anchored callout: Card on a surface one step above */}`);
+      if (o.footerCallout === "icon") {
+        lines.push(`      {/* inline orientation puts the icon beside the text */}`);
+        lines.push(`      <CardGroup orientation="inline" proximityHover={false}>`);
+      }
       lines.push(`      <Card size="compact" dismissible onDismiss={hide} href="/docs">`);
-      lines.push(`        <CardImage src={banner} className="aspect-[2/1] max-h-28" />`);
-      lines.push(`        <CardHeader>`);
+      lines.push(media);
+      lines.push(
+        o.footerCallout === "icon"
+          ? `        <CardHeader className="gap-0 pr-10">`
+          : `        <CardHeader className="gap-0 pt-4">`
+      );
       lines.push(`          <CardTitle>See what's new</CardTitle>`);
-      lines.push(`          <CardDescription>Fresh in Fluid Functionalism</CardDescription>`);
+      lines.push(
+        o.footerCallout === "icon"
+          ? `          <CardDescription>Latest updates</CardDescription>`
+          : `          <CardDescription>Fresh in Fluid Functionalism</CardDescription>`
+      );
       lines.push(`        </CardHeader>`);
       lines.push(`      </Card>`);
+      if (o.footerCallout === "icon") lines.push(`      </CardGroup>`);
     }
     if (o.footerStack === "horizontal") {
       if (footerActions.length > 0) {
@@ -463,7 +521,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       footerPrimary: pick(["dropdown", "dropdown", "none"] as const),
       footerStack: pick(["horizontal", "horizontal", "vertical"] as const),
       footerActions: pick([0, 1, 2, 2] as const),
-      footerPromo: Math.random() > 0.4,
+      footerCallout: pick(["none", "icon", "media", "media"] as const),
     });
   };
 
@@ -489,8 +547,14 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
   const footerActionSet = FOOTER_ACTION_SET.slice(0, state.footerActions);
   // A promo card with no rows under it has nothing to be spaced from, so the
   // footer drops its bottom padding and the card sits flush on the edge.
-  const promoOnlyFooter =
-    state.footerPromo && state.footerPrimary === "none" && footerActionSet.length === 0;
+  // Flush only in the inset variant: there the rail has no card edge of its
+  // own, so the callout can land on the bottom. Floating and sidebar keep
+  // their gutter — the callout has a card edge (or a border) to clear.
+  const calloutOnlyFooter =
+    state.footerCallout !== "none" &&
+    state.footerPrimary === "none" &&
+    footerActionSet.length === 0 &&
+    state.design === "inset";
 
   /** Row actions for one level: a single action uses the canonical part,
    *  more than one goes through the cluster that owns the row's gutter. */
@@ -801,9 +865,14 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           </SidebarContent>
           {(state.footerPrimary === "dropdown" ||
             footerActionSet.length > 0 ||
-            state.footerPromo) && (
-            <SidebarFooter className={promoOnlyFooter ? "pb-0" : undefined}>
-              {state.footerPromo && <FooterPromo onDismiss={() => set("footerPromo", false)} />}
+            state.footerCallout !== "none") && (
+            <SidebarFooter className={calloutOnlyFooter ? "pb-0" : undefined}>
+              {state.footerCallout !== "none" && (
+                <FooterCallout
+                  variant={state.footerCallout}
+                  onDismiss={() => set("footerCallout", "none")}
+                />
+              )}
               {/* Vertical stacking puts the actions above the user row, so
                   identity stays anchored to the sidebar's outer edge —
                   mirroring the brand row at the top. */}
@@ -1077,12 +1146,17 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           options={countOptions(2)}
         />
       </PlayField>
-      <Switch
-        label="Promo card"
-        checked={state.footerPromo}
-        onToggle={() => set("footerPromo", !state.footerPromo)}
-        className={PLAY_SWITCH}
-      />
+      <PlayField label="Callout">
+        <PlaySelect
+          value={state.footerCallout}
+          onChange={(v) => set("footerCallout", v as PlayState["footerCallout"])}
+          options={[
+            { value: "none", label: "None" },
+            { value: "icon", label: "Icon" },
+            { value: "media", label: "Media" },
+          ]}
+        />
+      </PlayField>
     </PlaygroundPanel>
   );
 

@@ -657,6 +657,67 @@ html.transitioning *::after {
   );
 }
 
+/* ── scroll-divider — a hairline marking a scroll edge ──────────────────────
+   Pairs with .scroll-fade on a descendant viewport: where the fade dissolves
+   content, this draws the line that says "the region continues". The line
+   can't live inside the scroller — the fade's own mask would erase it at
+   exactly the edge it belongs on — so it rides the parent's pseudo-elements
+   and borrows the scroller's timeline by name. Browsers without scroll-driven
+   timelines simply get the fade, as before. */
+@keyframes sf-divider-start {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes sf-divider-end {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@supports (timeline-scope: --sf) {
+  .scroll-divider {
+    position: relative;
+    timeline-scope: --sf-scroller;
+    --scroll-divider-size: 48px;
+  }
+  .scroll-divider .scroll-fade {
+    scroll-timeline-name: --sf-scroller;
+  }
+  .scroll-divider::before,
+  .scroll-divider::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: var(--border);
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+  }
+  /* Top edge: absent at rest, fading in as content passes above. */
+  .scroll-divider::before {
+    top: 0;
+    animation: sf-divider-start both linear;
+    animation-timeline: --sf-scroller;
+    animation-range: 0 var(--scroll-divider-size);
+  }
+  /* Bottom edge: present while content continues below, gone at the end. */
+  .scroll-divider::after {
+    bottom: 0;
+    animation: sf-divider-end both linear;
+    animation-timeline: --sf-scroller;
+    animation-range: calc(100% - var(--scroll-divider-size)) 100%;
+  }
+}
+
 /* Scroll-aware: the start/end edge stays solid until there's content past it. */
 @supports (animation-timeline: scroll()) {
   .scroll-fade {

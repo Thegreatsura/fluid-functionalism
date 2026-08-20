@@ -222,7 +222,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
     }
 
     return (
-      <ScrollArea className={cn("min-h-0 w-full flex-1", className)} viewportClassName={cn("scroll-fade", viewportClassName)}>
+      <ScrollArea className={cn("scroll-divider min-h-0 w-full flex-1", className)} viewportClassName={cn("scroll-fade", viewportClassName)}>
         <div ref={ref} data-sidebar="content" className="flex w-full min-w-0 flex-col" {...props}>
           {children}
         </div>

@@ -1252,11 +1252,11 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
         },
         className: cn(
           inCluster
-            ? "relative flex size-5 items-center justify-center text-muted-foreground outline-none"
-            // right-4 puts the 20px box's centre 26px from the sidebar's inner
-            // edge — the same axis the rows' badges and actions sit on, so the
-            // section header and the rows below it share one column.
-            : "absolute right-4 top-3.5 flex size-5 items-center justify-center text-muted-foreground outline-none",
+            ? "relative flex size-6 items-center justify-center text-muted-foreground outline-none"
+            // size-6 matches the rows' action hit-box, and right-3.5 puts that
+            // 24px box's centre 26px from the sidebar's inner edge — the axis
+            // the rows' badges and actions already sit on.
+            : "absolute right-3.5 top-3 flex size-6 items-center justify-center text-muted-foreground outline-none",
           "hover:bg-hover hover:text-foreground transition-[color,background-color] duration-80",
           "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
           "[&_svg]:size-[var(--icon-size)] [&_svg]:shrink-0",
@@ -1282,10 +1282,10 @@ const SidebarGroupActions = forwardRef<HTMLDivElement, SidebarGroupActionsProps>
       ref={ref}
       data-sidebar="group-actions"
       className={cn(
-        // right-4 lands the last action's centre 26px from the sidebar's
-        // inner edge — the rows' badge/action axis, so the header's icons
-        // line up with the column below them.
-        "absolute right-4 top-2 z-10 flex h-8 items-center gap-1",
+        // right-3.5 lands the last 24px action's centre 26px from the
+        // sidebar's inner edge — the rows' badge/action axis, so the header's
+        // controls line up with the column below them.
+        "absolute right-3.5 top-2 z-10 flex h-8 items-center gap-1",
         className
       )}
       {...props}

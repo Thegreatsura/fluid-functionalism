@@ -700,13 +700,18 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           active: i.active,
         }));
 
+  // Same treatment as a collapsible section label: while the row is open the
+  // chevron waits for hover, and once collapsed it stays put as the cue to
+  // reopen.
   const chevron = (open: boolean) => (
     <span className="ml-auto -mr-0.5 flex size-6 shrink-0 items-center justify-center">
       {createElement(icons["chevron-down"], {
         size: iconSize,
         strokeWidth: 1.5,
-        className: `text-muted-foreground transition-transform duration-80 ${
-          open ? "" : "-rotate-90"
+        className: `text-muted-foreground transition-[opacity,transform] duration-80 ${
+          open
+            ? "opacity-0 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100"
+            : "-rotate-90 opacity-100"
         }`,
       })}
     </span>

@@ -537,6 +537,9 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
           // Flex order (not DOM order) decides the side, so consumers can
           // keep Sidebar before SidebarInset regardless of `side`.
           side === "right" && "order-last",
+          // The inset rail has no card edge of its own, so its scroll hairline
+          // hugs the rows' 8px gutter instead of running panel-wide.
+          variant === "inset" && "[--scroll-divider-inset:8px]",
           BREAKPOINT_HIDDEN[mobileBreakpoint],
           className
         )}
@@ -1179,11 +1182,15 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
           "aria-expanded": group.open,
           "aria-controls": group.contentId,
           onClick: group.toggle,
-          // Header actions overlay the label's right edge — pad past the
-          // cluster (24px per size-5 action + gap) so the chevron clears it.
+          // The action cluster overlays the label's right edge, so the label
+          // pads past it — far enough that the chevron lands one cluster gap
+          // (4px) to its left and the whole trailing run keeps a single
+          // rhythm. Cluster width is 24px per action plus 4px between them;
+          // add that gap again, less the 8px the group's padding already
+          // gives back: 28n + 6.
           style:
             group.actionsCount > 0
-              ? { paddingRight: group.actionsCount * 24 + 4 }
+              ? { paddingRight: group.actionsCount * 28 + 6 }
               : undefined,
           className: cn(
             "group/group-label flex h-8 w-full shrink-0 cursor-pointer select-none items-center gap-2 px-2 text-left text-muted-foreground/70 outline-none",

@@ -694,8 +694,10 @@ html.transitioning *::after {
   .scroll-divider::after {
     content: "";
     position: absolute;
-    left: 0;
-    right: 0;
+    /* Inset so the line can hug the content's own gutter rather than the
+       panel edge — the sidebar's inset variant sets this to 8px. */
+    left: var(--scroll-divider-inset, 0px);
+    right: var(--scroll-divider-inset, 0px);
     height: 1px;
     background-color: var(--border);
     pointer-events: none;

@@ -1236,6 +1236,7 @@ const GroupActionsContext = createContext(false);
 const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps>(
   ({ className, render, asChild, children, ...props }, ref) => {
     const shape = useShape();
+    const sizeClasses = useSize();
     const inCluster = useContext(GroupActionsContext);
     const { template, content } = resolveSlotTemplate(render, asChild, children);
     return slotElement(
@@ -1245,6 +1246,10 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
         ref: ref as Ref<HTMLElement>,
         type: template ? undefined : "button",
         "data-sidebar": "group-action",
+        style: {
+          ...({ "--icon-size": `${sizeClasses.icon}px` } as CSSProperties),
+          ...(props.style ?? {}),
+        },
         className: cn(
           inCluster
             ? "relative flex size-5 items-center justify-center text-muted-foreground outline-none"
@@ -1254,7 +1259,7 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
             : "absolute right-4 top-3.5 flex size-5 items-center justify-center text-muted-foreground outline-none",
           "hover:bg-hover hover:text-foreground transition-[color,background-color] duration-80",
           "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
-          "[&_svg]:size-3.5 [&_svg]:shrink-0",
+          "[&_svg]:size-[var(--icon-size)] [&_svg]:shrink-0",
           shape.item,
           className
         ),

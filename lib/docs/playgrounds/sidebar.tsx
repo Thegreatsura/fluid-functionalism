@@ -29,6 +29,7 @@ import {
 } from "@/components/flavored/sidebar";
 import { useIcons, type IconName } from "@/lib/icon-context";
 import { useShape } from "@/lib/shape-context";
+import { useSize } from "@/lib/size-context";
 import { fontWeights } from "@/lib/font-weight";
 import { Switch } from "@/registry/radix/switch";
 import { Button } from "@/registry/radix/button";
@@ -527,6 +528,9 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
   };
 
   const ChevronsUpDown = icons["chevrons-up-down"];
+  // Chevrons and the header/footer trailing glyphs ride the same ladder step
+  // as every other sidebar icon.
+  const iconSize = useSize().icon;
 
   /** Tooltip content with the action's keystroke, on the same inverted
    *  surface treatment the sidebar trigger's tooltip uses. */
@@ -651,7 +655,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                 </span>
                 <span className="ml-auto inline-flex">
                   {createElement(icons["chevron-down"], {
-                    size: 14,
+                    size: iconSize,
                     strokeWidth: 1.5,
                     className: "text-muted-foreground",
                   })}
@@ -696,7 +700,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
   const chevron = (open: boolean) => (
     <span className="ml-auto -mr-0.5 inline-flex w-6 justify-center">
       {createElement(icons["chevron-down"], {
-        size: 14,
+        size: iconSize,
         strokeWidth: 1.5,
         className: `text-muted-foreground transition-transform duration-80 ${
           open ? "" : "-rotate-90"
@@ -825,7 +829,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
               <div className="flex flex-col gap-0.5">
                 <div className="group/search relative">
                   {createElement(icons.search, {
-                    size: 14,
+                    size: iconSize,
                     strokeWidth: 1.5,
                     className:
                       "pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground",
@@ -914,7 +918,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                               </span>
                               <span className="ml-auto inline-flex">
                                 {createElement(ChevronsUpDown, {
-                                  size: 14,
+                                  size: iconSize,
                                   strokeWidth: 1.5,
                                   className: "text-muted-foreground",
                                 })}

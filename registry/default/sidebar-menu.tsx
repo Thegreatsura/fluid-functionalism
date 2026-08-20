@@ -877,6 +877,7 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
         type: template ? undefined : "button",
         "data-sidebar": "menu-action",
         "data-show-on-hover": showOnHover ? "" : undefined,
+        style: { ...({ "--icon-size": `${sizeClasses.icon}px` } as CSSProperties), ...(props.style ?? {}) },
         className: cn(
           // right-1.5 centers the 24px hit-box on the same axis as the badge
           // (right-2 + min-w-5): both land 18px from the row's right edge.
@@ -894,7 +895,9 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
             (item?.isSubRow || sizeClasses.variant === "compact" ? "top-0.5" : "top-1"),
           "hover:bg-hover hover:text-foreground transition-[color,background-color,opacity] duration-80",
           "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
-          "[&_svg]:size-3.5 [&_svg]:shrink-0",
+          // One icon size across the sidebar: row actions match the leading
+          // icons and the section header's actions, all on the size ladder.
+          "[&_svg]:size-[var(--icon-size)] [&_svg]:shrink-0",
           shape.item,
           // Reveal on the OWN row only. A sub action must not use the
           // menu-item group — its nearest one is the parent li, which would

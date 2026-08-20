@@ -183,36 +183,37 @@ function FooterCallout({
     2
   )}`;
 
+  // CardImage / CardMedia stay DIRECT children: Card detects the image by
+  // scanning its own children, and a fragment wrapper would hide it (which
+  // silently drops the dismiss control's scrim).
   const card = (
     <Card
       size="compact"
       dismissible
+      dismissOnHover
       onDismiss={onDismiss}
-      href="/docs"
-      label="See what's new in Fluid Functionalism"
-      className={surface}
+      href="/docs/sidebar"
+      label="Sidebar is here — new in Fluid Functionalism"
+      // The icon row drops the card's 60px floor and tightens its inset;
+      // there's one line of text beside the icon, nothing to give room to.
+      className={`${surface}${variant === "icon" ? " min-h-0 pl-2.5" : ""}`}
     >
       {variant === "media" ? (
-        <>
-          {/* Capped so a drag-resized rail doesn't grow the banner with it. */}
-          <CardImage src={BANNER} className="aspect-[2/1] max-h-28" />
-          <CardHeader className="gap-0 pt-4">
-            <CardTitle>See what&apos;s new</CardTitle>
-            <CardDescription>Fresh in Fluid Functionalism</CardDescription>
-          </CardHeader>
-        </>
+        // Capped so a drag-resized rail doesn't grow the banner with it.
+        <CardImage src={BANNER} className="aspect-[2/1] max-h-28" />
       ) : (
-        <>
-          <CardMedia icon={icons.rocket} size={18} />
-          {/* The dismiss control floats over the row here (no banner to sit
-              on), so the text reserves the 36px it occupies plus air — which
-              leaves room for a short line, keeping the row two lines tall. */}
-          <CardHeader className="gap-0 pr-10">
-            <CardTitle>See what&apos;s new</CardTitle>
-            <CardDescription>Latest updates</CardDescription>
-          </CardHeader>
-        </>
+        <CardMedia icon={icons["panel-left"]} size={18} />
       )}
+      {/* On the icon row the dismiss control floats over the text rather than
+          over a banner, so that row reserves the 36px it occupies plus air. */}
+      <CardHeader
+        className={variant === "media" ? "gap-0 pt-4" : "gap-0 py-2 pr-10"}
+      >
+        <CardTitle className="truncate">Sidebar is here</CardTitle>
+        <CardDescription className="truncate">
+          {variant === "media" ? "New in Fluid Functionalism" : "See what's new"}
+        </CardDescription>
+      </CardHeader>
     </Card>
   );
 
@@ -424,24 +425,24 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
       const media =
         o.footerCallout === "media"
           ? `        <CardImage src={banner} className="aspect-[2/1] max-h-28" />`
-          : `        <CardMedia icon={RocketIcon} size={18} />`;
+          : `        <CardMedia icon={PanelLeftIcon} size={18} />`;
       lines.push(`      {/* anchored callout: Card on a surface one step above */}`);
       if (o.footerCallout === "icon") {
         lines.push(`      {/* inline orientation puts the icon beside the text */}`);
         lines.push(`      <CardGroup orientation="inline" proximityHover={false}>`);
       }
-      lines.push(`      <Card size="compact" dismissible onDismiss={hide} href="/docs">`);
+      lines.push(`      <Card size="compact" dismissible dismissOnHover onDismiss={hide} href="/docs/sidebar">`);
       lines.push(media);
       lines.push(
         o.footerCallout === "icon"
-          ? `        <CardHeader className="gap-0 pr-10">`
+          ? `        <CardHeader className="gap-0 py-2 pr-10">`
           : `        <CardHeader className="gap-0 pt-4">`
       );
-      lines.push(`          <CardTitle>See what's new</CardTitle>`);
+      lines.push(`          <CardTitle className="truncate">Sidebar is here</CardTitle>`);
       lines.push(
         o.footerCallout === "icon"
-          ? `          <CardDescription>Latest updates</CardDescription>`
-          : `          <CardDescription>Fresh in Fluid Functionalism</CardDescription>`
+          ? `          <CardDescription className="truncate">See what's new</CardDescription>`
+          : `          <CardDescription className="truncate">New in Fluid Functionalism</CardDescription>`
       );
       lines.push(`        </CardHeader>`);
       lines.push(`      </Card>`);

@@ -264,6 +264,10 @@ interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, "onClick"> {
   disabled?: boolean;
   /** Shows a dismiss (✕) button in the corner. */
   dismissible?: boolean;
+  /** Keep the dismiss control hidden until the card is hovered or holds
+   *  focus — for cards that sit in a dense surface (a sidebar footer, say)
+   *  where a permanent ✕ would compete with the content. @default false */
+  dismissOnHover?: boolean;
   onDismiss?: () => void;
   /** Pins the card to one step of the size ladder (see /docs/sizes) — compact
    *  tightens type and padding. Omitted, it follows the surrounding
@@ -283,6 +287,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
       selected = false,
       disabled = false,
       dismissible = false,
+      dismissOnHover = false,
       onDismiss,
       size,
       index,
@@ -506,6 +511,10 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
                 hasImage
                   ? "bg-card/70 backdrop-blur-sm hover:bg-card"
                   : "hover:bg-hover",
+                // Revealed on hover / focus. focus-visible covers the keyboard
+                // path, since the control is the only way to dismiss.
+                dismissOnHover &&
+                  "opacity-0 transition-opacity duration-80 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-visible:opacity-100",
                 shape.button
               )}
             >

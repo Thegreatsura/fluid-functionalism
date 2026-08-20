@@ -684,7 +684,7 @@ function MenuFeaturesPreview() {
                     aria-expanded={projectsOpen}
                   >
                     Projects
-                    <span className="ml-auto -mr-0.5 inline-flex w-6 justify-center">
+                    <span className="ml-auto -mr-0.5 flex size-6 shrink-0 items-center justify-center">
                       <ChevronDown
                         size={14}
                         strokeWidth={1.5}

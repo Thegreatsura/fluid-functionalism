@@ -536,8 +536,11 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
    *  surface treatment the sidebar trigger's tooltip uses. */
   const tipWithShortcut = (label: string, shortcut: string) => (
     <span className="flex items-center gap-2">
-      {label}
-      <kbd className="flex h-4 min-w-4 items-center justify-center rounded border border-background/30 px-1 font-sans text-[10px] text-background/80">
+      {/* A flex row escapes the tooltip surface's text-box trim, so the label
+          re-applies it and the chip pulls its box back with -my-1 — together
+          they keep this the same height as a tooltip without a shortcut. */}
+      <span className="[text-box:trim-both_cap_alphabetic]">{label}</span>
+      <kbd className="-my-1 flex h-4 min-w-4 items-center justify-center rounded border border-background/30 px-1 font-sans text-[10px] text-background/80">
         {shortcut}
       </kbd>
     </span>
@@ -698,7 +701,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
         }));
 
   const chevron = (open: boolean) => (
-    <span className="ml-auto -mr-0.5 inline-flex w-6 justify-center">
+    <span className="ml-auto -mr-0.5 flex size-6 shrink-0 items-center justify-center">
       {createElement(icons["chevron-down"], {
         size: iconSize,
         strokeWidth: 1.5,

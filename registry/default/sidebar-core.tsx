@@ -694,7 +694,7 @@ export type SidebarTriggerProps = ButtonProps;
 /** Keystroke chip rendered inside the (inverted) tooltip surface. */
 function ShortcutKbd({ children }: { children: ReactNode }) {
   return (
-    <kbd className="flex h-4 min-w-4 items-center justify-center rounded border border-background/30 px-1 font-sans text-[10px] text-background/80">
+    <kbd className="-my-1 flex h-4 min-w-4 items-center justify-center rounded border border-background/30 px-1 font-sans text-[10px] text-background/80">
       {children}
     </kbd>
   );
@@ -728,7 +728,12 @@ const SidebarTrigger = forwardRef<HTMLButtonElement, SidebarTriggerProps>(
         side="bottom"
         content={
           <span className="flex items-center gap-1.5">
-            {collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            {/* A flex row escapes the surface's text-box trim, so the label
+                re-applies it — otherwise the shortcut row would sit taller
+                than a tooltip without a chip. */}
+            <span className="[text-box:trim-both_cap_alphabetic]">
+              {collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            </span>
             <ShortcutKbd>{shortcutKey}</ShortcutKbd>
           </span>
         }
@@ -827,7 +832,7 @@ const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(
               <span style={semibold}>Drag</span> to resize
             </span>
             <span className="flex items-center gap-1.5">
-              <span>
+              <span className="[text-box:trim-both_cap_alphabetic]">
                 <span style={semibold}>Click</span> to collapse
               </span>
               <ShortcutKbd>{shortcutKey}</ShortcutKbd>
@@ -1133,6 +1138,7 @@ export interface SidebarGroupLabelProps extends HTMLAttributes<HTMLDivElement> {
 const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
   ({ className, render, asChild, children, ...props }, ref) => {
     const sizeVariant = useSizeVariant();
+    const sizeClasses = useSize();
     const group = useContext(SidebarGroupContext);
     const shape = useShape();
     const ChevronDownIcon = useIcon("chevron-down");
@@ -1191,16 +1197,20 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
         },
         <>
           {labelContent}
-          <ChevronDownIcon
-            size={14}
-            strokeWidth={1.5}
-            className={cn(
-              "ml-auto shrink-0 transition-[opacity,transform] duration-80",
-              group.open
-                ? "opacity-0 group-hover/group-label:opacity-100 group-focus-visible/group-label:opacity-100"
-                : "-rotate-90 opacity-100"
-            )}
-          />
+          {/* The chevron occupies an action-sized box, so it reads as one more
+              icon in the row rather than a smaller glyph tacked on the end. */}
+          <span className="ml-auto flex size-6 shrink-0 items-center justify-center">
+            <ChevronDownIcon
+              size={sizeClasses.icon}
+              strokeWidth={1.5}
+              className={cn(
+                "shrink-0 transition-[opacity,transform] duration-80",
+                group.open
+                  ? "opacity-0 group-hover/group-label:opacity-100 group-focus-visible/group-label:opacity-100"
+                  : "-rotate-90 opacity-100"
+              )}
+            />
+          </span>
         </>
       );
     }

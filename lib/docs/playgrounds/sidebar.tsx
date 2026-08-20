@@ -708,9 +708,11 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       {createElement(icons["chevron-down"], {
         size: iconSize,
         strokeWidth: 1.5,
+        // Scoped to the row's own button, not the <li> — the li also wraps the
+        // sub-menu, so hovering a child would light the parent's chevron.
         className: `text-muted-foreground transition-[opacity,transform] duration-80 ${
           open
-            ? "opacity-0 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100"
+            ? "opacity-0 group-hover/parent-row:opacity-100 group-focus-within/parent-row:opacity-100"
             : "-rotate-90 opacity-100"
         }`,
       })}
@@ -752,6 +754,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                 return (
                   <SidebarMenuItem key={row.key}>
                     <SidebarMenuButton
+                      className={hasChildren ? "group/parent-row" : undefined}
                       icon={row.icon ? icons[row.icon] : undefined}
                       status={row.status}
                       isActive={row.active}

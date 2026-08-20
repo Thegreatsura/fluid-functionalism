@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { createElement, useState, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
 import {
   SidebarProvider,
@@ -16,11 +16,11 @@ import {
   SidebarGroupLabel,
   SidebarGroupAction,
   SidebarGroupActions,
-  SidebarGroupContent,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarMenuAction,
+  SidebarMenuActions,
   SidebarMenuBadge,
   SidebarMenuSkeleton,
   SidebarMenuSub,
@@ -113,109 +113,118 @@ const insetCode = `<Sidebar variant="inset">…</Sidebar>
 // The inset variant pairs with SidebarInset, which renders the main
 // region as an elevated card.`;
 
-const groupsCode = `<SidebarContent>
-  <SidebarGroup>
-    <SidebarGroupLabel>Platform</SidebarGroupLabel>
-    {/* 1–3 header actions, clustered on the label row */}
-    <SidebarGroupActions>
-      <SidebarGroupAction aria-label="Add project" onClick={addProject}>
-        <PlusIcon />
-      </SidebarGroupAction>
-      <SidebarGroupAction aria-label="More options">
-        <MoreIcon />
-      </SidebarGroupAction>
-    </SidebarGroupActions>
-    <SidebarGroupContent>
-      <SidebarMenu>…</SidebarMenu>
-    </SidebarGroupContent>
-  </SidebarGroup>
-  <SidebarSeparator />
-  {/* collapsible: the label becomes the group's accordion toggle —
-      hover raises its contrast and reveals a chevron */}
-  <SidebarGroup collapsible>
-    <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-    <SidebarMenu>…</SidebarMenu>
-  </SidebarGroup>
-  <SidebarSeparator />
-  {/* thread-style rows: a status dot instead of an icon */}
-  <SidebarGroup collapsible>
-    <SidebarGroupLabel>fluid-functionalism</SidebarGroupLabel>
-    <SidebarGroupActions>
-      <SidebarGroupAction aria-label="New thread">
-        <PlusIcon />
-      </SidebarGroupAction>
-    </SidebarGroupActions>
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <SidebarMenuButton status="active">
-          Sidebar component height in demo
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-      <SidebarMenuItem>
-        <SidebarMenuButton status="unread">Sidebar component creation</SidebarMenuButton>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  </SidebarGroup>
-</SidebarContent>`;
 
-const menuFeaturesCode = `const [projectsOpen, setProjectsOpen] = useState(true);
 
-<SidebarMenu>
+
+
+const rowAnatomyCode = `<SidebarMenu>
   <SidebarMenuItem>
-    <SidebarMenuButton icon={InboxIcon}>Inbox</SidebarMenuButton>
-    {/* badge + action coexist: badge keeps the rightmost spot,
-        the action reveals left of it */}
-    <SidebarMenuBadge>12</SidebarMenuBadge>
+    <SidebarMenuButton icon={HomeIcon} isActive>Home</SidebarMenuButton>
+  </SidebarMenuItem>
+
+  <SidebarMenuItem>
+    <SidebarMenuButton icon={CalendarIcon}>Calendar</SidebarMenuButton>
+    {/* Badge keeps the rightmost slot; the action reveals to its left */}
+    <SidebarMenuBadge>5</SidebarMenuBadge>
     <SidebarMenuAction showOnHover aria-label="More options">
       <MoreIcon />
     </SidebarMenuAction>
   </SidebarMenuItem>
+
+  {/* Status leads instead of an icon: active/unread fill the dot, idle
+      rings it, and "unread" is announced to screen readers */}
   <SidebarMenuItem>
-    <SidebarMenuButton icon={ClockIcon}>Recent</SidebarMenuButton>
-    {/* showOnHover reveals the action on row hover or focus; compose a
-        Dropdown via render={<DropdownTrigger/>} for a real menu */}
-    <SidebarMenuAction showOnHover aria-label="More options">
-      <MoreIcon />
-    </SidebarMenuAction>
+    <SidebarMenuButton status="unread">Dark mode token audit</SidebarMenuButton>
   </SidebarMenuItem>
+
+  {/* More than one action: the cluster owns the row's gutter */}
   <SidebarMenuItem>
-    <SidebarMenuButton
-      icon={FolderIcon}
-      onClick={() => setProjectsOpen((v) => !v)}
-    >
-      Projects
-      <ChevronIcon className={projectsOpen ? "rotate-180" : ""} />
-    </SidebarMenuButton>
-    <SidebarMenuSub open={projectsOpen}>
-      {projects.map((p) => (
-        <SidebarMenuSubItem key={p}>
-          <SidebarMenuSubButton href="#" isActive={p === current}>
-            {p}
-          </SidebarMenuSubButton>
-        </SidebarMenuSubItem>
-      ))}
-    </SidebarMenuSub>
+    <SidebarMenuButton icon={FolderIcon}>Design system</SidebarMenuButton>
+    <SidebarMenuActions showOnHover>
+      <SidebarMenuAction aria-label="Add"><PlusIcon /></SidebarMenuAction>
+      <SidebarMenuAction aria-label="Rename"><PencilIcon /></SidebarMenuAction>
+      <SidebarMenuAction aria-label="More options"><MoreIcon /></SidebarMenuAction>
+    </SidebarMenuActions>
   </SidebarMenuItem>
 </SidebarMenu>`;
 
-const loadingCode = `<SidebarContent>
-  <SidebarGroup>
-    <SidebarInput placeholder="Search…" />
-  </SidebarGroup>
-  <SidebarGroup>
+const sectionsCode = `<SidebarContent>
+  {/* collapsible turns the label into the section's accordion */}
+  <SidebarGroup collapsible>
     <SidebarGroupLabel>Platform</SidebarGroupLabel>
-    <SidebarMenu>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <SidebarMenuSkeleton key={i} showIcon />
-      ))}
-    </SidebarMenu>
+    <SidebarGroupActions>
+      <SidebarGroupAction aria-label="Add item"><PlusIcon /></SidebarGroupAction>
+      <SidebarGroupAction aria-label="Section settings"><SlidersIcon /></SidebarGroupAction>
+    </SidebarGroupActions>
+    <SidebarMenu>…</SidebarMenu>
+  </SidebarGroup>
+
+  <SidebarSeparator />
+
+  {/* Uncontrolled, starting closed; pass open/onOpenChange to own it */}
+  <SidebarGroup collapsible defaultOpen={false}>
+    <SidebarGroupLabel>Starts collapsed</SidebarGroupLabel>
+    <SidebarMenu>…</SidebarMenu>
   </SidebarGroup>
 </SidebarContent>`;
 
-const controlledCode = `const [open, setOpen] = useState(true);
+const nestingCode = `const [open, setOpen] = useState(true);
+
+<SidebarMenuItem>
+  <SidebarMenuButton
+    icon={FolderIcon}
+    onClick={() => setOpen((v) => !v)}
+    aria-expanded={open}
+  >
+    Projects
+    <ChevronIcon className={open ? "" : "-rotate-90"} />
+  </SidebarMenuButton>
+
+  {/* The row's own action — a child's hover never reveals it */}
+  <SidebarMenuAction showOnHover aria-label="More options">
+    <MoreIcon />
+  </SidebarMenuAction>
+
+  {/* Collapses on measured height, never an animated "auto" */}
+  <SidebarMenuSub open={open}>
+    {projects.map((p) => (
+      <SidebarMenuSubItem key={p}>
+        <SidebarMenuSubButton href="#" isActive={p === current}>
+          {p}
+        </SidebarMenuSubButton>
+      </SidebarMenuSubItem>
+    ))}
+  </SidebarMenuSub>
+</SidebarMenuItem>`;
+
+const scrollEdgesCode = `{/* SidebarContent scrolls on its own: the viewport carries the
+    scroll-fade mask and the frame draws the hairline, both driven by
+    scroll timelines rather than a listener. Nothing to wire up. */}
+<SidebarContent>
+  <SidebarGroup>
+    <SidebarGroupLabel>Platform</SidebarGroupLabel>
+    <SidebarMenu>{/* more rows than the frame can hold */}</SidebarMenu>
+  </SidebarGroup>
+</SidebarContent>`;
+
+const stateCode = `const [open, setOpen] = useState(true);
 
 <SidebarProvider open={open} onOpenChange={setOpen} persist={false}>
-  <Sidebar>…</Sidebar>
+  <Sidebar>
+    <SidebarContent>
+      <SidebarGroup>
+        <SidebarMenu>
+          {loading
+            ? items.map((item) => <SidebarMenuSkeleton key={item.label} showIcon />)
+            : items.map((item) => (
+                <SidebarMenuItem key={item.label}>
+                  <SidebarMenuButton icon={item.icon}>{item.label}</SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+        </SidebarMenu>
+      </SidebarGroup>
+    </SidebarContent>
+  </Sidebar>
   <SidebarInset>
     <CustomTrigger /> {/* useSidebar().toggleSidebar */}
   </SidebarInset>
@@ -543,251 +552,10 @@ function CollapsePreview() {
   );
 }
 
-function GroupsPreview() {
-  const PlusIcon = useIcon("plus");
-  const MoreIcon = useIcon("more-horizontal");
-  const icons = useIcons();
-  return (
-    <SidebarShellFrame height="h-[640px]">
-      <SidebarProvider className="h-full min-h-0" persist={false}>
-        <Sidebar className="h-full">
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>{SIDEBAR_GROUP_LABEL}</SidebarGroupLabel>
-              {/* Cluster of 1–3 header actions on the label row. */}
-              <SidebarGroupActions>
-                <SidebarGroupAction aria-label="Add project">
-                  <PlusIcon />
-                </SidebarGroupAction>
-                <SidebarGroupAction aria-label="More options">
-                  <MoreIcon />
-                </SidebarGroupAction>
-              </SidebarGroupActions>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {SIDEBAR_ITEMS.slice(0, 3).map((item) => (
-                    <SidebarMenuItem key={item.label}>
-                      <SidebarMenuButton icon={icons[item.icon]} isActive={item.active}>
-                        {item.label}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-            <SidebarSeparator />
-            {/* Collapsible: the label itself is the toggle — hover raises its
-                contrast and reveals the chevron. */}
-            <SidebarGroup collapsible>
-              <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-              <SidebarMenu>
-                {SIDEBAR_ITEMS.slice(3).map((item) => (
-                  <SidebarMenuItem key={item.label}>
-                    <SidebarMenuButton icon={icons[item.icon]}>{item.label}</SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
-            <SidebarSeparator />
-            {/* Thread-style rows: a status dot instead of an icon — filled
-                reads active, ring reads idle. Collapsible label + one action. */}
-            <SidebarGroup collapsible>
-              <SidebarGroupLabel>fluid-functionalism</SidebarGroupLabel>
-              <SidebarGroupActions>
-                <SidebarGroupAction aria-label="New thread">
-                  <PlusIcon />
-                </SidebarGroupAction>
-              </SidebarGroupActions>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton status="active">
-                    Sidebar component height in demo
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton status="idle">Sidebar component creation</SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton status="unread">Dark mode token audit</SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
-        <SidebarInset className="min-h-0">
-          <DemoInsetHeader />
-          <DemoInsetBody />
-        </SidebarInset>
-      </SidebarProvider>
-    </SidebarShellFrame>
-  );
-}
 
-function MenuFeaturesPreview() {
-  const icons = useIcons();
-  const FolderIcon = useIcon("folder");
-  const MoreIcon = useIcon("more-horizontal");
-  const ChevronDown = useIcon("chevron-down");
-  const [projectsOpen, setProjectsOpen] = useState(true);
-  const [current, setCurrent] = useState<string>(SIDEBAR_PROJECTS[0]);
-  return (
-    <SidebarShellFrame height="h-[640px]">
-      <SidebarProvider className="h-full min-h-0" persist={false}>
-        <Sidebar collapsible="none" className="h-full">
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>{SIDEBAR_GROUP_LABEL}</SidebarGroupLabel>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton icon={icons.inbox}>Inbox</SidebarMenuButton>
-                  {/* Badge and action share the row — the badge keeps the
-                      rightmost spot, the ellipsis reveals left of it. */}
-                  <SidebarMenuBadge>12</SidebarMenuBadge>
-                  <DropdownMenu>
-                    <DropdownTrigger
-                      render={
-                        <SidebarMenuAction showOnHover aria-label="More options">
-                          <MoreIcon />
-                        </SidebarMenuAction>
-                      }
-                    />
-                    <DropdownContent className="min-w-0 w-[240px]" align="start" sideOffset={4}>
-                      <MenuItem index={0} icon={icons.pencil} label="Rename" onSelect={() => {}} />
-                      <MenuItem index={1} icon={icons.link} label="Share" onSelect={() => {}} />
-                      <MenuItem index={2} icon={icons.x} label="Delete" onSelect={() => {}} />
-                    </DropdownContent>
-                  </DropdownMenu>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton icon={icons.clock}>Recent</SidebarMenuButton>
-                  <DropdownMenu>
-                    <DropdownTrigger
-                      render={
-                        <SidebarMenuAction showOnHover aria-label="More options">
-                          <MoreIcon />
-                        </SidebarMenuAction>
-                      }
-                    />
-                    {/* Fixed 240px = the header/footer rows' trigger width, so
-                        every sidebar menu reads as one family. */}
-                    <DropdownContent className="min-w-0 w-[240px]" align="start" sideOffset={4}>
-                      <MenuItem index={0} icon={icons.pencil} label="Rename" onSelect={() => {}} />
-                      <MenuItem index={1} icon={icons.link} label="Share" onSelect={() => {}} />
-                      <MenuItem index={2} icon={icons.x} label="Delete" onSelect={() => {}} />
-                    </DropdownContent>
-                  </DropdownMenu>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    icon={FolderIcon}
-                    onClick={() => setProjectsOpen((v) => !v)}
-                    aria-expanded={projectsOpen}
-                  >
-                    Projects
-                    <span className="ml-auto -mr-0.5 flex size-6 shrink-0 items-center justify-center">
-                      <ChevronDown
-                        size={14}
-                        strokeWidth={1.5}
-                        className={`text-muted-foreground transition-transform duration-80 ${
-                          projectsOpen ? "" : "-rotate-90"
-                        }`}
-                      />
-                    </span>
-                  </SidebarMenuButton>
-                  <SidebarMenuSub open={projectsOpen}>
-                    {SIDEBAR_PROJECTS.map((p) => (
-                      <SidebarMenuSubItem key={p}>
-                        <SidebarMenuSubButton
-                          href="#"
-                          isActive={p === current}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setCurrent(p);
-                          }}
-                        >
-                          {p}
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    ))}
-                  </SidebarMenuSub>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
-        <SidebarInset className="min-h-0">
-          <div className="flex h-full items-center justify-center p-6 text-center text-[13px] text-muted-foreground">
-            One highlight travels between rows. Actions show on hover; Projects
-            collapses its sub-menu.
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
-    </SidebarShellFrame>
-  );
-}
 
-function LoadingPreview() {
-  return (
-    <SidebarShellFrame height="h-[640px]">
-      <SidebarProvider className="h-full min-h-0" persist={false}>
-        <Sidebar collapsible="none" className="h-full">
-          <SidebarContent>
-            <SidebarGroup>
-              <DemoSearch />
-            </SidebarGroup>
-            <SidebarGroup>
-              <SidebarGroupLabel>{SIDEBAR_GROUP_LABEL}</SidebarGroupLabel>
-              <SidebarMenu>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <SidebarMenuSkeleton key={i} showIcon />
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
-        <SidebarInset className="min-h-0">
-          <DemoInsetBody />
-        </SidebarInset>
-      </SidebarProvider>
-    </SidebarShellFrame>
-  );
-}
 
-function ControlledStateReadout() {
-  const { state, toggleSidebar } = useSidebar();
-  return (
-    <Button variant="secondary" size="compact" onClick={toggleSidebar}>
-      Sidebar is {state}
-    </Button>
-  );
-}
 
-function ControlledPreview() {
-  const [open, setOpen] = useState(true);
-  return (
-    <SidebarShellFrame height="h-[640px]">
-      <SidebarProvider
-        className="h-full min-h-0"
-        persist={false}
-        shortcut={null}
-        open={open}
-        onOpenChange={setOpen}
-      >
-        <Sidebar className="h-full">
-          <SidebarContent>
-            <DemoMenu badges={false} />
-          </SidebarContent>
-        </Sidebar>
-        <SidebarInset className="min-h-0">
-          <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2">
-            <ControlledStateReadout />
-          </header>
-          <DemoInsetBody />
-        </SidebarInset>
-      </SidebarProvider>
-    </SidebarShellFrame>
-  );
-}
 
 // ── Playground ───────────────────────────────────────────
 
@@ -809,6 +577,346 @@ function SidebarPlaygroundSection() {
 }
 
 // ── Page ─────────────────────────────────────────────────
+
+/** Rows: what one can carry, and how the label yields room for it. */
+function RowAnatomyPreview() {
+  const icons = useIcons();
+  const MoreIcon = useIcon("more-horizontal");
+  const rowMenu = (
+    <DropdownContent className="min-w-[240px] w-[240px]" align="start" sideOffset={4}>
+      <MenuItem index={0} icon={icons.pencil} label="Rename" onSelect={() => {}} />
+      <MenuItem index={1} icon={icons.link} label="Share" onSelect={() => {}} />
+      <MenuItem index={2} icon={icons.x} label="Delete" onSelect={() => {}} />
+    </DropdownContent>
+  );
+  return (
+    <SidebarShellFrame height="h-[640px]">
+      <SidebarProvider className="h-full min-h-0" persist={false}>
+        <Sidebar collapsible="none" className="h-full">
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Leading</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton icon={icons.home} isActive>
+                    Home
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton icon={icons.inbox}>Inbox</SidebarMenuButton>
+                  <SidebarMenuBadge>12</SidebarMenuBadge>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  {/* Badge and action share the row: the badge keeps the
+                      rightmost slot, the action reveals to its left. */}
+                  <SidebarMenuButton icon={icons.calendar}>Calendar</SidebarMenuButton>
+                  <SidebarMenuBadge>5</SidebarMenuBadge>
+                  <DropdownMenu>
+                    <DropdownTrigger
+                      render={
+                        <SidebarMenuAction showOnHover aria-label="More options">
+                          <MoreIcon />
+                        </SidebarMenuAction>
+                      }
+                    />
+                    {rowMenu}
+                  </DropdownMenu>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroup>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupLabel>Status instead of an icon</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton status="active">Sidebar component height</SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton status="unread">Dark mode token audit</SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton status="idle">Scrollbar fade regression</SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroup>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupLabel>More than one action</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton icon={icons.folder}>Design system</SidebarMenuButton>
+                  <SidebarMenuActions showOnHover>
+                    <SidebarMenuAction aria-label="Add">
+                      {createElement(icons.plus, {})}
+                    </SidebarMenuAction>
+                    <SidebarMenuAction aria-label="Rename">
+                      {createElement(icons.pencil, {})}
+                    </SidebarMenuAction>
+                    <DropdownMenu>
+                      <DropdownTrigger
+                        render={
+                          <SidebarMenuAction aria-label="More options">
+                            <MoreIcon />
+                          </SidebarMenuAction>
+                        }
+                      />
+                      {rowMenu}
+                    </DropdownMenu>
+                  </SidebarMenuActions>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset className="min-h-0">
+          <DemoInsetHeader title="Hover a row" />
+          <DemoInsetBody />
+        </SidebarInset>
+      </SidebarProvider>
+    </SidebarShellFrame>
+  );
+}
+
+/** Sections: collapsible labels and the actions that ride them. */
+function SectionsPreview() {
+  const icons = useIcons();
+  const PlusIcon = useIcon("plus");
+  const SlidersIcon = useIcon("sliders-horizontal");
+  return (
+    <SidebarShellFrame height="h-[640px]">
+      <SidebarProvider className="h-full min-h-0" persist={false}>
+        <Sidebar collapsible="none" className="h-full">
+          <SidebarContent>
+            <SidebarGroup collapsible>
+              <SidebarGroupLabel>{SIDEBAR_GROUP_LABEL}</SidebarGroupLabel>
+              <SidebarGroupActions>
+                <SidebarGroupAction aria-label="Add item">
+                  <PlusIcon />
+                </SidebarGroupAction>
+                <SidebarGroupAction aria-label="Section settings">
+                  <SlidersIcon />
+                </SidebarGroupAction>
+              </SidebarGroupActions>
+              <SidebarMenu>
+                {SIDEBAR_ITEMS.slice(0, 3).map((item) => (
+                  <SidebarMenuItem key={item.label}>
+                    <SidebarMenuButton icon={icons[item.icon]} isActive={item.active}>
+                      {item.label}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
+            <SidebarSeparator />
+            <SidebarGroup collapsible defaultOpen={false}>
+              <SidebarGroupLabel>Starts collapsed</SidebarGroupLabel>
+              <SidebarMenu>
+                {SIDEBAR_ITEMS.slice(3).map((item) => (
+                  <SidebarMenuItem key={item.label}>
+                    <SidebarMenuButton icon={icons[item.icon]}>{item.label}</SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupLabel>Not collapsible</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton icon={icons.star}>Favorites</SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset className="min-h-0">
+          <DemoInsetHeader title="Click a section label" />
+          <DemoInsetBody />
+        </SidebarInset>
+      </SidebarProvider>
+    </SidebarShellFrame>
+  );
+}
+
+/** Nesting: a row that owns a sub-tree. */
+function NestingPreview() {
+  const icons = useIcons();
+  const FolderIcon = useIcon("folder");
+  const MoreIcon = useIcon("more-horizontal");
+  const [open, setOpen] = useState(true);
+  const [current, setCurrent] = useState<string>(SIDEBAR_PROJECTS[0]);
+  return (
+    <SidebarShellFrame height="h-[640px]">
+      <SidebarProvider className="h-full min-h-0" persist={false}>
+        <Sidebar collapsible="none" className="h-full">
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>{SIDEBAR_GROUP_LABEL}</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton icon={icons.inbox}>Inbox</SidebarMenuButton>
+                  <SidebarMenuBadge>12</SidebarMenuBadge>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    className="group/parent-row"
+                    icon={FolderIcon}
+                    onClick={() => setOpen((v) => !v)}
+                    aria-expanded={open}
+                    style={
+                      { "--row-gutter": "var(--row-gutter-hover)" } as CSSProperties
+                    }
+                  >
+                    Projects
+                    <span className="ml-auto -mr-0.5 flex size-6 shrink-0 items-center justify-center">
+                      {createElement(icons["chevron-down"], {
+                        size: 16,
+                        strokeWidth: 1.5,
+                        className: `text-muted-foreground transition-[opacity,transform] duration-80 ${
+                          open
+                            ? "opacity-0 group-hover/parent-row:opacity-100 group-focus-within/parent-row:opacity-100"
+                            : "-rotate-90 opacity-100"
+                        }`,
+                      })}
+                    </span>
+                  </SidebarMenuButton>
+                  <DropdownMenu>
+                    <DropdownTrigger
+                      render={
+                        <SidebarMenuAction showOnHover aria-label="More options">
+                          <MoreIcon />
+                        </SidebarMenuAction>
+                      }
+                    />
+                    <DropdownContent className="min-w-[240px] w-[240px]" align="start" sideOffset={4}>
+                      <MenuItem index={0} icon={icons.pencil} label="Rename" onSelect={() => {}} />
+                      <MenuItem index={1} icon={icons.link} label="Share" onSelect={() => {}} />
+                      <MenuItem index={2} icon={icons.x} label="Delete" onSelect={() => {}} />
+                    </DropdownContent>
+                  </DropdownMenu>
+                  <SidebarMenuSub open={open}>
+                    {SIDEBAR_PROJECTS.map((project) => (
+                      <SidebarMenuSubItem key={project}>
+                        <SidebarMenuSubButton
+                          href="#"
+                          isActive={project === current}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            setCurrent(project);
+                          }}
+                        >
+                          {project}
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton icon={icons.star}>Favorites</SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset className="min-h-0">
+          <DemoInsetHeader title="Hover the parent, then a child" />
+          <DemoInsetBody />
+        </SidebarInset>
+      </SidebarProvider>
+    </SidebarShellFrame>
+  );
+}
+
+/** Scroll edges: enough rows to overflow, so the fade and hairline show. */
+function ScrollEdgesPreview() {
+  const icons = useIcons();
+  const rows = Array.from({ length: 7 }, () => SIDEBAR_ITEMS).flat();
+  return (
+    <SidebarShellFrame height="h-[640px]">
+      <SidebarProvider className="h-full min-h-0" persist={false}>
+        <Sidebar collapsible="none" className="h-full">
+          <DemoHeader search="below" />
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>{SIDEBAR_GROUP_LABEL}</SidebarGroupLabel>
+              <SidebarMenu>
+                {rows.map((item, i) => (
+                  <SidebarMenuItem key={`${item.label}-${i}`}>
+                    <SidebarMenuButton icon={icons[item.icon]}>{item.label}</SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
+          </SidebarContent>
+          <SidebarFooter>
+            <DemoFooterUser />
+          </SidebarFooter>
+        </Sidebar>
+        <SidebarInset className="min-h-0">
+          <DemoInsetHeader title="Scroll the rail" />
+          <DemoInsetBody />
+        </SidebarInset>
+      </SidebarProvider>
+    </SidebarShellFrame>
+  );
+}
+
+function ControlledStateReadout() {
+  const { state, toggleSidebar } = useSidebar();
+  return (
+    <Button variant="secondary" size="compact" onClick={toggleSidebar}>
+      Sidebar is {state}
+    </Button>
+  );
+}
+
+/** State: what the rail shows before its data lands, and who owns open. */
+function StatePreview() {
+  const [open, setOpen] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const icons = useIcons();
+  return (
+    <SidebarShellFrame height="h-[640px]">
+      <SidebarProvider
+        className="h-full min-h-0"
+        persist={false}
+        shortcut={null}
+        open={open}
+        onOpenChange={setOpen}
+      >
+        <Sidebar className="h-full">
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>{SIDEBAR_GROUP_LABEL}</SidebarGroupLabel>
+              <SidebarMenu>
+                {loading
+                  ? Array.from({ length: 5 }).map((_, i) => (
+                      <SidebarMenuSkeleton key={i} showIcon />
+                    ))
+                  : SIDEBAR_ITEMS.map((item) => (
+                      <SidebarMenuItem key={item.label}>
+                        <SidebarMenuButton icon={icons[item.icon]} isActive={item.active}>
+                          {item.label}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+              </SidebarMenu>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset className="min-h-0">
+          <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2">
+            <ControlledStateReadout />
+            <Button variant="secondary" size="compact" onClick={() => setLoading((v) => !v)}>
+              {loading ? "Show rows" : "Show skeletons"}
+            </Button>
+          </header>
+          <DemoInsetBody />
+        </SidebarInset>
+      </SidebarProvider>
+    </SidebarShellFrame>
+  );
+}
 
 export default function SidebarDoc() {
   return (
@@ -859,27 +967,64 @@ export default function SidebarDoc() {
         </ComponentPreview>
       </DocSection>
 
-      <DocSection title="Groups">
-        <ComponentPreview code={groupsCode} padding="none" minHeightClass="h-[640px]">
-          <GroupsPreview />
+      <DocSection title="Row anatomy">
+        <p className="text-body text-muted-foreground">
+          A row leads with an icon or a status dot, and can carry a badge, one
+          action, or a cluster of them. Hover-revealed actions cost the label
+          nothing at rest: the row reserves their width only while they show,
+          so the label runs full width until you reach for something.
+        </p>
+        <ComponentPreview code={rowAnatomyCode} padding="none" minHeightClass="h-[640px]">
+          <RowAnatomyPreview />
         </ComponentPreview>
       </DocSection>
 
-      <DocSection title="Menu features">
-        <ComponentPreview code={menuFeaturesCode} padding="none" minHeightClass="h-[640px]">
-          <MenuFeaturesPreview />
+      <DocSection title="Sections">
+        <p className="text-body text-muted-foreground">
+          A section label can be the accordion that collapses everything under
+          it, and can carry its own actions. Hover raises the label&apos;s
+          contrast and reveals its chevron; collapsed, the chevron stays as the
+          cue to reopen.
+        </p>
+        <ComponentPreview code={sectionsCode} padding="none" minHeightClass="h-[640px]">
+          <SectionsPreview />
         </ComponentPreview>
       </DocSection>
 
-      <DocSection title="Loading">
-        <ComponentPreview code={loadingCode} padding="none" minHeightClass="h-[640px]">
-          <LoadingPreview />
+      <DocSection title="Nesting">
+        <p className="text-body text-muted-foreground">
+          A row can own a sub-tree, collapsing on its measured height rather
+          than an animated <code>auto</code>. Its chevron and actions answer to
+          the row itself — hovering a child never lights the parent&apos;s
+          controls — and the sub-menu runs its own highlight, so the two levels
+          never fight over which row is lit.
+        </p>
+        <ComponentPreview code={nestingCode} padding="none" minHeightClass="h-[640px]">
+          <NestingPreview />
         </ComponentPreview>
       </DocSection>
 
-      <DocSection title="Controlled & useSidebar">
-        <ComponentPreview code={controlledCode} padding="none" minHeightClass="h-[640px]">
-          <ControlledPreview />
+      <DocSection title="Scroll edges">
+        <p className="text-body text-muted-foreground">
+          When the rail outgrows its frame the content dissolves at the edge it
+          continues past, and a hairline marks the boundary. Both are
+          scroll-driven CSS — no listener, no measurement — and the true start
+          and end stay crisp until there is something to scroll to.
+        </p>
+        <ComponentPreview code={scrollEdgesCode} padding="none" minHeightClass="h-[640px]">
+          <ScrollEdgesPreview />
+        </ComponentPreview>
+      </DocSection>
+
+      <DocSection title="State">
+        <p className="text-body text-muted-foreground">
+          Skeleton rows hold the shape while data lands — their widths are
+          deterministic, so the server and client agree. Open state can stay
+          uncontrolled, or you can own it and read it back through{" "}
+          <code>useSidebar</code>.
+        </p>
+        <ComponentPreview code={stateCode} padding="none" minHeightClass="h-[640px]">
+          <StatePreview />
         </ComponentPreview>
       </DocSection>
 

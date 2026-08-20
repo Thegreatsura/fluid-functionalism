@@ -372,7 +372,13 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   // Footer
   if (o.footerPrimary === "dropdown" || o.footerActions > 0 || o.footerPromo) {
     const footerActions = FOOTER_ACTION_SET.slice(0, o.footerActions);
-    lines.push(`    <SidebarFooter>`);
+    const promoOnly =
+      o.footerPromo && o.footerPrimary === "none" && footerActions.length === 0;
+    lines.push(
+      promoOnly
+        ? `    {/* nothing under the card — it sits flush on the edge */}\n    <SidebarFooter className="pb-0">`
+        : `    <SidebarFooter>`
+    );
     if (o.footerPromo) {
       lines.push(`      {/* anchored promo: Card on a surface one step above */}`);
       lines.push(`      <Card size="compact" dismissible onDismiss={hide} href="/docs">`);
@@ -481,6 +487,10 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
   const l1CanNest = state.l1Primary === "menu";
   const l1Children = l1CanNest && state.l1Children;
   const footerActionSet = FOOTER_ACTION_SET.slice(0, state.footerActions);
+  // A promo card with no rows under it has nothing to be spaced from, so the
+  // footer drops its bottom padding and the card sits flush on the edge.
+  const promoOnlyFooter =
+    state.footerPromo && state.footerPrimary === "none" && footerActionSet.length === 0;
 
   /** Row actions for one level: a single action uses the canonical part,
    *  more than one goes through the cluster that owns the row's gutter. */
@@ -792,7 +802,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           {(state.footerPrimary === "dropdown" ||
             footerActionSet.length > 0 ||
             state.footerPromo) && (
-            <SidebarFooter>
+            <SidebarFooter className={promoOnlyFooter ? "pb-0" : undefined}>
               {state.footerPromo && <FooterPromo onDismiss={() => set("footerPromo", false)} />}
               {/* Vertical stacking puts the actions above the user row, so
                   identity stays anchored to the sidebar's outer edge —
@@ -806,6 +816,11 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                   ))}
                 </SidebarMenu>
               )}
+              {/* Skip the row wrapper entirely when there's no user row and no
+                  horizontal actions — an empty div would still take the
+                  footer's gap and hold the card off the edge. */}
+              {(state.footerPrimary === "dropdown" ||
+                (footerHorizontal && footerActionSet.length > 0)) && (
               <div className={footerHorizontal ? "flex items-center gap-1" : "contents"}>
                 {state.footerPrimary === "dropdown" && (
                   <SidebarMenu
@@ -865,6 +880,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                     </Tooltip>
                   ))}
               </div>
+              )}
             </SidebarFooter>
           )}
         </Sidebar>

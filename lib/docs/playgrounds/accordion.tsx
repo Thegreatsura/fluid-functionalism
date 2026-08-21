@@ -26,14 +26,14 @@ interface PlayState {
   /** one — always exactly one open · oneOrNone — single + collapsible ·
    *  any — multiple. */
   expand: "one" | "oneOrNone" | "any";
-  /** highlight="trigger": the open row's tint is scoped to the row and
-   *  waits for hover. */
-  rowOnly: boolean;
+  /** On, an expanded item holds its tint (highlight="item"). Off, the fill
+   *  scopes to the row and waits for hover (highlight="trigger"). */
+  highlightExpanded: boolean;
 }
 
 const DEFAULT_STATE: PlayState = {
   expand: "oneOrNone",
-  rowOnly: false,
+  highlightExpanded: true,
 };
 
 function pick<T>(options: readonly T[]): T {
@@ -45,7 +45,7 @@ export function buildAccordionPlaygroundCode(o: PlayState): string {
   const props = [
     `type="${single ? "single" : "multiple"}"`,
     ...(o.expand === "oneOrNone" ? ["collapsible"] : []),
-    ...(o.rowOnly ? [`highlight="trigger"`] : []),
+    ...(o.highlightExpanded ? [] : [`highlight="trigger"`]),
     single ? `defaultValue="item-1"` : `defaultValue={["item-1"]}`,
   ].join(" ");
   return [
@@ -53,12 +53,12 @@ export function buildAccordionPlaygroundCode(o: PlayState): string {
     `  AccordionGroup, AccordionItem, AccordionTrigger, AccordionContent,`,
     `} from "./components";`,
     ``,
-    ...(o.rowOnly
-      ? [
+    ...(o.highlightExpanded
+      ? []
+      : [
           `{/* highlight="trigger" keeps an open item's tint on the row and`,
           `    leaves its panel on the page's own surface */}`,
-        ]
-      : []),
+        ]),
     `<AccordionGroup ${props}>`,
     `  {items.map((item, i) => (`,
     `    <AccordionItem key={item.value} value={item.value} index={i}>`,
@@ -78,7 +78,7 @@ export function AccordionPlayground({ children }: PlaygroundProps) {
   const randomize = () =>
     setState({
       expand: pick(["one", "oneOrNone", "oneOrNone", "any"] as const),
-      rowOnly: Math.random() > 0.6,
+      highlightExpanded: Math.random() > 0.4,
     });
 
   const items = ACCORDION_ITEMS.slice(0, 4);
@@ -96,7 +96,7 @@ export function AccordionPlayground({ children }: PlaygroundProps) {
             defaultValue: items[0].value,
           }
         : { type: "multiple" as const, defaultValue: [items[0].value] })}
-      highlight={state.rowOnly ? "trigger" : "item"}
+      highlight={state.highlightExpanded ? "item" : "trigger"}
     >
       {items.map((item, i) => (
         <AccordionItem key={item.value} value={item.value} index={i}>
@@ -122,8 +122,8 @@ export function AccordionPlayground({ children }: PlaygroundProps) {
       </PlayField>
       <Switch
         label="Highlight expanded"
-        checked={state.rowOnly}
-        onToggle={() => set("rowOnly", !state.rowOnly)}
+        checked={state.highlightExpanded}
+        onToggle={() => set("highlightExpanded", !state.highlightExpanded)}
         className={PLAY_SWITCH}
       />
     </PlaygroundPanel>

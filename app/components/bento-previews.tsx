@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useIcon, useIcons } from "@/lib/icon-context";
+import { fontWeights } from "@/lib/font-weight";
+import { useNarrowFrame } from "@/lib/use-narrow-frame";
+import { ChatMessage } from "@/registry/default/chat-message";
 import {
   ACCORDION_ITEMS,
   BADGE_ITEMS,
@@ -15,8 +19,7 @@ import {
   SELECT_DEFAULT,
   SELECT_PLACEHOLDER,
   SELECT_ROLES,
-  SIDEBAR_GROUP_LABEL,
-  SIDEBAR_ITEMS,
+  SIDEBAR_THREADS,
   SLIDER_OPACITY,
   SLIDER_VOLUME,
   SWITCH_ITEMS,
@@ -54,6 +57,9 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarMenuBadge,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarInput,
   SidebarInset,
 } from "@/components/flavored/sidebar";
 import {
@@ -612,37 +618,140 @@ function ColorPickerPreview() {
   );
 }
 
+function ChatMessagePreview() {
+  return (
+    <div className="flex w-full max-w-[300px] flex-col gap-1">
+      <ChatMessage from="user" size="compact">
+        Why is every other input box so stiff?
+      </ChatMessage>
+      <ChatMessage from="assistant" size="compact">
+        Because nothing about them moves with you.
+      </ChatMessage>
+    </div>
+  );
+}
+
 function SidebarPreview() {
   const icons = useIcons();
+  const SearchIcon = useIcon("search");
+  // One card, two ways to spend its width: beside the main region on a
+  // desktop, and rail-only on a phone, where 12rem of rail would leave the
+  // main region an 83px sliver that shows nothing.
+  const narrow = useNarrowFrame();
   return (
-    <div className="flex h-[200px] w-full max-w-[440px] overflow-hidden rounded-xl border border-border bg-background">
-      {/* collapsible="none" keeps the mini shell static — it never becomes
-          the full-viewport sheet on phones. */}
-      <SidebarProvider className="h-full min-h-0" persist={false} shortcut={null} width="11rem">
-        <Sidebar collapsible="none" className="h-full">
+    <div className="flex h-[380px] w-full max-w-[620px] overflow-hidden rounded-xl border border-border bg-background">
+      {/* A whole app shell in miniature — workspace row, a thread list with
+          the status-dot treatment, a user row, and the main region beside it.
+          collapsible="none" keeps it static: it never becomes the
+          full-viewport drawer on phones. */}
+      <SidebarProvider
+        className="h-full min-h-0"
+        persist={false}
+        shortcut={null}
+        width={narrow ? "100%" : "14rem"}
+      >
+        <Sidebar collapsible="none" variant="inset" className="h-full">
+          <SidebarHeader>
+            <SidebarMenu size="compact" aria-label="Workspace">
+              <SidebarMenuItem>
+                <SidebarMenuButton>
+                  <span
+                    className="flex size-5 shrink-0 items-center justify-center rounded-md bg-foreground text-[10px] text-background"
+                    style={{ fontVariationSettings: fontWeights.semibold }}
+                  >
+                    A
+                  </span>
+                  <span
+                    className="min-w-0 truncate text-foreground"
+                    style={{ fontVariationSettings: fontWeights.semibold }}
+                  >
+                    Acme Inc
+                  </span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+
+            {/* Search and New read as one block — no gap between them — and
+                each shortcut is revealed by its own row rather than sitting
+                there at rest. The input has no size prop, so its height and
+                type are pinned to the compact rows by hand. */}
+            <div className="flex flex-col">
+              <div className="group/search relative">
+                <SearchIcon
+                  size={14}
+                  strokeWidth={1.5}
+                  className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+                <SidebarInput
+                  placeholder="Search"
+                  aria-label="Search threads"
+                  className="h-7 pl-8 pr-11 text-[12px]"
+                />
+                <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 font-sans text-[11px] text-muted-foreground opacity-0 transition-opacity duration-80 group-hover/search:opacity-100 group-focus-within/search:opacity-100">
+                  ⌘K
+                </kbd>
+              </div>
+
+              <SidebarMenu size="compact" aria-label="Create">
+                <SidebarMenuItem>
+                  <SidebarMenuButton icon={icons.plus}>
+                    New thread
+                    <span className="ml-auto inline-flex opacity-0 transition-opacity duration-80 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100">
+                      <kbd className="font-sans text-[11px] text-muted-foreground">⌘N</kbd>
+                    </span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </div>
+          </SidebarHeader>
+
           <SidebarContent>
             <SidebarGroup>
-              <SidebarGroupLabel>{SIDEBAR_GROUP_LABEL}</SidebarGroupLabel>
+              <SidebarGroupLabel>Threads</SidebarGroupLabel>
               <SidebarMenu size="compact">
-                {SIDEBAR_ITEMS.slice(0, 4).map((item) => (
-                  <SidebarMenuItem key={item.label}>
-                    <SidebarMenuButton icon={icons[item.icon]} isActive={item.active}>
-                      {item.label}
+                {/* Skips index 1: it shares a prefix with index 0 and the two
+                    truncate to the same string in a 12rem rail. */}
+                {[SIDEBAR_THREADS[0], SIDEBAR_THREADS[2], SIDEBAR_THREADS[3], SIDEBAR_THREADS[4]].map((thread) => (
+                  <SidebarMenuItem key={thread.label}>
+                    <SidebarMenuButton status={thread.status}>
+                      {thread.label}
                     </SidebarMenuButton>
-                    {item.badge && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
+                    {thread.badge && <SidebarMenuBadge>{thread.badge}</SidebarMenuBadge>}
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
             </SidebarGroup>
+
           </SidebarContent>
+
+          <SidebarFooter>
+            <SidebarMenu size="compact" aria-label="User">
+              <SidebarMenuItem>
+                <SidebarMenuButton>
+                  <Image
+                    src="/micka.png"
+                    alt=""
+                    width={20}
+                    height={20}
+                    className="size-5 shrink-0 rounded-full"
+                  />
+                  <span className="min-w-0 truncate text-foreground">Micka Touillaud</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarFooter>
         </Sidebar>
+
+        {!narrow && (
         <SidebarInset className="min-h-0">
-          <div className="flex flex-col gap-2 p-3">
+          <div className="flex flex-col gap-2 p-4">
             <div className="h-3 w-2/3 rounded-md bg-hover" />
             <div className="h-3 w-1/2 rounded-md bg-hover" />
             <div className="h-16 rounded-lg bg-hover" />
+            <div className="h-3 w-3/5 rounded-md bg-hover" />
           </div>
         </SidebarInset>
+        )}
       </SidebarProvider>
     </div>
   );
@@ -650,6 +759,7 @@ function SidebarPreview() {
 
 export const previewMap: Record<string, React.FC> = {
   "input-message": InputMessagePreview,
+  "chat-message": ChatMessagePreview,
   sidebar: SidebarPreview,
   card: CardPreview,
   accordion: AccordionPreview,

@@ -19,6 +19,10 @@ interface BentoCardProps {
   name: string;
   isNew?: boolean;
   gridSize?: string;
+  /** Overrides the stage's padding for a preview that needs a taller window.
+   *  Rows are pinned at 300px (`grid-auto-rows`), so a preview can only be
+   *  shown more fully by spending less of that height on padding. */
+  previewClassName?: string;
   /** FLIP-animate the card when the surrounding grid re-slots it (used by the
    *  home bento grid when its column count changes). The card box tweens with
    *  a spring while the preview area and footer label ride as
@@ -34,7 +38,7 @@ interface BentoCardProps {
   children: ReactNode;
 }
 
-export function BentoCard({ slug, name, isNew, gridSize = "small", animateLayout = false, action, className: extraClassName, style, children }: BentoCardProps) {
+export function BentoCard({ slug, name, isNew, gridSize = "small", animateLayout = false, action, className: extraClassName, previewClassName, style, children }: BentoCardProps) {
   // No click-to-focus wiring here. Previously a mousedown on empty space
   // inside the card routed focus to the preview's first interactive element
   // (so the user could keyboard-drive the demo afterwards). In practice it
@@ -87,7 +91,10 @@ export function BentoCard({ slug, name, isNew, gridSize = "small", animateLayout
       <motion.div
         layout={animateLayout ? "position" : false}
         transition={spring.moderate}
-        className="flex-1 min-h-0 flex items-center justify-center px-6 py-16"
+        className={cn(
+          "flex-1 min-h-0 flex items-center justify-center px-6 py-16",
+          previewClassName
+        )}
       >
         {children}
       </motion.div>

@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
  * left/right band by band.
  *
  * The size mix is balanced so the grid fills with NO holes at both md and xl:
- * smalls needed = 2·(larges) + 1·(mediums) = 2·5 + 4 = 14 = smalls available
+ * smalls needed = 2·(larges) + 1·(mediums) = 2·6 + 3 = 15 = smalls available
  * (and an even small count keeps md's half-width pairs complete). Adding a
  * card or changing a gridSize breaks that equation — rebalance before
  * shipping or the bottom rows develop holes again.
@@ -23,8 +23,9 @@ import { cn } from "@/lib/utils";
 const displayOrder: { slug: string; side?: "right" }[] = [
   { slug: "input-message" },                 // band 1 · medium left
   { slug: "thinking-indicator" },
-  { slug: "sidebar", side: "right" },        // band 2 · medium right
+  { slug: "sidebar", side: "right" },        // band 2 · large right
   { slug: "radio-group" },
+  { slug: "chat-message" },
   { slug: "card" },                          // band 3 · large left
   { slug: "switch" },
   { slug: "select" },
@@ -113,6 +114,9 @@ export function BentoGrid({ components }: BentoGridProps) {
             isNew={c.isNew}
             gridSize={c.gridSize}
             className={side === "right" ? "xl:col-start-2" : undefined}
+            // A whole app shell needs more of the card than the default
+            // 24px/64px stage padding leaves it, in both directions.
+            previewClassName={c.slug === "sidebar" ? "px-4 py-8" : undefined}
             animateLayout
           >
             <Preview />

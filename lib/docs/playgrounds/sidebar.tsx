@@ -110,8 +110,8 @@ const DEFAULT_STATE: PlayState = {
   collapsedBehavior: "none",
   state: "opened",
   headerPrimary: "dropdown",
-  headerStack: "horizontal",
-  headerActions: 2,
+  headerStack: "vertical",
+  headerActions: 1,
   sectionsCollapsible: true,
   sectionActions: 1,
   l1Primary: "threads",
@@ -124,7 +124,7 @@ const DEFAULT_STATE: PlayState = {
   footerPrimary: "dropdown",
   footerStack: "horizontal",
   footerActions: 2,
-  footerCallout: "media",
+  footerCallout: "none",
 };
 
 // ── Content sets ─────────────────────────────────────────
@@ -215,7 +215,7 @@ function FooterCallout({
         className={variant === "media" ? "gap-0 pt-4" : "gap-[2px] py-3 pr-10"}
       >
         <CardTitle className="truncate">Sidebar is here</CardTitle>
-        <CardDescription className="truncate text-[12px]">
+        <CardDescription className="truncate text-caption">
           New in Fluid Functionalism
         </CardDescription>
       </CardHeader>
@@ -445,7 +445,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
       );
       lines.push(`          <CardTitle className="truncate">Sidebar is here</CardTitle>`);
       lines.push(
-        `          <CardDescription className="truncate text-[12px]">New in Fluid Functionalism</CardDescription>`
+        `          <CardDescription className="truncate text-caption">New in Fluid Functionalism</CardDescription>`
       );
       lines.push(`        </CardHeader>`);
       lines.push(`      </Card>`);
@@ -517,12 +517,19 @@ function PlaygroundInsetBody() {
     <>
       <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2">
         <SidebarTrigger />
-        <span className="text-[13px] text-muted-foreground">Dashboard</span>
       </header>
-      <div className="flex flex-col gap-3 px-2 py-4">
-        <div className="h-4 w-2/3 rounded-md bg-hover" />
-        <div className="h-4 w-1/2 rounded-md bg-hover" />
-        <div className="h-24 rounded-lg bg-hover" />
+      {/* The page the rail sits beside: a heading and two cards. Abstract
+          enough not to compete with the sidebar, structured enough to read as
+          a page rather than a stack of grey bars. */}
+      <div className="flex flex-1 flex-col gap-4 p-4">
+        <div className="flex flex-col gap-2">
+          <div className="h-2 w-16 rounded-full bg-hover" />
+          <div className="h-4 w-2/5 rounded-md bg-hover" />
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="h-20 rounded-lg bg-hover" />
+          <div className="h-20 rounded-lg bg-hover" />
+        </div>
       </div>
     </>
   );

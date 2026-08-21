@@ -472,7 +472,7 @@ function DemoMenu({ badges = true }: { badges?: boolean }) {
 }
 
 function DemoInsetHeader({
-  title = "Dashboard",
+  title,
   triggerSide = "left",
 }: {
   title?: ReactNode;
@@ -489,12 +489,20 @@ function DemoInsetHeader({
   );
 }
 
+/** The page the rail sits beside: a heading and two cards. Abstract enough
+ *  not to compete with the sidebar, structured enough to read as a page
+ *  rather than a stack of grey bars. */
 function DemoInsetBody() {
   return (
-    <div className="flex flex-col gap-3 px-2 py-4">
-      <div className="h-4 w-2/3 rounded-md bg-hover" />
-      <div className="h-4 w-1/2 rounded-md bg-hover" />
-      <div className="h-24 rounded-lg bg-hover" />
+    <div className="flex flex-1 flex-col gap-4 p-4">
+      <div className="flex flex-col gap-2">
+        <div className="h-2 w-16 rounded-full bg-hover" />
+        <div className="h-4 w-2/5 rounded-md bg-hover" />
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="h-20 rounded-lg bg-hover" />
+        <div className="h-20 rounded-lg bg-hover" />
+      </div>
     </div>
   );
 }
@@ -895,7 +903,7 @@ function DemoCallout({ variant }: { variant: "media" | "icon" }) {
       )}
       <CardHeader className={variant === "media" ? "gap-0 pt-4" : "gap-[2px] py-3"}>
         <CardTitle className="truncate">{AI_CALLOUT.title}</CardTitle>
-        <CardDescription className="truncate text-[12px]">
+        <CardDescription className="truncate text-caption">
           {variant === "media" ? AI_CALLOUT.media : AI_CALLOUT.icon}
         </CardDescription>
       </CardHeader>

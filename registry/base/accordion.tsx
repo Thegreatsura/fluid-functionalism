@@ -713,8 +713,8 @@ const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(
                         className={`absolute inset-0 ${shape.bg} bg-accent/20 dark:bg-accent/12 pointer-events-none`}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, transition: spring.fast.exit }}
-                        transition={{ duration: 0.08 }}
+                        exit={{ opacity: 0, transition: spring.moderate.exit }}
+                        transition={{ duration: 0.12 }}
                       />
                     )}
                   </AnimatePresence>
@@ -831,8 +831,11 @@ const AccordionTrigger = forwardRef<HTMLButtonElement, AccordionTriggerProps>(
               className={`absolute inset-0 ${shape.bg} bg-accent/20 dark:bg-accent/12 pointer-events-none`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0, transition: spring.fast.exit }}
-              transition={{ duration: 0.08 }}
+              // The expanded tint rides the moderate tier, like the grouped
+              // one — it marks a state, where the hover fill below tracks the
+              // pointer and stays fast.
+              exit={{ opacity: 0, transition: spring.moderate.exit }}
+              transition={{ duration: 0.12 }}
             />
           )}
         </AnimatePresence>

@@ -121,7 +121,7 @@ export function AccordionPlayground({ children }: PlaygroundProps) {
         />
       </PlayField>
       <Switch
-        label="Highlight row only"
+        label="Highlight expanded"
         checked={state.rowOnly}
         onToggle={() => set("rowOnly", !state.rowOnly)}
         className={PLAY_SWITCH}

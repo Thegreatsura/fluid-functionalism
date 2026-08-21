@@ -56,6 +56,11 @@ interface SidebarSheetProps {
 
 function SidebarSheet({ side, open, onClose, children }: SidebarSheetProps) {
   const { widthMobile } = useSidebar();
+  // The panel takes initial focus itself. Left to the primitive, the focus
+  // trap lands on the first focusable child — the top nav row — which reads
+  // as a selected item the moment the drawer opens, and Chrome grants
+  // :focus-visible to script-driven focus so it shows the keyboard ring too.
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const substrate = useSurface();
   const level = Math.min(substrate + 2, 8);
 
@@ -117,17 +122,30 @@ function SidebarSheet({ side, open, onClose, children }: SidebarSheetProps) {
 
         <DialogPrimitive.Popup
           aria-label="Sidebar"
+          initialFocus={panelRef}
           render={(popupProps) => {
-            const { style: baseStyle, ...rest } =
-              popupProps as React.HTMLAttributes<HTMLDivElement>;
+            const { style: baseStyle, ref: baseRef, ...rest } =
+              popupProps as React.HTMLAttributes<HTMLDivElement> & {
+                ref?: React.Ref<HTMLDivElement>;
+              };
             return (
               <motion.div
                 {...(rest as MotionSafeDivProps)}
+                // Merge, don't replace: the primitive needs its own handle on
+                // the panel as much as initialFocus needs ours.
+                ref={(node: HTMLDivElement | null) => {
+                  panelRef.current = node;
+                  if (typeof baseRef === "function") baseRef(node);
+                  else if (baseRef)
+                    (baseRef as React.MutableRefObject<HTMLDivElement | null>).current =
+                      node;
+                }}
+                tabIndex={-1}
                 data-sidebar="sidebar"
                 data-mobile="true"
                 data-side={side}
                 className={cn(
-                  "fixed inset-y-0 z-50 flex flex-col overflow-hidden",
+                  "fixed inset-y-0 z-50 flex flex-col overflow-hidden outline-none",
                   !visible && "pointer-events-none",
                   side === "left" ? "left-0" : "right-0",
                   surfaceClasses(level, 3)

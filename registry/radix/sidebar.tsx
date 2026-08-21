@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useRef,
   useState,
   forwardRef,
   type ReactNode,
@@ -43,6 +44,7 @@ function SidebarSheet({ side, open, onClose, children }: SidebarSheetProps) {
   const { widthMobile } = useSidebar();
   const substrate = useSurface();
   const level = Math.min(substrate + 2, 8);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -84,17 +86,28 @@ function SidebarSheet({ side, open, onClose, children }: SidebarSheetProps) {
           <DialogPrimitive.Content
             asChild
             forceMount
+            // The panel takes initial focus itself. Left to Radix, the trap
+            // lands on the first focusable child — the top nav row — which
+            // reads as a selected item the moment the drawer opens, and
+            // Chrome grants :focus-visible to script-driven focus so it shows
+            // the keyboard ring too.
+            onOpenAutoFocus={(event) => {
+              event.preventDefault();
+              panelRef.current?.focus();
+            }}
             // Radix warns when Content has no Description; an explicit
             // undefined clears the rendered attribute, which is what its
             // DescriptionWarning checks.
             aria-describedby={undefined}
           >
             <motion.div
+              ref={panelRef}
+              tabIndex={-1}
               data-sidebar="sidebar"
               data-mobile="true"
               data-side={side}
               className={cn(
-                "fixed inset-y-0 z-50 flex flex-col overflow-hidden",
+                "fixed inset-y-0 z-50 flex flex-col overflow-hidden outline-none",
                 side === "left" ? "left-0" : "right-0",
                 surfaceClasses(level, 3)
               )}

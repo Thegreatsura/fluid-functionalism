@@ -52,7 +52,7 @@ import {
 } from "@/registry/default/card";
 import { BANNER } from "@/lib/docs/playgrounds/card";
 import { useSurface } from "@/lib/surface-context";
-import { surfaceClasses } from "@/lib/surface-classes";
+import { surfaceClasses, surfaceHoverClasses } from "@/lib/surface-classes";
 import {
   PLAY_SWITCH,
   PlayField,
@@ -180,10 +180,13 @@ function FooterCallout({
   const substrate = useSurface();
   const shape = useShape();
   const icons = useIcons();
-  const surface = `${shape.container} overflow-hidden ${surfaceClasses(
-    Math.min(substrate + 1, 8),
+  // Rests one step above the rail and rises another under the pointer, so the
+  // card itself answers the hover rather than anything inside it.
+  const level = Math.min(substrate + 1, 8);
+  const surface = `${shape.container} overflow-hidden transition-[background-color,box-shadow] duration-80 ${surfaceClasses(
+    level,
     2
-  )}`;
+  )} ${surfaceHoverClasses(level + 1, 3)}`;
 
   // CardImage / CardMedia stay DIRECT children: Card detects the image by
   // scanning its own children, and a fragment wrapper would hide it (which
@@ -209,11 +212,11 @@ function FooterCallout({
       {/* On the icon row the dismiss control floats over the text rather than
           over a banner, so that row reserves the 36px it occupies plus air. */}
       <CardHeader
-        className={variant === "media" ? "gap-0 pt-4" : "gap-0 py-3 pr-10"}
+        className={variant === "media" ? "gap-0 pt-4" : "gap-[2px] py-3 pr-10"}
       >
         <CardTitle className="truncate">Sidebar is here</CardTitle>
-        <CardDescription className="truncate">
-          {variant === "media" ? "New in Fluid Functionalism" : "See what's new"}
+        <CardDescription className="truncate text-[12px]">
+          New in Fluid Functionalism
         </CardDescription>
       </CardHeader>
     </Card>
@@ -437,14 +440,12 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
       lines.push(media);
       lines.push(
         o.footerCallout === "icon"
-          ? `        <CardHeader className="gap-0 py-3 pr-10">`
+          ? `        <CardHeader className="gap-[2px] py-3 pr-10">`
           : `        <CardHeader className="gap-0 pt-4">`
       );
       lines.push(`          <CardTitle className="truncate">Sidebar is here</CardTitle>`);
       lines.push(
-        o.footerCallout === "icon"
-          ? `          <CardDescription className="truncate">See what's new</CardDescription>`
-          : `          <CardDescription className="truncate">New in Fluid Functionalism</CardDescription>`
+        `          <CardDescription className="truncate text-[12px]">New in Fluid Functionalism</CardDescription>`
       );
       lines.push(`        </CardHeader>`);
       lines.push(`      </Card>`);

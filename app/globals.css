@@ -292,12 +292,18 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3 {
-  text-wrap: balance;
-}
+/* @layer base so a utility can still win: unlayered, these outrank
+   `truncate` on the text-wrap-mode longhand (white-space is a shorthand for
+   white-space-collapse + text-wrap-mode), which silently un-truncates every
+   <p> that asks for it — CardDescription among them. */
+@layer base {
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
 
-p {
-  text-wrap: pretty;
+  p {
+    text-wrap: pretty;
+  }
 }
 
 /* ── Type-scale roles ─────────────────────────────────────────────────────

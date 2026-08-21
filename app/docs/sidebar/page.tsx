@@ -56,7 +56,7 @@ import {
 } from "@/registry/default/card";
 import { BANNER } from "@/lib/docs/playgrounds/card";
 import { useSurface } from "@/lib/surface-context";
-import { surfaceClasses } from "@/lib/surface-classes";
+import { surfaceClasses, surfaceHoverClasses } from "@/lib/surface-classes";
 import {
   AI_CALLOUT,
   AI_NAV,
@@ -873,10 +873,13 @@ function DemoCallout({ variant }: { variant: "media" | "icon" }) {
   const substrate = useSurface();
   const shape = useShape();
   const icons = useIcons();
-  const surface = `${shape.container} overflow-hidden ${surfaceClasses(
-    Math.min(substrate + 1, 8),
+  // Rests one step above the rail and rises another under the pointer, so the
+  // card itself answers the hover rather than anything inside it.
+  const level = Math.min(substrate + 1, 8);
+  const surface = `${shape.container} overflow-hidden transition-[background-color,box-shadow] duration-80 ${surfaceClasses(
+    level,
     2
-  )}`;
+  )} ${surfaceHoverClasses(level + 1, 3)}`;
 
   const card = (
     <Card
@@ -890,9 +893,9 @@ function DemoCallout({ variant }: { variant: "media" | "icon" }) {
       ) : (
         <CardMedia icon={icons.brain} size={18} />
       )}
-      <CardHeader className={variant === "media" ? "gap-0 pt-4" : "gap-0 py-3"}>
+      <CardHeader className={variant === "media" ? "gap-0 pt-4" : "gap-[2px] py-3"}>
         <CardTitle className="truncate">{AI_CALLOUT.title}</CardTitle>
-        <CardDescription className="truncate">
+        <CardDescription className="truncate text-[12px]">
           {variant === "media" ? AI_CALLOUT.media : AI_CALLOUT.icon}
         </CardDescription>
       </CardHeader>

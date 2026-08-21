@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useIcon, useIcons } from "@/lib/icon-context";
 import { fontWeights } from "@/lib/font-weight";
 import { useNarrowFrame } from "@/lib/use-narrow-frame";
+import { SizeProvider } from "@/lib/size-context";
 import { ChatMessage } from "@/registry/default/chat-message";
 import {
   ACCORDION_ITEMS,
@@ -673,36 +674,39 @@ function SidebarPreview() {
 
             {/* Search and New read as one block — no gap between them — and
                 each shortcut is revealed by its own row rather than sitting
-                there at rest. The input has no size prop, so its height and
-                type are pinned to the compact rows by hand. */}
-            <div className="flex flex-col">
-              <div className="group/search relative">
-                <SearchIcon
-                  size={14}
-                  strokeWidth={1.5}
-                  className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-                />
-                <SidebarInput
-                  placeholder="Search"
-                  aria-label="Search threads"
-                  className="h-7 pl-8 pr-11 text-[12px]"
-                />
-                <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 font-sans text-[11px] text-muted-foreground opacity-0 transition-opacity duration-80 group-hover/search:opacity-100 group-focus-within/search:opacity-100">
-                  ⌘K
-                </kbd>
-              </div>
+                there at rest. Pinned compact so SidebarInput takes its height
+                and type from the ladder, the same step the rows use, instead
+                of being hand-sized to match them. */}
+            <SizeProvider size="compact">
+              <div className="flex flex-col">
+                <div className="group/search relative">
+                  <SearchIcon
+                    size={14}
+                    strokeWidth={1.5}
+                    className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  />
+                  <SidebarInput
+                    placeholder="Search"
+                    aria-label="Search threads"
+                    className="pl-8 pr-11"
+                  />
+                  <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 font-sans text-caption text-muted-foreground opacity-0 transition-opacity duration-80 group-hover/search:opacity-100 group-focus-within/search:opacity-100">
+                    ⌘K
+                  </kbd>
+                </div>
 
-              <SidebarMenu size="compact" aria-label="Create">
-                <SidebarMenuItem>
-                  <SidebarMenuButton icon={icons.plus}>
-                    New thread
-                    <span className="ml-auto inline-flex opacity-0 transition-opacity duration-80 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100">
-                      <kbd className="font-sans text-[11px] text-muted-foreground">⌘N</kbd>
-                    </span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </div>
+                <SidebarMenu size="compact" aria-label="Create">
+                  <SidebarMenuItem>
+                    <SidebarMenuButton icon={icons.plus}>
+                      New thread
+                      <span className="ml-auto inline-flex opacity-0 transition-opacity duration-80 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100">
+                        <kbd className="font-sans text-caption text-muted-foreground">⌘N</kbd>
+                      </span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </div>
+            </SizeProvider>
           </SidebarHeader>
 
           <SidebarContent>

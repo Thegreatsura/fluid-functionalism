@@ -20,6 +20,23 @@ const FOCUS_RING_REGEX = `\\bfocus(?:-visible|-within)?:(?:ring|outline|border)-
 const FOCUS_RING_MESSAGE =
   "Focus indicators must use the --focus-ring token — e.g. focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)].";
 
+// A component owns its type: size comes from the ladder — a `size` prop, or
+// the surrounding SizeProvider (see /docs/sizes). Overriding that with a raw
+// px in className freezes one step of the ladder, so the text stops
+// responding when the site size changes. Site chrome has the type-scale
+// roles for this — text-display / text-title / text-subtitle / text-body /
+// text-caption, defined in app/globals.css — and a component that genuinely
+// wants a different step takes `size`.
+//
+// Deliberately scoped to className on FF components, not to every element:
+// previews that mimic a component's internals with plain divs legitimately
+// repeat the same px the component itself uses.
+const FF_COMPONENT_REGEX =
+  "^(Accordion|AskUser|Badge|Button|Card|Chat|Checkbox|Color|Dialog|Dropdown|Elevated|Input|Menu|Nav|Radio|Scroll|Select|Sidebar|Slider|Switch|Table|Tabs|Thinking|Tooltip)";
+const HARDCODED_TYPE_REGEX = "\\btext-\\[[0-9]";
+const HARDCODED_TYPE_MESSAGE =
+  "Hardcoded font size on a component. Type follows the size ladder: pass `size`, or use a type-scale role (text-caption / text-body / text-subtitle / text-title / text-display) so it tracks the site size step.";
+
 const shadcnRestrictedRules = {
   "no-restricted-syntax": [
     "error",
@@ -40,6 +57,18 @@ const shadcnRestrictedRules = {
     {
       selector: `TemplateElement[value.raw=/${FOCUS_RING_REGEX}/]`,
       message: FOCUS_RING_MESSAGE,
+    },
+    // `>` into the attribute, not a bare descendant: a component's own
+    // className only. Without it the selector reaches through
+    // `render={<span className="text-[13px]" />}` and flags the nested
+    // element, which is a plain span rendering a row's internals.
+    {
+      selector: `JSXOpeningElement[name.name=/${FF_COMPONENT_REGEX}/] > JSXAttribute[name.name="className"] Literal[value=/${HARDCODED_TYPE_REGEX}/]`,
+      message: HARDCODED_TYPE_MESSAGE,
+    },
+    {
+      selector: `JSXOpeningElement[name.name=/${FF_COMPONENT_REGEX}/] > JSXAttribute[name.name="className"] TemplateElement[value.raw=/${HARDCODED_TYPE_REGEX}/]`,
+      message: HARDCODED_TYPE_MESSAGE,
     },
   ],
 };

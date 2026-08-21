@@ -80,6 +80,27 @@ const multipleCode = `import { AccordionGroup, AccordionItem, AccordionTrigger, 
   </AccordionItem>
 </AccordionGroup>`;
 
+const rowHighlightCode = `import { AccordionGroup, AccordionItem, AccordionTrigger, AccordionContent } from "./components";
+
+{/* highlight="trigger": an expanded item stops holding a tint. The fill
+    scopes to the row and waits for hover, so the open panel sits on the
+    page's own surface — the way a sidebar row highlights without
+    colouring its sub-tree. */}
+<AccordionGroup type="single" collapsible defaultValue="item-1" highlight="trigger">
+  <AccordionItem value="item-1" index={0}>
+    <AccordionTrigger>Expanded, but not tinted</AccordionTrigger>
+    <AccordionContent>
+      The panel reads as part of the page rather than a filled block.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="item-2" index={1}>
+    <AccordionTrigger>Hover any row</AccordionTrigger>
+    <AccordionContent>
+      The fill follows your cursor instead of marking a state.
+    </AccordionContent>
+  </AccordionItem>
+</AccordionGroup>`;
+
 const rootProps: PropDef[] = [
   { name: "type", type: '"single" | "multiple"', default: '"single"', description: "Whether one or multiple items can be expanded." },
   { name: "collapsible", type: "boolean", default: "true", description: "Allow collapsing all items when type is single." },
@@ -207,6 +228,44 @@ export default function AccordionDoc() {
               <AccordionTrigger>Third Section</AccordionTrigger>
               <AccordionContent>
                 Each item operates independently in multiple mode.
+              </AccordionContent>
+            </AccordionItem>
+          </AccordionGroup>
+        </ComponentPreview>
+      </DocSection>
+
+
+      <DocSection title="Row highlight">
+        <p className="text-body text-muted-foreground">
+          With <code>highlight=&quot;trigger&quot;</code> an expanded item stops
+          holding a tint: the fill scopes to the row and waits for hover, so the
+          open panel sits on the page&apos;s own surface. Worth reaching for in a
+          dense panel — a sidebar, a settings column — where a filled block per
+          open item would read as a second layer.
+        </p>
+        <ComponentPreview code={rowHighlightCode} align="top">
+          <AccordionGroup
+            type="single"
+            collapsible
+            defaultValue="item-1"
+            highlight="trigger"
+          >
+            <AccordionItem value="item-1" index={0}>
+              <AccordionTrigger>Expanded, but not tinted</AccordionTrigger>
+              <AccordionContent>
+                The panel reads as part of the page rather than a filled block.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-2" index={1}>
+              <AccordionTrigger>Hover any row</AccordionTrigger>
+              <AccordionContent>
+                The fill follows your cursor instead of marking a state.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-3" index={2}>
+              <AccordionTrigger>Compare with the sections above</AccordionTrigger>
+              <AccordionContent>
+                Those hold a block across the row and its panel while open.
               </AccordionContent>
             </AccordionItem>
           </AccordionGroup>

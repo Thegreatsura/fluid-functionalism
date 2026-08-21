@@ -86,7 +86,7 @@ const rootProps: PropDef[] = [
   { name: "defaultValue", type: "string | string[]", description: "Initially expanded item value(s)." },
   { name: "value", type: "string | string[]", description: "Controlled expanded value(s)." },
   { name: "onValueChange", type: "(value) => void", description: "Callback when expanded state changes." },
-  { name: "highlight", type: '"trigger" | "item"', default: '"item"', description: "What an open item tints. item paints the row and its panel as one block, and holds while it stays open. trigger scopes the fill to the row and shows it on hover only — the panel keeps the page's own surface, the way a sidebar row highlights without colouring its sub-tree. AccordionItem takes the same prop when used standalone." },
+  { name: "highlight", type: '"trigger" | "item"', default: '"item"', description: "What an open item tints. item holds a block across the row and its panel. trigger scopes it to the row and shows it on hover only, the way a sidebar row highlights without colouring its sub-tree. AccordionItem takes the same prop standalone." },
 ];
 
 const itemProps: PropDef[] = [

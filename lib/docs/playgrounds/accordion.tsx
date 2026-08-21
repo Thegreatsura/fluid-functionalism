@@ -12,29 +12,28 @@ import {
   PLAY_SWITCH,
   PlayField,
   PlaySelect,
-  PlaySection,
-  PlayDivider,
   PlaygroundPanel,
 } from "@/lib/docs/playground";
 import { ACCORDION_ITEMS } from "@/app/components/demo-data";
 import type { PlaygroundProps } from "./types";
 
 // ── Accordion playground ─────────────────────────────────
-// Layout first (how many open at once, how tall the rows are), then the one
-// visual choice the component makes for you: what an open item tints.
+// Two questions: how many items open at once, and what an open one tints.
+// `type` and `collapsible` are one decision in practice, so they read as one
+// control — "one or none" is the pair, not a flag on top of a mode.
 
 interface PlayState {
-  type: "single" | "multiple";
-  collapsible: boolean;
-  size: "default" | "compact";
-  highlight: "item" | "trigger";
+  /** one — always exactly one open · oneOrNone — single + collapsible ·
+   *  any — multiple. */
+  expand: "one" | "oneOrNone" | "any";
+  /** highlight="trigger": the open row's tint is scoped to the row and
+   *  waits for hover. */
+  rowOnly: boolean;
 }
 
 const DEFAULT_STATE: PlayState = {
-  type: "single",
-  collapsible: true,
-  size: "default",
-  highlight: "item",
+  expand: "oneOrNone",
+  rowOnly: false,
 };
 
 function pick<T>(options: readonly T[]): T {
@@ -42,19 +41,19 @@ function pick<T>(options: readonly T[]): T {
 }
 
 export function buildAccordionPlaygroundCode(o: PlayState): string {
+  const single = o.expand !== "any";
   const props = [
-    `type="${o.type}"`,
-    ...(o.type === "single" && o.collapsible ? ["collapsible"] : []),
-    ...(o.size === "compact" ? [`size="compact"`] : []),
-    ...(o.highlight === "trigger" ? [`highlight="trigger"`] : []),
-    o.type === "single" ? `defaultValue="item-1"` : `defaultValue={["item-1"]}`,
+    `type="${single ? "single" : "multiple"}"`,
+    ...(o.expand === "oneOrNone" ? ["collapsible"] : []),
+    ...(o.rowOnly ? [`highlight="trigger"`] : []),
+    single ? `defaultValue="item-1"` : `defaultValue={["item-1"]}`,
   ].join(" ");
   return [
     `import {`,
     `  AccordionGroup, AccordionItem, AccordionTrigger, AccordionContent,`,
     `} from "./components";`,
     ``,
-    ...(o.highlight === "trigger"
+    ...(o.rowOnly
       ? [
           `{/* highlight="trigger" keeps an open item's tint on the row and`,
           `    leaves its panel on the page's own surface */}`,
@@ -78,24 +77,26 @@ export function AccordionPlayground({ children }: PlaygroundProps) {
 
   const randomize = () =>
     setState({
-      type: pick(["single", "single", "multiple"] as const),
-      collapsible: Math.random() > 0.3,
-      size: pick(["default", "default", "compact"] as const),
-      highlight: pick(["item", "item", "trigger"] as const),
+      expand: pick(["one", "oneOrNone", "oneOrNone", "any"] as const),
+      rowOnly: Math.random() > 0.6,
     });
 
   const items = ACCORDION_ITEMS.slice(0, 4);
 
   // `key` remounts the group when type flips: single and multiple take
   // different defaultValue shapes, and an uncontrolled group keeps the first.
+  const single = state.expand !== "any";
   const group = (
     <AccordionGroup
-      key={`${state.type}-${state.size}`}
-      {...(state.type === "single"
-        ? { type: "single" as const, collapsible: state.collapsible, defaultValue: items[0].value }
+      key={state.expand}
+      {...(single
+        ? {
+            type: "single" as const,
+            collapsible: state.expand === "oneOrNone",
+            defaultValue: items[0].value,
+          }
         : { type: "multiple" as const, defaultValue: [items[0].value] })}
-      size={state.size}
-      highlight={state.highlight}
+      highlight={state.rowOnly ? "trigger" : "item"}
     >
       {items.map((item, i) => (
         <AccordionItem key={item.value} value={item.value} index={i}>
@@ -108,47 +109,23 @@ export function AccordionPlayground({ children }: PlaygroundProps) {
 
   const controls = (
     <PlaygroundPanel onShuffle={randomize}>
-      <PlaySection label="Layout" />
-      <PlayField label="Type">
+      <PlayField label="Expand">
         <PlaySelect
-          value={state.type}
-          onChange={(v) => set("type", v as PlayState["type"])}
+          value={state.expand}
+          onChange={(v) => set("expand", v as PlayState["expand"])}
           options={[
-            { value: "single", label: "Single" },
-            { value: "multiple", label: "Multiple" },
+            { value: "one", label: "One at a time" },
+            { value: "oneOrNone", label: "One or none" },
+            { value: "any", label: "Any number" },
           ]}
         />
       </PlayField>
       <Switch
-        label="Collapsible"
-        checked={state.type === "single" && state.collapsible}
-        onToggle={() => set("collapsible", !state.collapsible)}
-        disabled={state.type !== "single"}
+        label="Highlight row only"
+        checked={state.rowOnly}
+        onToggle={() => set("rowOnly", !state.rowOnly)}
         className={PLAY_SWITCH}
       />
-      <PlayField label="Size">
-        <PlaySelect
-          value={state.size}
-          onChange={(v) => set("size", v as PlayState["size"])}
-          options={[
-            { value: "default", label: "Default" },
-            { value: "compact", label: "Compact" },
-          ]}
-        />
-      </PlayField>
-
-      <PlayDivider />
-      <PlaySection label="Open item" />
-      <PlayField label="Highlight">
-        <PlaySelect
-          value={state.highlight}
-          onChange={(v) => set("highlight", v as PlayState["highlight"])}
-          options={[
-            { value: "item", label: "Row + panel" },
-            { value: "trigger", label: "Row only" },
-          ]}
-        />
-      </PlayField>
     </PlaygroundPanel>
   );
 

@@ -38,8 +38,10 @@ interface ComponentPreviewProps {
    *  Useful when a demo opens floating UI (popovers, dropdowns) that needs
    *  vertical room. */
   minHeightClass?: string;
-  /** Vertical alignment of the preview content. Defaults to "center". */
-  align?: "center" | "bottom";
+  /** Vertical alignment of the preview content. Defaults to "center".
+   *  "top" suits content that grows downward — an accordion opening a panel
+   *  shouldn't shift the rows above it. */
+  align?: "top" | "center" | "bottom";
   /** Show the Inspect toggle (pixel rulers + box-model inspector). Defaults to
    *  true; set false for previews where an overlay would get in the way. */
   inspectable?: boolean;
@@ -148,7 +150,13 @@ export function ComponentPreview({
           <div
             ref={previewRef}
             onMouseDown={handlePreviewMouseDown}
-            className={`relative flex ${align === "bottom" ? "items-end" : "items-center"} justify-center ${minHeightClass} bg-background ${
+            className={`relative flex ${
+              align === "bottom"
+                ? "items-end"
+                : align === "top"
+                  ? "items-start"
+                  : "items-center"
+            } justify-center ${minHeightClass} bg-background ${
               padding === "none"
                 ? ""
                 : padding === "compact"

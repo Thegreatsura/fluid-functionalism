@@ -112,7 +112,7 @@ function AccordionPlaygroundSection() {
         <PlaygroundLayout
           controls={controls}
           preview={
-            <ComponentPreview code={code} padding="none" minHeightClass="h-[420px]">
+            <ComponentPreview code={code} padding="none" minHeightClass="h-[420px]" align="top">
               {preview}
             </ComponentPreview>
           }
@@ -135,7 +135,7 @@ export default function AccordionDoc() {
 
       <DocSection title="Standalone">
         <p className="text-body text-muted-foreground">A single collapsible item with its own hover state.</p>
-        <ComponentPreview code={standaloneCode}>
+        <ComponentPreview code={standaloneCode} align="top">
           <div className="min-h-[120px] flex items-center">
             <Accordion type="single" collapsible defaultValue="item-1">
               <AccordionItem value="item-1">
@@ -151,7 +151,7 @@ export default function AccordionDoc() {
 
       <DocSection title="Single Expand">
         <p className="text-body text-muted-foreground">Multiple items with proximity hover — only one can be expanded at a time.</p>
-        <ComponentPreview code={groupedCode}>
+        <ComponentPreview code={groupedCode} align="top">
           <AccordionGroup type="single" collapsible defaultValue="item-1">
             <AccordionItem value="item-1" index={0}>
               <AccordionTrigger>Getting Started</AccordionTrigger>
@@ -189,7 +189,7 @@ export default function AccordionDoc() {
 
       <DocSection title="Multi Expand">
         <p className="text-body text-muted-foreground">Multiple items with proximity hover — several can be expanded at once.</p>
-        <ComponentPreview code={multipleCode}>
+        <ComponentPreview code={multipleCode} align="top">
           <AccordionGroup type="multiple" defaultValue={["item-1", "item-3"]}>
             <AccordionItem value="item-1" index={0}>
               <AccordionTrigger>First Section</AccordionTrigger>

@@ -10,6 +10,8 @@ import {
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
+import { PlaygroundLayout } from "@/lib/docs/playground";
+import { AccordionPlayground } from "@/lib/docs/playgrounds/accordion";
 
 const standaloneCode = `import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "./components";
 
@@ -84,7 +86,7 @@ const rootProps: PropDef[] = [
   { name: "defaultValue", type: "string | string[]", description: "Initially expanded item value(s)." },
   { name: "value", type: "string | string[]", description: "Controlled expanded value(s)." },
   { name: "onValueChange", type: "(value) => void", description: "Callback when expanded state changes." },
-  { name: "highlight", type: '"trigger" | "item"', default: '"item"', description: "What an open item tints. item paints the row and its panel as one block. trigger keeps the fill on the row you clicked and leaves the panel on the page's own surface — the way a sidebar row highlights without colouring its sub-tree. AccordionItem takes the same prop when used standalone." },
+  { name: "highlight", type: '"trigger" | "item"', default: '"item"', description: "What an open item tints. item paints the row and its panel as one block, and holds while it stays open. trigger scopes the fill to the row and shows it on hover only — the panel keeps the page's own surface, the way a sidebar row highlights without colouring its sub-tree. AccordionItem takes the same prop when used standalone." },
 ];
 
 const itemProps: PropDef[] = [
@@ -101,6 +103,25 @@ const contentProps: PropDef[] = [
   { name: "children", type: "ReactNode", description: "Collapsible content." },
 ];
 
+// ── Playground ───────────────────────────────────────────
+
+function AccordionPlaygroundSection() {
+  return (
+    <AccordionPlayground>
+      {({ preview, controls, code }) => (
+        <PlaygroundLayout
+          controls={controls}
+          preview={
+            <ComponentPreview code={code} padding="none" minHeightClass="h-[420px]">
+              {preview}
+            </ComponentPreview>
+          }
+        />
+      )}
+    </AccordionPlayground>
+  );
+}
+
 export default function AccordionDoc() {
   return (
     <DocPage
@@ -108,6 +129,10 @@ export default function AccordionDoc() {
       slug="accordion"
       description="Collapsible sections with animated expand/collapse and proximity hover in grouped mode."
     >
+      <DocSection title="Playground">
+        <AccordionPlaygroundSection />
+      </DocSection>
+
       <DocSection title="Standalone">
         <p className="text-body text-muted-foreground">A single collapsible item with its own hover state.</p>
         <ComponentPreview code={standaloneCode}>

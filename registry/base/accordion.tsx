@@ -98,9 +98,10 @@ type AccordionGroupProps = HTMLAttributes<HTMLDivElement> & {
    *  SizeProvider. */
   size?: SizeVariant;
   /** What an open item tints. "item" paints the row and its panel as one
-   *  block. "trigger" keeps the fill on the row you clicked and leaves the
-   *  panel on the page's own surface — the way a sidebar row highlights
-   *  without colouring its sub-tree. @default "item" */
+   *  block, and holds while it stays open. "trigger" scopes the fill to the
+   *  row and shows it on hover only, leaving the panel on the page's own
+   *  surface — the way a sidebar row highlights without colouring its
+   *  sub-tree. @default "item" */
   highlight?: "trigger" | "item";
 } & (AccordionGroupSingleProps | AccordionGroupMultipleProps);
 
@@ -256,12 +257,15 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
     // An open item tints its trigger by default; "item" restores the older
     // block treatment that spans the panel too. The trigger rects are the
     // ones proximity already tracks, so this is a choice of source.
+    // "trigger" tints the open row only while you're on it: the panel below
+    // already says the item is open, so the fill goes back to being a hover
+    // affordance rather than a persistent state.
     const expandedRects =
       highlight === "item"
         ? openItemRects
         : new Map(
             [...openItemRects.keys()].flatMap((idx) => {
-              const rect = itemRects[idx];
+              const rect = idx === activeIndex ? itemRects[idx] : null;
               return rect ? ([[idx, rect]] as [number, ItemRect][]) : [];
             })
           );
@@ -822,7 +826,7 @@ const AccordionTrigger = forwardRef<HTMLButtonElement, AccordionTriggerProps>(
             own surface, the way a sidebar row highlights without colouring
             its sub-tree. */}
         <AnimatePresence>
-          {isOpen && highlight === "trigger" && (
+          {isOpen && highlight === "trigger" && isHovered && (
             <motion.div
               className={`absolute inset-0 ${shape.bg} bg-accent/20 dark:bg-accent/12 pointer-events-none`}
               initial={{ opacity: 0 }}
@@ -882,6 +886,18 @@ const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
     // spring — framer would measure the spring's numeric start visually
     // (scaled) and play a shrink. Items that open later spring normally.
     const needsSnap = useRef(isOpen);
+    // Height springs only when THIS panel toggles. When contentHeight
+    // changes underneath it instead — anything collapsible nested inside
+    // the panel, another accordion included — it must snap: a spring
+    // re-targeted every frame chases the child's own animation, lands
+    // after it, and drags everything below the item along late. Same rule
+    // as SidebarGroup / SidebarMenuSub; see motion-guidelines.md.
+    const prevOpenRef = useRef(isOpen);
+    const togglingRef = useRef(false);
+    if (prevOpenRef.current !== isOpen) {
+      prevOpenRef.current = isOpen;
+      togglingRef.current = true;
+    }
 
     const measureRef = useCallback((el: HTMLDivElement | null) => {
       roRef.current?.disconnect();
@@ -962,7 +978,7 @@ const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
                 // body dissolves rather than being sliced by the clip edge,
                 // which is what stops the rows below reading as shoved.
                 transition={
-                  needsSnap.current || reduceMotion
+                  needsSnap.current || reduceMotion || !togglingRef.current
                     ? { duration: 0 }
                     : isOpen
                       ? { ...spring.fast, opacity: { duration: 0.06 } }
@@ -972,6 +988,7 @@ const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
                   groupCtx?.remeasure();
                 }}
                 onAnimationComplete={() => {
+                  togglingRef.current = false;
                   groupCtx?.remeasure();
                   if (!isOpen) setExitComplete(true);
                 }}

@@ -1,3 +1,4 @@
+import { AccordionPlayground } from "./accordion";
 import { AskUserQuestionsPlayground } from "./ask-user-questions";
 import { ButtonPlayground } from "./button";
 import { CardPlayground } from "./card";
@@ -19,6 +20,7 @@ export type { PlaygroundParts, PlaygroundProps, PlaygroundComponent } from "./ty
 // ---------------------------------------------------------------------------
 
 export const playgroundMap: Record<string, PlaygroundComponent> = {
+  accordion: AccordionPlayground,
   "ask-user-questions": AskUserQuestionsPlayground,
   button: ButtonPlayground,
   card: CardPlayground,

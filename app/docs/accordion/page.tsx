@@ -237,11 +237,9 @@ export default function AccordionDoc() {
 
       <DocSection title="Row highlight">
         <p className="text-body text-muted-foreground">
-          With <code>highlight=&quot;trigger&quot;</code> an expanded item stops
-          holding a tint: the fill scopes to the row and waits for hover, so the
-          open panel sits on the page&apos;s own surface. Worth reaching for in a
-          dense panel — a sidebar, a settings column — where a filled block per
-          open item would read as a second layer.
+          With <code>highlight=&quot;trigger&quot;</code> an expanded item holds
+          no tint — the fill scopes to the row and waits for hover. Suits dense
+          panels, where a block per open item reads as a second layer.
         </p>
         <ComponentPreview code={rowHighlightCode} align="top">
           <AccordionGroup

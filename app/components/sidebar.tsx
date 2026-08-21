@@ -120,7 +120,7 @@ export function SiteSidebar() {
           lives in the right panel. */}
       {isMobile && (
         <SidebarFooter className="p-4 pt-2">
-          <div className="flex items-center justify-between pt-2 pb-2">
+          <div className="flex items-center justify-between pt-2">
             <h2
               className="text-title text-foreground leading-none"
               style={{ fontVariationSettings: "'wght' 600" }}

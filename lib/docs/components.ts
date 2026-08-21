@@ -40,7 +40,7 @@ export const componentList: ComponentEntry[] = [
   { slug: "input-message", name: "InputMessage", description: "Chat-style message composer with auto-resizing textarea and configurable action slots.", isNew: true, gridSize: "medium" },
   { slug: "radio-group", name: "RadioGroup", description: "Radio button group with proximity hover and animated selection.", gridSize: "small" },
   { slug: "select", name: "Select", description: "Animated select menu with bordered/borderless variants and optional icons.", gridSize: "small" },
-  { slug: "sidebar", name: "Sidebar", description: "App-shell sidebar with offcanvas collapse, a drag-resize rail, a mobile sheet, and one traveling row highlight.", isNew: true, dotColor: "bg-yellow-500", gridSize: "medium" },
+  { slug: "sidebar", name: "Sidebar", description: "Refined, composable sidebar with offcanvas collapse, a drag-resize rail, and a mobile drawer.", isNew: true, dotColor: "bg-yellow-500", gridSize: "medium" },
   { slug: "slider", name: "Slider", description: "One slider, two ladder steps: the default pip/scrubber design and the compact design with range mode and value display.", gridSize: "small" },
   { slug: "switch", name: "Switch", description: "Toggle switch with animated thumb and label.", gridSize: "small" },
   { slug: "table", name: "Table", description: "Data table with row hover effects and semantic markup.", gridSize: "medium" },

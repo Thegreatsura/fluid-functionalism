@@ -132,7 +132,7 @@ export interface SidebarProviderProps extends HTMLAttributes<HTMLDivElement> {
   /** Bare-key toggle shortcut. Defaults to "[" for a left sidebar and "]"
    *  for a right one; `null` disables it. */
   shortcut?: string | null;
-  /** Viewport width (px) below which the sidebar renders as a sheet. */
+  /** Viewport width (px) below which the sidebar renders as a drawer. */
   mobileBreakpoint?: number;
   /** While collapsed, reveal the sidebar as a floating overlay from the
    *  edge — on hover (with intent delay) or on click of the edge strip.

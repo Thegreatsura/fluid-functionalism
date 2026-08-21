@@ -243,11 +243,11 @@ const providerProps: PropDef[] = [
   { name: "open", type: "boolean", description: "Controlled open state — pair with onOpenChange." },
   { name: "onOpenChange", type: "(open: boolean) => void", description: "Fires when the trigger, rail, or shortcut wants to toggle." },
   { name: "defaultOpen", type: "boolean", default: "true", description: "Uncontrolled initial state. Read the sidebar_state cookie in a server layout to restore the last visit." },
-  { name: "persist", type: "boolean", default: "true", description: "Write the desktop state to the sidebar_state cookie (7 days). Mobile sheet state never persists." },
+  { name: "persist", type: "boolean", default: "true", description: "Write the desktop state to the sidebar_state cookie (7 days). Mobile drawer state never persists." },
   { name: "peek", type: '"none" | "hover" | "click"', default: '"none"', description: "What the collapsed edge does: an edge strip reveals the sidebar as a floating overlay, on hover or on click. Escape or an outside press dismisses; peeking never pins it or writes the cookie." },
   { name: "shortcut", type: "string | null", default: '"[" left · "]" right', description: "Bare-key toggle, side-aware; null disables. Focus-scoped: the innermost provider containing focus answers." },
-  { name: "mobileBreakpoint", type: "number", default: "768", description: "Width (px) below which the sidebar becomes a modal sheet." },
-  { name: "width / widthMobile", type: "string", default: '"16rem" / "18rem"', description: "Rail and sheet widths, also published as --sidebar-width and --sidebar-width-mobile." },
+  { name: "mobileBreakpoint", type: "number", default: "768", description: "Width (px) below which the sidebar becomes a modal drawer." },
+  { name: "width / widthMobile", type: "string", default: '"16rem" / "18rem"', description: "Rail and drawer widths, also published as --sidebar-width and --sidebar-width-mobile." },
 ];
 
 const sidebarProps: PropDef[] = [
@@ -968,7 +968,7 @@ export default function SidebarDoc() {
   return (
     <DocPage
       title="Sidebar"
-      description="An app-shell sidebar that collapses offcanvas, resizes from its edge, and becomes a sheet on mobile. One highlight travels between rows instead of many flashing on and off."
+      description="A refined, composable sidebar that collapses offcanvas, resizes from its edge, and becomes a drawer on mobile."
       slug="sidebar"
     >
       <DocSection title="Playground">

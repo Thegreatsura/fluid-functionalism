@@ -25,6 +25,7 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
   SidebarInset,
+  useSidebar,
   type SidebarVariant,
 } from "@/components/flavored/sidebar";
 import { useIcons, type IconName } from "@/lib/icon-context";
@@ -490,6 +491,41 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
 }
 
 // ── Component ────────────────────────────────────────────
+
+/** What the inset shows depends on whether the sidebar is a rail or a sheet.
+ *  Above the breakpoint it plays a page — a topbar with the trigger and some
+ *  content blocks — so the rail has something to sit beside. Below it the
+ *  sidebar is a sheet over the whole preview, so a mock page has nothing to
+ *  demonstrate and the small stage is better spent on the one control that
+ *  matters: the button that opens it. Reads `isMobile` from the provider
+ *  rather than a media query so the swap lands exactly when the sheet does. */
+function PlaygroundInsetBody() {
+  const { isMobile, toggleSidebar } = useSidebar();
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-4">
+        <Button variant="secondary" onClick={toggleSidebar}>
+          Open sidebar
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2">
+        <SidebarTrigger />
+        <span className="text-[13px] text-muted-foreground">Dashboard</span>
+      </header>
+      <div className="flex flex-col gap-3 px-2 py-4">
+        <div className="h-4 w-2/3 rounded-md bg-hover" />
+        <div className="h-4 w-1/2 rounded-md bg-hover" />
+        <div className="h-24 rounded-lg bg-hover" />
+      </div>
+    </>
+  );
+}
 
 export function SidebarPlayground({ children }: PlaygroundProps) {
   const [state, setState] = useState<PlayState>(DEFAULT_STATE);
@@ -980,15 +1016,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           )}
         </Sidebar>
         <SidebarInset className={state.design === "floating" ? "min-h-0 pt-2" : "min-h-0"}>
-          <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2">
-            <SidebarTrigger />
-            <span className="text-[13px] text-muted-foreground">Dashboard</span>
-          </header>
-          <div className="flex flex-col gap-3 px-2 py-4">
-            <div className="h-4 w-2/3 rounded-md bg-hover" />
-            <div className="h-4 w-1/2 rounded-md bg-hover" />
-            <div className="h-24 rounded-lg bg-hover" />
-          </div>
+          <PlaygroundInsetBody />
         </SidebarInset>
       </SidebarProvider>
     </div>

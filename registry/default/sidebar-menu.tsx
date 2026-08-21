@@ -1129,6 +1129,9 @@ const SidebarMenuSub = forwardRef<HTMLUListElement, SidebarMenuSubProps>(
             ? { height: open ? contentHeight : 0, opacity: open ? 1 : 0 }
             : { opacity: open ? 1 : 0 }
         }
+        // Do NOT simplify this to `open ? spring.moderate : …` — see the
+        // togglingRef note above. Springing on a re-measure stacks a second
+        // spring on a nested sub's own collapse.
         transition={
           togglingRef.current
             ? open

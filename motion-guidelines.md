@@ -104,6 +104,25 @@ instead of sliding; a tooltip fades instead of moving.
 **Consumers** who copy a component into their own app get this for free by
 wrapping their tree the same way — one line, like a `ThemeProvider`.
 
+### Never stack two measured-height collapses
+
+A wrapper that pins its height to a ResizeObserver-measured value and *animates*
+to it — `SidebarGroup`, `SidebarMenuSub`, `AccordionContent` — must spring only
+when **it** toggles. When the measured height changes underneath it because a
+child collapsed, it has to snap (`{ duration: 0 }`).
+
+Spring on a re-measure and the outer wrapper chases a target that moves every
+frame: it lags its own child badly, then needs a full settle time *after* the
+child has already landed, dragging everything below it along late. Measured on
+the sidebar playground before the guard, collapsing a sub-menu inside a
+collapsible group: the sub-menu finished in 218ms, the group's wrapper in 326ms,
+diverging by ~80px mid-flight. With the snap, both land within one frame of each
+other. Every extra nesting level multiplies the effect, which is what makes a
+deep tree feel sludgy.
+
+The guard is a render-phase ref comparing the previous `open` to the current
+one, cleared in `onAnimationComplete` — see `SidebarGroup` in `sidebar-core`.
+
 ### The catch — and why it pushes you toward `transform`
 
 `MotionConfig` only neutralises **transform / layout** animations. A component

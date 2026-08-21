@@ -292,10 +292,15 @@ const level2Props: PropDef[] = [
 
 // ── Shared demo scaffolding ──────────────────────────────
 
+/** Every preview stage on this page. 640px gives the rail room to be a rail;
+ *  below the sheet breakpoint there is no rail on screen, so the stage drops
+ *  to roughly square rather than leaving a phone-height column of mock page. */
+const SHELL_HEIGHT = "h-[360px] md:h-[640px]";
+
 /** Bounded app-shell frame every preview runs inside — the provider fills it
  *  instead of the viewport. */
 function SidebarShellFrame({
-  height = "h-[640px]",
+  height = SHELL_HEIGHT,
   children,
 }: {
   height?: string;
@@ -477,6 +482,46 @@ function DemoInsetBody() {
   );
 }
 
+/** What the inset shows depends on whether the sidebar is a rail or a sheet.
+ *  Above the breakpoint it plays a page for the rail to sit beside. Below it
+ *  the sheet covers the whole frame, so a mock page demonstrates nothing and
+ *  the short stage is better spent on the one control that matters. Reads
+ *  `isMobile` from the provider rather than a media query, so the swap lands
+ *  exactly when the sheet does. */
+function DemoInsetContent({
+  title,
+  triggerSide,
+  header,
+  mobileExtra,
+}: {
+  title?: ReactNode;
+  triggerSide?: "left" | "right";
+  /** Replaces the standard topbar on the desktop side. */
+  header?: ReactNode;
+  /** Controls a preview can't afford to lose when the topbar goes away. */
+  mobileExtra?: ReactNode;
+}) {
+  const { isMobile, toggleSidebar } = useSidebar();
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4">
+        <Button variant="secondary" onClick={toggleSidebar}>
+          Open sidebar
+        </Button>
+        {mobileExtra}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {header ?? <DemoInsetHeader title={title} triggerSide={triggerSide} />}
+      <DemoInsetBody />
+    </>
+  );
+}
+
 /** Standard demo shell: provider scoped to the frame, no cookie writes. The
  *  toggle key needs no opt-out: only the innermost provider containing focus
  *  answers a keypress (mounted-provider registry). */
@@ -513,8 +558,7 @@ function DemoShell({
             top so its header lines up with the card's. The inset variant's
             main is itself the card (own m-2), so it needs no extra padding. */}
         <SidebarInset className={variant === "floating" ? "min-h-0 pt-2" : "min-h-0"}>
-          <DemoInsetHeader title={insetTitle} triggerSide={side} />
-          <DemoInsetBody />
+          <DemoInsetContent title={insetTitle} triggerSide={side} />
         </SidebarInset>
       </SidebarProvider>
     </SidebarShellFrame>
@@ -525,7 +569,7 @@ function DemoShell({
 
 function CollapsePreview() {
   return (
-    <SidebarShellFrame height="h-[640px]">
+    <SidebarShellFrame height={SHELL_HEIGHT}>
       <SidebarProvider className="h-full min-h-0" persist={false}>
         <Sidebar className="h-full">
           <DemoHeader />
@@ -534,14 +578,13 @@ function CollapsePreview() {
           </SidebarContent>
         </Sidebar>
         <SidebarInset className="min-h-0">
-          <DemoInsetHeader
+          <DemoInsetContent
             title={
               <>
                 Press <code>[</code> to toggle
               </>
             }
           />
-          <DemoInsetBody />
         </SidebarInset>
       </SidebarProvider>
     </SidebarShellFrame>
@@ -562,7 +605,7 @@ function SidebarPlaygroundSection() {
         <PlaygroundLayout
           controls={controls}
           preview={
-            <ComponentPreview code={code} padding="none" minHeightClass="h-[640px]">
+            <ComponentPreview code={code} padding="none" minHeightClass={SHELL_HEIGHT}>
               {preview}
             </ComponentPreview>
           }
@@ -586,7 +629,7 @@ function RowAnatomyPreview() {
     </DropdownContent>
   );
   return (
-    <SidebarShellFrame height="h-[640px]">
+    <SidebarShellFrame height={SHELL_HEIGHT}>
       <SidebarProvider className="h-full min-h-0" persist={false}>
         <Sidebar collapsible="none" className="h-full">
           <SidebarContent>
@@ -665,8 +708,7 @@ function RowAnatomyPreview() {
           </SidebarContent>
         </Sidebar>
         <SidebarInset className="min-h-0">
-          <DemoInsetHeader title="Hover a row" />
-          <DemoInsetBody />
+          <DemoInsetContent title="Hover a row" />
         </SidebarInset>
       </SidebarProvider>
     </SidebarShellFrame>
@@ -679,7 +721,7 @@ function SectionsPreview() {
   const PlusIcon = useIcon("plus");
   const SlidersIcon = useIcon("sliders-horizontal");
   return (
-    <SidebarShellFrame height="h-[640px]">
+    <SidebarShellFrame height={SHELL_HEIGHT}>
       <SidebarProvider className="h-full min-h-0" persist={false}>
         <Sidebar collapsible="none" className="h-full">
           <SidebarContent>
@@ -726,8 +768,7 @@ function SectionsPreview() {
           </SidebarContent>
         </Sidebar>
         <SidebarInset className="min-h-0">
-          <DemoInsetHeader title="Click a section label" />
-          <DemoInsetBody />
+          <DemoInsetContent title="Click a section label" />
         </SidebarInset>
       </SidebarProvider>
     </SidebarShellFrame>
@@ -742,7 +783,7 @@ function NestingPreview() {
   const [open, setOpen] = useState(true);
   const [current, setCurrent] = useState<string>(SIDEBAR_PROJECTS[0]);
   return (
-    <SidebarShellFrame height="h-[640px]">
+    <SidebarShellFrame height={SHELL_HEIGHT}>
       <SidebarProvider className="h-full min-h-0" persist={false}>
         <Sidebar collapsible="none" className="h-full">
           <SidebarContent>
@@ -815,8 +856,7 @@ function NestingPreview() {
           </SidebarContent>
         </Sidebar>
         <SidebarInset className="min-h-0">
-          <DemoInsetHeader title="Hover the parent, then a child" />
-          <DemoInsetBody />
+          <DemoInsetContent title="Hover the parent, then a child" />
         </SidebarInset>
       </SidebarProvider>
     </SidebarShellFrame>
@@ -828,7 +868,7 @@ function ScrollEdgesPreview() {
   const icons = useIcons();
   const rows = Array.from({ length: 7 }, () => SIDEBAR_ITEMS).flat();
   return (
-    <SidebarShellFrame height="h-[640px]">
+    <SidebarShellFrame height={SHELL_HEIGHT}>
       <SidebarProvider className="h-full min-h-0" persist={false}>
         <Sidebar collapsible="none" className="h-full">
           <DemoHeader search="below" />
@@ -849,8 +889,7 @@ function ScrollEdgesPreview() {
           </SidebarFooter>
         </Sidebar>
         <SidebarInset className="min-h-0">
-          <DemoInsetHeader title="Scroll the rail" />
-          <DemoInsetBody />
+          <DemoInsetContent title="Scroll the rail" />
         </SidebarInset>
       </SidebarProvider>
     </SidebarShellFrame>
@@ -872,7 +911,7 @@ function StatePreview() {
   const [loading, setLoading] = useState(true);
   const icons = useIcons();
   return (
-    <SidebarShellFrame height="h-[640px]">
+    <SidebarShellFrame height={SHELL_HEIGHT}>
       <SidebarProvider
         className="h-full min-h-0"
         persist={false}
@@ -901,13 +940,24 @@ function StatePreview() {
           </SidebarContent>
         </Sidebar>
         <SidebarInset className="min-h-0">
-          <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2">
-            <ControlledStateReadout />
-            <Button variant="secondary" size="compact" onClick={() => setLoading((v) => !v)}>
-              {loading ? "Show rows" : "Show skeletons"}
-            </Button>
-          </header>
-          <DemoInsetBody />
+          <DemoInsetContent
+            header={
+              <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2">
+                <ControlledStateReadout />
+                <Button variant="secondary" size="compact" onClick={() => setLoading((v) => !v)}>
+                  {loading ? "Show rows" : "Show skeletons"}
+                </Button>
+              </header>
+            }
+            mobileExtra={
+              <>
+                <ControlledStateReadout />
+                <Button variant="secondary" size="compact" onClick={() => setLoading((v) => !v)}>
+                  {loading ? "Show rows" : "Show skeletons"}
+                </Button>
+              </>
+            }
+          />
         </SidebarInset>
       </SidebarProvider>
     </SidebarShellFrame>
@@ -926,7 +976,7 @@ export default function SidebarDoc() {
       </DocSection>
 
       <DocSection title="Basic">
-        <ComponentPreview code={basicCode} padding="none" minHeightClass="h-[640px]">
+        <ComponentPreview code={basicCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <DemoShell />
         </ComponentPreview>
       </DocSection>
@@ -938,7 +988,7 @@ export default function SidebarDoc() {
           a right sidebar. The key goes to the sidebar that has focus. State persists
           to a cookie.
         </p>
-        <ComponentPreview code={collapseCode} padding="none" minHeightClass="h-[640px]">
+        <ComponentPreview code={collapseCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <CollapsePreview />
         </ComponentPreview>
       </DocSection>
@@ -948,8 +998,8 @@ export default function SidebarDoc() {
           Elevate the sidebar. The rail floats as its own card over the canvas —
           use it when navigation should read as a distinct layer.
         </p>
-        <ComponentPreview code={floatingCode} padding="none" minHeightClass="h-[640px]">
-          <DemoShell height="h-[640px]" variant="floating" />
+        <ComponentPreview code={floatingCode} padding="none" minHeightClass={SHELL_HEIGHT}>
+          <DemoShell height={SHELL_HEIGHT} variant="floating" />
         </ComponentPreview>
       </DocSection>
 
@@ -958,8 +1008,8 @@ export default function SidebarDoc() {
           Elevate the content. The main region becomes the card while the sidebar
           recedes into the canvas — use it when the content is the star.
         </p>
-        <ComponentPreview code={insetCode} padding="none" minHeightClass="h-[640px]">
-          <DemoShell height="h-[640px]" variant="inset" />
+        <ComponentPreview code={insetCode} padding="none" minHeightClass={SHELL_HEIGHT}>
+          <DemoShell height={SHELL_HEIGHT} variant="inset" />
         </ComponentPreview>
       </DocSection>
 
@@ -970,7 +1020,7 @@ export default function SidebarDoc() {
           nothing at rest: the row reserves their width only while they show,
           so the label runs full width until you reach for something.
         </p>
-        <ComponentPreview code={rowAnatomyCode} padding="none" minHeightClass="h-[640px]">
+        <ComponentPreview code={rowAnatomyCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <RowAnatomyPreview />
         </ComponentPreview>
       </DocSection>
@@ -982,7 +1032,7 @@ export default function SidebarDoc() {
           contrast and reveals its chevron; collapsed, the chevron stays as the
           cue to reopen.
         </p>
-        <ComponentPreview code={sectionsCode} padding="none" minHeightClass="h-[640px]">
+        <ComponentPreview code={sectionsCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <SectionsPreview />
         </ComponentPreview>
       </DocSection>
@@ -995,7 +1045,7 @@ export default function SidebarDoc() {
           controls — and the sub-menu runs its own highlight, so the two levels
           never fight over which row is lit.
         </p>
-        <ComponentPreview code={nestingCode} padding="none" minHeightClass="h-[640px]">
+        <ComponentPreview code={nestingCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <NestingPreview />
         </ComponentPreview>
       </DocSection>
@@ -1007,7 +1057,7 @@ export default function SidebarDoc() {
           scroll-driven CSS — no listener, no measurement — and the true start
           and end stay crisp until there is something to scroll to.
         </p>
-        <ComponentPreview code={scrollEdgesCode} padding="none" minHeightClass="h-[640px]">
+        <ComponentPreview code={scrollEdgesCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <ScrollEdgesPreview />
         </ComponentPreview>
       </DocSection>
@@ -1019,7 +1069,7 @@ export default function SidebarDoc() {
           uncontrolled, or you can own it and read it back through{" "}
           <code>useSidebar</code>.
         </p>
-        <ComponentPreview code={stateCode} padding="none" minHeightClass="h-[640px]">
+        <ComponentPreview code={stateCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <StatePreview />
         </ComponentPreview>
       </DocSection>

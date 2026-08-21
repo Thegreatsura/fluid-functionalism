@@ -1110,6 +1110,10 @@ const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>(
                   ? { height: open ? contentHeight : 0, opacity: open ? 1 : 0 }
                   : { opacity: open ? 1 : 0 }
               }
+              // Do NOT simplify this to `open ? spring.moderate : …`. The
+              // togglingRef arm is what stops a re-measure from springing —
+              // without it a nested collapse makes this wrapper chase its own
+              // child and everything below the group moves late.
               transition={
                 togglingRef.current
                   ? open

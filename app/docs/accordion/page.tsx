@@ -84,6 +84,7 @@ const rootProps: PropDef[] = [
   { name: "defaultValue", type: "string | string[]", description: "Initially expanded item value(s)." },
   { name: "value", type: "string | string[]", description: "Controlled expanded value(s)." },
   { name: "onValueChange", type: "(value) => void", description: "Callback when expanded state changes." },
+  { name: "highlight", type: '"trigger" | "item"', default: '"trigger"', description: "What an open item tints. trigger keeps the fill on the row you clicked, leaving its panel on the page's own surface — the way a sidebar row highlights without colouring its sub-tree. item tints the row and its panel as one block." },
 ];
 
 const itemProps: PropDef[] = [

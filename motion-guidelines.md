@@ -11,8 +11,8 @@ does the other.
 
 | Token | Duration | Bounce | Use for |
 |---|---|---|---|
-| `spring.fast` | 0.08s | 0 | Hover, focus rings, fades, tooltips, selection indicators |
-| `spring.moderate` | 0.16s | 0 | Critically damped — short travel / small expansion (dropdown & tab indicators, switch thumb, accordions) and panels/sheets that must land exactly (mobile drawer, merged selection backgrounds) |
+| `spring.fast` | 0.08s | 0 | Hover, focus rings, fades, tooltips, selection indicators, the accordion panel (it lands with its own chevron) |
+| `spring.moderate` | 0.16s | 0 | Critically damped — short travel / small expansion (dropdown & tab indicators, switch thumb) and panels/sheets that must land exactly (mobile drawer, merged selection backgrounds) |
 | `spring.slow` | 0.24s | 0.12 | Large surfaces: dialogs, side panels, stepped flows |
 
 **Rule:** the bigger the thing that moves, the slower the spring. No component
@@ -44,8 +44,11 @@ import { spring } from "@/lib/springs";
 ```
 
 A couple of exits stay bespoke because they are not a simple timed fade: the
-radio tick (`{ duration: 0.04 }`) and `height: 0` collapse exits
-(accordion, textarea). Everything else uses the tokens.
+radio tick (`{ duration: 0.04 }`) and the textarea's `height: 0` collapse.
+Everything else uses the tokens. An animation that flips a target instead of
+unmounting has no `exit` prop to carry the quicker tier, so it picks the
+transition off its own state — see the accordion panel, which reads
+`isOpen ? spring.fast : spring.fast.exit`.
 
 The Motion page makes this tangible in the **Slow in, faster out** section: two
 identical modals open on `spring.slow`, then close — one on the same
@@ -71,7 +74,7 @@ Keep this table and that array identical.
 
 | fast (0.08s) | moderate (0.16s, no bounce) | slow (0.24s) |
 |---|---|---|
-| Hover & focus rings, Checkbox, Radio, Table rows, Card proximity, Tooltip, Input copy, Slider, Select / Color picker open | Dropdown / Select highlight, Tabs indicator, Switch thumb, Accordion, Chat & message bubbles, Mobile drawer, Sidebar, Selection merge / split | Dialog, Ask-user questions, Thinking steps |
+| Hover & focus rings, Checkbox, Radio, Table rows, Card proximity, Tooltip, Input copy, Slider, Select / Color picker open, Accordion | Dropdown / Select highlight, Tabs indicator, Switch thumb, Chat & message bubbles, Mobile drawer, Sidebar, Selection merge / split | Dialog, Ask-user questions, Thinking steps |
 
 Most components *also* use `fast` for their hover and focus states on top of
 their headline tier — the table lists each component once, by its headline
@@ -114,10 +117,12 @@ fix:
 
 Known stragglers that still animate layout properties (so they aren't yet
 auto-reduced): the magnetic highlight slides in `dropdown` / `nav-menu` /
-`select` / `tabs-subtle`, and the `height` collapse in `accordion`. Re-expressing
-those as `transform` (or gating them on `useReducedMotion()`) is the remaining
-work. `input-message` already reads `useReducedMotion()` directly as a reference
-for the manual approach.
+`select` / `tabs-subtle`. Re-expressing those as `transform` (or gating them on
+`useReducedMotion()`) is the remaining work. `input-message` and the `height`
+collapse in `accordion` already read `useReducedMotion()` directly, as a
+reference for the manual approach — worth copying for anything that animates a
+positional value, since an installed component can't count on the consumer
+having wrapped their app in `MotionConfig`.
 
 ---
 

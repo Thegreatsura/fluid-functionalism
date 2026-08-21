@@ -63,6 +63,7 @@ const REFERENCE_TIERS = [
       { label: "Slider",              slug: "/docs/slider" },
       { label: "Select",              slug: "/docs/select" },
       { label: "Color picker",        slug: "/docs/color-picker" },
+      { label: "Accordion",           slug: "/docs/accordion" },
     ],
   },
   {
@@ -78,7 +79,6 @@ const REFERENCE_TIERS = [
       { label: "Dropdown",                slug: "/docs/dropdown" },
       { label: "Tabs indicator",          slug: "/docs/tabs" },
       { label: "Switch thumb",            slug: "/docs/switch" },
-      { label: "Accordion",               slug: "/docs/accordion" },
       { label: "Chat bubbles",            slug: "/docs/chat-message" },
       { label: "Mobile drawer",           slug: null },
       { label: "Sidebar",                 slug: "/docs/sidebar" },

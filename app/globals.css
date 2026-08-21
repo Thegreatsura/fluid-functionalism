@@ -711,6 +711,11 @@ html.transitioning *::after {
     animation-timeline: --sf-scroller;
     animation-range: 0 var(--scroll-divider-size);
   }
+  /* A region flush with the panel's own top edge has nothing above for
+     content to pass under, so the start line would read as a stray border. */
+  .scroll-divider:first-child::before {
+    content: none;
+  }
   /* Bottom edge: present while content continues below, gone at the end. */
   .scroll-divider::after {
     bottom: 0;

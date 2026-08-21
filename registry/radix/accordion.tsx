@@ -13,7 +13,7 @@ import {
   type ReactNode,
   type HTMLAttributes,
 } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 
 // SSR-safe layout effect (client components still server-render in Next).
@@ -58,6 +58,8 @@ interface AccordionItemContextValue {
   value: string;
   isOpen: boolean;
   triggerRef: React.MutableRefObject<HTMLDivElement | null>;
+  /** Standalone items carry the group's choice themselves. */
+  highlight: "trigger" | "item";
 }
 
 const AccordionItemContext =
@@ -95,12 +97,18 @@ type AccordionGroupProps = HTMLAttributes<HTMLDivElement> & {
    *  compact 28px — see /docs/sizes). Omitted, they follow the surrounding
    *  SizeProvider. */
   size?: SizeVariant;
+  /** What an open item tints. "trigger" keeps the fill on the row you
+   *  clicked — the panel below it stays on the page's own surface, the way a
+   *  sidebar row highlights without colouring its sub-tree. "item" tints the
+   *  row and its panel as one block. @default "trigger" */
+  highlight?: "trigger" | "item";
 } & (AccordionGroupSingleProps | AccordionGroupMultipleProps);
 
 const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
   (props, ref) => {
     const {
       children,
+      highlight = "trigger",
       type = "single",
       size,
       className,
@@ -253,6 +261,19 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
     const activeRect = activeIndex !== null ? itemRects[activeIndex] : null;
     const focusRect = focusedIndex !== null ? itemRects[focusedIndex] : null;
     // Dimming: reduce expanded BG opacity when hovering a non-expanded trigger
+    // An open item tints its trigger by default; "item" restores the older
+    // block treatment that spans the panel too. The trigger rects are the
+    // ones proximity already tracks, so this is a choice of source.
+    const expandedRects =
+      highlight === "item"
+        ? openItemRects
+        : new Map(
+            [...openItemRects.keys()].flatMap((idx) => {
+              const rect = itemRects[idx];
+              return rect ? ([[idx, rect]] as [number, ItemRect][]) : [];
+            })
+          );
+
     const isHoveringNonOpen =
       activeIndex !== null && !openItemRects.has(activeIndex);
     const shape = useShape();
@@ -384,7 +405,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
           >
             {/* Expanded item backgrounds */}
             <AnimatePresence>
-              {[...openItemRects.entries()].map(([idx, rect]) => (
+              {[...expandedRects.entries()].map(([idx, rect]) => (
                 <motion.div
                   key={`expanded-${idx}`}
                   className={`absolute ${shape.bg} bg-accent/20 dark:bg-accent/12 pointer-events-none`}
@@ -606,11 +627,15 @@ interface AccordionItemProps extends HTMLAttributes<HTMLDivElement> {
   value: string;
   index?: number;
   disabled?: boolean;
+  /** Standalone equivalent of AccordionGroup's prop: what an open item
+   *  tints. Ignored inside a group, which decides for all its rows.
+   *  @default "trigger" */
+  highlight?: "trigger" | "item";
   children: ReactNode;
 }
 
 const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(
-  ({ value, index, disabled, children, className, ...props }, ref) => {
+  ({ value, index, disabled, highlight = "trigger", children, className, ...props }, ref) => {
     const internalRef = useRef<HTMLDivElement>(null);
     const groupCtx = useAccordionGroup();
     const standaloneOpen = useContext(StandaloneOpenContext);
@@ -643,7 +668,7 @@ const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(
     }, [index, groupCtx, isOpen]);
 
     return (
-      <AccordionItemContext.Provider value={{ index, value, isOpen, triggerRef }}>
+      <AccordionItemContext.Provider value={{ index, value, isOpen, triggerRef, highlight }}>
         <AccordionPrimitive.Item
           ref={(node) => {
             (
@@ -661,8 +686,10 @@ const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(
           className={cn(!groupCtx?.grouped && "relative", className)}
           {...props}
         >
-          {/* Standalone expanded background */}
-          {!groupCtx?.grouped && (
+          {/* Standalone expanded background. Under the default "trigger"
+              choice the tint lives inside AccordionTrigger, where it covers
+              the row and not the panel below it. */}
+          {!groupCtx?.grouped && highlight === "item" && (
             <AnimatePresence>
               {isOpen && (
                 <motion.div
@@ -695,7 +722,7 @@ const AccordionTrigger = forwardRef<HTMLButtonElement, AccordionTriggerProps>(
   ({ children, className, ...props }, ref) => {
     const ChevronRight = useIcon("chevron-right");
     const groupCtx = useAccordionGroup();
-    const { index, isOpen, triggerRef } = useAccordionItemContext();
+    const { index, isOpen, triggerRef, highlight } = useAccordionItemContext();
     const shape = useShape();
     const sizeClasses = useSize();
     const [isHovered, setIsHovered] = useState(false);
@@ -776,6 +803,20 @@ const AccordionTrigger = forwardRef<HTMLButtonElement, AccordionTriggerProps>(
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
+        {/* Open tint, scoped to this row: the panel below keeps the page's
+            own surface, the way a sidebar row highlights without colouring
+            its sub-tree. */}
+        <AnimatePresence>
+          {isOpen && highlight === "trigger" && (
+            <motion.div
+              className={`absolute inset-0 ${shape.bg} bg-accent/20 dark:bg-accent/12 pointer-events-none`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: spring.fast.exit }}
+              transition={{ duration: 0.08 }}
+            />
+          )}
+        </AnimatePresence>
         <AnimatePresence>
           {isHovered && (
             <motion.div
@@ -806,6 +847,10 @@ const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
     const groupCtx = useAccordionGroup();
     const { isOpen } = useAccordionItemContext();
     const sizeClasses = useSize();
+    // Read here rather than relying on a MotionConfig the consumer may not
+    // have: height is a positional value, so framer would otherwise animate
+    // it for a reduced-motion user in any app that installs this component.
+    const reduceMotion = useReducedMotion() ?? false;
 
     // The open height is animated to a self-measured LAYOUT pixel value, not
     // `height: "auto"`: framer resolves an "auto" target by measuring the
@@ -866,14 +911,20 @@ const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
           hidden={!isOpen && exitComplete}
           className={cn("overflow-hidden", className)}
           initial={{ height: isOpen ? "auto" : 0 }}
-          animate={{ height: isOpen ? contentHeight ?? 0 : 0 }}
-          // bounce: 0 — a critically damped spring on body height; pure
-          // height has no aesthetic value in bouncing, so a smooth approach
-          // reads better.
+          animate={{ height: isOpen ? contentHeight ?? 0 : 0, opacity: isOpen ? 1 : 0 }}
+          // spring.fast lands with the trigger's chevron, and its bounce: 0
+          // keeps pure height from overshooting its content. A close is a
+          // decision already made, so it takes the quicker exit tier — the
+          // target flip has no `exit` prop to carry it. Opacity runs ahead of
+          // the height on its own timing: the body dissolves rather than being
+          // sliced by the clip edge, which is what stops the rows below
+          // reading as shoved.
           transition={
-            needsSnap.current
+            needsSnap.current || reduceMotion
               ? { duration: 0 }
-              : { ...spring.moderate, bounce: 0 }
+              : isOpen
+                ? { ...spring.fast, opacity: { duration: 0.06 } }
+                : { ...spring.fast.exit, opacity: { duration: 0.04 } }
           }
           onUpdate={() => {
             groupCtx?.remeasure();

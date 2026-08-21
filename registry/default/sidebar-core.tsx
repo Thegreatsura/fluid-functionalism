@@ -1053,6 +1053,19 @@ const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>(
       if (!open) setSettled(false);
     }, [open]);
 
+    // Height animates only when THIS group toggles. When the measured height
+    // changes underneath it instead — a nested sub-menu collapsing inside the
+    // group — the wrapper must snap: a spring re-targeted every frame chases
+    // the child's own animation, lands well after it, and drags everything
+    // below the group along late. Tracked with a ref so a controlled `open`
+    // is covered too, and cleared once the toggle's animation lands.
+    const prevOpenRef = useRef(open);
+    const togglingRef = useRef(false);
+    if (prevOpenRef.current !== open) {
+      prevOpenRef.current = open;
+      togglingRef.current = true;
+    }
+
     // The label and any header actions stay put; everything else after the
     // label rides in the collapse wrapper. If no SidebarGroupLabel child is
     // found the group renders untouched.
@@ -1097,8 +1110,15 @@ const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>(
                   ? { height: open ? contentHeight : 0, opacity: open ? 1 : 0 }
                   : { opacity: open ? 1 : 0 }
               }
-              transition={open ? spring.moderate : spring.moderate.exit}
+              transition={
+                togglingRef.current
+                  ? open
+                    ? spring.moderate
+                    : spring.moderate.exit
+                  : { duration: 0 }
+              }
               onAnimationComplete={() => {
+                togglingRef.current = false;
                 if (open) setSettled(true);
               }}
             >

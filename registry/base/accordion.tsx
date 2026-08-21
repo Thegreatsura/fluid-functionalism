@@ -97,10 +97,10 @@ type AccordionGroupProps = HTMLAttributes<HTMLDivElement> & {
    *  compact 28px — see /docs/sizes). Omitted, they follow the surrounding
    *  SizeProvider. */
   size?: SizeVariant;
-  /** What an open item tints. "trigger" keeps the fill on the row you
-   *  clicked — the panel below it stays on the page's own surface, the way a
-   *  sidebar row highlights without colouring its sub-tree. "item" tints the
-   *  row and its panel as one block. @default "trigger" */
+  /** What an open item tints. "item" paints the row and its panel as one
+   *  block. "trigger" keeps the fill on the row you clicked and leaves the
+   *  panel on the page's own surface — the way a sidebar row highlights
+   *  without colouring its sub-tree. @default "item" */
   highlight?: "trigger" | "item";
 } & (AccordionGroupSingleProps | AccordionGroupMultipleProps);
 
@@ -108,7 +108,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
   (props, ref) => {
     const {
       children,
-      highlight = "trigger",
+      highlight = "item",
       type = "single",
       size,
       className,
@@ -639,13 +639,13 @@ interface AccordionItemProps extends HTMLAttributes<HTMLDivElement> {
   disabled?: boolean;
   /** Standalone equivalent of AccordionGroup's prop: what an open item
    *  tints. Ignored inside a group, which decides for all its rows.
-   *  @default "trigger" */
+   *  @default "item" */
   highlight?: "trigger" | "item";
   children: ReactNode;
 }
 
 const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(
-  ({ value, index, disabled, highlight = "trigger", children, className, ...props }, ref) => {
+  ({ value, index, disabled, highlight = "item", children, className, ...props }, ref) => {
     const internalRef = useRef<HTMLDivElement>(null);
     const groupCtx = useAccordionGroup();
     const standaloneOpen = useContext(StandaloneOpenContext);

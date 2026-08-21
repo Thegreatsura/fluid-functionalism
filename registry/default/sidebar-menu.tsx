@@ -1104,6 +1104,17 @@ const SidebarMenuSub = forwardRef<HTMLUListElement, SidebarMenuSubProps>(
     }, []);
     const measured = contentHeight !== null;
 
+    // Same rule as SidebarGroup: spring only when this sub-tree itself
+    // toggles. A height change coming from a nested sub collapsing inside it
+    // snaps, so the wrapper tracks its content instead of chasing it with a
+    // second spring and moving everything below late.
+    const prevOpenRef = useRef(open);
+    const togglingRef = useRef(false);
+    if (prevOpenRef.current !== open) {
+      prevOpenRef.current = open;
+      togglingRef.current = true;
+    }
+
     return (
       <motion.div
         data-slot="sidebar-menu-sub-wrapper"
@@ -1118,7 +1129,16 @@ const SidebarMenuSub = forwardRef<HTMLUListElement, SidebarMenuSubProps>(
             ? { height: open ? contentHeight : 0, opacity: open ? 1 : 0 }
             : { opacity: open ? 1 : 0 }
         }
-        transition={open ? spring.moderate : spring.moderate.exit}
+        transition={
+          togglingRef.current
+            ? open
+              ? spring.moderate
+              : spring.moderate.exit
+            : { duration: 0 }
+        }
+        onAnimationComplete={() => {
+          togglingRef.current = false;
+        }}
       >
         <MenuScopeContext.Provider value={value}>
           <ul

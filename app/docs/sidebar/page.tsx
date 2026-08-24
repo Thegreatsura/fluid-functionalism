@@ -267,6 +267,7 @@ const providerProps: PropDef[] = [
 ];
 
 const sidebarProps: PropDef[] = [
+  { name: "side", type: '"left" | "right"', default: '"left"', description: "Which edge the rail lives on. The provider mirrors it into the default shortcut — \"[\" left, \"]\" right — and the trigger's icon, the rail handle, and the drawer's slide all follow." },
   { name: "variant", type: '"sidebar" | "floating" | "inset"', default: '"sidebar"', description: "Transparent rail, elevated floating card, or the inset pairing where SidebarInset becomes the card." },
   { name: "collapsible", type: '"offcanvas" | "none"', default: '"offcanvas"', description: "Offcanvas slides the rail away; none renders a static, always-open column. (The icon-rail mode is intentionally not supported.)" },
   { name: "rail", type: "boolean", default: "true", description: "The built-in resize/collapse handle: drag to resize (192–360px), click to collapse, drag past the minimum to collapse. false hides it; the trigger and shortcut still toggle." },
@@ -308,23 +309,18 @@ const level2Props: PropDef[] = [
 
 // ── Shared demo scaffolding ──────────────────────────────
 
-/** Every preview stage on this page. 640px gives the rail room to be a rail;
- *  below the sheet breakpoint there is no rail on screen, so the stage drops
- *  to roughly square rather than leaving a phone-height column of mock page. */
-const SHELL_HEIGHT = "h-[360px] md:h-[640px]";
+/** Every preview stage on this page. 640px gives the rail room to be a rail.
+ *  On a phone the previews are rail-only, and the rails run 300–580px of
+ *  content, so 560 shows almost all of it without scrolling — the stage is
+ *  the point on a page where the prose is deliberately short. */
+const SHELL_HEIGHT = "h-[560px] md:h-[640px]";
 
 /** Bounded app-shell frame every preview runs inside — the provider fills it
  *  instead of the viewport. */
-function SidebarShellFrame({
-  height = SHELL_HEIGHT,
-  children,
-}: {
-  height?: string;
-  children: ReactNode;
-}) {
+function SidebarShellFrame({ children }: { children: ReactNode }) {
   return (
     <div
-      className={`relative flex w-full overflow-hidden bg-background ${height}`}
+      className={`relative flex w-full overflow-hidden bg-background ${SHELL_HEIGHT}`}
     >
       {children}
     </div>
@@ -377,7 +373,7 @@ function DemoSearch() {
       <SearchIcon
         size={14}
         strokeWidth={1.5}
-        className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+        className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground"
       />
       <SidebarInput placeholder="Search…" aria-label="Search" className="pl-8" />
     </div>
@@ -451,40 +447,78 @@ function DemoFooterUser() {
   );
 }
 
-/** The product's top-level nav — Chat, Agents, Knowledge, Runs, Evals. */
-function DemoMenu({ badges = true }: { badges?: boolean }) {
+/** The product's top-level nav — Chat, Agents, Knowledge, Runs, Evals, each
+ *  owning a sub-tree, under a section label that collapses the lot. One row
+ *  starts open: five expanded sub-trees would outrun the frame, and a mix of
+ *  open and closed is what a real tree looks like anyway. */
+function DemoMenu() {
   const icons = useIcons();
+  const [open, setOpen] = useState<Record<string, boolean>>({ Chat: true });
+  const [current, setCurrent] = useState(AI_NAV[0].children[0].label);
+
   return (
-    <SidebarGroup>
+    <SidebarGroup collapsible>
       <SidebarGroupLabel>Workspace</SidebarGroupLabel>
       <SidebarMenu>
-        {AI_NAV.map((item) => (
-          <SidebarMenuItem key={item.label}>
-            <SidebarMenuButton icon={icons[item.icon]} isActive={item.active}>
-              {item.label}
-            </SidebarMenuButton>
-            {badges && item.badge && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
-          </SidebarMenuItem>
-        ))}
+        {AI_NAV.map((item) => {
+          const isOpen = !!open[item.label];
+          return (
+            <SidebarMenuItem key={item.label}>
+              <SidebarMenuButton
+                className="group/parent-row"
+                icon={icons[item.icon]}
+                isActive={item.active}
+                onClick={() => setOpen((prev) => ({ ...prev, [item.label]: !prev[item.label] }))}
+                aria-expanded={isOpen}
+                style={{ "--row-gutter": "var(--row-gutter-hover)" } as CSSProperties}
+              >
+                {item.label}
+                {/* The chevron rides the label's trailing edge: at rest it
+                    only shows on a closed row, so an open tree isn't a column
+                    of arrows. */}
+                <span className="ml-auto -mr-0.5 flex size-6 shrink-0 items-center justify-center">
+                  {createElement(icons["chevron-down"], {
+                    size: 16,
+                    strokeWidth: 1.5,
+                    className: `text-muted-foreground transition-[opacity,transform] duration-80 ${
+                      isOpen
+                        ? "opacity-0 group-hover/parent-row:opacity-100 group-focus-within/parent-row:opacity-100"
+                        : "-rotate-90 opacity-100"
+                    }`,
+                  })}
+                </span>
+              </SidebarMenuButton>
+
+              <SidebarMenuSub open={isOpen}>
+                {item.children.map((child) => (
+                  <SidebarMenuSubItem key={child.label}>
+                    <SidebarMenuSubButton
+                      href="#"
+                      isActive={child.label === current}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        setCurrent(child.label);
+                      }}
+                    >
+                      {child.label}
+                    </SidebarMenuSubButton>
+                    {child.badge && <SidebarMenuBadge>{child.badge}</SidebarMenuBadge>}
+                  </SidebarMenuSubItem>
+                ))}
+              </SidebarMenuSub>
+            </SidebarMenuItem>
+          );
+        })}
       </SidebarMenu>
     </SidebarGroup>
   );
 }
 
-function DemoInsetHeader({
-  title,
-  triggerSide = "left",
-}: {
-  title?: ReactNode;
-  triggerSide?: "left" | "right";
-}) {
-  // A right-hand sidebar puts its trigger at the bar's far end; the trigger
-  // icon mirrors the side by itself.
+function DemoInsetHeader({ title }: { title?: ReactNode }) {
   return (
     <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2">
-      {triggerSide === "left" && <SidebarTrigger />}
+      <SidebarTrigger />
       <span className="text-[13px] text-muted-foreground">{title}</span>
-      {triggerSide === "right" && <SidebarTrigger className="ml-auto" />}
     </header>
   );
 }
@@ -510,16 +544,10 @@ function DemoInsetBody() {
 /** Two examples are *about* the rail-and-main pairing, so they keep both
  *  halves at every width — the rail just narrows to leave the main region
  *  something to be. The other three are rail-only and never render this. */
-function DemoInsetContent({
-  title,
-  triggerSide,
-}: {
-  title?: ReactNode;
-  triggerSide?: "left" | "right";
-}) {
+function DemoInsetContent({ title }: { title?: ReactNode }) {
   return (
     <>
-      <DemoInsetHeader title={title} triggerSide={triggerSide} />
+      <DemoInsetHeader title={title} />
       <DemoInsetBody />
     </>
   );
@@ -583,39 +611,29 @@ function DemoRailShell({
 /** Standard demo shell — rail and main together, for the examples about that
  *  relationship. */
 function DemoShell({
-  height,
-  side,
   variant,
-  sidebarChildren,
   insetTitle,
 }: {
-  height?: string;
-  side?: "left" | "right";
   variant?: "sidebar" | "floating" | "inset";
-  sidebarChildren?: ReactNode;
   insetTitle?: ReactNode;
 }) {
   return (
-    <SidebarShellFrame height={height}>
+    <SidebarShellFrame>
       <DemoProvider narrowWidth="11rem">
-        <Sidebar side={side} variant={variant} className="h-full">
-          {sidebarChildren ?? (
-            <>
-              <DemoHeader />
-              <SidebarContent>
-                <DemoMenu />
-              </SidebarContent>
-              <SidebarFooter>
-                <DemoFooterUser />
-              </SidebarFooter>
-            </>
-          )}
+        <Sidebar variant={variant} className="h-full">
+          <DemoHeader />
+          <SidebarContent>
+            <DemoMenu />
+          </SidebarContent>
+          <SidebarFooter>
+            <DemoFooterUser />
+          </SidebarFooter>
         </Sidebar>
         {/* The floating card sits in a p-2 gutter — pad the main region's
             top so its header lines up with the card's. The inset variant's
             main is itself the card (own m-2), so it needs no extra padding. */}
         <SidebarInset className={variant === "floating" ? "min-h-0 pt-2" : "min-h-0"}>
-          <DemoInsetContent title={insetTitle} triggerSide={side} />
+          <DemoInsetContent title={insetTitle} />
         </SidebarInset>
       </DemoProvider>
     </SidebarShellFrame>
@@ -660,7 +678,6 @@ function CollapsePreview() {
  *  can be seen holding their own highlights. */
 function NestingPreview() {
   const icons = useIcons();
-  const MoreIcon = useIcon("more-horizontal");
   const [open, setOpen] = useState<Record<string, boolean>>({
     Agents: true,
     Knowledge: true,
@@ -670,14 +687,9 @@ function NestingPreview() {
   return (
     <DemoRailShell insetTitle="Open a branch, then a child">
       <SidebarContent>
-        <SidebarGroup>
+        <SidebarGroup collapsible>
           <SidebarGroupLabel>Workspace</SidebarGroupLabel>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton icon={icons["message-circle"]}>Chat</SidebarMenuButton>
-              <SidebarMenuBadge>3</SidebarMenuBadge>
-            </SidebarMenuItem>
-
             {AI_TREE.map((branch) => {
               const isOpen = open[branch.label];
               return (
@@ -705,22 +717,6 @@ function NestingPreview() {
                     </span>
                   </SidebarMenuButton>
 
-                  {/* The row's own action — a child's hover never reveals it */}
-                  <DropdownMenu>
-                    <DropdownTrigger
-                      render={
-                        <SidebarMenuAction showOnHover aria-label={`${branch.label} options`}>
-                          <MoreIcon />
-                        </SidebarMenuAction>
-                      }
-                    />
-                    <DropdownContent className="min-w-[240px] w-[240px]" align="start" sideOffset={4}>
-                      <MenuItem index={0} icon={icons.plus} label="New" onSelect={() => {}} />
-                      <MenuItem index={1} icon={icons.pencil} label="Rename" onSelect={() => {}} />
-                      <MenuItem index={2} icon={icons.x} label="Delete" onSelect={() => {}} />
-                    </DropdownContent>
-                  </DropdownMenu>
-
                   <SidebarMenuSub open={isOpen}>
                     {branch.children.map((child) => (
                       <SidebarMenuSubItem key={child.label}>
@@ -743,9 +739,6 @@ function NestingPreview() {
               );
             })}
 
-            <SidebarMenuItem>
-              <SidebarMenuButton icon={icons.check}>Evals</SidebarMenuButton>
-            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
@@ -1031,12 +1024,9 @@ export default function SidebarDoc() {
 
       <DocSection title="Layouts">
         <p className="text-body text-muted-foreground">
-          One prop, three app shells. <code>sidebar</code> is a flush rail
-          against the canvas; <code>floating</code> lifts the rail into its own
-          card, for when navigation should read as a distinct layer;{" "}
-          <code>inset</code> does the opposite and makes the main region the
-          card, for when the content is the star. Everything else below —
-          content, header, footer — is identical in all three.
+          One prop, three app shells: <code>sidebar</code> is a flush rail,{" "}
+          <code>floating</code> lifts the rail into its own card, and{" "}
+          <code>inset</code> makes the main region the card instead.
         </p>
         <ComponentPreview code={layoutsCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <DemoShell insetTitle="Sidebar — the default" />
@@ -1051,14 +1041,9 @@ export default function SidebarDoc() {
 
       <DocSection title="Nesting">
         <p className="text-body text-muted-foreground">
-          A level 1 row can own a level 2 sub-tree — here an agent roster and
-          the sources behind a retrieval agent, both open at once. The sub-tree
-          collapses on its measured height rather than an animated{" "}
-          <code>auto</code>. A parent&apos;s chevron and actions answer to the
-          row itself, so hovering a child never lights them, and each sub-menu
-          runs its own highlight: the two levels never fight over which row is
-          lit. Two levels is the whole vocabulary — deeper trees belong in the
-          main region, not the rail.
+          A level 1 row can own a level 2 sub-tree, collapsing on its measured
+          height. Each level runs its own highlight, so the two never fight
+          over which row is lit. Two levels is the whole vocabulary.
         </p>
         <ComponentPreview code={nestingCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <NestingPreview />
@@ -1067,13 +1052,9 @@ export default function SidebarDoc() {
 
       <DocSection title="Actions & badges">
         <p className="text-body text-muted-foreground">
-          A row leads with an icon or a status dot and can carry a badge, one
-          action, or a cluster of them. Hover-revealed actions cost the label
-          nothing at rest: the row reserves their width only while they show.
-          The badge slot takes a result as readily as a count, section labels
-          carry actions of their own and collapse everything under them, and
-          skeleton rows hold the shape while data lands — their widths are
-          deterministic, so the server and client agree.
+          A row leads with an icon or a status dot and can carry a badge, an
+          action, or a cluster. Hover-revealed actions cost the label nothing
+          at rest, and the badge slot takes a result as readily as a count.
         </p>
         <ComponentPreview code={actionsCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <ActionsPreview />
@@ -1082,12 +1063,9 @@ export default function SidebarDoc() {
 
       <DocSection title="Header, footer & callout">
         <p className="text-body text-muted-foreground">
-          Both ends of the rail take the same pieces in two packings. Vertical
-          gives each element its own full-width row — brand, search, a primary
-          action, then a user row and settings beneath a callout. Horizontal
-          collapses the extras into icon buttons sharing the brand&apos;s line,
-          buying back two rows of height. The callout is a Card on a surface one
-          step above the rail, with media or an inline icon.
+          The same pieces in two packings: vertical gives each element its own
+          full-width row, horizontal collapses the extras into icon buttons on
+          the brand&apos;s line. The callout is a Card, with media or an icon.
         </p>
         <ComponentPreview code={headerFooterCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <HeaderFooterPreview stack="vertical" />
@@ -1099,12 +1077,10 @@ export default function SidebarDoc() {
 
       <DocSection title="Collapse, peek & resize">
         <p className="text-body text-muted-foreground">
-          Three ways to toggle: the trigger, the rail on the sidebar&apos;s edge
-          (drag to resize, click to collapse), and the <code>[</code> key —{" "}
-          <code>]</code> for a right sidebar. The key goes to the sidebar that
-          has focus. This one also sets <code>peek=&quot;hover&quot;</code>:
-          collapsed, its edge floats the rail back as an overlay without pinning
-          it or writing the cookie. State otherwise persists to a cookie.
+          Three ways to toggle: the trigger, the rail (drag to resize, click to
+          collapse), and the <code>[</code> key. With{" "}
+          <code>peek=&quot;hover&quot;</code> a collapsed edge floats the rail
+          back without pinning it. State persists to a cookie.
         </p>
         <ComponentPreview code={collapseCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <CollapsePreview />

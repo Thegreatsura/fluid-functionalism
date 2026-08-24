@@ -683,7 +683,7 @@ function SidebarPreview() {
                   <SearchIcon
                     size={14}
                     strokeWidth={1.5}
-                    className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground"
                   />
                   <SidebarInput
                     placeholder="Search"

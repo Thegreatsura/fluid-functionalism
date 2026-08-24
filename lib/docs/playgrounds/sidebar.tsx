@@ -154,7 +154,8 @@ const FOOTER_ACTION_SET = [
   { icon: "moon", label: "Theme" },
 ] as const;
 
-/** Level-2 rows, hosted by the first level-1 row of each section. */
+/** Level-2 rows, hosted by every level-1 row while "Has children" is on —
+ *  matching the generated code, which nests every item. */
 const L2_ROWS = [
   { icon: "folder", label: "Design system", badge: "4" },
   { icon: "folder", label: "Marketing site", badge: "2" },
@@ -275,24 +276,37 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   const loading = o.state === "loading";
   // Threads are leaves — only the icon menu nests.
   const nests = o.l1Primary === "menu" && o.l1Children;
+  // What the snippet actually renders, so the import list stays honest:
+  // loading swaps the body rows for skeletons (and drops the sub-tree), and
+  // the vertical header/footer stacks are the only other menu-row consumers.
+  const menuRows =
+    !loading ||
+    (o.headerStack === "vertical" && o.headerActions > 0) ||
+    (o.footerStack === "vertical" && o.footerActions > 0);
+  const maxActions = loading ? 0 : Math.max(o.l1Actions, nests ? o.l2Actions : 0);
+  const anyBadge = !loading && (o.l1Badges || (nests && o.l2Badges));
+  const hasFooter =
+    o.footerPrimary === "dropdown" || o.footerActions > 0 || o.footerCallout !== "none";
 
   lines.push(`import {`);
   lines.push(`  SidebarProvider, Sidebar, SidebarTrigger, SidebarInset,`);
-  lines.push(`  SidebarHeader, SidebarContent, SidebarFooter,`);
+  lines.push(
+    `  SidebarHeader,${o.headerStack === "vertical" ? " SidebarInput," : ""} SidebarContent,${hasFooter ? " SidebarFooter," : ""}`
+  );
   lines.push(
     o.sectionActions > 0
       ? `  SidebarGroup, SidebarGroupLabel, SidebarGroupActions, SidebarGroupAction,`
       : `  SidebarGroup, SidebarGroupLabel,`
   );
-  lines.push(`  SidebarMenu, SidebarMenuItem,`);
-  const maxActions = Math.max(o.l1Actions, o.l2Actions);
-  const anyBadge = o.l1Badges || o.l2Badges;
+  lines.push(`  SidebarMenu,${menuRows ? " SidebarMenuItem," : ""}`);
   const menuExtras = [
-    "SidebarMenuButton",
+    ...(menuRows ? ["SidebarMenuButton"] : []),
     ...(anyBadge ? ["SidebarMenuBadge"] : []),
     ...(maxActions > 0 ? ["SidebarMenuAction"] : []),
     ...(maxActions > 1 ? ["SidebarMenuActions"] : []),
-    ...(nests ? ["SidebarMenuSub", "SidebarMenuSubItem", "SidebarMenuSubButton"] : []),
+    ...(nests && !loading
+      ? ["SidebarMenuSub", "SidebarMenuSubItem", "SidebarMenuSubButton"]
+      : []),
     ...(loading ? ["SidebarMenuSkeleton"] : []),
   ];
   lines.push(`  ${menuExtras.join(", ")},`);
@@ -317,7 +331,13 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   if (o.headerStack === "horizontal") {
     lines.push(`      {/* horizontal: search + actions share the brand line */}`);
     lines.push(`      <div className="flex items-center gap-1">`);
-    if (brandComment) lines.push(`        ${brandComment}`);
+    // The brand slot keeps its flex-1 spacer even when empty, so the icon
+    // buttons hold the trailing edge exactly as the preview does.
+    lines.push(
+      brandComment
+        ? `        <div className="min-w-0 flex-1">${brandComment}</div>`
+        : `        <div className="min-w-0 flex-1" />`
+    );
     lines.push(`        <Button variant="ghost" size="icon-compact" aria-label="Search">`);
     lines.push(`          <SearchIcon />`);
     lines.push(`        </Button>`);
@@ -379,7 +399,15 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
     if (o.l1Badges) {
       lines.push(`              {item.badge && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}`);
     }
-    lines.push(...rowActionLines(o.l1Actions, `              `));
+    // A row that owns a sub-tree gives its trailing slot to the chevron, so
+    // the printed code guards the actions the same way the preview does.
+    if (nests && o.l1Actions > 0) {
+      lines.push(`              {!item.children && (`);
+      lines.push(...rowActionLines(o.l1Actions, `                `));
+      lines.push(`              )}`);
+    } else {
+      lines.push(...rowActionLines(o.l1Actions, `              `));
+    }
     if (nests) {
       lines.push(`              <SidebarMenuSub open={item.open}>`);
       lines.push(`                {item.children.map((child) => (`);
@@ -413,7 +441,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   lines.push(`    </SidebarContent>`);
 
   // Footer
-  if (o.footerPrimary === "dropdown" || o.footerActions > 0 || o.footerCallout !== "none") {
+  if (hasFooter) {
     const footerActions = FOOTER_ACTION_SET.slice(0, o.footerActions);
     // Flush to the edge only in the inset variant (see the shell).
     const calloutOnly =
@@ -454,7 +482,9 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
     if (o.footerStack === "horizontal") {
       if (footerActions.length > 0) {
         lines.push(`      <div className="flex items-center gap-1">`);
-        if (o.footerPrimary === "dropdown") lines.push(`        {/* user row */}`);
+        // The user row owns the leftover width, as in the preview.
+        if (o.footerPrimary === "dropdown")
+          lines.push(`        <div className="min-w-0 flex-1">{/* user row */}</div>`);
         for (const a of footerActions) {
           lines.push(`        <Button variant="ghost" size="icon-compact" aria-label="${a.label}">`);
           lines.push(`          <${iconTag(a.icon)} />`);
@@ -538,6 +568,10 @@ function PlaygroundInsetBody() {
 export function SidebarPlayground({ children }: PlaygroundProps) {
   const [state, setState] = useState<PlayState>(DEFAULT_STATE);
   const [closedRows, setClosedRows] = useState<Record<string, boolean>>({});
+  // Which row the user last clicked — leaf and sub rows are selectable, so
+  // the active highlight follows the pointer around the preview. Null falls
+  // back to the demo data's own active row.
+  const [selected, setSelected] = useState<string | null>(null);
   const icons = useIcons();
   const shape = useShape();
   const set = <K extends keyof PlayState>(key: K, value: PlayState[K]) =>
@@ -548,10 +582,15 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
     setClosedRows((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const randomize = () => {
-    setState({
+    // Selection keys are row labels, which differ between the two primary
+    // element modes — clear it so the data's own active row takes over.
+    setSelected(null);
+    setState((prev) => ({
+      // `state` is deliberately not rolled: shuffling is for trying shapes,
+      // and landing on closed or loading hides the very thing being shuffled.
+      state: prev.state,
       design: pick(["sidebar", "floating", "inset"] as const),
       collapsedBehavior: pick(["none", "none", "hover", "click"] as const),
-      state: pick(["opened", "opened", "opened", "closed", "loading"] as const),
       headerPrimary: pick(["dropdown", "dropdown", "logo", "none"] as const),
       headerStack: pick(["horizontal", "vertical"] as const),
       headerActions: pick([0, 1, 2, 2] as const),
@@ -568,7 +607,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       footerStack: pick(["horizontal", "horizontal", "vertical"] as const),
       footerActions: pick([0, 1, 2, 2] as const),
       footerCallout: pick(["none", "icon", "media", "media"] as const),
-    });
+    }));
   };
 
   const ChevronsUpDown = icons["chevrons-up-down"];
@@ -770,7 +809,11 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           <SidebarMenuSubButton
             icon={state.l2Icon ? icons[row.icon] : undefined}
             href="#"
-            onClick={(e) => e.preventDefault()}
+            isActive={selected === `${parentKey}/${row.label}`}
+            onClick={(e) => {
+              e.preventDefault();
+              setSelected(`${parentKey}/${row.label}`);
+            }}
           >
             {row.label}
           </SidebarMenuSubButton>
@@ -792,17 +835,29 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           ? level1.slice(0, 4).map((row) => <SidebarMenuSkeleton key={row.key} showIcon />)
           : level1
               .slice(index === 0 ? 0 : 3, index === 0 ? 3 : 5)
-              .map((row, i) => {
+              .map((row) => {
                 const key = `${index}/${row.key}`;
-                const hasChildren = l1Children && i === 0;
+                const hasChildren = l1Children;
                 return (
                   <SidebarMenuItem key={row.key}>
                     <SidebarMenuButton
                       className={hasChildren ? "group/parent-row" : undefined}
                       icon={row.icon ? icons[row.icon] : undefined}
-                      status={row.status}
-                      isActive={row.active}
-                      onClick={hasChildren ? () => toggleRow(key) : undefined}
+                      // status="active" implies row-active by design, so once
+                      // the user selects a different thread the streaming one
+                      // demotes to "unread" — the dot stays filled, but the
+                      // highlight follows the selection alone.
+                      status={
+                        row.status === "active" && selected && selected !== key
+                          ? "unread"
+                          : row.status
+                      }
+                      // Click a leaf to select it; until the first click the
+                      // demo data's own active row holds the highlight.
+                      isActive={selected ? selected === key : row.active}
+                      onClick={
+                        hasChildren ? () => toggleRow(key) : () => setSelected(key)
+                      }
                       aria-expanded={hasChildren ? isRowOpen(key) : undefined}
                       // A row holding a chevron pins its gutter to the hover
                       // value: the chevron rides the label's padding edge, so
@@ -821,7 +876,12 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                     {state.l1Badges && row.badge && (
                       <SidebarMenuBadge>{row.badge}</SidebarMenuBadge>
                     )}
-                    {rowActions(state.l1Actions)}
+                    {/* A parent row spends its trailing slot on the chevron,
+                        so it skips the row actions: with both, the chevron is
+                        pushed off the axis the badges and actions share. With
+                        children on, every level-1 row is a parent, so the
+                        level-1 actions live on the leaf rows one level down. */}
+                    {!hasChildren && rowActions(state.l1Actions)}
                     {hasChildren && subTree(key)}
                   </SidebarMenuItem>
                 );
@@ -897,7 +957,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                     size: iconSize,
                     strokeWidth: 1.5,
                     className:
-                      "pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground",
+                      "pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground",
                   })}
                   <SidebarInput
                     placeholder="Search…"
@@ -1126,7 +1186,10 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       <PlayField label="Primary element">
         <PlaySelect
           value={state.l1Primary}
-          onChange={(v) => set("l1Primary", v as PlayState["l1Primary"])}
+          onChange={(v) => {
+            set("l1Primary", v as PlayState["l1Primary"]);
+            setSelected(null);
+          }}
           options={[
             { value: "menu", label: "Menu" },
             { value: "threads", label: "Thread" },
@@ -1164,7 +1227,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
         disabled={!l1Children}
         className={PLAY_SWITCH}
       />
-      <PlayField label="Actions">
+      <PlayField label="Actions" disabled={!l1Children}>
         <PlaySelect
           value={String(state.l2Actions)}
           onChange={(v) => set("l2Actions", Number(v) as Count3)}

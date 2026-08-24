@@ -16,18 +16,63 @@ import type { IconName } from "@/lib/icon-context";
 
 export const AI_WORKSPACE = "Aurora AI";
 
-/** Top-level product nav — the layout and collapse examples. */
+/** Top-level product nav — the layout and collapse examples. Every row owns
+ *  a sub-tree, so those examples show the shape of a real tree rather than a
+ *  flat list; only the first is open, or five expanded rows would outrun the
+ *  frame. Level-2 rows carry the counts, since a parent row spends its
+ *  trailing slot on the chevron. */
 export const AI_NAV: readonly {
   icon: IconName;
   label: string;
-  badge?: string;
   active?: boolean;
+  children: readonly { label: string; badge?: string }[];
 }[] = [
-  { icon: "message-circle", label: "Chat", active: true },
-  { icon: "brain", label: "Agents", badge: "4" },
-  { icon: "square-library", label: "Knowledge", badge: "12" },
-  { icon: "play", label: "Runs", badge: "3" },
-  { icon: "check", label: "Evals" },
+  {
+    icon: "message-circle",
+    label: "Chat",
+    active: true,
+    children: [
+      { label: "Q3 board deck", badge: "12" },
+      { label: "Postgres 16 plan", badge: "4" },
+      { label: "Onboarding emails" },
+    ],
+  },
+  {
+    icon: "brain",
+    label: "Agents",
+    children: [
+      { label: "Support triage", badge: "18" },
+      { label: "Release notes" },
+      { label: "SQL analyst" },
+    ],
+  },
+  {
+    icon: "square-library",
+    label: "Knowledge",
+    children: [
+      { label: "Product docs", badge: "1.2k" },
+      { label: "Support macros" },
+      { label: "API reference" },
+    ],
+  },
+  {
+    icon: "play",
+    label: "Runs",
+    children: [
+      { label: "In progress", badge: "3" },
+      { label: "Completed" },
+      { label: "Failed", badge: "1" },
+    ],
+  },
+  {
+    icon: "check",
+    label: "Evals",
+    children: [
+      { label: "Refusal suite", badge: "98%" },
+      { label: "Retrieval recall", badge: "91%" },
+      { label: "Jailbreak probes" },
+    ],
+  },
 ];
 
 /** Level 1 rows that own a level 2 sub-tree — the nesting example.

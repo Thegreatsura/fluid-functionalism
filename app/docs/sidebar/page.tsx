@@ -2,6 +2,8 @@
 
 import { createElement, useState, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
+import { motion } from "framer-motion";
+import { spring } from "@/lib/springs";
 import {
   SidebarProvider,
   Sidebar,
@@ -116,7 +118,10 @@ const nestingCode = `const [open, setOpen] = useState<string | null>("Agents");
     aria-expanded={open === "Agents"}
   >
     Agents
-    <ChevronIcon className={open === "Agents" ? "" : "-rotate-90"} />
+    {/* one chevron-right, sprung 90° to point down while open */}
+    <motion.span animate={{ rotate: open === "Agents" ? 90 : 0 }} transition={spring.fast}>
+      <ChevronRightIcon />
+    </motion.span>
   </SidebarMenuButton>
 
   {/* The row's own action — a child's hover never reveals it */}
@@ -475,17 +480,24 @@ function DemoMenu() {
                 {item.label}
                 {/* The chevron rides the label's trailing edge: at rest it
                     only shows on a closed row, so an open tree isn't a column
-                    of arrows. */}
+                    of arrows. One chevron-right glyph, sprung 90° to point
+                    down while the row is open. */}
                 <span className="ml-auto -mr-0.5 flex size-6 shrink-0 items-center justify-center">
-                  {createElement(icons["chevron-down"], {
-                    size: 16,
-                    strokeWidth: 1.5,
-                    className: `text-muted-foreground transition-[opacity,transform] duration-80 ${
-                      isOpen
-                        ? "opacity-0 group-hover/parent-row:opacity-100 group-focus-within/parent-row:opacity-100"
-                        : "-rotate-90 opacity-100"
-                    }`,
-                  })}
+                  <motion.span
+                    className="inline-flex"
+                    animate={{ rotate: isOpen ? 90 : 0 }}
+                    transition={spring.fast}
+                  >
+                    {createElement(icons["chevron-right"], {
+                      size: 16,
+                      strokeWidth: 1.5,
+                      className: `text-muted-foreground transition-opacity duration-80 ${
+                        isOpen
+                          ? "opacity-0 group-hover/parent-row:opacity-100 group-focus-within/parent-row:opacity-100"
+                          : "opacity-100"
+                      }`,
+                    })}
+                  </motion.span>
                 </span>
               </SidebarMenuButton>
 
@@ -705,15 +717,21 @@ function NestingPreview() {
                   >
                     {branch.label}
                     <span className="ml-auto -mr-0.5 flex size-6 shrink-0 items-center justify-center">
-                      {createElement(icons["chevron-down"], {
-                        size: 16,
-                        strokeWidth: 1.5,
-                        className: `text-muted-foreground transition-[opacity,transform] duration-80 ${
-                          isOpen
-                            ? "opacity-0 group-hover/parent-row:opacity-100 group-focus-within/parent-row:opacity-100"
-                            : "-rotate-90 opacity-100"
-                        }`,
-                      })}
+                      <motion.span
+                        className="inline-flex"
+                        animate={{ rotate: isOpen ? 90 : 0 }}
+                        transition={spring.fast}
+                      >
+                        {createElement(icons["chevron-right"], {
+                          size: 16,
+                          strokeWidth: 1.5,
+                          className: `text-muted-foreground transition-opacity duration-80 ${
+                            isOpen
+                              ? "opacity-0 group-hover/parent-row:opacity-100 group-focus-within/parent-row:opacity-100"
+                              : "opacity-100"
+                          }`,
+                        })}
+                      </motion.span>
                     </span>
                   </SidebarMenuButton>
 

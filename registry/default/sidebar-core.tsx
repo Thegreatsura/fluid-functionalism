@@ -1168,7 +1168,7 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
     const sizeClasses = useSize();
     const group = useContext(SidebarGroupContext);
     const shape = useShape();
-    const ChevronDownIcon = useIcon("chevron-down");
+    const ChevronRightIcon = useIcon("chevron-right");
     const { template, content } = resolveSlotTemplate(render, asChild, children);
 
     // Truncate only the leading text; element children (count badges,
@@ -1229,18 +1229,28 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
         <>
           {labelContent}
           {/* The chevron occupies an action-sized box, so it reads as one more
-              icon in the row rather than a smaller glyph tacked on the end. */}
+              icon in the row rather than a smaller glyph tacked on the end.
+              One chevron-right glyph for both states, sprung 90° to point
+              down while the group is open — the motion wrapper is what
+              animates: Tailwind's rotate-* sets the standalone CSS `rotate`
+              property, which transition-transform never covers. */}
           <span className="ml-auto flex size-6 shrink-0 items-center justify-center">
-            <ChevronDownIcon
-              size={sizeClasses.icon}
-              strokeWidth={1.5}
-              className={cn(
-                "shrink-0 transition-[opacity,transform] duration-80",
-                group.open
-                  ? "opacity-0 group-hover/group-label:opacity-100 group-focus-visible/group-label:opacity-100"
-                  : "-rotate-90 opacity-100"
-              )}
-            />
+            <motion.span
+              className="inline-flex"
+              animate={{ rotate: group.open ? 90 : 0 }}
+              transition={spring.fast}
+            >
+              <ChevronRightIcon
+                size={sizeClasses.icon}
+                strokeWidth={1.5}
+                className={cn(
+                  "shrink-0 transition-opacity duration-80",
+                  group.open
+                    ? "opacity-0 group-hover/group-label:opacity-100 group-focus-visible/group-label:opacity-100"
+                    : "opacity-100"
+                )}
+              />
+            </motion.span>
           </span>
         </>
       );

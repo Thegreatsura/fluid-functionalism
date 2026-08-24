@@ -2,6 +2,8 @@
 
 import { useState, createElement, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
+import { motion } from "framer-motion";
+import { spring } from "@/registry/default/lib/springs";
 import {
   SidebarProvider,
   Sidebar,
@@ -788,17 +790,25 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
   // reopen.
   const chevron = (open: boolean) => (
     <span className="ml-auto -mr-0.5 flex size-6 shrink-0 items-center justify-center">
-      {createElement(icons["chevron-down"], {
-        size: iconSize,
-        strokeWidth: 1.5,
-        // Scoped to the row's own button, not the <li> — the li also wraps the
-        // sub-menu, so hovering a child would light the parent's chevron.
-        className: `text-muted-foreground transition-[opacity,transform] duration-80 ${
-          open
-            ? "opacity-0 group-hover/parent-row:opacity-100 group-focus-within/parent-row:opacity-100"
-            : "-rotate-90 opacity-100"
-        }`,
-      })}
+      <motion.span
+        className="inline-flex"
+        animate={{ rotate: open ? 90 : 0 }}
+        transition={spring.fast}
+      >
+        {createElement(icons["chevron-right"], {
+          size: iconSize,
+          strokeWidth: 1.5,
+          // One chevron-right glyph, sprung 90° to point down while open.
+          // Hover reveal is scoped to the row's own button, not the <li> —
+          // the li also wraps the sub-menu, so hovering a child would light
+          // the parent's chevron.
+          className: `text-muted-foreground transition-opacity duration-80 ${
+            open
+              ? "opacity-0 group-hover/parent-row:opacity-100 group-focus-within/parent-row:opacity-100"
+              : "opacity-100"
+          }`,
+        })}
+      </motion.span>
     </span>
   );
 

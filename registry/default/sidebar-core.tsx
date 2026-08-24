@@ -830,8 +830,12 @@ const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(
         followCursor="y"
         forceOpen={dragging ? false : undefined}
         content={
-          <span className="flex flex-col items-start gap-1 py-0.5">
-            <span>
+          // The flex column escapes the tooltip surface's text-box trim, so
+          // BOTH lines re-apply it and the gap alone carries the line rhythm
+          // — an untrimmed line would smuggle its half-leading back in as
+          // lopsided padding.
+          <span className="flex flex-col items-start gap-2">
+            <span className="[text-box:trim-both_cap_alphabetic]">
               <span style={semibold}>Drag</span> to resize
             </span>
             <span className="flex items-center gap-1.5">

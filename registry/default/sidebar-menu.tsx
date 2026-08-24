@@ -39,27 +39,37 @@ const useIsoLayoutEffect =
 
 // ─── Menu scope ──────────────────────────────────────────────────────────────
 //
-// Each menu level (SidebarMenu, and every SidebarMenuSub) runs its own scope:
-// one proximity-hover system plus the three traveling overlays — hover
-// background, active background, focus ring — that glide between its rows.
-// Sub-menus need their own scope because their rows live inside a positioned
-// parent row, so they can't share the parent's offset coordinate space.
+// One scope per SidebarMenu tree: a single proximity-hover system plus the
+// traveling overlays — hover background, active background(s), focus ring —
+// that glide between every visible row, sub-menu rows included, so the hover
+// moves from a parent into its children as one continuous piece. Sub rows
+// live inside positioned ancestors, so their rects are accumulated into the
+// menu's own coordinate space by the proximity hook. The active background
+// stays one per level (the root rows, and each sub-menu) so a current section
+// and the current page inside it can both be lit, exactly as before.
 
 interface MenuScopeValue {
-  isRoot: boolean;
   registerRow: (el: HTMLElement) => () => void;
   setRowButton: (row: HTMLElement, button: HTMLElement | null) => void;
   setRowActive: (row: HTMLElement, active: boolean) => void;
   hoveredRowEl: HTMLElement | null;
-  activeRowEl: HTMLElement | null;
+  /** Every visible active row, in DOM order — a parent section marker and
+   *  the current row inside its sub-tree can be active at once. */
+  activeRows: HTMLElement[];
   firstRowEl: HTMLElement | null;
   hasActive: boolean;
+  /** A sub-menu toggled: rows changed visibility in place, so hover targets
+   *  and the visible active set must be recomputed. */
+  refreshVisibility: () => void;
 }
 
 const MenuScopeContext = createContext<MenuScopeValue | null>(null);
 
 interface MenuItemContextValue {
   rowRef: RefObject<HTMLLIElement | null>;
+  /** Ref callback for the row's <li> — also replays the row's active flag
+   *  to the scope, covering the windows where the ref is detached. */
+  attachRow: (node: HTMLLIElement | null) => void;
   isHovered: boolean;
   isActiveRow: boolean;
   /** True inside SidebarMenuSubItem — actions center on the shorter row. */
@@ -80,6 +90,28 @@ const MenuItemContext = createContext<MenuItemContextValue | null>(null);
 /** True while rendering inside a SidebarMenuActions cluster, where each
  *  action flows in the wrapper's row instead of positioning itself. */
 const MenuActionsClusterContext = createContext(false);
+
+/** True while the element sits inside a collapsed sub-tree — clipped away,
+ *  so it must be invisible to hover, highlights, and keyboard order. Rows
+ *  stay registered either way: unregistering on every toggle would churn the
+ *  proximity measurements and blink the overlays. */
+function rowHidden(el: HTMLElement) {
+  return el.closest('[data-sidebar="menu-sub"][data-state="closed"]') !== null;
+}
+
+/** Stable keys for the per-level active overlays: one id per sub-menu <ul>
+ *  (or the menu root), so the active background glides when the active row
+ *  moves within its level instead of remounting. */
+let overlayGroupSeq = 0;
+const overlayGroupIds = new WeakMap<Element, number>();
+function overlayGroupId(el: Element) {
+  let id = overlayGroupIds.get(el);
+  if (id === undefined) {
+    id = ++overlayGroupSeq;
+    overlayGroupIds.set(el, id);
+  }
+  return id;
+}
 
 function byDomOrder(a: HTMLElement, b: HTMLElement) {
   return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
@@ -103,10 +135,7 @@ interface MenuScope {
   overlays: ReactNode;
 }
 
-function useMenuScope(
-  containerRef: RefObject<HTMLElement | null>,
-  isRoot: boolean
-): MenuScope {
+function useMenuScope(containerRef: RefObject<HTMLElement | null>): MenuScope {
   const {
     activeIndex,
     setActiveIndex,
@@ -115,7 +144,7 @@ function useMenuScope(
     sessionRef,
     handlers,
     registerItem,
-  } = useProximityHover(containerRef);
+  } = useProximityHover(containerRef, { isItemDisabled: rowHidden });
 
   const rowsRef = useRef<Set<HTMLElement>>(new Set());
   const rowButtonsRef = useRef<Map<HTMLElement, HTMLElement>>(new Map());
@@ -124,32 +153,46 @@ function useMenuScope(
   const orderedRowsRef = useRef(orderedRows);
   orderedRowsRef.current = orderedRows;
   const registeredCountRef = useRef(0);
-  const [activeRowEl, setActiveRowEl] = useState<HTMLElement | null>(null);
+  const [activeRows, setActiveRows] = useState<HTMLElement[]>([]);
   const [focusedRowEl, setFocusedRowEl] = useState<HTMLElement | null>(null);
 
   const recomputeActive = useCallback(() => {
-    let first: HTMLElement | null = null;
-    for (const el of orderedRowsRef.current) {
-      if (activeMapRef.current.get(el)) {
-        first = el;
-        break;
-      }
-    }
-    setActiveRowEl((prev) => (prev === first ? prev : first));
+    const next = orderedRowsRef.current.filter(
+      (el) => activeMapRef.current.get(el) && !rowHidden(el)
+    );
+    setActiveRows((prev) => (sameElements(prev, next) ? prev : next));
   }, []);
 
+  const rowButton = useCallback(
+    (row: HTMLElement) =>
+      rowButtonsRef.current.get(row) ??
+      row.querySelector<HTMLElement>(
+        ':scope > [data-sidebar="menu-button"], :scope > [data-sidebar="menu-sub-button"]'
+      ),
+    []
+  );
+
   // Rows register by element; indexes are derived from DOM order so consumers
-  // never pass an index prop and conditional rows just work.
+  // never pass an index prop and conditional rows just work. The proximity
+  // system measures the row's BUTTON, not the <li>: a row hosting an expanded
+  // sub-tree is a tall <li>, and hit-testing against that whole box would hand
+  // the sub-tree's gaps and gutter to the parent — the button strip is the
+  // only part that is really "the row".
   const syncRows = useCallback(() => {
     const sorted = [...rowsRef.current].sort(byDomOrder);
+    // The ref updates synchronously (not just at the next render): callers in
+    // the same commit — a row registering, its button turning active — must
+    // see the row set they just changed, or the first recompute of a mount
+    // filters every row out against the previous render's empty list.
+    orderedRowsRef.current = sorted;
     setOrderedRows((prev) => (sameElements(prev, sorted) ? prev : sorted));
-    sorted.forEach((el, i) => registerItem(i, el));
+    sorted.forEach((el, i) => registerItem(i, rowButton(el) ?? el));
     for (let i = sorted.length; i < registeredCountRef.current; i++) {
       registerItem(i, null);
     }
     registeredCountRef.current = sorted.length;
     recomputeActive();
-  }, [registerItem, recomputeActive]);
+  }, [registerItem, recomputeActive, rowButton]);
 
   const registerRow = useCallback(
     (el: HTMLElement) => {
@@ -165,10 +208,16 @@ function useMenuScope(
     [syncRows]
   );
 
-  const setRowButton = useCallback((row: HTMLElement, button: HTMLElement | null) => {
-    if (button) rowButtonsRef.current.set(row, button);
-    else rowButtonsRef.current.delete(row);
-  }, []);
+  const setRowButton = useCallback(
+    (row: HTMLElement, button: HTMLElement | null) => {
+      if (button) rowButtonsRef.current.set(row, button);
+      else rowButtonsRef.current.delete(row);
+      // The button is the row's measured element, so a button arriving after
+      // its row registered must re-sync what the proximity system observes.
+      syncRows();
+    },
+    [syncRows]
+  );
 
   const setRowActive = useCallback(
     (row: HTMLElement, active: boolean) => {
@@ -177,6 +226,15 @@ function useMenuScope(
     },
     [recomputeActive]
   );
+
+  const refreshVisibility = useCallback(() => {
+    recomputeActive();
+    // A hover riding a row that just collapsed away has nothing under it.
+    setActiveIndex((prev) => {
+      const row = prev !== null ? orderedRowsRef.current[prev] : undefined;
+      return row && rowHidden(row) ? null : prev;
+    });
+  }, [recomputeActive, setActiveIndex]);
 
   // A row's rect spans the whole <li> — which grows when it hosts an expanded
   // sub-menu — so overlay heights are clamped to the row's button box. The
@@ -188,25 +246,10 @@ function useMenuScope(
       const idx = orderedRowsRef.current.indexOf(row);
       const rect = idx === -1 ? null : itemRects[idx];
       if (!rect) return null;
-      const button =
-        rowButtonsRef.current.get(row) ??
-        row.querySelector<HTMLElement>(
-          ':scope > [data-sidebar="menu-button"], :scope > [data-sidebar="menu-sub-button"]'
-        );
-      const height = Math.min(rect.height, button?.offsetHeight ?? 48);
+      const height = Math.min(rect.height, rowButton(row)?.offsetHeight ?? 48);
       return { ...rect, height };
     },
-    [itemRects]
-  );
-
-  // Events that originate inside a nested sub-menu belong to that sub-menu's
-  // own scope; this scope steps aside so the two sets of overlays never fight.
-  const isForeign = useCallback(
-    (target: HTMLElement) => {
-      const sub = target.closest('[data-sidebar="menu-sub"]');
-      return !!sub && sub !== containerRef.current;
-    },
-    [containerRef]
+    [itemRects, rowButton]
   );
 
   // While a popup anchored in the sidebar is open (a row action's or the
@@ -227,23 +270,14 @@ function useMenuScope(
   const onMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (popupOpen()) return;
-      if (isForeign(e.target as HTMLElement)) {
-        setActiveIndex(null);
-        return;
-      }
       handlers.onMouseMove(e);
     },
-    [popupOpen, isForeign, setActiveIndex, handlers]
+    [popupOpen, handlers]
   );
 
   const onFocus = useCallback(
     (e: React.FocusEvent) => {
       const target = e.target as HTMLElement;
-      if (isForeign(target)) {
-        setFocusedRowEl(null);
-        setActiveIndex(null);
-        return;
-      }
       // Only the row's main button drives the traveling highlight and ring —
       // actions keep their own static focus rings.
       if (!target.closest('[data-sidebar="menu-button"],[data-sidebar="menu-sub-button"]')) return;
@@ -256,7 +290,7 @@ function useMenuScope(
       setActiveIndex(idx);
       setFocusedRowEl(target.matches(":focus-visible") ? row : null);
     },
-    [isForeign, setActiveIndex]
+    [setActiveIndex]
   );
 
   const onPointerDown = useCallback(() => {
@@ -307,42 +341,112 @@ function useMenuScope(
 
   const value = useMemo<MenuScopeValue>(
     () => ({
-      isRoot,
       registerRow,
       setRowButton,
       setRowActive,
       hoveredRowEl,
-      activeRowEl,
+      activeRows,
       firstRowEl: orderedRows[0] ?? null,
-      hasActive: activeRowEl !== null,
+      hasActive: activeRows.length > 0,
+      refreshVisibility,
     }),
-    [isRoot, registerRow, setRowButton, setRowActive, hoveredRowEl, activeRowEl, orderedRows]
+    [registerRow, setRowButton, setRowActive, hoveredRowEl, activeRows, orderedRows, refreshVisibility]
   );
 
   const shape = useShape();
-  const activeRect = overlayRect(activeRowEl);
+  // Every active row gets its own background — the buttons' own text styling
+  // already lights each active row, so the overlays must match. Keys are the
+  // row's level (root, or its sub-menu) plus its occurrence within that
+  // level: the usual case — one active per level, e.g. a current section
+  // marker plus the current page inside its sub-tree — keeps a stable key,
+  // so the background GLIDES when the selection moves instead of remounting.
+  const rowLevel = useCallback(
+    (row: HTMLElement) =>
+      row.closest('[data-sidebar="menu-sub"]') ?? containerRef.current,
+    [containerRef]
+  );
+  // A rect change has two causes with two right answers. The highlight moving
+  // to a DIFFERENT row springs — that's the glide. The same row itself moving
+  // — a sibling sub-tree collapsing above reflows every row below on every
+  // frame of its own spring — must snap, or the overlay chases the row it is
+  // sitting on with a trailing second spring. Targets are compared against
+  // the previous COMMIT (the effect below), not the previous render, so
+  // strict mode's double render can't eat a genuine row change.
+  const prevTargetsRef = useRef<{
+    hover: HTMLElement | null;
+    focus: HTMLElement | null;
+    actives: Map<string, HTMLElement>;
+  }>({ hover: null, focus: null, actives: new Map() });
+
+  const levelOccurrence = new Map<number, number>();
+  const levelFirstActive = new Map<number, HTMLElement>();
+  const activeRects: {
+    key: string;
+    rect: ItemRect;
+    row: HTMLElement;
+    rowChanged: boolean;
+  }[] = [];
+  for (const row of activeRows) {
+    const level = rowLevel(row);
+    if (!level) continue;
+    const levelId = overlayGroupId(level);
+    const occurrence = levelOccurrence.get(levelId) ?? 0;
+    levelOccurrence.set(levelId, occurrence + 1);
+    if (!levelFirstActive.has(levelId)) levelFirstActive.set(levelId, row);
+    const rect = overlayRect(row);
+    if (rect)
+      activeRects.push({
+        key: `${levelId}:${occurrence}`,
+        rect,
+        row,
+        rowChanged: prevTargetsRef.current.actives.get(`${levelId}:${occurrence}`) !== row,
+      });
+  }
   const hoverRect = overlayRect(hoveredRowEl);
   const focusRect = overlayRect(focusedRowEl);
+  const hoverRowChanged = prevTargetsRef.current.hover !== hoveredRowEl;
+  const focusRowChanged = prevTargetsRef.current.focus !== focusedRowEl;
+
+  useIsoLayoutEffect(() => {
+    prevTargetsRef.current = {
+      hover: hoveredRowEl,
+      focus: focusedRowEl,
+      actives: new Map(activeRects.map(({ key, row }) => [key, row])),
+    };
+  });
+  // The hover background fades in anchored on the active row of the hovered
+  // row's own level (falling back to any active), so entering the menu reads
+  // as the highlight detaching from where the selection lives.
+  const hoveredLevel = hoveredRowEl ? rowLevel(hoveredRowEl) : null;
+  const hoverAnchorRow =
+    (hoveredLevel ? levelFirstActive.get(overlayGroupId(hoveredLevel)) : undefined) ??
+    levelFirstActive.values().next().value;
+  const hoverAnchorRect = hoverAnchorRow ? overlayRect(hoverAnchorRow) : null;
 
   const overlays = isMeasured ? (
     <>
-      {/* Active row background */}
+      {/* Active row backgrounds — one per active row (see activeRects above) */}
       <AnimatePresence>
-        {activeRect && (
+        {activeRects.map(({ key, rect, rowChanged }) => (
           <motion.div
+            key={key}
             className={`absolute ${shape.bg} bg-active pointer-events-none`}
             initial={false}
             animate={{
-              top: activeRect.top,
-              left: activeRect.left,
-              width: activeRect.width,
-              height: activeRect.height,
+              top: rect.top,
+              left: rect.left,
+              width: rect.width,
+              height: rect.height,
               opacity: 1,
             }}
             exit={{ opacity: 0, transition: spring.moderate.exit }}
-            transition={{ ...spring.moderate, opacity: { duration: 0.08 } }}
+            transition={
+              rowChanged
+                ? { ...spring.moderate, opacity: { duration: 0.08 } }
+                : { duration: 0 }
+            }
           />
-        )}
+        ))}
       </AnimatePresence>
 
       {/* Hover background */}
@@ -353,10 +457,10 @@ function useMenuScope(
             className={`absolute ${shape.bg} bg-hover pointer-events-none`}
             initial={{
               opacity: 0,
-              top: activeRect?.top ?? hoverRect.top,
-              left: activeRect?.left ?? hoverRect.left,
-              width: activeRect?.width ?? hoverRect.width,
-              height: activeRect?.height ?? hoverRect.height,
+              top: hoverAnchorRect?.top ?? hoverRect.top,
+              left: hoverAnchorRect?.left ?? hoverRect.left,
+              width: hoverAnchorRect?.width ?? hoverRect.width,
+              height: hoverAnchorRect?.height ?? hoverRect.height,
             }}
             animate={{
               opacity: 1,
@@ -366,7 +470,11 @@ function useMenuScope(
               height: hoverRect.height,
             }}
             exit={{ opacity: 0, transition: spring.fast.exit }}
-            transition={{ ...spring.fast, opacity: { duration: 0.08 } }}
+            transition={
+              hoverRowChanged
+                ? { ...spring.fast, opacity: { duration: 0.08 } }
+                : { duration: 0 }
+            }
           />
         )}
       </AnimatePresence>
@@ -384,7 +492,11 @@ function useMenuScope(
               height: focusRect.height + 4,
             }}
             exit={{ opacity: 0, transition: spring.fast.exit }}
-            transition={{ ...spring.fast, opacity: { duration: 0.08 } }}
+            transition={
+              focusRowChanged
+                ? { ...spring.fast, opacity: { duration: 0.08 } }
+                : { duration: 0 }
+            }
           />
         )}
       </AnimatePresence>
@@ -403,7 +515,7 @@ function useMenuScope(
       // already-focused row never re-fires focus, so without this the
       // keyboard ring would stick until focus left the menu.
       onPointerDown,
-      onKeyDown: isRoot ? onKeyDown : undefined,
+      onKeyDown,
     },
     overlays,
   };
@@ -420,7 +532,7 @@ export interface SidebarMenuProps extends HTMLAttributes<HTMLUListElement> {
 const SidebarMenu = forwardRef<HTMLUListElement, SidebarMenuProps>(
   ({ className, size, children, ...props }, ref) => {
     const containerRef = useRef<HTMLUListElement>(null);
-    const { value, containerProps, overlays } = useMenuScope(containerRef, true);
+    const { value, containerProps, overlays } = useMenuScope(containerRef);
 
     const content = (
       <MenuScopeContext.Provider value={value}>
@@ -431,7 +543,7 @@ const SidebarMenu = forwardRef<HTMLUListElement, SidebarMenuProps>(
             else if (ref) (ref as React.MutableRefObject<HTMLUListElement | null>).current = node;
           }}
           data-sidebar="menu"
-          className={cn("relative flex w-full min-w-0 flex-col gap-0.5 select-none", className)}
+          className={cn("relative flex w-full min-w-0 flex-col select-none", className)}
           {...containerProps}
           {...props}
         >
@@ -456,14 +568,33 @@ function useMenuRow(rowRef: RefObject<HTMLLIElement | null>, isSubRow = false) {
   const setRowButton = scope?.setRowButton;
   const setRowActive = scope?.setRowActive;
 
+  // The button's setActive effect can fire while this row's <li> ref is
+  // detached: a child's layout effects run before its parent's ref attaches
+  // — at mount, and on EVERY re-render whose inline ref identity changes
+  // (React detaches the old callback, nulling the ref, before the layout
+  // phase). The flag holds the truth through that window, and attachRow
+  // re-syncs the scope whenever the <li> lands.
+  const activeFlagRef = useRef(false);
+
   useIsoLayoutEffect(() => {
     const el = rowRef.current;
     if (!el || !registerRow) return;
     return registerRow(el);
   }, [registerRow, rowRef]);
 
+  /** The <li>'s ref callback: tracks the element and replays the active flag
+   *  the scope may have missed while the ref was detached. */
+  const attachRow = useCallback(
+    (node: HTMLLIElement | null) => {
+      rowRef.current = node;
+      if (node && setRowActive) setRowActive(node, activeFlagRef.current);
+    },
+    [setRowActive, rowRef]
+  );
+
   const setActive = useCallback(
     (active: boolean) => {
+      activeFlagRef.current = active;
       if (rowRef.current && setRowActive) setRowActive(rowRef.current, active);
     },
     [setRowActive, rowRef]
@@ -477,7 +608,8 @@ function useMenuRow(rowRef: RefObject<HTMLLIElement | null>, isSubRow = false) {
   );
 
   const isHovered = rowRef.current !== null && scope?.hoveredRowEl === rowRef.current;
-  const isActiveRow = rowRef.current !== null && scope?.activeRowEl === rowRef.current;
+  const isActiveRow =
+    rowRef.current !== null && (scope?.activeRows.includes(rowRef.current) ?? false);
 
   const [trailing, setTrailing] = useState({
     actionCount: 0,
@@ -502,6 +634,7 @@ function useMenuRow(rowRef: RefObject<HTMLLIElement | null>, isSubRow = false) {
   return useMemo(
     () => ({
       rowRef,
+      attachRow,
       isHovered,
       isActiveRow,
       isSubRow,
@@ -513,6 +646,7 @@ function useMenuRow(rowRef: RefObject<HTMLLIElement | null>, isSubRow = false) {
     }),
     [
       rowRef,
+      attachRow,
       isHovered,
       isActiveRow,
       isSubRow,
@@ -558,14 +692,21 @@ const SidebarMenuItem = forwardRef<HTMLLIElement, SidebarMenuItemProps>(
   ({ className, children, ...props }, ref) => {
     const rowRef = useRef<HTMLLIElement>(null);
     const item = useMenuRow(rowRef);
+    const { attachRow } = item;
+    // Stable ref callback: an inline one is detached and re-attached around
+    // every re-render, and child layout effects fire inside that null window.
+    const refCb = useCallback(
+      (node: HTMLLIElement | null) => {
+        attachRow(node);
+        if (typeof ref === "function") ref(node);
+        else if (ref) (ref as React.MutableRefObject<HTMLLIElement | null>).current = node;
+      },
+      [attachRow, ref]
+    );
     return (
       <MenuItemContext.Provider value={item}>
         <li
-          ref={(node) => {
-            rowRef.current = node;
-            if (typeof ref === "function") ref(node);
-            else if (ref) (ref as React.MutableRefObject<HTMLLIElement | null>).current = node;
-          }}
+          ref={refCb}
           data-sidebar="menu-item"
           className={cn("group/menu-item relative", className)}
           {...props}
@@ -584,14 +725,20 @@ const SidebarMenuSubItem = forwardRef<HTMLLIElement, SidebarMenuSubItemProps>(
   ({ className, children, ...props }, ref) => {
     const rowRef = useRef<HTMLLIElement>(null);
     const item = useMenuRow(rowRef, true);
+    const { attachRow } = item;
+    // Stable ref callback — same reason as SidebarMenuItem's.
+    const refCb = useCallback(
+      (node: HTMLLIElement | null) => {
+        attachRow(node);
+        if (typeof ref === "function") ref(node);
+        else if (ref) (ref as React.MutableRefObject<HTMLLIElement | null>).current = node;
+      },
+      [attachRow, ref]
+    );
     return (
       <MenuItemContext.Provider value={item}>
         <li
-          ref={(node) => {
-            rowRef.current = node;
-            if (typeof ref === "function") ref(node);
-            else if (ref) (ref as React.MutableRefObject<HTMLLIElement | null>).current = node;
-          }}
+          ref={refCb}
           data-sidebar="menu-sub-item"
           className={cn("group/menu-sub-item relative", className)}
           {...props}
@@ -769,14 +916,14 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
             : "h-8";
     const textClass = size === "sm" ? "text-[12px]" : sizeClasses.text;
 
-    // Roving tabindex: the active row's button is the menu's tab stop; with no
-    // active row, the root scope's first row keeps the menu keyboard-reachable.
+    // Roving tabindex: the active rows' buttons are the menu's tab stops; with
+    // no active row, the menu's first row keeps it keyboard-reachable.
     const row = item?.rowRef.current ?? null;
     const tabIdx = effectiveActive
       ? 0
       : scope?.hasActive
         ? -1
-        : scope?.isRoot && row !== null && row === scope.firstRowEl
+        : row !== null && row === scope?.firstRowEl
           ? 0
           : -1;
 
@@ -1087,7 +1234,15 @@ export interface SidebarMenuSubProps extends HTMLAttributes<HTMLUListElement> {
 const SidebarMenuSub = forwardRef<HTMLUListElement, SidebarMenuSubProps>(
   ({ className, open = true, children, ...props }, ref) => {
     const containerRef = useRef<HTMLUListElement>(null);
-    const { value, containerProps, overlays } = useMenuScope(containerRef, false);
+    // The sub-menu is NOT its own highlight scope: its rows register with the
+    // surrounding SidebarMenu, so one hover background glides from a parent
+    // row into its children. Toggling flips the rows' visibility in place
+    // (they stay registered), so the scope re-reads what is visible.
+    const scope = useContext(MenuScopeContext);
+    const refreshVisibility = scope?.refreshVisibility;
+    useIsoLayoutEffect(() => {
+      refreshVisibility?.();
+    }, [open, refreshVisibility]);
 
     // Measured-height collapse: animate between 0 and the content's real
     // offsetHeight — never to "auto", which framer measures wrong under a
@@ -1143,30 +1298,27 @@ const SidebarMenuSub = forwardRef<HTMLUListElement, SidebarMenuSubProps>(
           togglingRef.current = false;
         }}
       >
-        <MenuScopeContext.Provider value={value}>
-          <ul
-            ref={(node) => {
-              containerRef.current = node;
-              if (typeof ref === "function") ref(node);
-              else if (ref) (ref as React.MutableRefObject<HTMLUListElement | null>).current = node;
-            }}
-            data-sidebar="menu-sub"
-            data-state={open ? "open" : "closed"}
-            aria-hidden={open ? undefined : true}
-            className={cn(
-              // pl-2 lands the sub-row label (pl-2 + the row's own px-2 = 24px
-              // + border/translate) exactly on the parent label's x (px-2 +
-              // 16px icon + gap-2 = 32px).
-              "relative ml-3.5 flex min-w-0 translate-x-px flex-col gap-0.5 border-l border-border py-0.5 pl-2 select-none",
-              className
-            )}
-            {...containerProps}
-            {...props}
-          >
-            {overlays}
-            {children}
-          </ul>
-        </MenuScopeContext.Provider>
+        <ul
+          ref={(node) => {
+            containerRef.current = node;
+            if (typeof ref === "function") ref(node);
+            else if (ref) (ref as React.MutableRefObject<HTMLUListElement | null>).current = node;
+          }}
+          data-sidebar="menu-sub"
+          data-state={open ? "open" : "closed"}
+          aria-hidden={open ? undefined : true}
+          className={cn(
+            // ml-[15px] (a margin, not a translate, so the rows' measured
+            // rects include it) + 1px border + pl-2 lands the sub-row label
+            // (+ the row's own pl-2 = 32px) exactly on the parent label's x
+            // (px-2 + 16px icon + gap-2 = 32px).
+            "relative ml-[15px] flex min-w-0 flex-col gap-0.5 border-l border-border pl-2 select-none",
+            className
+          )}
+          {...props}
+        >
+          {children}
+        </ul>
       </motion.div>
     );
   }

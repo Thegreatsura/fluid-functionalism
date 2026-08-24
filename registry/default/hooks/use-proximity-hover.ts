@@ -26,6 +26,13 @@ interface UseProximityHoverOptions {
    *          measured by Euclidean distance to each item's center
    */
   axis?: "x" | "y" | "xy";
+  /**
+   * Makes an item invisible to hit-testing without unregistering it — for
+   * rows that stay mounted while clipped away (a collapsed sub-tree).
+   * Unregistering would invalidate every measurement; a skipped item keeps
+   * the set stable. Consulted per mouse move, so keep it cheap.
+   */
+  isItemDisabled?: (element: HTMLElement) => boolean;
 }
 
 interface UseProximityHoverReturn {
@@ -70,7 +77,7 @@ export function useProximityHover<T extends HTMLElement>(
   containerRef: RefObject<T | null>,
   options: UseProximityHoverOptions = {}
 ): UseProximityHoverReturn {
-  const { axis = "y" } = options;
+  const { axis = "y", isItemDisabled } = options;
   const itemsRef = useRef(new Map<number, HTMLElement>());
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [itemRects, setItemRects] = useState<ItemRect[]>([]);
@@ -109,11 +116,23 @@ export function useProximityHover<T extends HTMLElement>(
       // unaffected by CSS transforms (e.g. scaleY animation on the parent
       // motion.div). offsetTop/offsetLeft are layout values relative to the
       // offsetParent (the scroll container), matching the coordinate space
-      // used by `position: absolute` children.
+      // used by `position: absolute` children. Items nested inside positioned
+      // descendants of the container (a sidebar sub-menu's rows live inside a
+      // positioned row) accumulate those ancestors' offsets, so every rect
+      // lands in the container's own coordinate space; for a flat list the
+      // loop never runs and this is exactly the plain offsetTop/offsetLeft.
+      let top = element.offsetTop;
+      let left = element.offsetLeft;
+      let ancestor = element.offsetParent as HTMLElement | null;
+      while (ancestor && ancestor !== container && container.contains(ancestor)) {
+        top += ancestor.offsetTop + ancestor.clientTop;
+        left += ancestor.offsetLeft + ancestor.clientLeft;
+        ancestor = ancestor.offsetParent as HTMLElement | null;
+      }
       rects[index] = {
-        top: element.offsetTop,
+        top,
         height: element.offsetHeight,
-        left: element.offsetLeft,
+        left,
         width: element.offsetWidth,
       };
     });
@@ -256,6 +275,8 @@ export function useProximityHover<T extends HTMLElement>(
           for (let index = 0; index < rects.length; index++) {
             const r = rects[index];
             if (!r) continue;
+            const el = itemsRef.current.get(index);
+            if (el && isItemDisabled?.(el)) continue;
 
             const left = containerRect.left + (borderX + r.left - scrollX) * scaleX;
             const top = containerRect.top + (borderY + r.top - scrollY) * scaleY;
@@ -307,6 +328,8 @@ export function useProximityHover<T extends HTMLElement>(
         for (let index = 0; index < rects.length; index++) {
           const r = rects[index];
           if (!r) continue;
+          const el = itemsRef.current.get(index);
+          if (el && isItemDisabled?.(el)) continue;
 
           const contentPos = axis === "x" ? r.left : r.top;
           const itemStart = containerEdge + (borderOffset + contentPos - scrollOffset) * scale;
@@ -329,7 +352,7 @@ export function useProximityHover<T extends HTMLElement>(
         setActiveIndex(containingIndex ?? closestIndex);
       });
     },
-    [axis, containerRef]
+    [axis, containerRef, isItemDisabled]
   );
 
   const handleMouseEnter = useCallback(() => {

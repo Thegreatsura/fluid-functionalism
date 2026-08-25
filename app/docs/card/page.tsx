@@ -152,7 +152,8 @@ const cardProps: PropDef[] = [
   { name: "label", type: "string", description: "Accessible name for the stretched link/button when the whole card is clickable." },
   { name: "selected", type: "boolean", default: "false", description: "Persistent selected fill + title emphasis, on top of proximity hover. The group drops the hairline dividers around the selected card so the fill reads clean." },
   { name: "disabled", type: "boolean", default: "false", description: "Dims and disables the card." },
-  { name: "dismissible", type: "boolean", default: "false", description: "Shows a dismiss (✕) button." },
+  { name: "dismissible", type: "boolean", default: "false", description: "Shows a dismiss (✕) button, revealed on hover or focus by default." },
+  { name: "dismissOnHover", type: "boolean", default: "true", description: "Keeps the dismiss control hidden until the card is hovered or holds focus. Pass false for an always-visible ✕." },
   { name: "onDismiss", type: "() => void", description: "Called when the dismiss button is pressed." },
 ];
 

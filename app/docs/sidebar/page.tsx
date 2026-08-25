@@ -13,7 +13,6 @@ import {
   SidebarHeader,
   SidebarContent,
   SidebarFooter,
-  SidebarSeparator,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupAction,
@@ -24,13 +23,13 @@ import {
   SidebarMenuAction,
   SidebarMenuActions,
   SidebarMenuBadge,
-  SidebarMenuSkeleton,
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
   useSidebar,
 } from "@/components/flavored/sidebar";
 import { Button } from "@/registry/radix/button";
+import { Tooltip } from "@/registry/radix/tooltip";
 import {
   DropdownMenu,
   DropdownTrigger,
@@ -45,7 +44,7 @@ import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
 import { useNarrowFrame } from "@/lib/use-narrow-frame";
 import { PlaygroundLayout } from "@/lib/docs/playground";
-import { SidebarPlayground } from "@/lib/docs/playgrounds/sidebar";
+import { SidebarPlayground, FooterCalloutStack } from "@/lib/docs/playgrounds/sidebar";
 import { WorkspaceMenuItems } from "@/lib/docs/workspace-demo";
 import {
   Card,
@@ -62,8 +61,6 @@ import { surfaceClasses, surfaceHoverClasses } from "@/lib/surface-classes";
 import {
   AI_CALLOUT,
   AI_NAV,
-  AI_RUNS,
-  AI_SOURCES,
   AI_THREADS,
   AI_TREE,
   AI_WORKSPACE,
@@ -75,13 +72,15 @@ const layoutsCode = `import {
   SidebarProvider, Sidebar, SidebarTrigger, SidebarInset,
   SidebarHeader, SidebarContent, SidebarFooter,
   SidebarGroup, SidebarGroupLabel,
-  SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge,
+  SidebarMenu, SidebarMenuItem, SidebarMenuButton,
 } from "./components";
 
 // variant is the only thing that changes between the three:
 //   "sidebar"  — flush rail, the default
 //   "floating" — the rail is its own card over the canvas
 //   "inset"    — the MAIN region is the card; the rail recedes
+const [current, setCurrent] = useState(nav[0].label);
+
 <SidebarProvider>
   <Sidebar variant="inset">
     <SidebarHeader>{/* workspace row */}</SidebarHeader>
@@ -91,10 +90,13 @@ const layoutsCode = `import {
         <SidebarMenu>
           {nav.map((item) => (
             <SidebarMenuItem key={item.label}>
-              <SidebarMenuButton icon={item.icon} isActive={item.active}>
+              <SidebarMenuButton
+                icon={item.icon}
+                isActive={item.label === current}
+                onClick={() => setCurrent(item.label)}
+              >
                 {item.label}
               </SidebarMenuButton>
-              {item.badge && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
@@ -140,7 +142,6 @@ const nestingCode = `const [open, setOpen] = useState<string | null>("Agents");
         >
           {agent.label}
         </SidebarMenuSubButton>
-        {agent.badge && <SidebarMenuBadge>{agent.badge}</SidebarMenuBadge>}
       </SidebarMenuSubItem>
     ))}
   </SidebarMenuSub>
@@ -156,31 +157,20 @@ const actionsCode = `{/* The section label carries actions of its own */}
 
   <SidebarMenu>
     {/* Status leads instead of an icon: active/unread fill the dot, idle
-        rings it, and "unread" is announced to screen readers */}
-    <SidebarMenuItem>
-      <SidebarMenuButton status="active">Summarise the Q3 board deck</SidebarMenuButton>
-      <SidebarMenuBadge>12</SidebarMenuBadge>
-    </SidebarMenuItem>
-
-    {/* Badge keeps the rightmost slot; the action reveals to its left */}
-    <SidebarMenuItem>
-      <SidebarMenuButton status="unread">Migration plan for Postgres 16</SidebarMenuButton>
-      <SidebarMenuBadge>4</SidebarMenuBadge>
-      <SidebarMenuAction showOnHover aria-label="More options"><MoreIcon /></SidebarMenuAction>
-    </SidebarMenuItem>
-
-    {/* More than one action: the cluster owns the row's gutter */}
-    <SidebarMenuItem>
-      <SidebarMenuButton status="idle">Rewrite the onboarding emails</SidebarMenuButton>
-      <SidebarMenuActions showOnHover>
-        <SidebarMenuAction aria-label="Branch"><CornerIcon /></SidebarMenuAction>
-        <SidebarMenuAction aria-label="Share"><LinkIcon /></SidebarMenuAction>
-        <SidebarMenuAction aria-label="More options"><MoreIcon /></SidebarMenuAction>
-      </SidebarMenuActions>
-    </SidebarMenuItem>
-
-    {/* Widths are deterministic, so the server and client agree */}
-    {indexing && <SidebarMenuSkeleton showIcon />}
+        rings it, and "unread" is announced to screen readers. The badge
+        keeps the rightmost slot; the cluster reveals to its left and owns
+        the row's gutter */}
+    {threads.map((thread) => (
+      <SidebarMenuItem key={thread.label}>
+        <SidebarMenuButton status={thread.status}>{thread.label}</SidebarMenuButton>
+        <SidebarMenuBadge>{thread.badge}</SidebarMenuBadge>
+        <SidebarMenuActions showOnHover>
+          <SidebarMenuAction aria-label="Branch"><CornerIcon /></SidebarMenuAction>
+          <SidebarMenuAction aria-label="Share"><LinkIcon /></SidebarMenuAction>
+          <SidebarMenuAction aria-label="More options"><MoreIcon /></SidebarMenuAction>
+        </SidebarMenuActions>
+      </SidebarMenuItem>
+    ))}
   </SidebarMenu>
 </SidebarGroup>`;
 
@@ -191,12 +181,16 @@ const headerFooterCode = `{/* Vertical: every element gets its own full-width ro
       <DropdownTrigger render={<SidebarMenuButton>Aurora AI</SidebarMenuButton>} />
     </SidebarMenuItem>
   </SidebarMenu>
-  <SidebarInput placeholder="Search threads…" />
-  <SidebarMenu>
-    <SidebarMenuItem>
-      <SidebarMenuButton icon={PlusIcon}>New thread</SidebarMenuButton>
-    </SidebarMenuItem>
-  </SidebarMenu>
+  {/* Search + action rows are ONE block: the field reads as the list's
+      first row, on the menu rows' own tight rhythm */}
+  <div className="flex flex-col gap-0.5">
+    <SidebarInput placeholder="Search threads…" />
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton icon={PlusIcon}>New thread</SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  </div>
 </SidebarHeader>
 
 {/* Horizontal is the same pieces sharing the brand's line as icon buttons:
@@ -206,23 +200,65 @@ const headerFooterCode = `{/* Vertical: every element gets its own full-width ro
 */}
 
 <SidebarFooter>
-  {/* Anchored callout: a Card on a surface one step above the rail */}
-  <Card size="compact" href="/docs/sidebar" label="Aurora 2 is here">
+  {/* Anchored callout: a Card on a surface one step above the rail.
+      dismissible reveals its ✕ on hover (the default) */}
+  <Card size="compact" dismissible onDismiss={hide} href="/docs/sidebar" label="Aurora 2 is here">
     <CardImage src={banner} className="aspect-[2/1] max-h-28" />
-    <CardHeader className="gap-0 pt-4">
+    <CardHeader className="gap-0 pt-3">
       <CardTitle>Aurora 2 is here</CardTitle>
       <CardDescription>Longer context, faster agents</CardDescription>
     </CardHeader>
   </Card>
 
+  {/* Actions above, the user row last — identity anchors the outer edge */}
   <SidebarMenu>
-    <SidebarMenuItem>
-      <DropdownTrigger render={<SidebarMenuButton>Micka Touillaud</SidebarMenuButton>} />
-    </SidebarMenuItem>
     <SidebarMenuItem>
       <SidebarMenuButton icon={SettingsIcon}>Settings</SidebarMenuButton>
     </SidebarMenuItem>
+    <SidebarMenuItem>
+      <DropdownTrigger render={<SidebarMenuButton>Micka Touillaud</SidebarMenuButton>} />
+    </SidebarMenuItem>
   </SidebarMenu>
+</SidebarFooter>`;
+
+const stackedCalloutCode = `/* A sonner-style pile in the footer: cards peek 12px apiece behind the
+   front one, scaling down 0.05 a step, two peeks max. The inline pile
+   fans out on hover; dismissing the front card promotes the next. Each
+   card keeps its own step of the brand mesh's intensity ladder. */
+const [expanded, setExpanded] = useState(false);
+// CARD_H is the front card's measured offsetHeight — never an animated "auto"
+const collapsedH = CARD_H + Math.min(callouts.length - 1, 2) * 12;
+const expandedH = callouts.length * CARD_H + (callouts.length - 1) * 4;
+
+<SidebarFooter>
+  <motion.div
+    className="relative"
+    animate={{ height: expanded ? expandedH : collapsedH }}
+    onMouseEnter={() => setExpanded(true)}
+    onMouseLeave={() => setExpanded(false)}
+  >
+    {callouts.map((c, i) => (
+      <motion.div
+        key={c.id}
+        className="absolute inset-x-0 bottom-0"
+        style={{ transformOrigin: "bottom center", zIndex: 100 - i }}
+        animate={expanded
+          ? { y: -i * (CARD_H + 4), scale: 1, opacity: 1 }
+          : { y: -Math.min(i, 2) * 12, scale: 1 - Math.min(i, 2) * 0.05,
+              opacity: i <= 2 ? 1 : 0 }}
+      >
+        <Card size="compact" dismissible onDismiss={() => dismiss(c.id)}>
+          {/* full-strength brand glyph on the card's own tint step */}
+          <CardMedia icon={c.icon} size={18} className={\`\${c.tint} [&_svg]:text-[#6B97FF]\`} />
+          <CardHeader className="gap-[2px] py-3 pr-10">
+            <CardTitle className="truncate">{c.title}</CardTitle>
+            <CardDescription className="truncate text-caption">{c.desc}</CardDescription>
+          </CardHeader>
+        </Card>
+      </motion.div>
+    ))}
+  </motion.div>
+  {/* user row */}
 </SidebarFooter>`;
 
 const collapseCode = `// The bare "[" key toggles a left sidebar, "]" a right one (Provider's
@@ -239,7 +275,9 @@ const collapseCode = `// The bare "[" key toggles a left sidebar, "]" a right on
 //   <SidebarProvider defaultOpen={defaultOpen}>…
 
 <SidebarProvider peek="hover">
-  <Sidebar>
+  {/* railTooltipOpen pins the rail's tooltip open (the demo spotlights the
+      handle until your cursor takes over); undefined restores hover */}
+  <Sidebar variant="inset" railTooltipOpen={spotlight || undefined}>
     <SidebarContent>…</SidebarContent>
   </Sidebar>
   <SidebarInset>
@@ -276,6 +314,7 @@ const sidebarProps: PropDef[] = [
   { name: "variant", type: '"sidebar" | "floating" | "inset"', default: '"sidebar"', description: "Transparent rail, elevated floating card, or the inset pairing where SidebarInset becomes the card." },
   { name: "collapsible", type: '"offcanvas" | "none"', default: '"offcanvas"', description: "Offcanvas slides the rail away; none renders a static, always-open column. (The icon-rail mode is intentionally not supported.)" },
   { name: "rail", type: "boolean", default: "true", description: "The built-in resize/collapse handle: drag to resize (192–360px), click to collapse, drag past the minimum to collapse. false hides it; the trigger and shortcut still toggle." },
+  { name: "railTooltipOpen", type: "boolean", description: "Pins the rail's tooltip open (true) or closed (false); undefined leaves it on hover. Dragging always hides it — the collapse demo uses it to spotlight the handle." },
   { name: "bordered", type: "boolean", default: "true", description: "The sidebar variant's inner-edge border." },
   { name: "SidebarTrigger", type: "ButtonProps", description: "Ghost icon button calling toggleSidebar(). Its tooltip carries the shortcut key." },
   { name: "SidebarContent viewportClassName", type: "string", description: "Extra classes for the scroll viewport — a ScrollArea carrying the scroll-fade mask, with the boundary hairline on its frame." },
@@ -371,16 +410,37 @@ function DemoHeaderRow() {
   );
 }
 
+const SEARCH_SHORTCUT = "⌘K";
+
+/** Tooltip content with the action's keystroke, on the same inverted surface
+ *  treatment the sidebar trigger's tooltip uses. The label re-applies the
+ *  surface's text-box trim (a flex row escapes it) and the chip pulls its
+ *  box back with -my-1, so the tooltip keeps its single-line height. */
+function tipWithShortcut(label: string, shortcut: string) {
+  return (
+    <span className="flex items-center gap-2">
+      <span className="[text-box:trim-both_cap_alphabetic]">{label}</span>
+      <kbd className="-my-1 flex h-4 min-w-4 items-center justify-center rounded border border-background/30 px-1 font-sans text-[10px] text-background/80">
+        {shortcut}
+      </kbd>
+    </span>
+  );
+}
+
 function DemoSearch() {
   const SearchIcon = useIcon("search");
   return (
-    <div className="relative">
+    <div className="group/search relative">
       <SearchIcon
         size={14}
         strokeWidth={1.5}
         className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground"
       />
-      <SidebarInput placeholder="Search…" aria-label="Search" className="pl-8" />
+      <SidebarInput placeholder="Search…" aria-label="Search" className="pl-8 pr-12" />
+      {/* Revealed on hover / focus — the placeholder owns the field at rest. */}
+      <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 font-sans text-[11px] text-muted-foreground opacity-0 transition-opacity duration-80 group-hover/search:opacity-100 group-focus-within/search:opacity-100">
+        {SEARCH_SHORTCUT}
+      </kbd>
     </div>
   );
 }
@@ -397,14 +457,16 @@ function DemoHeader({ search = "below" }: { search?: "below" | "inline" }) {
           <div className="min-w-0 flex-1">
             <DemoHeaderRow />
           </div>
-          <Button
-            variant="ghost"
-            size="icon-compact"
-            aria-label="Search"
-            className="shrink-0"
-          >
-            <SearchIcon />
-          </Button>
+          <Tooltip content={tipWithShortcut("Search", SEARCH_SHORTCUT)} side="bottom">
+            <Button
+              variant="ghost"
+              size="icon-compact"
+              aria-label="Search"
+              className="shrink-0"
+            >
+              <SearchIcon />
+            </Button>
+          </Tooltip>
         </div>
       </SidebarHeader>
     );
@@ -452,27 +514,46 @@ function DemoFooterUser() {
   );
 }
 
-/** The product's top-level nav — Chat, Agents, Knowledge, Runs, Evals, each
- *  owning a sub-tree, under a section label that collapses the lot. One row
- *  starts open: five expanded sub-trees would outrun the frame, and a mix of
- *  open and closed is what a real tree looks like anyway. */
-function DemoMenu() {
+/** The product's top-level nav — Chat, Agents, Knowledge, Runs, Evals under
+ *  a section label that collapses the lot. The Layouts previews render it
+ *  FLAT (`nested={false}`): those examples are about the shell, so plain
+ *  selectable rows keep the rail quiet — and match the flat layoutsCode
+ *  snippet. The collapse example keeps the tree: each row owns a sub-tree,
+ *  one starting open (five expanded sub-trees would outrun the frame, and a
+ *  mix of open and closed is what a real tree looks like anyway). */
+function DemoMenu({ nested = true }: { nested?: boolean }) {
   const icons = useIcons();
   const [open, setOpen] = useState<Record<string, boolean>>({ Chat: true });
-  const [current, setCurrent] = useState(AI_NAV[0].children[0].label);
+  const [current, setCurrent] = useState(
+    nested ? AI_NAV[0].children[0].label : AI_NAV[0].label
+  );
 
   return (
     <SidebarGroup collapsible>
       <SidebarGroupLabel>Workspace</SidebarGroupLabel>
       <SidebarMenu>
         {AI_NAV.map((item) => {
+          if (!nested) {
+            return (
+              <SidebarMenuItem key={item.label}>
+                <SidebarMenuButton
+                  icon={icons[item.icon]}
+                  isActive={item.label === current}
+                  onClick={() => setCurrent(item.label)}
+                >
+                  {item.label}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          }
           const isOpen = !!open[item.label];
           return (
             <SidebarMenuItem key={item.label}>
+              {/* Parents only expand/collapse — the current-page highlight
+                  lives on the selected child alone. */}
               <SidebarMenuButton
                 className="group/parent-row"
                 icon={icons[item.icon]}
-                isActive={item.active}
                 onClick={() => setOpen((prev) => ({ ...prev, [item.label]: !prev[item.label] }))}
                 aria-expanded={isOpen}
                 style={{ "--row-gutter": "var(--row-gutter-hover)" } as CSSProperties}
@@ -635,7 +716,7 @@ function DemoShell({
         <Sidebar variant={variant} className="h-full">
           <DemoHeader />
           <SidebarContent>
-            <DemoMenu />
+            <DemoMenu nested={false} />
           </SidebarContent>
           <SidebarFooter>
             <DemoFooterUser />
@@ -665,23 +746,95 @@ function SidebarStateReadout() {
   );
 }
 
-/** Collapse, peek & resize: the whole shell, since collapsing is about what
- *  the main region does with the space. */
-function CollapsePreview() {
+/** Stacked callouts: the footer pile as its own subject — hover fans the
+ *  inline pile out, dismissing the front card promotes the next, and each
+ *  card keeps its own step of the brand-blue ladder. Emptying the pile
+ *  brings it back a beat later so the demo stays stocked. */
+function StackedCalloutPreview() {
+  const [restockKey, setRestockKey] = useState(0);
+  const [hidden, setHidden] = useState(false);
+  const onEmpty = () => {
+    setHidden(true);
+    setTimeout(() => {
+      setRestockKey((k) => k + 1);
+      setHidden(false);
+    }, 1600);
+  };
   return (
-    <SidebarShellFrame>
-      <DemoProvider narrowWidth="11rem" peek="hover">
-        <Sidebar className="h-full">
-          <DemoHeader />
-          <SidebarContent>
-            <DemoMenu />
-          </SidebarContent>
-        </Sidebar>
-        <SidebarInset className="min-h-0">
-          <DemoInsetContent title={<SidebarStateReadout />} />
-        </SidebarInset>
-      </DemoProvider>
-    </SidebarShellFrame>
+    <DemoRailShell insetTitle="Hover the pile — dismiss to promote">
+      <DemoHeader />
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Threads</SidebarGroupLabel>
+          <SidebarMenu>
+            {AI_THREADS.slice(0, 3).map((thread) => (
+              <SidebarMenuItem key={thread.label}>
+                <SidebarMenuButton status={thread.status}>{thread.label}</SidebarMenuButton>
+                <SidebarMenuBadge>{thread.badge}</SidebarMenuBadge>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter>
+        {!hidden && (
+          <FooterCalloutStack key={restockKey} variant="inline" onEmpty={onEmpty} />
+        )}
+        <DemoFooterUser />
+      </SidebarFooter>
+    </DemoRailShell>
+  );
+}
+
+/** Collapse, peek & resize: the whole shell, since collapsing is about what
+ *  the main region does with the space. The rail's tooltip is pinned open as
+ *  the section's subject — a real hover takes over (it follows the cursor
+ *  along the handle), and it pins again once the pointer leaves the preview.
+ *  Inset layout, simple thread rows: nothing competes with the rail. */
+function CollapsePreview() {
+  const [cursorInside, setCursorInside] = useState(false);
+  const [open, setOpen] = useState(true);
+  return (
+    <div
+      className="w-full self-stretch"
+      // mousemove covers a pointer already resting inside at mount, and
+      // pointerdown covers touch (no hover) — otherwise the pinned tooltip
+      // could never be handed off and would sit over the demo forever.
+      onMouseEnter={() => setCursorInside(true)}
+      onMouseMove={() => setCursorInside(true)}
+      onPointerDown={() => setCursorInside(true)}
+      onMouseLeave={() => setCursorInside(false)}
+    >
+      <SidebarShellFrame>
+        <DemoProvider narrowWidth="11rem" peek="hover" open={open} onOpenChange={setOpen}>
+          <Sidebar
+            variant="inset"
+            // Pinned only while the rail exists to anchor it — never while
+            // collapsed, and never against the visitor's own hover.
+            railTooltipOpen={!cursorInside && open ? true : undefined}
+            className="h-full"
+          >
+            <DemoHeader />
+            <SidebarContent>
+              <SidebarGroup>
+                <SidebarGroupLabel>Threads</SidebarGroupLabel>
+                <SidebarMenu>
+                  {AI_THREADS.slice(0, 5).map((thread) => (
+                    <SidebarMenuItem key={thread.label}>
+                      <SidebarMenuButton status={thread.status}>{thread.label}</SidebarMenuButton>
+                      <SidebarMenuBadge>{thread.badge}</SidebarMenuBadge>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroup>
+            </SidebarContent>
+          </Sidebar>
+          <SidebarInset className="min-h-0">
+            <DemoInsetContent title={<SidebarStateReadout />} />
+          </SidebarInset>
+        </DemoProvider>
+      </SidebarShellFrame>
+    </div>
   );
 }
 
@@ -749,7 +902,6 @@ function NestingPreview() {
                         >
                           {child.label}
                         </SidebarMenuSubButton>
-                        {child.badge && <SidebarMenuBadge>{child.badge}</SidebarMenuBadge>}
                       </SidebarMenuSubItem>
                     ))}
                   </SidebarMenuSub>
@@ -765,122 +917,80 @@ function NestingPreview() {
 }
 
 /** Actions & badges: everything a row and a section label can carry —
- *  status dots on assistant threads, counts, hover-revealed actions, an
- *  action cluster, scores in the badge slot, and skeletons while sources
- *  index. */
+ *  status dots on assistant threads, counts, and the hover-revealed action
+ *  cluster (branch / share / overflow menu, tooltipped) on every thread —
+ *  inside the full shell, header and footer included, like the other
+ *  examples. */
 function ActionsPreview() {
   const icons = useIcons();
-  const MoreIcon = useIcon("more-horizontal");
-  const [indexing, setIndexing] = useState(true);
+  const MoreIcon = useIcon("more-vertical");
 
+  // No Share here — it already sits on the row as a hover action.
   const threadMenu = (
     <DropdownContent className="min-w-[240px] w-[240px]" align="start" sideOffset={4}>
       <MenuItem index={0} icon={icons.pencil} label="Rename" onSelect={() => {}} />
-      <MenuItem index={1} icon={icons.link} label="Share" onSelect={() => {}} />
-      <MenuItem index={2} icon={icons.x} label="Delete" onSelect={() => {}} />
+      <MenuItem index={1} icon={icons.x} label="Delete" onSelect={() => {}} />
     </DropdownContent>
   );
 
   return (
     <DemoRailShell insetTitle="Hover a row — tap on touch">
+      <DemoHeader />
       <SidebarContent>
         {/* A section label that collapses its rows and carries its own actions */}
         <SidebarGroup collapsible>
           <SidebarGroupLabel>Threads</SidebarGroupLabel>
           <SidebarGroupActions>
-            <SidebarGroupAction aria-label="New thread">
-              {createElement(icons.plus, {})}
-            </SidebarGroupAction>
-            <SidebarGroupAction aria-label="Filter threads">
-              {createElement(icons["sliders-horizontal"], {})}
-            </SidebarGroupAction>
+            <Tooltip content="New thread" side="top">
+              <SidebarGroupAction aria-label="New thread">
+                {createElement(icons.plus, {})}
+              </SidebarGroupAction>
+            </Tooltip>
+            <Tooltip content="Filter threads" side="top">
+              <SidebarGroupAction aria-label="Filter threads">
+                {createElement(icons["sliders-horizontal"], {})}
+              </SidebarGroupAction>
+            </Tooltip>
           </SidebarGroupActions>
           <SidebarMenu>
-            {AI_THREADS.map((thread, i) => (
+            {/* Every thread carries the full cluster: branch, share, and the
+                overflow menu — the badge keeps the rightmost slot beside it.
+                The dropdown trigger goes without a tooltip, like every other
+                dropdown trigger in the sidebar. */}
+            {AI_THREADS.map((thread) => (
               <SidebarMenuItem key={thread.label}>
                 <SidebarMenuButton status={thread.status}>{thread.label}</SidebarMenuButton>
-                {thread.badge && <SidebarMenuBadge>{thread.badge}</SidebarMenuBadge>}
-                {/* One action beside a badge; the cluster on the last row */}
-                {i === AI_THREADS.length - 1 ? (
-                  <SidebarMenuActions showOnHover>
+                <SidebarMenuBadge>{thread.badge}</SidebarMenuBadge>
+                <SidebarMenuActions showOnHover>
+                  <Tooltip content="Branch thread" side="top">
                     <SidebarMenuAction aria-label="Branch thread">
                       {createElement(icons["corner-down-right"], {})}
                     </SidebarMenuAction>
+                  </Tooltip>
+                  <Tooltip content="Share thread" side="top">
                     <SidebarMenuAction aria-label="Share thread">
                       {createElement(icons.link, {})}
                     </SidebarMenuAction>
-                    <DropdownMenu>
-                      <DropdownTrigger
-                        render={
-                          <SidebarMenuAction aria-label="More options">
-                            <MoreIcon />
-                          </SidebarMenuAction>
-                        }
-                      />
-                      {threadMenu}
-                    </DropdownMenu>
-                  </SidebarMenuActions>
-                ) : (
-                  i === 1 && (
-                    <DropdownMenu>
-                      <DropdownTrigger
-                        render={
-                          <SidebarMenuAction showOnHover aria-label="More options">
-                            <MoreIcon />
-                          </SidebarMenuAction>
-                        }
-                      />
-                      {threadMenu}
-                    </DropdownMenu>
-                  )
-                )}
+                  </Tooltip>
+                  <DropdownMenu>
+                    <DropdownTrigger
+                      render={
+                        <SidebarMenuAction aria-label="More options">
+                          <MoreIcon />
+                        </SidebarMenuAction>
+                      }
+                    />
+                    {threadMenu}
+                  </DropdownMenu>
+                </SidebarMenuActions>
               </SidebarMenuItem>
             ))}
-          </SidebarMenu>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        {/* The badge slot holds a result as readily as a count */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Eval runs</SidebarGroupLabel>
-          <SidebarMenu>
-            {AI_RUNS.map((run) => (
-              <SidebarMenuItem key={run.label}>
-                <SidebarMenuButton icon={icons[run.icon]}>{run.label}</SidebarMenuButton>
-                <SidebarMenuBadge>{run.badge}</SidebarMenuBadge>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Sources</SidebarGroupLabel>
-          <SidebarGroupActions>
-            <SidebarGroupAction
-              aria-label={indexing ? "Show indexed sources" : "Show indexing"}
-              onClick={() => setIndexing((v) => !v)}
-            >
-              {createElement(icons["rotate-ccw"], {})}
-            </SidebarGroupAction>
-          </SidebarGroupActions>
-          <SidebarMenu>
-            {indexing
-              ? AI_SOURCES.map((source) => (
-                  <SidebarMenuSkeleton key={source.label} showIcon />
-                ))
-              : AI_SOURCES.map((source) => (
-                  <SidebarMenuItem key={source.label}>
-                    <SidebarMenuButton icon={icons[source.icon]}>
-                      {source.label}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <DemoFooterUser />
+      </SidebarFooter>
     </DemoRailShell>
   );
 }
@@ -888,40 +998,58 @@ function ActionsPreview() {
 /** The anchored callout — a Card on a surface one step above the rail.
  *  CardImage / CardMedia stay DIRECT children: Card finds the media by
  *  scanning its own children, and a fragment wrapper would hide it. */
-function DemoCallout({ variant }: { variant: "media" | "icon" }) {
+function DemoCallout({ variant }: { variant: "banner" | "inline" }) {
   const substrate = useSurface();
   const shape = useShape();
   const icons = useIcons();
+  // Dismiss really removes the card; the demo brings it back a beat later so
+  // the section keeps its subject.
+  const [dismissed, setDismissed] = useState(false);
+  const dismiss = () => {
+    setDismissed(true);
+    setTimeout(() => setDismissed(false), 1600);
+  };
   // Rests one step above the rail and rises another under the pointer, so the
   // card itself answers the hover rather than anything inside it.
   const level = Math.min(substrate + 1, 8);
   const surface = `${shape.container} overflow-hidden transition-[background-color,box-shadow] duration-80 ${surfaceClasses(
     level,
     2
-  )} ${surfaceHoverClasses(level + 1, 3)}`;
+  )} ${surfaceHoverClasses(
+    level + 1,
+    3
+  )} shadow-[var(--shadow-2-inset)] hover:shadow-[var(--shadow-3-inset)]`;
+
+  if (dismissed) return null;
 
   const card = (
     <Card
       size="compact"
+      dismissible
+      onDismiss={dismiss}
       href="/docs/sidebar"
       label={`${AI_CALLOUT.title} — ${AI_CALLOUT.media}`}
-      className={`${surface}${variant === "icon" ? " min-h-0 pl-2.5" : ""}`}
+      className={`${surface}${variant === "inline" ? " min-h-0 pl-2.5" : ""}`}
     >
-      {variant === "media" ? (
+      {variant === "banner" ? (
         <CardImage src={BANNER} className="aspect-[2/1] max-h-28" />
       ) : (
         <CardMedia icon={icons.brain} size={18} />
       )}
-      <CardHeader className={variant === "media" ? "gap-0 pt-4" : "gap-[2px] py-3"}>
+      {/* On the icon row the dismiss control floats over the text rather than
+          over a banner, so that row reserves the 36px it occupies plus air. */}
+      <CardHeader
+        className={variant === "banner" ? "gap-0 pt-3" : "gap-[2px] py-3 pr-10"}
+      >
         <CardTitle className="truncate">{AI_CALLOUT.title}</CardTitle>
         <CardDescription className="truncate text-caption">
-          {variant === "media" ? AI_CALLOUT.media : AI_CALLOUT.icon}
+          {variant === "banner" ? AI_CALLOUT.media : AI_CALLOUT.icon}
         </CardDescription>
       </CardHeader>
     </Card>
   );
 
-  return variant === "icon" ? (
+  return variant === "inline" ? (
     <CardGroup orientation="inline" proximityHover={false}>
       {card}
     </CardGroup>
@@ -944,24 +1072,40 @@ function HeaderFooterPreview({ stack }: { stack: "vertical" | "horizontal" }) {
         {vertical ? (
           <>
             <DemoHeaderRow />
-            <DemoSearch />
-            <SidebarMenu aria-label="Header actions">
-              <SidebarMenuItem>
-                <SidebarMenuButton icon={icons.plus}>New thread</SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
+            {/* Search and the action rows are ONE block: the header's gap-2
+                separates it from the brand row, while inside it the search
+                field reads as the list's first row (menu row rhythm). */}
+            <div className="flex flex-col gap-0.5">
+              <DemoSearch />
+              <SidebarMenu aria-label="Header actions">
+                <SidebarMenuItem>
+                  <SidebarMenuButton icon={icons.plus}>
+                    New thread
+                    {/* Shortcut chip, revealed on row hover — a labeled row
+                        wants no tooltip. */}
+                    <span className="ml-auto inline-flex opacity-0 transition-opacity duration-80 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100">
+                      <kbd className="font-sans text-[11px] text-muted-foreground">⇧⌘O</kbd>
+                    </span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </div>
           </>
         ) : (
           <div className="flex items-center gap-1">
             <div className="min-w-0 flex-1">
               <DemoHeaderRow />
             </div>
-            <Button variant="ghost" size="icon-compact" aria-label="Search" className="shrink-0">
-              {createElement(icons.search, {})}
-            </Button>
-            <Button variant="ghost" size="icon-compact" aria-label="New thread" className="shrink-0">
-              {createElement(icons.plus, {})}
-            </Button>
+            <Tooltip content={tipWithShortcut("Search", SEARCH_SHORTCUT)} side="bottom">
+              <Button variant="ghost" size="icon-compact" aria-label="Search" className="shrink-0">
+                {createElement(icons.search, {})}
+              </Button>
+            </Tooltip>
+            <Tooltip content={tipWithShortcut("New thread", "⇧⌘O")} side="bottom">
+              <Button variant="ghost" size="icon-compact" aria-label="New thread" className="shrink-0">
+                {createElement(icons.plus, {})}
+              </Button>
+            </Tooltip>
           </div>
         )}
       </SidebarHeader>
@@ -980,10 +1124,11 @@ function HeaderFooterPreview({ stack }: { stack: "vertical" | "horizontal" }) {
       </SidebarContent>
 
       <SidebarFooter>
-        <DemoCallout variant={vertical ? "media" : "icon"} />
+        <DemoCallout variant={vertical ? "banner" : "inline"} />
         {vertical ? (
           <>
-            <DemoFooterUser />
+            {/* Actions stack above the user row, so identity stays anchored
+                to the sidebar's outer edge — mirroring the brand row up top. */}
             <SidebarMenu aria-label="Footer actions">
               <SidebarMenuItem>
                 <SidebarMenuButton icon={icons.settings}>Settings</SidebarMenuButton>
@@ -992,6 +1137,7 @@ function HeaderFooterPreview({ stack }: { stack: "vertical" | "horizontal" }) {
                 <SidebarMenuButton icon={icons.lightbulb}>What&apos;s new</SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
+            <DemoFooterUser />
           </>
         ) : (
           <div className="flex items-center gap-1">
@@ -1072,7 +1218,7 @@ export default function SidebarDoc() {
         <p className="text-body text-muted-foreground">
           A row leads with an icon or a status dot and can carry a badge, an
           action, or a cluster. Hover-revealed actions cost the label nothing
-          at rest, and the badge slot takes a result as readily as a count.
+          at rest, and the badge keeps the rightmost slot beside them.
         </p>
         <ComponentPreview code={actionsCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <ActionsPreview />
@@ -1090,6 +1236,18 @@ export default function SidebarDoc() {
         </ComponentPreview>
         <ComponentPreview code={headerFooterCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <HeaderFooterPreview stack="horizontal" />
+        </ComponentPreview>
+      </DocSection>
+
+      <DocSection title="Stacked callouts">
+        <p className="text-body text-muted-foreground">
+          More than one callout shares the footer as a sonner-style pile: the
+          front card leads and the rest peek out behind it, each a step apart
+          on the brand ladder. Hovering fans the inline pile into a column,
+          and dismissing the front card promotes the one below.
+        </p>
+        <ComponentPreview code={stackedCalloutCode} padding="none" minHeightClass={SHELL_HEIGHT}>
+          <StackedCalloutPreview />
         </ComponentPreview>
       </DocSection>
 

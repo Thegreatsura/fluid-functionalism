@@ -24,13 +24,11 @@ export const AI_WORKSPACE = "Aurora AI";
 export const AI_NAV: readonly {
   icon: IconName;
   label: string;
-  active?: boolean;
   children: readonly { label: string; badge?: string }[];
 }[] = [
   {
     icon: "message-circle",
     label: "Chat",
-    active: true,
     children: [
       { label: "Q3 board deck", badge: "12" },
       { label: "Postgres 16 plan", badge: "4" },
@@ -80,13 +78,13 @@ export const AI_NAV: readonly {
 export const AI_TREE: readonly {
   icon: IconName;
   label: string;
-  children: readonly { icon: IconName; label: string; badge?: string }[];
+  children: readonly { icon: IconName; label: string }[];
 }[] = [
   {
     icon: "brain",
     label: "Agents",
     children: [
-      { icon: "inbox", label: "Support triage", badge: "18" },
+      { icon: "inbox", label: "Support triage" },
       { icon: "pencil", label: "Release notes" },
       { icon: "search", label: "SQL analyst" },
     ],
@@ -95,7 +93,7 @@ export const AI_TREE: readonly {
     icon: "square-library",
     label: "Knowledge",
     children: [
-      { icon: "globe", label: "Product docs", badge: "1.2k" },
+      { icon: "globe", label: "Product docs" },
       { icon: "mail", label: "Support macros" },
       { icon: "link", label: "API reference" },
     ],
@@ -104,36 +102,19 @@ export const AI_TREE: readonly {
 
 /** Assistant threads for the status-dot treatment: `active` is the one
  *  streaming a reply, `unread` finished while you were away, `idle` is
- *  everything else. Badges count turns. */
+ *  everything else. Every thread carries a badge — they count turns. */
 export const AI_THREADS: readonly {
   label: string;
   status: "active" | "unread" | "idle";
-  badge?: string;
+  badge: string;
 }[] = [
   { label: "Summarise the Q3 board deck", status: "active", badge: "12" },
   { label: "Migration plan for Postgres 16", status: "unread", badge: "4" },
-  { label: "Why does retrieval miss the changelog?", status: "idle" },
+  { label: "Why does retrieval miss the changelog?", status: "idle", badge: "6" },
   { label: "Rewrite the onboarding emails", status: "idle", badge: "8" },
-];
-
-/** Eval runs — rows whose trailing slot is a result, not a count. */
-export const AI_RUNS: readonly {
-  icon: IconName;
-  label: string;
-  badge: string;
-}[] = [
-  { icon: "check", label: "Refusal suite", badge: "98%" },
-  { icon: "rotate-ccw", label: "Retrieval recall", badge: "91%" },
-  { icon: "shield", label: "Jailbreak probes", badge: "12" },
-];
-
-/** Sources a retrieval agent is indexing — the skeleton example's payload,
- *  so the loading state stands for something that really is slow. */
-export const AI_SOURCES: readonly { icon: IconName; label: string }[] = [
-  { icon: "globe", label: "docs.aurora.ai" },
-  { icon: "folder", label: "Notion — Handbook" },
-  { icon: "mail", label: "Support inbox" },
-  { icon: "square-library", label: "Zendesk macros" },
+  { label: "Debug the eval harness timeout", status: "unread", badge: "9" },
+  { label: "Draft the launch announcement", status: "idle", badge: "5" },
+  { label: "Compare embedding models", status: "idle", badge: "3" },
 ];
 
 export const AI_CALLOUT = {

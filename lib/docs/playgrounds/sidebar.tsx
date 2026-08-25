@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, createElement, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, createElement, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { spring } from "@/registry/default/lib/springs";
 import {
   SidebarProvider,
@@ -103,8 +103,11 @@ interface PlayState {
   footerPrimary: "dropdown" | "none";
   footerStack: Stack;
   footerActions: Count2;
-  /** Anchored callout above the footer rows: a leading icon, or a banner. */
-  footerCallout: "none" | "icon" | "media";
+  /** Anchored callout above the footer rows: an inline icon row or a
+   *  banner card. */
+  footerCallout: "none" | "inline" | "banner";
+  /** Render the callout as a sonner-style stack of cards instead of one. */
+  footerCalloutStacked: boolean;
 }
 
 const DEFAULT_STATE: PlayState = {
@@ -127,6 +130,7 @@ const DEFAULT_STATE: PlayState = {
   footerStack: "horizontal",
   footerActions: 2,
   footerCallout: "none",
+  footerCalloutStacked: false,
 };
 
 // ── Content sets ─────────────────────────────────────────
@@ -135,13 +139,13 @@ const DEFAULT_STATE: PlayState = {
 const ROW_ACTION_SET = [
   { icon: "plus", label: "Add" },
   { icon: "pencil", label: "Rename" },
-  { icon: "more-horizontal", label: "More options", menu: true },
+  { icon: "more-vertical", label: "More options", menu: true },
 ] as const;
 
 const GROUP_ACTION_SET = [
   { icon: "plus", label: "Add item" },
   { icon: "sliders-horizontal", label: "Section settings" },
-  { icon: "more-horizontal", label: "More options" },
+  { icon: "more-vertical", label: "More options" },
 ] as const;
 
 const SEARCH_SHORTCUT = "⌘K";
@@ -171,13 +175,13 @@ const SECTION_LABELS = {
 
 /** Anchored footer callout — the Card component on a surface one step above
  *  the sidebar it sits in, so it reads as a card resting on the rail.
- *  "media" leads with the gradient banner; "icon" leads with an icon tile on
- *  a single inline row, for when the footer has less room to give. */
+ *  "banner" leads with the gradient banner; "inline" leads with an icon tile
+ *  on a single inline row, for when the footer has less room to give. */
 function FooterCallout({
   variant,
   onDismiss,
 }: {
-  variant: "icon" | "media";
+  variant: "inline" | "banner";
   onDismiss: () => void;
 }) {
   const substrate = useSurface();
@@ -189,7 +193,10 @@ function FooterCallout({
   const surface = `${shape.container} overflow-hidden transition-[background-color,box-shadow] duration-80 ${surfaceClasses(
     level,
     2
-  )} ${surfaceHoverClasses(level + 1, 3)}`;
+  )} ${surfaceHoverClasses(
+    level + 1,
+    3
+  )} shadow-[var(--shadow-2-inset)] hover:shadow-[var(--shadow-3-inset)]`;
 
   // CardImage / CardMedia stay DIRECT children: Card detects the image by
   // scanning its own children, and a fragment wrapper would hide it (which
@@ -198,15 +205,14 @@ function FooterCallout({
     <Card
       size="compact"
       dismissible
-      dismissOnHover
       onDismiss={onDismiss}
       href="/docs/sidebar"
       label="Sidebar is here — new in Fluid Functionalism"
       // The icon row drops the card's 60px floor and tightens its inset;
       // there's one line of text beside the icon, nothing to give room to.
-      className={`${surface}${variant === "icon" ? " min-h-0 pl-2.5" : ""}`}
+      className={`${surface}${variant === "inline" ? " min-h-0 pl-2.5" : ""}`}
     >
-      {variant === "media" ? (
+      {variant === "banner" ? (
         // Capped so a drag-resized rail doesn't grow the banner with it.
         <CardImage src={BANNER} className="aspect-[2/1] max-h-28" />
       ) : (
@@ -215,7 +221,7 @@ function FooterCallout({
       {/* On the icon row the dismiss control floats over the text rather than
           over a banner, so that row reserves the 36px it occupies plus air. */}
       <CardHeader
-        className={variant === "media" ? "gap-0 pt-4" : "gap-[2px] py-3 pr-10"}
+        className={variant === "banner" ? "gap-0 pt-3" : "gap-[2px] py-3 pr-10"}
       >
         <CardTitle className="truncate">Sidebar is here</CardTitle>
         <CardDescription className="truncate text-caption">
@@ -226,7 +232,7 @@ function FooterCallout({
   );
 
   // Inline orientation (leading media, text beside it) comes from the group.
-  return variant === "icon" ? (
+  return variant === "inline" ? (
     <CardGroup orientation="inline" proximityHover={false}>
       {card}
     </CardGroup>
@@ -235,11 +241,211 @@ function FooterCallout({
   );
 }
 
+// ── Stacked footer callouts ──────────────────────────────
+// Sonner-style pile, on the queued-message stack's geometry: cards peek out
+// 12px apiece behind the front one, scaling down a step each, capped at two
+// visible peeks. Only the INLINE pile fans out on hover (banner cards are too
+// tall to fan inside a footer); either way, dismissing the front card is what
+// reveals (and promotes) the one below. Each card keeps its own step of the
+// brand-blue mesh, so the pile reads as one family with depth. The container
+// is IN FLOW — the footer sits at the column's bottom.
+
+const CALLOUT_STACK: readonly {
+  id: string;
+  icon: IconName;
+  title: string;
+  desc: string;
+}[] = [
+  { id: "sidebar", icon: "panel-left", title: "Sidebar is here", desc: "New in Fluid Functionalism" },
+  { id: "stars", icon: "star", title: "500 stars", desc: "Find the hidden mosaic" },
+  { id: "motion", icon: "play", title: "Motion guidelines", desc: "Three spring tiers, one page" },
+];
+
+const CALLOUT_PEEK = 12;
+const CALLOUT_SCALE = 0.05;
+const CALLOUT_GAP = 4;
+const CALLOUT_MAX_PEEK = 2;
+/** Brand-mesh intensity per card (by its place in CALLOUT_STACK — a card
+ *  keeps its own tint when promotion moves it forward). */
+const CALLOUT_MESH_STEPS = [1, 0.4, 0.66] as const;
+/** The inline tile's flat equivalent of the same ladder (the second card is
+ *  the lightest, so the pile alternates instead of just fading back). */
+const CALLOUT_TILE_TINTS = [
+  "bg-[#6B97FF]/25",
+  "bg-[#6B97FF]/[0.08]",
+  "bg-[#6B97FF]/15",
+] as const;
+
+/** Scales every opacity stop in the card playground's brand-blue mesh, so
+ *  one asset yields the whole intensity ladder. */
+function meshAt(src: string, k: number): string {
+  return src.replace(
+    /(stop-opacity='|fill-opacity=')([0-9.]+)/g,
+    (_, prefix, value) => `${prefix}${Math.round(Number(value) * k * 1000) / 1000}`
+  );
+}
+/** Height fallbacks until the first card is measured. */
+const CALLOUT_INLINE_H = 64;
+const CALLOUT_BANNER_H = 180;
+
+export function FooterCalloutStack({
+  variant,
+  onEmpty,
+}: {
+  variant: "inline" | "banner";
+  onEmpty: () => void;
+}) {
+  const substrate = useSurface();
+  const shape = useShape();
+  const icons = useIcons();
+  const [cards, setCards] = useState(() => [...CALLOUT_STACK]);
+  // Banner cards never fan out — a hover-expanded pile of banners would
+  // swallow the whole rail. The inline pile expands under the pointer.
+  const [hovered, setHovered] = useState(false);
+  const expanded = variant === "inline" && hovered;
+
+  // Cards share one anatomy, so the FRONT card's measured height drives the
+  // whole pile's geometry — a banner's height follows the rail's width
+  // (aspect-ratio image), so it can't be a constant. offsetHeight, not
+  // getBoundingClientRect: the /demo card scales this preview.
+  // Refs are kept per card id: the FRONT card is the measure target, and an
+  // id-keyed map survives promotion — a dismissed card's late ref cleanup
+  // (AnimatePresence keeps it mounted through its exit) deletes its own
+  // entry instead of clobbering the promoted card's.
+  const wrapperRefs = useRef(new Map<string, HTMLDivElement>());
+  const frontId = cards[0]?.id;
+  const [cardH, setCardH] = useState(
+    variant === "banner" ? CALLOUT_BANNER_H : CALLOUT_INLINE_H
+  );
+  useEffect(() => {
+    const el = frontId ? wrapperRefs.current.get(frontId) : undefined;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      if (el.offsetHeight) setCardH(el.offsetHeight);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [frontId]);
+
+  const level = Math.min(substrate + 1, 8);
+  const surface = `${shape.container} overflow-hidden transition-[background-color,box-shadow] duration-80 ${surfaceClasses(
+    level,
+    2
+  )} ${surfaceHoverClasses(
+    level + 1,
+    3
+  )} shadow-[var(--shadow-2-inset)] hover:shadow-[var(--shadow-3-inset)]`;
+
+  const n = cards.length;
+  const collapsedH =
+    cardH + Math.min(Math.max(n - 1, 0), CALLOUT_MAX_PEEK) * CALLOUT_PEEK;
+  const expandedH = n * cardH + Math.max(n - 1, 0) * CALLOUT_GAP;
+
+  // onEmpty stays OUT of the state updater — updaters must be pure (strict
+  // mode double-invokes them, which double-fired the restock).
+  const dismiss = (id: string) => {
+    const next = cards.filter((c) => c.id !== id);
+    setCards(next);
+    if (next.length === 0) onEmpty();
+  };
+
+  return (
+    <motion.div
+      className="relative"
+      // Measured heights, never an animated "auto" — the /demo card scales
+      // this preview.
+      animate={{ height: expanded ? expandedH : collapsedH }}
+      transition={{ ...spring.moderate, bounce: 0 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <AnimatePresence initial={false}>
+        {cards.map((c, i) => {
+          const peek = Math.min(i, CALLOUT_MAX_PEEK);
+          // The tint follows the CARD, not the slot — promotion keeps it.
+          const step = CALLOUT_STACK.findIndex((x) => x.id === c.id);
+          const card = (
+            <Card
+              size="compact"
+              dismissible
+              onDismiss={() => dismiss(c.id)}
+              href="/docs/sidebar"
+              label={`${c.title} — ${c.desc}`}
+              className={`${surface} min-h-0${variant === "inline" ? " pl-2.5" : ""}`}
+            >
+              {/* CardImage / CardMedia stay DIRECT children (a ternary is —
+                  a fragment wrapper would hide them from Card's scan). */}
+              {variant === "banner" ? (
+                <CardImage
+                  src={meshAt(BANNER, CALLOUT_MESH_STEPS[step] ?? 0.4)}
+                  className="aspect-[2/1] max-h-28"
+                />
+              ) : (
+                <CardMedia
+                  icon={icons[c.icon]}
+                  size={18}
+                  // Full brand color on the glyph — the tinted tile carries
+                  // the intensity step, the icon stays at full strength. The
+                  // [&_svg] variant out-specifies CardMedia's own muted color.
+                  className={`${CALLOUT_TILE_TINTS[step] ?? CALLOUT_TILE_TINTS[2]} [&_svg]:text-[#6B97FF]`}
+                />
+              )}
+              <CardHeader
+                className={
+                  variant === "banner" ? "gap-0 pt-3" : "gap-[2px] py-3 pr-10"
+                }
+              >
+                <CardTitle className="truncate">{c.title}</CardTitle>
+                <CardDescription className="truncate text-caption">
+                  {c.desc}
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          );
+          return (
+            <motion.div
+              key={c.id}
+              ref={(node) => {
+                if (node) wrapperRefs.current.set(c.id, node);
+                else wrapperRefs.current.delete(c.id);
+              }}
+              className="absolute inset-x-0 bottom-0"
+              initial={{ opacity: 0, y: 14, scale: 0.96 }}
+              animate={
+                expanded
+                  ? { y: -i * (cardH + CALLOUT_GAP), scale: 1, opacity: 1 }
+                  : {
+                      y: -peek * CALLOUT_PEEK,
+                      scale: 1 - peek * CALLOUT_SCALE,
+                      opacity: i <= CALLOUT_MAX_PEEK ? 1 : 0,
+                    }
+              }
+              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.12 } }}
+              transition={spring.moderate}
+              style={{ transformOrigin: "bottom center", zIndex: 100 - i }}
+            >
+              {variant === "inline" ? (
+                <CardGroup orientation="inline" proximityHover={false}>
+                  {card}
+                </CardGroup>
+              ) : (
+                card
+              )}
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
 function pick<T>(options: readonly T[]): T {
   return options[Math.floor(Math.random() * options.length)];
 }
 
-/** "more-horizontal" → "MoreHorizontalIcon", for the generated snippet. */
+/** "more-vertical" → "MoreVerticalIcon", for the generated snippet. */
 function iconTag(name: string): string {
   return (
     name
@@ -456,22 +662,70 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
         ? `    {/* nothing under the card — it sits flush on the edge */}\n    <SidebarFooter className="pb-0">`
         : `    <SidebarFooter>`
     );
-    if (o.footerCallout !== "none") {
+    if (o.footerCallout !== "none" && o.footerCalloutStacked) {
+      lines.push(`      {/* Stacked callouts — a sonner-style pile: cards peek 12px apiece`);
+      lines.push(`          behind the front one (scaling down 0.05 a step, two peeks max).`);
+      lines.push(
+        o.footerCallout === "banner"
+          ? `          Banner piles never fan out (too tall for a footer) — dismissing`
+          : `          The inline pile fans out into a column on hover — and either way,`
+      );
+      lines.push(
+        o.footerCallout === "banner"
+          ? `          the front card is what reveals and promotes the next. Each card`
+          : `          dismissing the front card reveals and promotes the next. Each card`
+      );
+      lines.push(`          keeps its own step of the brand mesh's intensity ladder.`);
+      lines.push(`          Bottom-anchored absolutes inside an in-flow container whose`);
+      lines.push(`          measured height animates (CARD_H = the front card's measured`);
+      lines.push(`          offsetHeight). */}`);
+      lines.push(
+        o.footerCallout === "banner"
+          ? `      <motion.div className="relative" animate={{ height: collapsedH }}>`
+          : `      <motion.div className="relative" animate={{ height: expanded ? expandedH : collapsedH }}\n        onMouseEnter={() => setExpanded(true)} onMouseLeave={() => setExpanded(false)}>`
+      );
+      lines.push(`        {callouts.map((c, i) => (`);
+      lines.push(`          <motion.div key={c.id} className="absolute inset-x-0 bottom-0"`);
+      lines.push(`            style={{ transformOrigin: "bottom center", zIndex: 100 - i }}`);
+      lines.push(
+        o.footerCallout === "banner"
+          ? `            animate={{ y: -Math.min(i, 2) * 12, scale: 1 - Math.min(i, 2) * 0.05,\n              opacity: i <= 2 ? 1 : 0 }}>`
+          : `            animate={expanded\n              ? { y: -i * (CARD_H + 4), scale: 1, opacity: 1 }\n              : { y: -Math.min(i, 2) * 12, scale: 1 - Math.min(i, 2) * 0.05,\n                  opacity: i <= 2 ? 1 : 0 }}>`
+      );
+      lines.push(`            <Card size="compact" dismissible onDismiss={() => dismiss(c.id)}>`);
+      lines.push(
+        o.footerCallout === "banner"
+          ? `              {/* meshAt scales the brand mesh's stops to the card's step */}\n              <CardImage src={meshAt(banner, c.intensity)} className="aspect-[2/1] max-h-28" />`
+          : `              <CardMedia icon={c.icon} size={18} className={\`\${c.tint} [&_svg]:text-[#6B97FF]\`} />`
+      );
+      lines.push(
+        o.footerCallout === "banner"
+          ? `              <CardHeader className="gap-0 pt-3">`
+          : `              <CardHeader className="gap-[2px] py-3 pr-10">`
+      );
+      lines.push(`                <CardTitle className="truncate">{c.title}</CardTitle>`);
+      lines.push(`                <CardDescription className="truncate text-caption">{c.desc}</CardDescription>`);
+      lines.push(`              </CardHeader>`);
+      lines.push(`            </Card>`);
+      lines.push(`          </motion.div>`);
+      lines.push(`        ))}`);
+      lines.push(`      </motion.div>`);
+    } else if (o.footerCallout !== "none") {
       const media =
-        o.footerCallout === "media"
+        o.footerCallout === "banner"
           ? `        <CardImage src={banner} className="aspect-[2/1] max-h-28" />`
           : `        <CardMedia icon={PanelLeftIcon} size={18} />`;
       lines.push(`      {/* anchored callout: Card on a surface one step above */}`);
-      if (o.footerCallout === "icon") {
+      if (o.footerCallout === "inline") {
         lines.push(`      {/* inline orientation puts the icon beside the text */}`);
         lines.push(`      <CardGroup orientation="inline" proximityHover={false}>`);
       }
-      lines.push(`      <Card size="compact" dismissible dismissOnHover onDismiss={hide} href="/docs/sidebar">`);
+      lines.push(`      <Card size="compact" dismissible onDismiss={hide} href="/docs/sidebar">`);
       lines.push(media);
       lines.push(
-        o.footerCallout === "icon"
+        o.footerCallout === "inline"
           ? `        <CardHeader className="gap-[2px] py-3 pr-10">`
-          : `        <CardHeader className="gap-0 pt-4">`
+          : `        <CardHeader className="gap-0 pt-3">`
       );
       lines.push(`          <CardTitle className="truncate">Sidebar is here</CardTitle>`);
       lines.push(
@@ -479,7 +733,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
       );
       lines.push(`        </CardHeader>`);
       lines.push(`      </Card>`);
-      if (o.footerCallout === "icon") lines.push(`      </CardGroup>`);
+      if (o.footerCallout === "inline") lines.push(`      </CardGroup>`);
     }
     if (o.footerStack === "horizontal") {
       if (footerActions.length > 0) {
@@ -608,7 +862,8 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       footerPrimary: pick(["dropdown", "dropdown", "none"] as const),
       footerStack: pick(["horizontal", "horizontal", "vertical"] as const),
       footerActions: pick([0, 1, 2, 2] as const),
-      footerCallout: pick(["none", "icon", "media", "media"] as const),
+      footerCallout: pick(["none", "inline", "banner", "banner"] as const),
+      footerCalloutStacked: Math.random() > 0.65,
     }));
   };
 
@@ -1007,12 +1262,18 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
             footerActionSet.length > 0 ||
             state.footerCallout !== "none") && (
             <SidebarFooter className={calloutOnlyFooter ? "pb-0" : undefined}>
-              {state.footerCallout !== "none" && (
-                <FooterCallout
-                  variant={state.footerCallout}
-                  onDismiss={() => set("footerCallout", "none")}
-                />
-              )}
+              {state.footerCallout !== "none" &&
+                (state.footerCalloutStacked ? (
+                  <FooterCalloutStack
+                    variant={state.footerCallout}
+                    onEmpty={() => set("footerCallout", "none")}
+                  />
+                ) : (
+                  <FooterCallout
+                    variant={state.footerCallout}
+                    onDismiss={() => set("footerCallout", "none")}
+                  />
+                ))}
               {/* Vertical stacking puts the actions above the user row, so
                   identity stays anchored to the sidebar's outer edge —
                   mirroring the brand row at the top. */}
@@ -1287,11 +1548,19 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           onChange={(v) => set("footerCallout", v as PlayState["footerCallout"])}
           options={[
             { value: "none", label: "None" },
-            { value: "icon", label: "Icon" },
-            { value: "media", label: "Media" },
+            { value: "inline", label: "Inline" },
+            { value: "banner", label: "Banner" },
           ]}
         />
       </PlayField>
+      {/* Either anatomy stacks — a sonner-style pile of three cards. */}
+      <Switch
+        label="Stacked"
+        checked={state.footerCallout !== "none" && state.footerCalloutStacked}
+        onToggle={() => set("footerCalloutStacked", !state.footerCalloutStacked)}
+        disabled={state.footerCallout === "none"}
+        className={PLAY_SWITCH}
+      />
     </PlaygroundPanel>
   );
 

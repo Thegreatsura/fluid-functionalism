@@ -449,6 +449,9 @@ export interface SidebarShellProps extends MotionSafeDivProps {
   /** Render the built-in resize/collapse rail handle. `false` hides it and
    *  disables drag-resize — the trigger and keyboard shortcut still toggle. */
   rail?: boolean;
+  /** Pin the rail's tooltip open (`true`) or closed (`false`); `undefined`
+   *  leaves it on hover. Dragging always hides it. */
+  railTooltipOpen?: boolean;
 }
 
 /** Internal: the expanded/collapsed desktop rail. An in-flow sticky column
@@ -457,7 +460,7 @@ export interface SidebarShellProps extends MotionSafeDivProps {
  *  the whole sidebar works inside any bounded frame, not just the viewport.
  *  Ships the resize/collapse rail handle on its inner edge by default. */
 const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
-  ({ side, variant, bordered = true, rail = true, className, children, ...props }, ref) => {
+  ({ side, variant, bordered = true, rail = true, railTooltipOpen, className, children, ...props }, ref) => {
     const {
       open,
       width,
@@ -659,6 +662,7 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
           )}
           {rail && (
           <SidebarRail
+            tooltipOpen={railTooltipOpen}
             className={cn(
               // The floating card sits inside the panel's p-2 gutter, so the
               // grab strip (and its hover hairline) moves in to straddle the
@@ -763,14 +767,17 @@ SidebarTrigger.displayName = "SidebarTrigger";
 
 // ─── SidebarRail ─────────────────────────────────────────────────────────────
 
-export type SidebarRailProps = HTMLAttributes<HTMLButtonElement>;
+export interface SidebarRailProps extends HTMLAttributes<HTMLButtonElement> {
+  /** Pin the tooltip open/closed; `undefined` leaves it on hover. */
+  tooltipOpen?: boolean;
+}
 
 /** The grab strip on the sidebar's inner edge, rendered by default inside
  *  the desktop shell: drag it to resize (clamped), click it to collapse, and
  *  its tooltip explains both with the toggle keystroke. Hovering it
  *  brightens the edge border. */
 const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(
-  ({ className, ...props }, ref) => {
+  ({ className, tooltipOpen, ...props }, ref) => {
     const { toggleSidebar, setOpen, setWidth, side, setIsResizing } = useSidebar();
     const shortcutKey = useShortcutKey();
     const railRef = useRef<HTMLButtonElement | null>(null);
@@ -828,7 +835,7 @@ const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(
         side={side === "left" ? "right" : "left"}
         sideOffset={8}
         followCursor="y"
-        forceOpen={dragging ? false : undefined}
+        forceOpen={dragging ? false : tooltipOpen}
         content={
           // The flex column escapes the tooltip surface's text-box trim, so
           // BOTH lines re-apply it and the gap alone carries the line rhythm
@@ -865,8 +872,11 @@ const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(
             // Positioned from context (not group-data selectors) so variant
             // offsets passed via className can win the merge.
             side === "left" ? "right-0" : "left-0",
-            // Hovering brightens the edge border the shell draws by default.
+            // Hovering brightens the edge border the shell draws by default;
+            // a pinned tooltip brightens it too, so the spotlight reads as
+            // the hover it stands in for.
             "after:absolute after:inset-y-0 after:w-px after:bg-transparent hover:after:bg-foreground/25 after:transition-colors after:duration-80",
+            tooltipOpen && "after:bg-foreground/25",
             side === "left" ? "after:right-0" : "after:left-0",
             className
           )}

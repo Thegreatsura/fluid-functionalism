@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useState,
   type ReactNode,
 } from "react";
@@ -143,6 +144,11 @@ function Tooltip({
   // Cursor-follow offset from the trigger's center, driven as a motion value
   // so per-move updates skip React re-renders.
   const followOffset = useMotionValue(0);
+  // A force-opened follow-cursor tooltip has no cursor to follow — it rests
+  // centered on the trigger until a real pointer takes over.
+  useEffect(() => {
+    if (forceOpen && followCursor) followOffset.set(0);
+  }, [forceOpen, followCursor, followOffset]);
   const handleFollowMove = (event: React.PointerEvent) => {
     if (!followCursor) return;
     const rect = event.currentTarget.getBoundingClientRect();

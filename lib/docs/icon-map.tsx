@@ -71,6 +71,7 @@ import {
   IconLayoutSidebarRight,
   IconSelector,
   IconDots,
+  IconDotsVertical,
   IconCalendar,
   IconFolder,
   IconAdjustmentsHorizontal,
@@ -131,6 +132,7 @@ import {
   SidebarSimple as PhSidebarSimple,
   CaretUpDown as PhCaretUpDown,
   DotsThree as PhDotsThree,
+  DotsThreeVertical as PhDotsThreeVertical,
   SlidersHorizontal as PhSlidersHorizontal,
   CalendarBlank as PhCalendarBlank,
   FolderSimple as PhFolderSimple,
@@ -189,6 +191,7 @@ import HiPanelLeft from "@hugeicons/core-free-icons/SidebarLeft01Icon";
 import HiPanelRight from "@hugeicons/core-free-icons/SidebarRight01Icon";
 import HiChevronsUpDown from "@hugeicons/core-free-icons/UnfoldMoreIcon";
 import HiMoreHorizontal from "@hugeicons/core-free-icons/MoreHorizontalIcon";
+import HiMoreVertical from "@hugeicons/core-free-icons/MoreVerticalIcon";
 import HiCalendar from "@hugeicons/core-free-icons/Calendar01Icon";
 import HiFolder from "@hugeicons/core-free-icons/Folder01Icon";
 import HiSliders from "@hugeicons/core-free-icons/SlidersHorizontalIcon";
@@ -247,6 +250,7 @@ import {
   LayoutRight as UuiLayoutRight,
   ChevronSelectorVertical as UuiChevronSelectorVertical,
   DotsHorizontal as UuiDotsHorizontal,
+  DotsVertical as UuiDotsVertical,
   Sliders01 as UuiSliders,
   Calendar as UuiCalendar,
   Folder as UuiFolder,
@@ -372,6 +376,7 @@ const tablerMap: Record<IconName, IconComponent> = {
   "panel-right": tabler(IconLayoutSidebarRight),
   "chevrons-up-down": tabler(IconSelector),
   "more-horizontal": tabler(IconDots),
+  "more-vertical": tabler(IconDotsVertical),
   "calendar": tabler(IconCalendar),
   "folder": tabler(IconFolder),
   "sliders-horizontal": tabler(IconAdjustmentsHorizontal),
@@ -432,6 +437,7 @@ const phosphorMap: Record<IconName, IconComponent> = {
   "panel-right": phosphorFlipped(PhSidebarSimple),
   "chevrons-up-down": phosphor(PhCaretUpDown),
   "more-horizontal": phosphor(PhDotsThree),
+  "more-vertical": phosphor(PhDotsThreeVertical),
   "calendar": phosphor(PhCalendarBlank),
   "folder": phosphor(PhFolderSimple),
   "sliders-horizontal": phosphor(PhSlidersHorizontal),
@@ -492,6 +498,7 @@ const hugeiconsMap: Record<IconName, IconComponent> = {
   "panel-right": hugeicons(HiPanelRight),
   "chevrons-up-down": hugeicons(HiChevronsUpDown),
   "more-horizontal": hugeicons(HiMoreHorizontal),
+  "more-vertical": hugeicons(HiMoreVertical),
   "calendar": hugeicons(HiCalendar),
   "folder": hugeicons(HiFolder),
   "sliders-horizontal": hugeicons(HiSliders),
@@ -556,6 +563,7 @@ const untitleduiMap: Record<IconName, IconComponent> = {
   "panel-right": untitledui(UuiLayoutRight),
   "chevrons-up-down": untitledui(UuiChevronSelectorVertical),
   "more-horizontal": untitledui(UuiDotsHorizontal),
+  "more-vertical": untitledui(UuiDotsVertical),
   "calendar": untitledui(UuiCalendar),
   "folder": untitledui(UuiFolder),
   "sliders-horizontal": untitledui(UuiSliders),

@@ -581,7 +581,13 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
         if (!root.contains(target)) {
           if (mountedInstances.some((el) => el !== root && el.contains(target)))
             return;
-          if (mountedInstances[mountedInstances.length - 1] !== root) return;
+          // A focused element that WRAPS instances (a docs preview frame
+          // holding keyboard scope — see click-to-focus) narrows the pick to
+          // the instances inside it; focus on <body> wraps them all, which
+          // degenerates to the original most-recently-mounted rule.
+          const wrapped = mountedInstances.filter((el) => target.contains(el));
+          const pool = wrapped.length > 0 ? wrapped : mountedInstances;
+          if (pool[pool.length - 1] !== root) return;
         }
         const code = e.key;
         if (code < "1" || code > "9") return;

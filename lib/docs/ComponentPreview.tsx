@@ -149,8 +149,11 @@ export function ComponentPreview({
         {tab === 0 ? (
           <div
             ref={previewRef}
+            // Focus target for empty-space clicks (see routeKeyboardOnMouseDown)
+            // — holds keyboard scope for the demo without ringing any control.
+            tabIndex={-1}
             onMouseDown={handlePreviewMouseDown}
-            className={`relative flex ${
+            className={`relative flex outline-none ${
               align === "bottom"
                 ? "items-end"
                 : align === "top"

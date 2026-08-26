@@ -17,15 +17,16 @@ export const FOCUSABLE_SELECTOR = [
 
 /**
  * Routes keyboard control into a container on click. When the user clicks an
- * empty (non-interactive) part of the click region, focus moves to the first
- * interactive element inside `scope` (falling back to `fallback`, if focusable).
- * Clicking an interactive element keeps its native focus. Pair with a
- * `:focus-within` border so the active container is visible; the page regains
- * keyboard control when focus leaves (click outside / Tab away).
- *
- * `scope` is where we look for the first interactive element; `fallback` is the
- * element that defines the "already active" region and receives focus when the
- * scope has nothing focusable (e.g. a card wrapper with tabIndex={-1}).
+ * empty (non-interactive) part of the click region, focus moves to the
+ * CONTAINER itself (`fallback ?? scope` — give it tabIndex={-1}), not to any
+ * control inside it: Chrome reports script-driven focus as :focus-visible, so
+ * focusing a control would light its keyboard ring on a plain mouse click
+ * (the sidebar demo's header row, most visibly). Keyboard-scoped components
+ * resolve a focused ancestor to the instance it wraps (see the sidebar
+ * provider's and AskUserQuestions' shortcut resolution), so shortcuts still
+ * land in the clicked demo. Clicking an interactive element keeps its native
+ * focus. Pair with a `:focus-within` border so the active container is
+ * visible; the page regains keyboard control when focus leaves.
  */
 export function routeKeyboardOnMouseDown(
   e: MouseEvent,
@@ -39,18 +40,5 @@ export function routeKeyboardOnMouseDown(
   const region = fallback ?? scope;
   if (region.contains(document.activeElement) && document.activeElement !== region)
     return; // already keyboard-active here — keep the current focus
-  const focusable = firstInteractive(scope);
-  (focusable ?? fallback ?? scope).focus();
-}
-
-// First focusable descendant the user could actually interact with. Skips
-// controls that are present but non-interactable at rest (e.g. hover-revealed
-// action buttons sitting under `pointer-events: none`) so an empty-space click
-// doesn't route keyboard focus into hidden affordances.
-function firstInteractive(scope: HTMLElement): HTMLElement | null {
-  const candidates = scope.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-  for (const el of candidates) {
-    if (getComputedStyle(el).pointerEvents !== "none") return el;
-  }
-  return null;
+  region.focus();
 }

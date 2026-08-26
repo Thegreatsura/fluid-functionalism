@@ -250,7 +250,7 @@ const expandedH = callouts.length * CARD_H + (callouts.length - 1) * 4;
         <Card size="compact" dismissible onDismiss={() => dismiss(c.id)}>
           {/* full-strength brand glyph on the card's own tint step */}
           <CardMedia icon={c.icon} size={18} className={\`\${c.tint} [&_svg]:text-[#6B97FF]\`} />
-          <CardHeader className="gap-[2px] py-3 pr-10">
+          <CardHeader className="gap-[2px] py-3">
             <CardTitle className="truncate">{c.title}</CardTitle>
             <CardDescription className="truncate text-caption">{c.desc}</CardDescription>
           </CardHeader>
@@ -265,7 +265,8 @@ const collapseCode = `// The bare "[" key toggles a left sidebar, "]" a right on
 // \`shortcut\` prop overrides, null disables). The rail handle on the
 // sidebar's edge is built in: drag it to resize, click it to collapse.
 // \`peek\` gives the collapsed edge a hover or click strip that floats the
-// rail back as an overlay without pinning it.
+// rail back as an overlay without pinning it — in hover mode, resting on
+// the trigger peeks it too.
 // setOpen persists to the "sidebar_state" cookie — read it back in a
 // server layout for a flicker-free default:
 //
@@ -303,7 +304,7 @@ const providerProps: PropDef[] = [
   { name: "onOpenChange", type: "(open: boolean) => void", description: "Fires when the trigger, rail, or shortcut wants to toggle." },
   { name: "defaultOpen", type: "boolean", default: "true", description: "Uncontrolled initial state. Read the sidebar_state cookie in a server layout to restore the last visit." },
   { name: "persist", type: "boolean", default: "true", description: "Write the desktop state to the sidebar_state cookie (7 days). Mobile drawer state never persists." },
-  { name: "peek", type: '"none" | "hover" | "click"', default: '"none"', description: "What the collapsed edge does: an edge strip reveals the sidebar as a floating overlay, on hover or on click. Escape or an outside press dismisses; peeking never pins it or writes the cookie." },
+  { name: "peek", type: '"none" | "hover" | "click"', default: '"none"', description: "What the collapsed edge does: an edge strip reveals the sidebar as a floating overlay, on hover or on click — and in hover mode, resting on the trigger peeks it too. Escape or an outside press dismisses; peeking never pins it or writes the cookie." },
   { name: "shortcut", type: "string | null", default: '"[" left · "]" right', description: "Bare-key toggle, side-aware; null disables. Focus-scoped: the innermost provider containing focus answers." },
   { name: "mobileBreakpoint", type: "number", default: "768", description: "Width (px) below which the sidebar becomes a modal drawer." },
   { name: "width / widthMobile", type: "string", default: '"16rem" / "18rem"', description: "Rail and drawer widths, also published as --sidebar-width and --sidebar-width-mobile." },
@@ -313,7 +314,7 @@ const sidebarProps: PropDef[] = [
   { name: "side", type: '"left" | "right"', default: '"left"', description: "Which edge the rail lives on. The provider mirrors it into the default shortcut — \"[\" left, \"]\" right — and the trigger's icon, the rail handle, and the drawer's slide all follow." },
   { name: "variant", type: '"sidebar" | "floating" | "inset"', default: '"sidebar"', description: "Transparent rail, elevated floating card, or the inset pairing where SidebarInset becomes the card." },
   { name: "collapsible", type: '"offcanvas" | "none"', default: '"offcanvas"', description: "Offcanvas slides the rail away; none renders a static, always-open column. (The icon-rail mode is intentionally not supported.)" },
-  { name: "rail", type: "boolean", default: "true", description: "The built-in resize/collapse handle: drag to resize (192–360px), click to collapse, drag past the minimum to collapse. false hides it; the trigger and shortcut still toggle." },
+  { name: "rail", type: "boolean", default: "true", description: "The built-in resize/collapse handle: drag to resize (160–360px), click to collapse, drag past the minimum to collapse. false hides it; the trigger and shortcut still toggle." },
   { name: "railTooltipOpen", type: "boolean", description: "Pins the rail's tooltip open (true) or closed (false); undefined leaves it on hover. Dragging always hides it — the collapse demo uses it to spotlight the handle." },
   { name: "bordered", type: "boolean", default: "true", description: "The sidebar variant's inner-edge border." },
   { name: "SidebarTrigger", type: "ButtonProps", description: "Ghost icon button calling toggleSidebar(). Its tooltip carries the shortcut key." },
@@ -374,28 +375,47 @@ function SidebarShellFrame({ children }: { children: ReactNode }) {
 function DemoHeaderRow() {
   const ChevronDown = useIcon("chevron-down");
   const shape = useShape();
+  const { isPeeking } = useSidebar();
   return (
-    <SidebarMenu aria-label="Workspace">
+    // @container: the row hides its dropdown chevron once it gets too narrow
+    // to show a useful slice of the name (squeezed by trailing header actions
+    // or a mid-drag width) — the text keeps whatever room is left.
+    <SidebarMenu aria-label="Workspace" className="@container">
       <SidebarMenuItem>
+        {/* While the sidebar is only PEEKING, the pointer's one way to pin it
+            open is covered by the overlay itself — so the trigger takes the
+            logo's slot. A sibling positioned over the row (the menu-action
+            pattern), never a button nested inside the row button. */}
+        {isPeeking && (
+          <SidebarTrigger
+            size="icon-compact"
+            className="absolute left-0.5 top-1/2 z-20 -translate-y-1/2"
+          />
+        )}
         <DropdownMenu>
           <DropdownTrigger
             render={
-              <SidebarMenuButton aria-label="Switch workspace">
-                <span
-                  className={`flex size-5 shrink-0 items-center justify-center bg-foreground text-[10px] text-background ${
-                    shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
-                  }`}
-                  style={{ fontVariationSettings: fontWeights.semibold }}
-                >
-                  A
-                </span>
+              <SidebarMenuButton
+                aria-label="Switch workspace"
+                className={isPeeking ? "pl-9" : undefined}
+              >
+                {!isPeeking && (
+                  <span
+                    className={`flex size-5 shrink-0 items-center justify-center bg-foreground text-[10px] text-background ${
+                      shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
+                    }`}
+                    style={{ fontVariationSettings: fontWeights.semibold }}
+                  >
+                    A
+                  </span>
+                )}
                 <span
                   className="min-w-0 truncate text-[13px] text-foreground"
                   style={{ fontVariationSettings: fontWeights.semibold }}
                 >
                   {AI_WORKSPACE}
                 </span>
-                <span className="ml-auto inline-flex">
+                <span className="ml-auto inline-flex @max-[7rem]:hidden">
                   <ChevronDown size={14} strokeWidth={1.5} className="text-muted-foreground" />
                 </span>
               </SidebarMenuButton>
@@ -609,7 +629,7 @@ function DemoMenu({ nested = true }: { nested?: boolean }) {
 
 function DemoInsetHeader({ title }: { title?: ReactNode }) {
   return (
-    <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2">
+    <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-1.5">
       <SidebarTrigger />
       <span className="text-[13px] text-muted-foreground">{title}</span>
     </header>
@@ -621,7 +641,7 @@ function DemoInsetHeader({ title }: { title?: ReactNode }) {
  *  rather than a stack of grey bars. */
 function DemoInsetBody() {
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
+    <div className="flex flex-1 flex-col gap-4 p-3">
       <div className="flex flex-col gap-2">
         <div className="h-2 w-16 rounded-full bg-hover" />
         <div className="h-4 w-2/5 rounded-md bg-hover" />
@@ -1036,10 +1056,10 @@ function DemoCallout({ variant }: { variant: "banner" | "inline" }) {
       ) : (
         <CardMedia icon={icons.brain} size={18} />
       )}
-      {/* On the icon row the dismiss control floats over the text rather than
-          over a banner, so that row reserves the 36px it occupies plus air. */}
+      {/* The dismiss clearance is hover-only (Card pads the header while the
+          ✕ is revealed), so the resting title keeps the full row. */}
       <CardHeader
-        className={variant === "banner" ? "gap-0 pt-3" : "gap-[2px] py-3 pr-10"}
+        className={variant === "banner" ? "gap-0 pt-3" : "gap-[2px] py-3"}
       >
         <CardTitle className="truncate">{AI_CALLOUT.title}</CardTitle>
         <CardDescription className="truncate text-caption">

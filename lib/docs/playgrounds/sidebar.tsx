@@ -218,10 +218,10 @@ function FooterCallout({
       ) : (
         <CardMedia icon={icons["panel-left"]} size={18} />
       )}
-      {/* On the icon row the dismiss control floats over the text rather than
-          over a banner, so that row reserves the 36px it occupies plus air. */}
+      {/* The dismiss clearance is hover-only (Card pads the header while the
+          ✕ is revealed), so the resting title keeps the full row. */}
       <CardHeader
-        className={variant === "banner" ? "gap-0 pt-3" : "gap-[2px] py-3 pr-10"}
+        className={variant === "banner" ? "gap-0 pt-3" : "gap-[2px] py-3"}
       >
         <CardTitle className="truncate">Sidebar is here</CardTitle>
         <CardDescription className="truncate text-caption">
@@ -394,7 +394,7 @@ export function FooterCalloutStack({
               )}
               <CardHeader
                 className={
-                  variant === "banner" ? "gap-0 pt-3" : "gap-[2px] py-3 pr-10"
+                  variant === "banner" ? "gap-0 pt-3" : "gap-[2px] py-3"
                 }
               >
                 <CardTitle className="truncate">{c.title}</CardTitle>
@@ -438,6 +438,95 @@ export function FooterCalloutStack({
         })}
       </AnimatePresence>
     </motion.div>
+  );
+}
+
+/** Workspace brand row for the playground header. While the sidebar is only
+ *  PEEKING, the pointer's one way to pin it open is covered by the overlay
+ *  itself — so the trigger takes the logo's slot: a sibling positioned over
+ *  the row (the menu-action pattern), never a button nested inside the row
+ *  button. */
+function BrandHeaderRow({ variant }: { variant: "dropdown" | "logo" }) {
+  const icons = useIcons();
+  const shape = useShape();
+  const iconSize = useSize().icon;
+  const { isPeeking } = useSidebar();
+
+  const tile = (
+    <span
+      className={`flex size-5 shrink-0 items-center justify-center bg-foreground text-[10px] text-background ${
+        shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
+      }`}
+      style={{ fontVariationSettings: fontWeights.semibold }}
+    >
+      A
+    </span>
+  );
+  const name = (
+    <span
+      className="min-w-0 truncate text-[13px] text-foreground"
+      style={{ fontVariationSettings: fontWeights.semibold }}
+    >
+      Acme Inc
+    </span>
+  );
+
+  if (variant === "logo") {
+    // Not interactive, so it renders outside SidebarMenu — a menu row would
+    // track the traveling hover background.
+    return (
+      <div className="flex h-8 items-center gap-2 px-2">
+        {isPeeking ? (
+          <SidebarTrigger size="icon-compact" className="-ml-1.5 shrink-0" />
+        ) : (
+          tile
+        )}
+        {name}
+      </div>
+    );
+  }
+  return (
+    // @container: the row hides its dropdown chevron once it gets too narrow
+    // to show a useful slice of the name (squeezed by trailing header actions
+    // or a mid-drag width) — the text keeps whatever room is left.
+    <SidebarMenu aria-label="Workspace" className="@container">
+      <SidebarMenuItem>
+        {isPeeking && (
+          <SidebarTrigger
+            size="icon-compact"
+            className="absolute left-0.5 top-1/2 z-20 -translate-y-1/2"
+          />
+        )}
+        <DropdownMenu>
+          <DropdownTrigger
+            render={
+              <SidebarMenuButton
+                aria-label="Switch workspace"
+                className={isPeeking ? "pl-9" : undefined}
+              >
+                {!isPeeking && tile}
+                {name}
+                <span className="ml-auto inline-flex @max-[7rem]:hidden">
+                  {createElement(icons["chevron-down"], {
+                    size: iconSize,
+                    strokeWidth: 1.5,
+                    className: "text-muted-foreground",
+                  })}
+                </span>
+              </SidebarMenuButton>
+            }
+          />
+          <DropdownContent
+            className="min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]"
+            align="start"
+            sideOffset={4}
+            checkedIndex={0}
+          >
+            <WorkspaceMenuItems />
+          </DropdownContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 }
 
@@ -701,7 +790,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
       lines.push(
         o.footerCallout === "banner"
           ? `              <CardHeader className="gap-0 pt-3">`
-          : `              <CardHeader className="gap-[2px] py-3 pr-10">`
+          : `              <CardHeader className="gap-[2px] py-3">`
       );
       lines.push(`                <CardTitle className="truncate">{c.title}</CardTitle>`);
       lines.push(`                <CardDescription className="truncate text-caption">{c.desc}</CardDescription>`);
@@ -724,7 +813,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
       lines.push(media);
       lines.push(
         o.footerCallout === "inline"
-          ? `        <CardHeader className="gap-[2px] py-3 pr-10">`
+          ? `        <CardHeader className="gap-[2px] py-3">`
           : `        <CardHeader className="gap-0 pt-3">`
       );
       lines.push(`          <CardTitle className="truncate">Sidebar is here</CardTitle>`);
@@ -801,13 +890,13 @@ function PlaygroundInsetBody() {
 
   return (
     <>
-      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2">
+      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-1.5">
         <SidebarTrigger />
       </header>
       {/* The page the rail sits beside: a heading and two cards. Abstract
           enough not to compete with the sidebar, structured enough to read as
           a page rather than a stack of grey bars. */}
-      <div className="flex flex-1 flex-col gap-4 p-4">
+      <div className="flex flex-1 flex-col gap-4 p-3">
         <div className="flex flex-col gap-2">
           <div className="h-2 w-16 rounded-full bg-hover" />
           <div className="h-4 w-2/5 rounded-md bg-hover" />
@@ -829,7 +918,6 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
   // back to the demo data's own active row.
   const [selected, setSelected] = useState<string | null>(null);
   const icons = useIcons();
-  const shape = useShape();
   const set = <K extends keyof PlayState>(key: K, value: PlayState[K]) =>
     setState((prev) => ({ ...prev, [key]: value }));
   // Nested rows start open, so switching a level on shows the tree at once.
@@ -956,68 +1044,8 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       </SidebarGroupActions>
     ) : null;
 
-  const brandLockup = (
-    <div className="flex h-8 items-center gap-2 px-2">
-      <span
-        className={`flex size-5 shrink-0 items-center justify-center bg-foreground text-[10px] text-background ${
-          shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
-        }`}
-        style={{ fontVariationSettings: fontWeights.semibold }}
-      >
-        A
-      </span>
-      <span
-        className="min-w-0 truncate text-[13px] text-foreground"
-        style={{ fontVariationSettings: fontWeights.semibold }}
-      >
-        Acme Inc
-      </span>
-    </div>
-  );
 
-  const brandDropdown = (
-    <SidebarMenu aria-label="Workspace">
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownTrigger
-            render={
-              <SidebarMenuButton aria-label="Switch workspace">
-                <span
-                  className={`flex size-5 shrink-0 items-center justify-center bg-foreground text-[10px] text-background ${
-                    shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
-                  }`}
-                  style={{ fontVariationSettings: fontWeights.semibold }}
-                >
-                  A
-                </span>
-                <span
-                  className="min-w-0 truncate text-[13px] text-foreground"
-                  style={{ fontVariationSettings: fontWeights.semibold }}
-                >
-                  Acme Inc
-                </span>
-                <span className="ml-auto inline-flex">
-                  {createElement(icons["chevron-down"], {
-                    size: iconSize,
-                    strokeWidth: 1.5,
-                    className: "text-muted-foreground",
-                  })}
-                </span>
-              </SidebarMenuButton>
-            }
-          />
-          <DropdownContent
-            className="min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]"
-            align="start"
-            sideOffset={4}
-            checkedIndex={0}
-          >
-            <WorkspaceMenuItems />
-          </DropdownContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  );
+
 
   // Level-1 rows follow the primary-element choice: thread titles carry
   // semantic status, menu rows carry an icon.
@@ -1177,13 +1205,11 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                 horizontal collapses them to icon buttons sharing its line. */}
             <div className={headerHorizontal ? "flex items-center gap-1" : "contents"}>
               <div className={headerHorizontal ? "min-w-0 flex-1" : "contents"}>
-                {state.headerPrimary === "logo"
-                  ? // Not interactive, so it renders outside SidebarMenu — a
-                    // menu row would track the traveling hover background.
-                    brandLockup
-                  : state.headerPrimary === "dropdown"
-                    ? brandDropdown
-                    : null}
+                {state.headerPrimary === "logo" ? (
+                  <BrandHeaderRow variant="logo" />
+                ) : state.headerPrimary === "dropdown" ? (
+                  <BrandHeaderRow variant="dropdown" />
+                ) : null}
               </div>
               {headerHorizontal && (
                 <>

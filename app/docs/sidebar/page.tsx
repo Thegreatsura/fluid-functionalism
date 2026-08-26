@@ -1199,18 +1199,22 @@ export default function SidebarDoc() {
   return (
     <DocPage
       title="Sidebar"
-      description="A refined, composable sidebar that collapses offcanvas, resizes from its edge, and becomes a drawer on mobile."
+      description="A sidebar built from composable parts. Drag its edge to resize, collapse it away, and on mobile it becomes a drawer."
       slug="sidebar"
     >
       <DocSection title="Playground">
+        <p className="text-body text-muted-foreground">
+          Every option, live. Change anything on the right and the code
+          follows.
+        </p>
         <SidebarPlaygroundSection />
       </DocSection>
 
       <DocSection title="Layouts">
         <p className="text-body text-muted-foreground">
-          One prop, three app shells: <code>sidebar</code> is a flush rail,{" "}
-          <code>floating</code> lifts the rail into its own card, and{" "}
-          <code>inset</code> makes the main region the card instead.
+          One prop picks the shell: <code>sidebar</code> sits flush with the
+          page, <code>floating</code> puts the rail in its own card,{" "}
+          <code>inset</code> makes your content the card.
         </p>
         <ComponentPreview code={layoutsCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <DemoShell insetTitle="Sidebar — the default" />
@@ -1225,9 +1229,8 @@ export default function SidebarDoc() {
 
       <DocSection title="Nesting">
         <p className="text-body text-muted-foreground">
-          A level 1 row can own a level 2 sub-tree, collapsing on its measured
-          height. Each level runs its own highlight, so the two never fight
-          over which row is lit. Two levels is the whole vocabulary.
+          Rows nest one level deep — a parent folds its children under it.
+          Each level has its own highlight.
         </p>
         <ComponentPreview code={nestingCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <NestingPreview />
@@ -1236,9 +1239,8 @@ export default function SidebarDoc() {
 
       <DocSection title="Actions & badges">
         <p className="text-body text-muted-foreground">
-          A row leads with an icon or a status dot and can carry a badge, an
-          action, or a cluster. Hover-revealed actions cost the label nothing
-          at rest, and the badge keeps the rightmost slot beside them.
+          Rows start with an icon or a status dot and end with a badge and
+          actions. Actions show on hover, so the label keeps its full width.
         </p>
         <ComponentPreview code={actionsCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <ActionsPreview />
@@ -1247,9 +1249,9 @@ export default function SidebarDoc() {
 
       <DocSection title="Header, footer & callout">
         <p className="text-body text-muted-foreground">
-          The same pieces in two packings: vertical gives each element its own
-          full-width row, horizontal collapses the extras into icon buttons on
-          the brand&apos;s line. The callout is a Card, with media or an icon.
+          Stack the header two ways: each element on its own row, or icon
+          buttons beside the brand. The callout is a Card with an image or an
+          icon.
         </p>
         <ComponentPreview code={headerFooterCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <HeaderFooterPreview stack="vertical" />
@@ -1261,10 +1263,9 @@ export default function SidebarDoc() {
 
       <DocSection title="Stacked callouts">
         <p className="text-body text-muted-foreground">
-          More than one callout shares the footer as a sonner-style pile: the
-          front card leads and the rest peek out behind it, each a step apart
-          on the brand ladder. Hovering fans the inline pile into a column,
-          and dismissing the front card promotes the one below.
+          Callouts stack into a pile — the front card leads, the rest peek
+          out behind. Hover to fan them out; dismiss the front and the next
+          steps up.
         </p>
         <ComponentPreview code={stackedCalloutCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <StackedCalloutPreview />
@@ -1273,10 +1274,10 @@ export default function SidebarDoc() {
 
       <DocSection title="Collapse, peek & resize">
         <p className="text-body text-muted-foreground">
-          Three ways to toggle: the trigger, the rail (drag to resize, click to
-          collapse), and the <code>[</code> key. With{" "}
-          <code>peek=&quot;hover&quot;</code> a collapsed edge floats the rail
-          back without pinning it. State persists to a cookie.
+          Toggle with the trigger, the rail (drag to resize, click to
+          collapse), or the <code>[</code> key.{" "}
+          <code>peek=&quot;hover&quot;</code> floats the collapsed sidebar out
+          without pinning it. Width and state survive a reload.
         </p>
         <ComponentPreview code={collapseCode} padding="none" minHeightClass={SHELL_HEIGHT}>
           <CollapsePreview />

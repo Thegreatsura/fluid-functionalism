@@ -318,6 +318,18 @@ html, body {
   p {
     text-wrap: pretty;
   }
+
+  /* Inline code chips: bare <code> in prose gets its own ground (the same
+     recipe the motion/scrollbars pages hand-rolled). Excludes code inside
+     <pre> — shiki blocks style themselves. Base layer, so a page can still
+     override with utilities. */
+  code:not(pre code) {
+    background: light-dark(#EBEBED, #2C2C2C);
+    border-radius: 4px;
+    padding: 1px 4px;
+    font-size: var(--fs-caption, 12px);
+    color: var(--color-foreground, inherit);
+  }
 }
 
 /* ── Type-scale roles ─────────────────────────────────────────────────────

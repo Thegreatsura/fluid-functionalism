@@ -11,7 +11,7 @@ import {
   type HTMLAttributes,
 } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
 import { useSurface, SurfaceProvider } from "@/lib/surface-context";
@@ -56,6 +56,9 @@ interface SidebarSheetProps {
 
 function SidebarSheet({ side, open, onClose, children }: SidebarSheetProps) {
   const { widthMobile } = useSidebar();
+  // Reduced motion drops the slide (the movement) but keeps the scrim's
+  // opacity fade — the state change stays legible without the travel.
+  const reduceMotion = useReducedMotion() ?? false;
   // The panel takes initial focus itself. Left to the primitive, the focus
   // trap lands on the first focusable child — the top nav row — which reads
   // as a selected item the moment the drawer opens, and Chrome grants
@@ -114,7 +117,7 @@ function SidebarSheet({ side, open, onClose, children }: SidebarSheetProps) {
                 className="fixed inset-0 bg-black/40 dark:bg-black/80 z-40"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: visible ? 1 : 0 }}
-                transition={visible ? { duration: 0.16 } : spring.moderate.exit}
+                transition={visible ? { duration: spring.moderate.duration } : spring.moderate.exit}
               />
             );
           }}
@@ -159,7 +162,7 @@ function SidebarSheet({ side, open, onClose, children }: SidebarSheetProps) {
                 // into x: 0 without overshooting and exposing the page behind
                 // its leading edge.
                 animate={{ x: visible ? 0 : offscreen }}
-                transition={visible ? spring.moderate : spring.moderate.exit}
+                transition={reduceMotion ? { duration: 0 } : visible ? spring.moderate : spring.moderate.exit}
                 onAnimationComplete={() => {
                   if (closing) finishClose();
                 }}
@@ -235,18 +238,22 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
       );
     }
 
-    if (isMobile) {
-      return (
-        <SidebarSheet side={side} open={openMobile} onClose={() => setOpenMobile(false)}>
-          {children}
-        </SidebarSheet>
-      );
-    }
-
+    // The desktop shell stays MOUNTED across the drawer breakpoint — its
+    // breakpoint classes fade it out (opacity + display, allow-discrete)
+    // instead of this component unmounting it, which snapped the rail away
+    // the instant the window shrank. The sheet mounts alongside it below the
+    // breakpoint; the hidden shell costs nothing visible (display: none).
     return (
-      <SidebarShell ref={ref} side={side} variant={variant} bordered={bordered} rail={rail} railTooltipOpen={railTooltipOpen} className={className} style={style} {...props}>
-        {children}
-      </SidebarShell>
+      <>
+        {isMobile && (
+          <SidebarSheet side={side} open={openMobile} onClose={() => setOpenMobile(false)}>
+            {children}
+          </SidebarSheet>
+        )}
+        <SidebarShell ref={ref} side={side} variant={variant} bordered={bordered} rail={rail} railTooltipOpen={railTooltipOpen} className={className} style={style} {...props}>
+          {children}
+        </SidebarShell>
+      </>
     );
   }
 );
@@ -282,8 +289,12 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
       );
     }
 
+    // The scroll primitive wraps children in an inline-styled sizer that
+    // sizes to content — rows would stop shrinking near the min width
+    // instead of truncating, so the viewport's direct child is forced back
+    // to a plain shrinkable block.
     return (
-      <ScrollArea className={cn("scroll-divider min-h-0 w-full flex-1", className)} viewportClassName={cn("scroll-fade", viewportClassName)}>
+      <ScrollArea className={cn("scroll-divider min-h-0 w-full flex-1", className)} viewportClassName={cn("scroll-fade [&>div]:!block [&>div]:!min-w-0", viewportClassName)}>
         <div ref={ref} data-sidebar="content" className="flex w-full min-w-0 flex-col" {...props}>
           {children}
         </div>

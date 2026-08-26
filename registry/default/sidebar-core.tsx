@@ -21,9 +21,9 @@ import {
   type HTMLAttributes,
   type Ref,
 } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { spring } from "@/lib/springs";
+import { spring, exitFallbackMs } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 import { useSize, useSizeVariant } from "@/lib/size-context";
@@ -44,7 +44,7 @@ export const SIDEBAR_WIDTH_MOBILE = "18rem";
 export const SIDEBAR_KEYBOARD_SHORTCUT = "[";
 export const SIDEBAR_KEYBOARD_SHORTCUT_RIGHT = "]";
 /** Drag-resize clamp for the built-in rail handle (px). */
-export const SIDEBAR_MIN_WIDTH = 192;
+export const SIDEBAR_MIN_WIDTH = 160;
 export const SIDEBAR_MAX_WIDTH = 360;
 /** Dragging this far past the minimum width collapses the sidebar instead of
  *  bottoming out — the same "throw it at the edge to dismiss" affordance
@@ -83,6 +83,13 @@ export interface SidebarContextValue {
   /** True while the collapsed sidebar is peeking as an overlay. */
   isPeeking: boolean;
   setIsPeeking: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Shared hover-intent machinery for the peek: ONE timer serves every
+   *  affordance that can float the rail out (the edge strip, the trigger),
+   *  so crossing between them — or into the peeked card — cancels a pending
+   *  dismissal instead of racing a second timer. */
+  schedulePeek: () => void;
+  scheduleDismissPeek: () => void;
+  cancelPeekTimer: () => void;
   /** Internal: true while the rail is being drag-resized (disables the
    *  width spring so the panel tracks the pointer 1:1). */
   isResizing: boolean;
@@ -214,11 +221,31 @@ const SidebarProvider = forwardRef<HTMLDivElement, SidebarProviderProps>(
     }, [isMobile, setOpen]);
 
     // Collapsed-peek overlay state. Pinning the sidebar open (or disabling
-    // the mode) always dismisses the peek.
+    // the mode) always dismisses the peek — including a PENDING intent
+    // timer, or a hover armed just before the pin would fire setIsPeeking on
+    // an open sidebar (the effect's deps never re-run for the late timer).
     const [isPeeking, setIsPeeking] = useState(false);
+    const peekTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
-      if (open || peek === "none") setIsPeeking(false);
+      if (open || peek === "none") {
+        if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
+        peekTimerRef.current = null;
+        setIsPeeking(false);
+      }
     }, [open, peek]);
+    const cancelPeekTimer = useCallback(() => {
+      if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
+      peekTimerRef.current = null;
+    }, []);
+    const schedulePeek = useCallback(() => {
+      cancelPeekTimer();
+      peekTimerRef.current = setTimeout(() => setIsPeeking(true), 150);
+    }, [cancelPeekTimer]);
+    const scheduleDismissPeek = useCallback(() => {
+      cancelPeekTimer();
+      peekTimerRef.current = setTimeout(() => setIsPeeking(false), 250);
+    }, [cancelPeekTimer]);
+    useEffect(() => cancelPeekTimer, [cancelPeekTimer]);
 
     // The bare shortcut key toggles the sidebar app-wide. Bound to the
     // provider's lifetime (not a docs-only global), skipped while typing, and
@@ -248,16 +275,39 @@ const SidebarProvider = forwardRef<HTMLDivElement, SidebarProviderProps>(
             )
           )
             return;
-        } else {
-          if (mountedProviders.some((el) => el !== root && el.contains(target)))
+          // The focused element itself WRAPS another provider (a docs
+          // preview frame holding keyboard scope for the demo inside it —
+          // see click-to-focus): the wrapped provider answers, not this
+          // ancestor shell.
+          if (mountedProviders.some((el) => el !== root && target.contains(el)))
             return;
-          // Focus outside every provider: the OUTERMOST one answers — mount
-          // order is unreliable here (a persistent app-shell provider mounts
-          // once, while doc demos mount later on client-side navigation).
-          const outermost = mountedProviders.find(
-            (el) => !mountedProviders.some((other) => other !== el && other.contains(el))
-          );
-          if (outermost !== root) return;
+        } else {
+          // Focus outside this provider. A focused element that WRAPS
+          // providers — a docs preview frame holding keyboard scope for the
+          // demo inside it (see click-to-focus) — scopes the key to what it
+          // wraps: the outermost wrapped provider answers, and this check
+          // must come BEFORE the containment guard below (an app-shell
+          // provider always contains the preview frame, and must not steal
+          // the key from the demo the frame scopes to). Focus on <body>
+          // wraps every provider, which degenerates to the original rule:
+          // the OUTERMOST provider overall answers — mount order is
+          // unreliable here (a persistent app-shell provider mounts once,
+          // while doc demos mount later on client-side navigation).
+          const wrapped = mountedProviders.filter((el) => target.contains(el));
+          if (wrapped.length > 0) {
+            const outermost = wrapped.find(
+              (el) => !wrapped.some((other) => other !== el && other.contains(el))
+            );
+            if (outermost !== root) return;
+          } else {
+            if (mountedProviders.some((el) => el !== root && el.contains(target)))
+              return;
+            const outermost = mountedProviders.find(
+              (el) =>
+                !mountedProviders.some((other) => other !== el && other.contains(el))
+            );
+            if (outermost !== root) return;
+          }
         }
         event.preventDefault();
         toggleSidebar();
@@ -285,6 +335,9 @@ const SidebarProvider = forwardRef<HTMLDivElement, SidebarProviderProps>(
         peek,
         isPeeking,
         setIsPeeking,
+        schedulePeek,
+        scheduleDismissPeek,
+        cancelPeekTimer,
         isResizing,
         setIsResizing,
       }),
@@ -302,6 +355,9 @@ const SidebarProvider = forwardRef<HTMLDivElement, SidebarProviderProps>(
         shortcut,
         peek,
         isPeeking,
+        schedulePeek,
+        scheduleDismissPeek,
+        cancelPeekTimer,
         isResizing,
       ]
     );
@@ -420,13 +476,21 @@ export function slotElement(
 
 // Literal map so Tailwind's scanner emits the utilities: for the standard
 // breakpoints the shell is also hidden by CSS, avoiding a pre-hydration flash
-// of the rail on small screens. Non-standard breakpoints rely on the JS
-// isMobile branch alone.
+// of the rail on small screens. Non-standard breakpoints fall back to a
+// JS-driven `hidden` in the shell (no dissolve, but never rail + drawer at
+// once).
+// Crossing the drawer breakpoint DISSOLVES the desktop rail instead of
+// snapping it away: opacity fades while `display` rides the same transition
+// with allow-discrete, so none applies only once the fade lands (and
+// @starting-style fades it back in when the window grows). Literal classes
+// per breakpoint — Tailwind's scanner can't see composed strings.
+const BREAKPOINT_FADE_BASE =
+  "transition-[opacity,display] ease-out [transition-behavior:allow-discrete] motion-reduce:transition-none";
 const BREAKPOINT_HIDDEN: Record<number, string> = {
-  640: "max-sm:hidden",
-  768: "max-md:hidden",
-  1024: "max-lg:hidden",
-  1280: "max-xl:hidden",
+  640: "max-sm:hidden max-sm:opacity-0 max-sm:duration-160 sm:duration-240 sm:starting:opacity-0",
+  768: "max-md:hidden max-md:opacity-0 max-md:duration-160 md:duration-240 md:starting:opacity-0",
+  1024: "max-lg:hidden max-lg:opacity-0 max-lg:duration-160 lg:duration-240 lg:starting:opacity-0",
+  1280: "max-xl:hidden max-xl:opacity-0 max-xl:duration-160 xl:duration-240 xl:starting:opacity-0",
 };
 
 // Props framer-motion redefines with incompatible signatures; they must not
@@ -465,10 +529,14 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
       open,
       width,
       mobileBreakpoint,
+      isMobile,
       isResizing,
       peek,
       isPeeking,
       setIsPeeking,
+      schedulePeek,
+      scheduleDismissPeek,
+      cancelPeekTimer,
     } = useSidebar();
     const shape = useShape();
     const shellRef = useRef<HTMLDivElement | null>(null);
@@ -476,21 +544,10 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
     // Collapsed-peek: the edge strip reveals the sidebar as a floating
     // overlay without pinning it. Hover mode uses small intent/leave delays;
     // both modes dismiss on Escape or an outside press.
-    const peekEnabled = peek !== "none" && !open;
-    const peekTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const clearPeekTimer = useCallback(() => {
-      if (peekTimer.current) clearTimeout(peekTimer.current);
-      peekTimer.current = null;
-    }, []);
-    const schedulePeek = useCallback(() => {
-      clearPeekTimer();
-      peekTimer.current = setTimeout(() => setIsPeeking(true), 150);
-    }, [clearPeekTimer, setIsPeeking]);
-    const scheduleDismiss = useCallback(() => {
-      clearPeekTimer();
-      peekTimer.current = setTimeout(() => setIsPeeking(false), 250);
-    }, [clearPeekTimer, setIsPeeking]);
-    useEffect(() => clearPeekTimer, [clearPeekTimer]);
+    // `!isResizing`: a drag can preview the collapsed state mid-gesture; the
+    // shell must not swap to the peek strip then, or it would unmount the
+    // rail holding the pointer capture and kill the drag.
+    const peekEnabled = peek !== "none" && !open && !isResizing;
     useEffect(() => {
       if (!(peekEnabled && isPeeking)) return;
       const onKeyDown = (event: KeyboardEvent) => {
@@ -499,22 +556,84 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
       const onPointerDown = (event: PointerEvent) => {
         if (!shellRef.current?.contains(event.target as Node)) setIsPeeking(false);
       };
+      // Hover mode holds the peek by geometric containment, not
+      // enter/leave: a portalled tooltip or menu covering the card steals
+      // the hit-test and fires pointerleave on the shell even though the
+      // cursor never left the sidebar. Dismissal is armed only when the
+      // pointer's position actually crosses out of the overlay's box (with
+      // a little margin), and disarmed the moment it crosses back.
+      let wasInside = true;
+      const onPointerMove = (event: PointerEvent) => {
+        const overlay =
+          shellRef.current?.querySelector('[data-sidebar="peek"]') ?? shellRef.current;
+        if (!overlay) return;
+        const box = overlay.getBoundingClientRect();
+        const inside =
+          event.clientX >= box.left - 8 &&
+          event.clientX <= box.right + 8 &&
+          event.clientY >= box.top - 8 &&
+          event.clientY <= box.bottom + 8;
+        if (inside) {
+          // Unconditional (not transition-gated): another surface's leave —
+          // the hover-peek trigger's, say — may have armed a dismissal while
+          // the pointer was already inside the box.
+          wasInside = true;
+          cancelPeekTimer();
+        } else if (wasInside) {
+          wasInside = false;
+          scheduleDismissPeek();
+        }
+      };
       document.addEventListener("keydown", onKeyDown);
       document.addEventListener("pointerdown", onPointerDown);
+      if (peek === "hover") document.addEventListener("pointermove", onPointerMove);
       return () => {
         document.removeEventListener("keydown", onKeyDown);
         document.removeEventListener("pointerdown", onPointerDown);
+        document.removeEventListener("pointermove", onPointerMove);
       };
-    }, [peekEnabled, isPeeking, setIsPeeking]);
+    }, [peekEnabled, isPeeking, setIsPeeking, peek, cancelPeekTimer, scheduleDismissPeek]);
     const substrate = useSurface();
     const floatingLevel = Math.min(substrate + 1, 8);
     // Drag-resize needs the panel glued to the pointer; the spring resumes
-    // for open/close.
-    const widthTransition = isResizing
+    // for open/close. Reduced motion snaps instead of sliding — the state
+    // change stays legible without the 256px of travel. The open/close ride
+    // the SLOW tier: a whole column moving is the largest thing this
+    // component animates (the sheet and peek stay on moderate — drawers
+    // settle precisely, per the tier notes).
+    const reduceMotion = useReducedMotion() ?? false;
+    // Mid-drag open flips — the collapse preview and its drag-back rescue —
+    // ride the moderate tier instead of the drag's glued duration-0 tracking.
+    // The flip is detected synchronously (transition must be right on the
+    // very commit whose animate target changes; effects run too late), then
+    // `dragFlip` holds the spring through its settle so pointer moves landing
+    // right after a flip retarget the spring instead of snapping.
+    const [dragFlip, setDragFlip] = useState(false);
+    const prevOpenRef = useRef(open);
+    const openFlipped = prevOpenRef.current !== open;
+    useEffect(() => {
+      const flipped = prevOpenRef.current !== open;
+      prevOpenRef.current = open;
+      if (!isResizing) {
+        setDragFlip(false);
+        return;
+      }
+      if (!flipped) return;
+      setDragFlip(true);
+      const id = setTimeout(() => setDragFlip(false), exitFallbackMs(spring.moderate));
+      return () => clearTimeout(id);
+    }, [open, isResizing]);
+    const widthTransition = reduceMotion
       ? { duration: 0 }
-      : open
-        ? spring.moderate
-        : spring.moderate.exit;
+      : isResizing
+        ? openFlipped || dragFlip
+          ? open
+            ? spring.moderate
+            : spring.moderate.exit
+          : { duration: 0 }
+        : open
+          ? spring.slow
+          : spring.slow.exit;
 
     return (
       <motion.div
@@ -543,7 +662,11 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
           // The inset rail has no card edge of its own, so its scroll hairline
           // hugs the rows' 8px gutter instead of running panel-wide.
           variant === "inset" && "[--scroll-divider-inset:8px]",
+          BREAKPOINT_FADE_BASE,
           BREAKPOINT_HIDDEN[mobileBreakpoint],
+          // A non-standard breakpoint has no literal utility in the map, so
+          // JS hides the shell (no fade, but never rail + drawer at once).
+          !BREAKPOINT_HIDDEN[mobileBreakpoint] && isMobile && "hidden",
           className
         )}
         initial={false}
@@ -553,12 +676,15 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
         // on the overlay without ever crossing it (the card slides in under
         // a stationary cursor), so per-element leave events are unreliable —
         // leaving the shell subtree is the signal that matters.
-        onPointerEnter={peekEnabled && peek === "hover" ? clearPeekTimer : undefined}
+        onPointerEnter={peekEnabled && peek === "hover" ? cancelPeekTimer : undefined}
+        // While PEEKED, dismissal belongs to the geometric watcher above —
+        // leave events lie whenever portalled content (tooltip, menu) covers
+        // the card. This leave handler only retires a pending peek-arm when
+        // the cursor departs before the intent delay lands.
         onPointerLeave={
           peekEnabled && peek === "hover"
             ? () => {
-                if (isPeeking) scheduleDismiss();
-                else clearPeekTimer();
+                if (!isPeeking) cancelPeekTimer();
               }
             : undefined
         }
@@ -585,7 +711,7 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
                   : undefined
               }
               onClick={() => {
-                clearPeekTimer();
+                cancelPeekTimer();
                 setIsPeeking(true);
               }}
             >
@@ -608,13 +734,13 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
                     surfaceClasses(floatingLevel, 3)
                   )}
                   style={{ width: `calc(${width} - 1rem)` }}
-                  initial={{ x: side === "left" ? "-108%" : "108%" }}
+                  initial={reduceMotion ? false : { x: side === "left" ? "-108%" : "108%" }}
                   animate={{ x: 0 }}
                   exit={{
                     x: side === "left" ? "-108%" : "108%",
-                    transition: spring.moderate.exit,
+                    transition: reduceMotion ? { duration: 0 } : spring.moderate.exit,
                   }}
-                  transition={spring.moderate}
+                  transition={reduceMotion ? { duration: 0 } : spring.moderate}
                 >
                   <SurfaceProvider value={floatingLevel}>{children}</SurfaceProvider>
                 </motion.div>
@@ -722,8 +848,23 @@ function useShortcutKey(): string {
  *  keystroke by default. */
 const SidebarTrigger = forwardRef<HTMLButtonElement, SidebarTriggerProps>(
   ({ onClick, size, children, ...props }, ref) => {
-    const { toggleSidebar, open, openMobile, isMobile, side } = useSidebar();
+    const {
+      toggleSidebar,
+      open,
+      openMobile,
+      isMobile,
+      side,
+      peek,
+      isPeeking,
+      schedulePeek,
+      cancelPeekTimer,
+    } = useSidebar();
     const shortcutKey = useShortcutKey();
+    // With hover-peek enabled, the COLLAPSED trigger is a peek affordance
+    // too: resting on it floats the rail out exactly like the edge strip —
+    // same shared intent timer, so moving from the trigger into the peeked
+    // card (or back) cancels the pending dismissal.
+    const hoverPeek = peek === "hover" && !isMobile && !open;
     const PanelLeftIcon = useIcon("panel-left");
     const PanelRightIcon = useIcon("panel-right");
     const TriggerIcon = side === "right" ? PanelRightIcon : PanelLeftIcon;
@@ -755,6 +896,27 @@ const SidebarTrigger = forwardRef<HTMLButtonElement, SidebarTriggerProps>(
             onClick?.(event);
             toggleSidebar();
           }}
+          onPointerEnter={
+            hoverPeek
+              ? (event: React.PointerEvent) => {
+                  if (event.pointerType !== "mouse") return;
+                  if (isPeeking) cancelPeekTimer();
+                  else schedulePeek();
+                }
+              : undefined
+          }
+          // While PEEKED the shell's geometric watcher owns dismissal — a
+          // leave fired here can be the peek card sliding over a stationary
+          // cursor (layout-driven boundary event, no accompanying move to
+          // disarm it), which would flicker the peek closed and open again.
+          // This leave only retires a pending intent timer.
+          onPointerLeave={
+            hoverPeek
+              ? () => {
+                  if (!isPeeking) cancelPeekTimer();
+                }
+              : undefined
+          }
           {...props}
         >
           {children ?? <TriggerIcon />}
@@ -781,13 +943,13 @@ const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(
     const { toggleSidebar, setOpen, setWidth, side, setIsResizing } = useSidebar();
     const shortcutKey = useShortcutKey();
     const railRef = useRef<HTMLButtonElement | null>(null);
-    const dragRef = useRef<{ startX: number; startWidth: number; moved: boolean } | null>(null);
+    const dragRef = useRef<{ startX: number; startWidth: number; moved: boolean; collapsed: boolean } | null>(null);
     const [dragging, setDragging] = useState(false);
 
     const onPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
       const panel = railRef.current?.closest('[data-slot="sidebar"]') as HTMLElement | null;
       if (!panel) return;
-      dragRef.current = { startX: event.clientX, startWidth: panel.offsetWidth, moved: false };
+      dragRef.current = { startX: event.clientX, startWidth: panel.offsetWidth, moved: false, collapsed: false };
       event.currentTarget.setPointerCapture(event.pointerId);
     };
 
@@ -803,16 +965,20 @@ const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(
       }
       const delta = side === "left" ? dx : -dx;
       const raw = drag.startWidth + delta;
-      // Dragged well past the minimum, toward the edge: collapse and end the
-      // drag rather than pinning at the min width.
+      // Dragged well past the minimum, toward the edge: preview the collapse
+      // but keep the drag session alive — pulling back past the threshold
+      // re-expands, so an overshoot isn't committed until release.
       if (raw < SIDEBAR_MIN_WIDTH - SIDEBAR_COLLAPSE_SLOP) {
-        dragRef.current = null;
-        event.currentTarget.releasePointerCapture(event.pointerId);
-        setDragging(false);
-        setIsResizing(false);
-        setWidth(`${SIDEBAR_MIN_WIDTH}px`);
-        setOpen(false);
+        if (!drag.collapsed) {
+          drag.collapsed = true;
+          setWidth(`${SIDEBAR_MIN_WIDTH}px`);
+          setOpen(false);
+        }
         return;
+      }
+      if (drag.collapsed) {
+        drag.collapsed = false;
+        setOpen(true);
       }
       const next = Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, raw));
       setWidth(`${next}px`);
@@ -826,6 +992,14 @@ const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(
       setIsResizing(false);
       // A press that never turned into a drag is the collapse click.
       if (drag && !drag.moved) toggleSidebar();
+    };
+
+    // A cancelled pointer (touch interruption, capture loss) ends the drag
+    // where it stands — no collapse-click, capture is already released.
+    const onPointerCancel = () => {
+      dragRef.current = null;
+      setDragging(false);
+      setIsResizing(false);
     };
 
     const semibold = { fontVariationSettings: fontWeights.semibold };
@@ -867,8 +1041,11 @@ const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
+          onPointerCancel={onPointerCancel}
           className={cn(
-            "absolute inset-y-0 z-20 w-2 cursor-col-resize outline-none",
+            // touch-none: without it the browser claims a touch drag for
+            // scrolling and pointercancels the resize mid-gesture.
+            "absolute inset-y-0 z-20 w-2 cursor-col-resize touch-none outline-none",
             // Positioned from context (not group-data selectors) so variant
             // offsets passed via className can win the merge.
             side === "left" ? "right-0" : "left-0",
@@ -1109,8 +1286,16 @@ const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>(
         );
         inner = (
           <>
-            {kids.slice(0, labelIdx + 1)}
-            {headerActions}
+            {kids.slice(0, labelIdx)}
+            {/* Header hover scope: the label and its action cluster reveal
+                their trailing controls together (hovering the overlaid
+                cluster never :hovers the label element itself). Kept
+                position-static so the cluster's absolute box still anchors
+                to the group and stays on the rows' action axis. */}
+            <div className="group/group-header w-full">
+              {kids[labelIdx]}
+              {headerActions}
+            </div>
             <motion.div
               id={contentId}
               aria-hidden={open ? undefined : true}
@@ -1220,19 +1405,25 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
           "aria-expanded": group.open,
           "aria-controls": group.contentId,
           onClick: group.toggle,
-          // The action cluster overlays the label's right edge, so the label
-          // pads past it — far enough that the chevron lands one cluster gap
-          // (4px) to its left and the whole trailing run keeps a single
-          // rhythm. Cluster width is 24px per action plus 4px between them;
-          // add that gap again, less the 8px the group's padding already
-          // gives back: 28n + 6.
+          // The action cluster overlays the label's right edge, so while the
+          // cluster is revealed the label pads past it — far enough that the
+          // chevron lands one cluster gap (4px) to its left and the whole
+          // trailing run keeps a single rhythm. Cluster width is 24px per
+          // action plus 4px between them; add that gap again, less the 8px
+          // the group's padding already gives back: 28n + 6. The reservation
+          // applies only on header hover/focus (the rows' gutter-swap
+          // pattern): at rest the text gets the full row.
           style:
             group.actionsCount > 0
-              ? { paddingRight: group.actionsCount * 28 + 6 }
+              ? ({ "--group-actions-pad": `${group.actionsCount * 28 + 6}px` } as CSSProperties)
               : undefined,
           className: cn(
-            "group/group-label flex h-8 w-full shrink-0 cursor-pointer select-none items-center gap-2 px-2 text-left text-muted-foreground/70 outline-none",
+            "flex h-8 w-full shrink-0 cursor-pointer select-none items-center gap-2 px-2 text-left text-muted-foreground/70 outline-none",
+            // Colors only — transitioning the padding would slide the
+            // revealed chevron/cluster sideways; the reveal is instant.
             "transition-colors duration-80 hover:text-muted-foreground",
+            group.actionsCount > 0 &&
+              "group-hover/group-header:pr-[var(--group-actions-pad)] group-focus-within/group-header:pr-[var(--group-actions-pad)] group-has-[[data-sidebar=group-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/group-header:pr-[var(--group-actions-pad)] pointer-coarse:pr-[var(--group-actions-pad)]",
             "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
             shape.item,
             sizeVariant === "compact" ? "text-[11px]" : "text-[12px]",
@@ -1247,8 +1438,21 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
               One chevron-right glyph for both states, sprung 90° to point
               down while the group is open — the motion wrapper is what
               animates: Tailwind's rotate-* sets the standalone CSS `rotate`
-              property, which transition-transform never covers. */}
-          <span className="ml-auto flex size-6 shrink-0 items-center justify-center">
+              property, which transition-transform never covers. While open
+              the whole box collapses to zero width at rest so the label text
+              keeps the full row; hover/focus (or an open action popup)
+              reveals it. Collapsed keeps it visible as the reopen cue. */}
+          {/* No width/opacity transition: animating the box's width slides
+              the glyph in from the side — the chevron should simply be
+              there once the header is hovered. */}
+          <span
+            className={cn(
+              "ml-auto flex h-6 shrink-0 items-center justify-center overflow-hidden",
+              group.open
+                ? "w-0 opacity-0 group-hover/group-header:w-6 group-hover/group-header:opacity-100 group-focus-within/group-header:w-6 group-focus-within/group-header:opacity-100 group-has-[[data-sidebar=group-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/group-header:w-6 group-has-[[data-sidebar=group-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/group-header:opacity-100 pointer-coarse:w-6 pointer-coarse:opacity-100"
+                : "w-6 opacity-100"
+            )}
+          >
             <motion.span
               className="inline-flex"
               animate={{ rotate: group.open ? 90 : 0 }}
@@ -1257,12 +1461,7 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
               <ChevronRightIcon
                 size={sizeClasses.icon}
                 strokeWidth={1.5}
-                className={cn(
-                  "shrink-0 transition-opacity duration-80",
-                  group.open
-                    ? "opacity-0 group-hover/group-label:opacity-100 group-focus-visible/group-label:opacity-100"
-                    : "opacity-100"
-                )}
+                className="shrink-0"
               />
             </motion.span>
           </span>
@@ -1303,6 +1502,7 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
     const shape = useShape();
     const sizeClasses = useSize();
     const inCluster = useContext(GroupActionsContext);
+    const group = useContext(SidebarGroupContext);
     const { template, content } = resolveSlotTemplate(render, asChild, children);
     return slotElement(
       template,
@@ -1318,7 +1518,16 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
             // 24px box's centre 26px from the sidebar's inner edge — the axis
             // the rows' badges and actions already sit on.
             : "absolute right-3.5 top-3 flex size-6 items-center justify-center text-muted-foreground outline-none",
-          "hover:bg-hover hover:text-foreground transition-[color,background-color] duration-80",
+          // A lone action in a collapsible header reveals like the cluster
+          // does; clustered actions inherit the cluster's own reveal. Coarse
+          // pointers have no hover, so there the action stays visible — a
+          // control only a hover can reach doesn't exist on touch. (The
+          // opacity transition lives in the shared property list below;
+          // listing transition-opacity here would lose to it in tailwind-merge.)
+          !inCluster &&
+            group &&
+            "opacity-0 pointer-events-none group-hover/group-header:opacity-100 group-hover/group-header:pointer-events-auto group-focus-within/group-header:opacity-100 group-focus-within/group-header:pointer-events-auto data-[state=open]:opacity-100 data-[state=open]:pointer-events-auto data-[popup-open]:opacity-100 data-[popup-open]:pointer-events-auto aria-expanded:opacity-100 aria-expanded:pointer-events-auto pointer-coarse:opacity-100 pointer-coarse:pointer-events-auto",
+          "hover:bg-hover hover:text-foreground transition-[color,background-color,opacity] duration-80",
           "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
           "[&_svg]:size-[var(--icon-size)] [&_svg]:shrink-0",
           shape.item,
@@ -1344,24 +1553,34 @@ SidebarGroupAction.displayName = "SidebarGroupAction";
 export type SidebarGroupActionsProps = HTMLAttributes<HTMLDivElement>;
 
 const SidebarGroupActions = forwardRef<HTMLDivElement, SidebarGroupActionsProps>(
-  ({ className, children, ...props }, ref) => (
-    <div
-      ref={ref}
-      data-sidebar="group-actions"
-      className={cn(
-        // right-3.5 lands the last 24px action's centre 26px from the
-        // sidebar's inner edge — the rows' badge/action axis, so the header's
-        // controls line up with the column below them.
-        "absolute right-3.5 top-2 z-10 flex h-8 items-center gap-1",
-        className
-      )}
-      {...props}
-    >
-      <GroupActionsContext.Provider value={true}>
-        {children}
-      </GroupActionsContext.Provider>
-    </div>
-  )
+  ({ className, children, ...props }, ref) => {
+    const group = useContext(SidebarGroupContext);
+    return (
+      <div
+        ref={ref}
+        data-sidebar="group-actions"
+        className={cn(
+          // right-3.5 lands the last 24px action's centre 26px from the
+          // sidebar's inner edge — the rows' badge/action axis, so the header's
+          // controls line up with the column below them.
+          "absolute right-3.5 top-2 z-10 flex h-8 items-center gap-1",
+          // Inside a collapsible header the cluster is hover/focus-revealed
+          // (like row actions) so the resting label keeps the full row. An
+          // open action popup pins it. pointer-events gates alongside opacity
+          // so the invisible cluster never eats the label's clicks. Coarse
+          // pointers have no hover, so there the cluster stays visible.
+          group &&
+            "opacity-0 pointer-events-none transition-opacity duration-80 group-hover/group-header:opacity-100 group-hover/group-header:pointer-events-auto group-focus-within/group-header:opacity-100 group-focus-within/group-header:pointer-events-auto has-[:is([data-state=open],[data-popup-open],[aria-expanded=true])]:opacity-100 has-[:is([data-state=open],[data-popup-open],[aria-expanded=true])]:pointer-events-auto pointer-coarse:opacity-100 pointer-coarse:pointer-events-auto",
+          className
+        )}
+        {...props}
+      >
+        <GroupActionsContext.Provider value={true}>
+          {children}
+        </GroupActionsContext.Provider>
+      </div>
+    );
+  }
 );
 SidebarGroupActions.displayName = "SidebarGroupActions";
 

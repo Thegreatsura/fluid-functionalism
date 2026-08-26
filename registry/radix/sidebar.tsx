@@ -10,7 +10,7 @@ import {
   type HTMLAttributes,
 } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
 import { useSurface, SurfaceProvider } from "@/lib/surface-context";
@@ -42,6 +42,9 @@ interface SidebarSheetProps {
 
 function SidebarSheet({ side, open, onClose, children }: SidebarSheetProps) {
   const { widthMobile } = useSidebar();
+  // Reduced motion drops the slide (the movement) but keeps the scrim's
+  // opacity fade — the state change stays legible without the travel.
+  const reduceMotion = useReducedMotion() ?? false;
   const substrate = useSurface();
   const level = Math.min(substrate + 2, 8);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -79,7 +82,7 @@ function SidebarSheet({ side, open, onClose, children }: SidebarSheetProps) {
               className="fixed inset-0 bg-black/40 dark:bg-black/80 z-40"
               initial={{ opacity: 0 }}
               animate={{ opacity: open ? 1 : 0 }}
-              transition={open ? { duration: 0.16 } : spring.moderate.exit}
+              transition={open ? { duration: spring.moderate.duration } : spring.moderate.exit}
             />
           </DialogPrimitive.Overlay>
 
@@ -117,7 +120,7 @@ function SidebarSheet({ side, open, onClose, children }: SidebarSheetProps) {
               // into x: 0 without overshooting and exposing the page behind
               // its leading edge.
               animate={{ x: open ? 0 : offscreen }}
-              transition={open ? spring.moderate : spring.moderate.exit}
+              transition={reduceMotion ? { duration: 0 } : open ? spring.moderate : spring.moderate.exit}
               onAnimationComplete={() => {
                 if (!open) setMounted(false);
               }}
@@ -195,18 +198,22 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
       );
     }
 
-    if (isMobile) {
-      return (
-        <SidebarSheet side={side} open={openMobile} onClose={() => setOpenMobile(false)}>
-          {children}
-        </SidebarSheet>
-      );
-    }
-
+    // The desktop shell stays MOUNTED across the drawer breakpoint — its
+    // breakpoint classes fade it out (opacity + display, allow-discrete)
+    // instead of this component unmounting it, which snapped the rail away
+    // the instant the window shrank. The sheet mounts alongside it below the
+    // breakpoint; the hidden shell costs nothing visible (display: none).
     return (
-      <SidebarShell ref={ref} side={side} variant={variant} bordered={bordered} rail={rail} railTooltipOpen={railTooltipOpen} className={className} style={style} {...props}>
-        {children}
-      </SidebarShell>
+      <>
+        {isMobile && (
+          <SidebarSheet side={side} open={openMobile} onClose={() => setOpenMobile(false)}>
+            {children}
+          </SidebarSheet>
+        )}
+        <SidebarShell ref={ref} side={side} variant={variant} bordered={bordered} rail={rail} railTooltipOpen={railTooltipOpen} className={className} style={style} {...props}>
+          {children}
+        </SidebarShell>
+      </>
     );
   }
 );
@@ -242,8 +249,12 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
       );
     }
 
+    // The scroll primitive wraps children in an inline-styled sizer that
+    // sizes to content — rows would stop shrinking near the min width
+    // instead of truncating, so the viewport's direct child is forced back
+    // to a plain shrinkable block.
     return (
-      <ScrollArea className={cn("scroll-divider min-h-0 w-full flex-1", className)} viewportClassName={cn("scroll-fade", viewportClassName)}>
+      <ScrollArea className={cn("scroll-divider min-h-0 w-full flex-1", className)} viewportClassName={cn("scroll-fade [&>div]:!block [&>div]:!min-w-0", viewportClassName)}>
         <div ref={ref} data-sidebar="content" className="flex w-full min-w-0 flex-col" {...props}>
           {children}
         </div>

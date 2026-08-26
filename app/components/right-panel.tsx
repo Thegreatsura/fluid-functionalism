@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { spring } from "@/registry/default/lib/springs";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { Button } from "@/registry/radix/button";
 import {
@@ -25,7 +27,9 @@ import {
 } from "@/lib/docs/icon-playground";
 import { SurfaceProvider } from "@/lib/surface-context";
 import { RightRailTarget } from "@/lib/right-rail";
+import { showShortcutToast } from "@/lib/docs/settings-toast";
 import { Tooltip } from "@/registry/radix/tooltip";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useBase, type Base } from "@/lib/base-context";
 
 const REPO = "mickadesign/fluid-functionalism";
@@ -280,22 +284,127 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
 
 /** Desktop-only right column that mirrors the left sidebar styling. */
 export function RightPanel() {
+  // The bare "]" key shows/hides the panel — the mirror of the left rail's
+  // "[" (the sidebar provider only ever claims its own side's key, so "]" is
+  // free while no right-side Sidebar is mounted). Same guards as the other
+  // site shortcuts: no modifiers, and typing surfaces own their keys.
+  const [open, setOpen] = useState(true);
+  const reduceMotion = useReducedMotion() ?? false;
+  // The listener registers once; the ref keeps the current value in reach so
+  // the toast can announce the RESULT without a setState-updater side effect.
+  const openRef = useRef(open);
+  openRef.current = open;
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "]") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      // Below xl the panel doesn't render — a shortcut that visibly does
+      // nothing (but toasts and flips state) reads as broken.
+      if (!window.matchMedia("(min-width: 1280px)").matches) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable
+      )
+        return;
+      e.preventDefault();
+      const next = !openRef.current;
+      setOpen(next);
+      showShortcutToast(
+        "]",
+        next ? "Properties panel expanded" : "Properties panel collapsed"
+      );
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  const PanelRightIcon = useIcon("panel-right");
+
   return (
-    // max-xl:fixed — during the xl-fade-block fade-out the panel keeps
-    // display:block for the transition (allow-discrete), which would hold its
-    // 264px of flex space and make the content reflow a second time when
-    // display finally flips to none. Fixed positioning below xl removes it
-    // from flow at the breakpoint (single reflow) while it fades in place:
-    // top-0/right-0 + mt-4/mr-2 land on the same 8px/16px inset as the pinned
-    // sticky state. The wrapper carries the fade/sticky so pages can stack a
-    // second panel (RightRailTarget) below the settings.
-    // xl-fade-block sets display:block at ≥xl, so the flex column lives on an
-    // inner wrapper (else it would override `flex` and drop the gap).
-    <div className="shrink-0 w-64 sticky top-4 self-start mt-4 mr-2 xl-fade-block max-xl:fixed max-xl:top-0 max-xl:right-0 max-xl:z-40 max-xl:pointer-events-none">
+    <>
+      {/* Collapsed, the panel leaves a way back in its own top-right spot —
+          the same ghost trigger the sidebar uses, mirrored. */}
+      <AnimatePresence>
+        {!open && (
+          <motion.div
+            // Mirrors the left rail's reopen trigger: same top-4 inset from
+            // its edge, same default trigger size.
+            className="fixed top-4 right-4 z-40 max-xl:hidden"
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{
+              opacity: 0,
+              transition: reduceMotion ? { duration: 0 } : spring.fast.exit,
+            }}
+            transition={reduceMotion ? { duration: 0 } : spring.fast}
+          >
+            <Tooltip
+              side="left"
+              content={
+                <span className="flex items-center gap-2">
+                  <span className="[text-box:trim-both_cap_alphabetic]">
+                    Expand properties panel
+                  </span>
+                  <kbd className="-my-1 flex h-4 min-w-4 items-center justify-center rounded border border-background/30 px-1 font-sans text-[10px] text-background/80">
+                    ]
+                  </kbd>
+                </span>
+              }
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Expand properties panel"
+                onClick={() => setOpen(true)}
+              >
+                <PanelRightIcon />
+              </Button>
+            </Tooltip>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    {/* max-xl:fixed — during the xl-fade-block fade-out the panel keeps
+        display:block for the transition (allow-discrete), which would hold its
+        264px of flex space and make the content reflow a second time when
+        display finally flips to none. Fixed positioning below xl removes it
+        from flow at the breakpoint (single reflow) while it fades in place:
+        top-0/right-0 + mt-4 and the animated 16px marginRight land on the
+        same 16px inset as the pinned sticky state. The wrapper carries the fade/sticky so pages can stack a
+        second panel (RightRailTarget) below the settings.
+        xl-fade-block sets display:block at ≥xl, so the flex column lives on an
+        inner wrapper (else it would override `flex` and drop the gap).
+        The "]" toggle animates width/margin (the sidebar-shell technique: the
+        outer collapses while the inner keeps its true width) so the page
+        content reflows into the space instead of snapping. */}
+    <motion.div
+      className="shrink-0 overflow-hidden sticky top-4 self-start mt-4 xl-fade-block max-xl:fixed max-xl:top-0 max-xl:right-0 max-xl:z-40 max-xl:pointer-events-none"
+      initial={false}
+      animate={{
+        width: open ? 256 : 0,
+        // 16px on the right, matching the 16px top (sticky top-4) and the
+        // 16px the max-h calc leaves at the bottom — one even inset.
+        marginRight: open ? 16 : 0,
+        opacity: open ? 1 : 0,
+      }}
+      transition={
+        reduceMotion ? { duration: 0 } : open ? spring.slow : spring.slow.exit
+      }
+      style={{ pointerEvents: open ? undefined : "none" }}
+      // Collapsed is width:0 + opacity:0 — still in the DOM, so without
+      // inert every control inside would stay tabbable and announced.
+      inert={open ? undefined : true}
+    >
+      <div className="w-64">
       {/* Taller stacks (settings + playground controls) scroll within the
-          viewport instead of running past it; scroll-fade dissolves the
-          clipped edge. */}
-      <div className="flex max-h-[calc(100svh-2rem)] flex-col gap-3 overflow-y-auto scroll-fade [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          viewport instead of running past it — the house ScrollArea (quiet
+          thumb on the overlay ramp), scroll-fade dissolving the clipped
+          edges. The fade sits on the viewport itself, so it starts at the
+          panel's true edge — any breathing room lives INSIDE the scroller,
+          under the mask, never outside pushing the gradient down. */}
+      <ScrollArea viewportClassName="scroll-fade max-h-[calc(100svh-2rem)]">
+      <div className="flex flex-col gap-3">
         <aside className="p-4 rounded-lg bg-muted">
           <SurfaceProvider value={2}>
             <div className="flex items-center justify-between pt-2 pb-2">
@@ -314,6 +423,9 @@ export function RightPanel() {
         {/* Page-owned slot — e.g. the Card doc's Playground controls. */}
         <RightRailTarget />
       </div>
-    </div>
+      </ScrollArea>
+      </div>
+    </motion.div>
+    </>
   );
 }

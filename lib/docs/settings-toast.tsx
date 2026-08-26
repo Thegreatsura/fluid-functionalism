@@ -39,6 +39,28 @@ const MATCH_WINDOW_MS = 300;
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+// Monotonic press counter shared by every shortcut toast — a repeat press
+// updates the single toast in place and replays its pressed-state dip.
+let pressSeq = 0;
+
+/** Surface a shortcut-driven change the way the settings shortcuts do — the
+ *  key as an inverted chip beside the message, one toast slot for all of
+ *  them. Exported for shortcuts whose state lives outside this watcher (the
+ *  sidebar's "[", the properties panel's "]"). */
+export function showShortcutToast(keyLabel: string, message: string) {
+  const press = ++pressSeq;
+  toast.custom(
+    () => <ShortcutToast keyLabel={keyLabel} message={message} press={press} />,
+    {
+      id: "settings-shortcut",
+      duration: TOAST_MS,
+      // A custom toast's <li> shrinks to fit and left-aligns inside the
+      // centered 356px-wide list; full width lets the body's mx-auto center.
+      style: { width: "100%" },
+    }
+  );
+}
+
 /**
  * The toast body — rendered by Sonner inside the Toaster (which mounts within
  * all the site providers, so the shape context resolves). Carries the
@@ -119,7 +141,6 @@ export function SettingsToast() {
   // recording it must not re-render, and the change effect below reads it
   // synchronously.
   const pendingRef = useRef<{ setting: Setting; at: number } | null>(null);
-  const pressSeqRef = useRef(0);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -185,27 +206,8 @@ export function SettingsToast() {
     )
       return;
     pendingRef.current = null;
-    // One fixed id: a repeat press updates the toast in place (restarting its
-    // timer) and bumps `press`, which replays the pressed-state dip — instead
-    // of stacking a second toast.
     const { setting, message } = changed;
-    const press = ++pressSeqRef.current;
-    toast.custom(
-      () => (
-        <ShortcutToast
-          keyLabel={settingKeys[setting]}
-          message={message}
-          press={press}
-        />
-      ),
-      {
-        id: "settings-shortcut",
-        duration: TOAST_MS,
-        // A custom toast's <li> shrinks to fit and left-aligns inside the
-        // centered 356px-wide list; full width lets the body's mx-auto center.
-        style: { width: "100%" },
-      }
-    );
+    showShortcutToast(settingKeys[setting], message);
   }, [theme, shape, size, iconLibrary]);
 
   return <Toaster position="bottom-center" />;

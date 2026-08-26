@@ -455,6 +455,16 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
             // Standalone (no group) cards can't lean on the group highlight, so
             // they carry their own hover tint when interactive.
             !group && clickable && !disabled && "transition-colors duration-80 hover:bg-hover",
+            // Inline rows are single-line, so the corner dismiss would sit on
+            // the title's tail: the header yields right padding whenever the
+            // control is present — only while it's revealed in the on-hover
+            // case, so the resting text keeps the full row (the group-header
+            // gutter-swap pattern; instant, not transitioned).
+            dismissible &&
+              isInline &&
+              (dismissOnHover
+                ? "[&:hover_[data-slot=card-header]]:pr-10 [&:focus-within_[data-slot=card-header]]:pr-10"
+                : "[&_[data-slot=card-header]]:pr-10"),
             tileShape,
             disabled && "opacity-50 pointer-events-none",
             className
@@ -584,19 +594,27 @@ const CardTitle = forwardRef<HTMLSpanElement, HTMLAttributes<HTMLSpanElement>>(
       orientation === "inline" ? "[text-box:trim-both_cap_alphabetic]" : "";
     // Ghost-span pattern: an invisible semibold copy reserves the width so the
     // resting→active weight animation never reflows the row.
+    //
+    // Truncation support: a consumer's `truncate` lands on this grid, whose
+    // text-overflow can't ellipsize (only a block's own line boxes can — grid
+    // children just clip). The nowrap it sets inherits into the cell spans,
+    // so giving those spans overflow-hidden + ellipsis renders the … there
+    // instead; minmax(0,1fr) clamps the implicit track to the clipped grid's
+    // width so the ellipsis falls inside the visible box. All of it is inert
+    // while titles wrap normally.
     return (
       <span
         ref={ref}
         data-slot="card-title"
         className={cn(
-          "inline-grid leading-snug",
+          "inline-grid grid-cols-[minmax(0,1fr)] leading-snug",
           compact ? "text-[13px]" : "text-[14px]",
           className
         )}
         {...props}
       >
         <span
-          className={cn("col-start-1 row-start-1 invisible", trim)}
+          className={cn("col-start-1 row-start-1 invisible min-w-0 overflow-hidden text-ellipsis", trim)}
           style={{ fontVariationSettings: fontWeights.semibold }}
           aria-hidden="true"
         >
@@ -604,7 +622,7 @@ const CardTitle = forwardRef<HTMLSpanElement, HTMLAttributes<HTMLSpanElement>>(
         </span>
         <span
           className={cn(
-            "col-start-1 row-start-1 text-foreground transition-[font-variation-settings] duration-80",
+            "col-start-1 row-start-1 min-w-0 overflow-hidden text-ellipsis text-foreground transition-[font-variation-settings] duration-80",
             trim
           )}
           style={{

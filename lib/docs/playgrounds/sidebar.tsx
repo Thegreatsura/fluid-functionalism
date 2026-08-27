@@ -1600,7 +1600,10 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
     // under the /demo page's scaled card. The doc preview fills the
     // ComponentPreview stage edge to edge.
     preview: shell("h-full self-stretch"),
-    demoPreview: <div className="w-full max-w-[460px]">{shell("h-[480px]", true)}</div>,
+    // The /demo card gives shell previews more room than the default 420
+    // stage — a sidebar next to its inset needs the width to read properly.
+    demoPreview: <div className="w-full">{shell("h-[560px]", true)}</div>,
+    demoMaxWidth: 600,
     controls,
     code: buildSidebarPlaygroundCode(state),
   });

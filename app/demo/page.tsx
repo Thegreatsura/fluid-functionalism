@@ -179,10 +179,10 @@ function DemoPageInner() {
   // The scaling stage, shared by every slide type. A plain helper (not a
   // component) so it inlines into the same tree on each render — a nested
   // component would be a new type every render and remount the slide.
-  const stage = (children: ReactNode) => (
+  const stage = (children: ReactNode, maxWidth = 420) => (
     <motion.div
       ref={setScaleEl}
-      className="w-full max-w-[420px] mx-auto flex justify-center relative"
+      className="w-full mx-auto flex justify-center relative"
       // Springs between the two scales on toggle instead of snapping, and
       // chases the resize-driven scale closely enough to feel immediate.
       // initial={false} — a slide arrives already at its scale; without this
@@ -190,7 +190,7 @@ function DemoPageInner() {
       initial={false}
       animate={{ scale: scaleOn ? scale : 1 }}
       transition={spring.moderate}
-      style={{ transformOrigin: "center" }}
+      style={{ transformOrigin: "center", maxWidth }}
     >
       <TooltipPortalContainer value={scaleEl}>
         <ColorPickerPortalContainer value={scaleEl}>
@@ -289,7 +289,7 @@ function DemoPageInner() {
             </BentoCard>
           ) : Playground ? (
             <Playground key={current.slug}>
-              {({ demoPreview, controls }) => (
+              {({ demoPreview, demoMaxWidth, controls }) => (
                 <BentoCard
                   slug={current.slug}
                   name={current.name}
@@ -301,7 +301,7 @@ function DemoPageInner() {
                     </PlaygroundMenu>
                   )}
                 >
-                  {stage(demoPreview)}
+                  {stage(demoPreview, demoMaxWidth)}
                 </BentoCard>
               )}
             </Playground>

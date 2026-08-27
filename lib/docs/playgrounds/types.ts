@@ -17,6 +17,9 @@ import type { ComponentType, ReactNode } from "react";
 export interface PlaygroundParts {
   preview: ReactNode;
   demoPreview: ReactNode;
+  /** Max width (px) the /demo stage gives demoPreview. Defaults to the
+   *  stage's 420; shell-sized previews (sidebar) opt into a wider slide. */
+  demoMaxWidth?: number;
   controls: ReactNode;
   /** Source snippet kept in sync with the controls, for the doc Code tab. */
   code: string;

@@ -626,8 +626,9 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
         : null;
   lines.push(`    <SidebarHeader>`);
   if (o.headerStack === "horizontal") {
-    lines.push(`      {/* horizontal: search + actions share the brand line */}`);
-    lines.push(`      <div className="flex items-center gap-1">`);
+    lines.push(`      {/* horizontal: search + actions share the brand line as 24px`);
+    lines.push(`          buttons, inset pr-1.5 onto the section actions' axis */}`);
+    lines.push(`      <div className="flex items-center gap-1 pr-1.5">`);
     // The brand slot keeps its flex-1 spacer even when empty, so the icon
     // buttons hold the trailing edge exactly as the preview does.
     lines.push(
@@ -635,11 +636,11 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
         ? `        <div className="min-w-0 flex-1">${brandComment}</div>`
         : `        <div className="min-w-0 flex-1" />`
     );
-    lines.push(`        <Button variant="ghost" size="icon-compact" aria-label="Search">`);
+    lines.push(`        <Button variant="ghost" size="icon-compact" className="size-6" aria-label="Search">`);
     lines.push(`          <SearchIcon />`);
     lines.push(`        </Button>`);
     for (const a of headerActions) {
-      lines.push(`        <Button variant="ghost" size="icon-compact" aria-label="${a.label}">`);
+      lines.push(`        <Button variant="ghost" size="icon-compact" className="size-6" aria-label="${a.label}">`);
       lines.push(`          <${iconTag(a.icon)} />`);
       lines.push(`        </Button>`);
     }
@@ -826,12 +827,12 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
     }
     if (o.footerStack === "horizontal") {
       if (footerActions.length > 0) {
-        lines.push(`      <div className="flex items-center gap-1">`);
+        lines.push(`      <div className="flex items-center gap-1 pr-1.5">`);
         // The user row owns the leftover width, as in the preview.
         if (o.footerPrimary === "dropdown")
           lines.push(`        <div className="min-w-0 flex-1">{/* user row */}</div>`);
         for (const a of footerActions) {
-          lines.push(`        <Button variant="ghost" size="icon-compact" aria-label="${a.label}">`);
+          lines.push(`        <Button variant="ghost" size="icon-compact" className="size-6" aria-label="${a.label}">`);
           lines.push(`          <${iconTag(a.icon)} />`);
           lines.push(`        </Button>`);
         }
@@ -1202,8 +1203,11 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           <SidebarHeader>
             {/* Stacking rule: vertical keeps the brand row on its own line
                 with search and actions stacked beneath as full-width rows;
-                horizontal collapses them to icon buttons sharing its line. */}
-            <div className={headerHorizontal ? "flex items-center gap-1" : "contents"}>
+                horizontal collapses them to icon buttons sharing its line.
+                The buttons are 24px (size-6) and the row insets pr-1.5 so
+                each button's centre lands on the section actions' axis —
+                26px from the sidebar's inner edge, on the same 28px pitch. */}
+            <div className={headerHorizontal ? "flex items-center gap-1 pr-1.5" : "contents"}>
               <div className={headerHorizontal ? "min-w-0 flex-1" : "contents"}>
                 {state.headerPrimary === "logo" ? (
                   <BrandHeaderRow variant="logo" />
@@ -1218,7 +1222,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                       variant="ghost"
                       size="icon-compact"
                       aria-label="Search"
-                      className="shrink-0"
+                      className="size-6 shrink-0"
                     >
                       {createElement(icons.search, {})}
                     </Button>
@@ -1229,7 +1233,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                         variant="ghost"
                         size="icon-compact"
                         aria-label={a.label}
-                        className="shrink-0"
+                        className="size-6 shrink-0"
                       >
                         {createElement(icons[a.icon], {})}
                       </Button>
@@ -1317,7 +1321,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                   footer's gap and hold the card off the edge. */}
               {(state.footerPrimary === "dropdown" ||
                 (footerHorizontal && footerActionSet.length > 0)) && (
-              <div className={footerHorizontal ? "flex items-center gap-1" : "contents"}>
+              <div className={footerHorizontal ? "flex items-center gap-1 pr-1.5" : "contents"}>
                 {state.footerPrimary === "dropdown" && (
                   <SidebarMenu
                     aria-label="User"
@@ -1369,7 +1373,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                         variant="ghost"
                         size="icon-compact"
                         aria-label={a.label}
-                        className="shrink-0"
+                        className="size-6 shrink-0"
                       >
                         {createElement(icons[a.icon], {})}
                       </Button>

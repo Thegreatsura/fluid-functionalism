@@ -1287,9 +1287,9 @@ const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>(
         inner = (
           <>
             {kids.slice(0, labelIdx)}
-            {/* Header hover scope: the label and its action cluster reveal
-                their trailing controls together (hovering the overlaid
-                cluster never :hovers the label element itself). Kept
+            {/* Header hover scope: hovering anywhere on the row — the
+                overlaid action cluster included, which never :hovers the
+                label element itself — reveals the label's chevron. Kept
                 position-static so the cluster's absolute box still anchors
                 to the group and stays on the rows' action axis. */}
             <div className="group/group-header w-full">
@@ -1405,25 +1405,21 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
           "aria-expanded": group.open,
           "aria-controls": group.contentId,
           onClick: group.toggle,
-          // The action cluster overlays the label's right edge, so while the
-          // cluster is revealed the label pads past it — far enough that the
-          // chevron lands one cluster gap (4px) to its left and the whole
-          // trailing run keeps a single rhythm. Cluster width is 24px per
-          // action plus 4px between them; add that gap again, less the 8px
-          // the group's padding already gives back: 28n + 6. The reservation
-          // applies only on header hover/focus (the rows' gutter-swap
-          // pattern): at rest the text gets the full row.
+          // The action cluster overlays the label's right edge, so the label
+          // pads past it — far enough that the hover-revealed chevron lands
+          // one cluster gap (4px) to its left and the whole trailing run
+          // keeps a single rhythm. Cluster width is 24px per action plus 4px
+          // between them; add that gap again, less the 8px the group's
+          // padding already gives back: 28n + 6. The cluster is always
+          // visible, so the reservation is permanent.
           style:
             group.actionsCount > 0
               ? ({ "--group-actions-pad": `${group.actionsCount * 28 + 6}px` } as CSSProperties)
               : undefined,
           className: cn(
             "flex h-8 w-full shrink-0 cursor-pointer select-none items-center gap-2 px-2 text-left text-muted-foreground/70 outline-none",
-            // Colors only — transitioning the padding would slide the
-            // revealed chevron/cluster sideways; the reveal is instant.
             "transition-colors duration-80 hover:text-muted-foreground",
-            group.actionsCount > 0 &&
-              "group-hover/group-header:pr-[var(--group-actions-pad)] group-focus-within/group-header:pr-[var(--group-actions-pad)] group-has-[[data-sidebar=group-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/group-header:pr-[var(--group-actions-pad)] pointer-coarse:pr-[var(--group-actions-pad)]",
+            group.actionsCount > 0 && "pr-[var(--group-actions-pad)]",
             "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
             shape.item,
             sizeVariant === "compact" ? "text-[11px]" : "text-[12px]",
@@ -1502,7 +1498,6 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
     const shape = useShape();
     const sizeClasses = useSize();
     const inCluster = useContext(GroupActionsContext);
-    const group = useContext(SidebarGroupContext);
     const { template, content } = resolveSlotTemplate(render, asChild, children);
     return slotElement(
       template,
@@ -1518,16 +1513,7 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
             // 24px box's centre 26px from the sidebar's inner edge — the axis
             // the rows' badges and actions already sit on.
             : "absolute right-3.5 top-3 flex size-6 items-center justify-center text-muted-foreground outline-none",
-          // A lone action in a collapsible header reveals like the cluster
-          // does; clustered actions inherit the cluster's own reveal. Coarse
-          // pointers have no hover, so there the action stays visible — a
-          // control only a hover can reach doesn't exist on touch. (The
-          // opacity transition lives in the shared property list below;
-          // listing transition-opacity here would lose to it in tailwind-merge.)
-          !inCluster &&
-            group &&
-            "opacity-0 pointer-events-none group-hover/group-header:opacity-100 group-hover/group-header:pointer-events-auto group-focus-within/group-header:opacity-100 group-focus-within/group-header:pointer-events-auto data-[state=open]:opacity-100 data-[state=open]:pointer-events-auto data-[popup-open]:opacity-100 data-[popup-open]:pointer-events-auto aria-expanded:opacity-100 aria-expanded:pointer-events-auto pointer-coarse:opacity-100 pointer-coarse:pointer-events-auto",
-          "hover:bg-hover hover:text-foreground transition-[color,background-color,opacity] duration-80",
+          "hover:bg-hover hover:text-foreground transition-colors duration-80",
           "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
           "[&_svg]:size-[var(--icon-size)] [&_svg]:shrink-0",
           shape.item,
@@ -1554,7 +1540,6 @@ export type SidebarGroupActionsProps = HTMLAttributes<HTMLDivElement>;
 
 const SidebarGroupActions = forwardRef<HTMLDivElement, SidebarGroupActionsProps>(
   ({ className, children, ...props }, ref) => {
-    const group = useContext(SidebarGroupContext);
     return (
       <div
         ref={ref}
@@ -1564,13 +1549,6 @@ const SidebarGroupActions = forwardRef<HTMLDivElement, SidebarGroupActionsProps>
           // sidebar's inner edge — the rows' badge/action axis, so the header's
           // controls line up with the column below them.
           "absolute right-3.5 top-2 z-10 flex h-8 items-center gap-1",
-          // Inside a collapsible header the cluster is hover/focus-revealed
-          // (like row actions) so the resting label keeps the full row. An
-          // open action popup pins it. pointer-events gates alongside opacity
-          // so the invisible cluster never eats the label's clicks. Coarse
-          // pointers have no hover, so there the cluster stays visible.
-          group &&
-            "opacity-0 pointer-events-none transition-opacity duration-80 group-hover/group-header:opacity-100 group-hover/group-header:pointer-events-auto group-focus-within/group-header:opacity-100 group-focus-within/group-header:pointer-events-auto has-[:is([data-state=open],[data-popup-open],[aria-expanded=true])]:opacity-100 has-[:is([data-state=open],[data-popup-open],[aria-expanded=true])]:pointer-events-auto pointer-coarse:opacity-100 pointer-coarse:pointer-events-auto",
           className
         )}
         {...props}

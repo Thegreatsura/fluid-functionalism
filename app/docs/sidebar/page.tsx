@@ -193,10 +193,11 @@ const headerFooterCode = `{/* Vertical: every element gets its own full-width ro
   </div>
 </SidebarHeader>
 
-{/* Horizontal is the same pieces sharing the brand's line as icon buttons:
-      <div className="flex items-center gap-1">
+{/* Horizontal is the same pieces sharing the brand's line as 24px icon
+    buttons, the row inset pr-1.5 onto the section actions' axis:
+      <div className="flex items-center gap-1 pr-1.5">
         <div className="min-w-0 flex-1">{brandRow}</div>
-        <Button variant="ghost" size="icon-compact" aria-label="Search">…
+        <Button variant="ghost" size="icon-compact" className="size-6" aria-label="Search">…
 */}
 
 <SidebarFooter>
@@ -473,7 +474,9 @@ function DemoHeader({ search = "below" }: { search?: "below" | "inline" }) {
   if (search === "inline") {
     return (
       <SidebarHeader>
-        <div className="flex items-center gap-1">
+        {/* 24px buttons, row inset pr-1.5: centres land on the section
+            actions' axis, 26px from the sidebar's inner edge. */}
+        <div className="flex items-center gap-1 pr-1.5">
           <div className="min-w-0 flex-1">
             <DemoHeaderRow />
           </div>
@@ -482,7 +485,7 @@ function DemoHeader({ search = "below" }: { search?: "below" | "inline" }) {
               variant="ghost"
               size="icon-compact"
               aria-label="Search"
-              className="shrink-0"
+              className="size-6 shrink-0"
             >
               <SearchIcon />
             </Button>
@@ -1112,17 +1115,17 @@ function HeaderFooterPreview({ stack }: { stack: "vertical" | "horizontal" }) {
             </div>
           </>
         ) : (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 pr-1.5">
             <div className="min-w-0 flex-1">
               <DemoHeaderRow />
             </div>
             <Tooltip content={tipWithShortcut("Search", SEARCH_SHORTCUT)} side="bottom">
-              <Button variant="ghost" size="icon-compact" aria-label="Search" className="shrink-0">
+              <Button variant="ghost" size="icon-compact" aria-label="Search" className="size-6 shrink-0">
                 {createElement(icons.search, {})}
               </Button>
             </Tooltip>
             <Tooltip content={tipWithShortcut("New thread", "⇧⌘O")} side="bottom">
-              <Button variant="ghost" size="icon-compact" aria-label="New thread" className="shrink-0">
+              <Button variant="ghost" size="icon-compact" aria-label="New thread" className="size-6 shrink-0">
                 {createElement(icons.plus, {})}
               </Button>
             </Tooltip>
@@ -1160,11 +1163,11 @@ function HeaderFooterPreview({ stack }: { stack: "vertical" | "horizontal" }) {
             <DemoFooterUser />
           </>
         ) : (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 pr-1.5">
             <div className="min-w-0 flex-1">
               <DemoFooterUser />
             </div>
-            <Button variant="ghost" size="icon-compact" aria-label="Settings" className="shrink-0">
+            <Button variant="ghost" size="icon-compact" aria-label="Settings" className="size-6 shrink-0">
               {createElement(icons.settings, {})}
             </Button>
           </div>

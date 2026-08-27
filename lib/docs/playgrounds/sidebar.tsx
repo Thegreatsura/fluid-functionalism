@@ -889,25 +889,12 @@ function PlaygroundInsetBody() {
     );
   }
 
+  // The main region stays blank on purpose — a bare topbar with the trigger.
+  // Skeleton page furniture competed with the sidebar for attention.
   return (
-    <>
-      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-1.5">
-        <SidebarTrigger />
-      </header>
-      {/* The page the rail sits beside: a heading and two cards. Abstract
-          enough not to compete with the sidebar, structured enough to read as
-          a page rather than a stack of grey bars. */}
-      <div className="flex flex-1 flex-col gap-4 p-3">
-        <div className="flex flex-col gap-2">
-          <div className="h-2 w-16 rounded-full bg-hover" />
-          <div className="h-4 w-2/5 rounded-md bg-hover" />
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="h-20 rounded-lg bg-hover" />
-          <div className="h-20 rounded-lg bg-hover" />
-        </div>
-      </div>
-    </>
+    <header className="flex h-12 shrink-0 items-center gap-2 px-1.5">
+      <SidebarTrigger />
+    </header>
   );
 }
 
@@ -960,6 +947,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
   // Chevrons and the header/footer trailing glyphs ride the same ladder step
   // as every other sidebar icon.
   const iconSize = useSize().icon;
+  const shape = useShape();
 
   /** Tooltip content with the action's keystroke, on the same inverted
    *  surface treatment the sidebar trigger's tooltip uses. */
@@ -1185,11 +1173,21 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
   );
 
   // The doc page's ComponentPreview already draws the frame; only the /demo
-  // card's standalone preview brings its own border.
+  // card's standalone preview brings its own border. Inset and floating put
+  // a rounded card (rounded-xl / rounded-3xl by shape) 8px inside the frame,
+  // so the frame's radius is that inner radius + 8px — concentric corners.
+  // The flush sidebar design has no inner card and keeps the plain container
+  // radius.
+  const frameRadius =
+    state.design === "sidebar"
+      ? shape.container
+      : shape.bgRadius >= 20
+        ? "rounded-[32px]"
+        : "rounded-[20px]";
   const shell = (height: string, framed = false) => (
     <div
       className={`relative flex w-full overflow-hidden bg-background ${height} ${
-        framed ? "rounded-xl border border-border" : ""
+        framed ? `${frameRadius} border border-border` : ""
       }`}
     >
       <SidebarProvider

@@ -630,42 +630,17 @@ function DemoMenu({ nested = true }: { nested?: boolean }) {
   );
 }
 
-function DemoInsetHeader({ title }: { title?: ReactNode }) {
+/** Two examples are *about* the rail-and-main pairing, so they keep both
+ *  halves at every width — the rail just narrows to leave the main region
+ *  something to be. The other three are rail-only and never render this.
+ *  The region itself stays blank on purpose: a bare topbar with the trigger
+ *  and optional caption — skeleton page furniture competed with the rail. */
+function DemoInsetContent({ title }: { title?: ReactNode }) {
   return (
-    <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-1.5">
+    <header className="flex h-12 shrink-0 items-center gap-2 px-1.5">
       <SidebarTrigger />
       <span className="text-[13px] text-muted-foreground">{title}</span>
     </header>
-  );
-}
-
-/** The page the rail sits beside: a heading and two cards. Abstract enough
- *  not to compete with the sidebar, structured enough to read as a page
- *  rather than a stack of grey bars. */
-function DemoInsetBody() {
-  return (
-    <div className="flex flex-1 flex-col gap-4 p-3">
-      <div className="flex flex-col gap-2">
-        <div className="h-2 w-16 rounded-full bg-hover" />
-        <div className="h-4 w-2/5 rounded-md bg-hover" />
-      </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="h-20 rounded-lg bg-hover" />
-        <div className="h-20 rounded-lg bg-hover" />
-      </div>
-    </div>
-  );
-}
-
-/** Two examples are *about* the rail-and-main pairing, so they keep both
- *  halves at every width — the rail just narrows to leave the main region
- *  something to be. The other three are rail-only and never render this. */
-function DemoInsetContent({ title }: { title?: ReactNode }) {
-  return (
-    <>
-      <DemoInsetHeader title={title} />
-      <DemoInsetBody />
-    </>
   );
 }
 

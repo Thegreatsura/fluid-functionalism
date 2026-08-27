@@ -386,30 +386,33 @@ function DemoHeaderRow() {
         {/* While the sidebar is only PEEKING, the pointer's one way to pin it
             open is covered by the overlay itself — so the trigger takes the
             logo's slot. A sibling positioned over the row (the menu-action
-            pattern), never a button nested inside the row button. */}
-        {isPeeking && (
-          <SidebarTrigger
-            size="icon-compact"
-            className="absolute left-0.5 top-1/2 z-20 -translate-y-1/2"
-          />
-        )}
+            pattern), never a button nested inside the row button. Trigger and
+            tile cross-fade in place; the constant pl-9 keeps the name pinned
+            while they swap. */}
+        <SidebarTrigger
+          size="icon-compact"
+          aria-hidden={!isPeeking || undefined}
+          tabIndex={isPeeking ? undefined : -1}
+          // The Button's first child is its hover/press bg layer — hidden here
+          // because its box is off-axis from the tile slot the trigger
+          // overlays, so a fill reads as a second, non-concentric rectangle.
+          className={`absolute left-0.5 top-1/2 z-20 -translate-y-1/2 [&>span:first-child]:hidden [&_svg]:size-4 transition-opacity duration-80 ${
+            isPeeking ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
+        />
         <DropdownMenu>
           <DropdownTrigger
             render={
-              <SidebarMenuButton
-                aria-label="Switch workspace"
-                className={isPeeking ? "pl-9" : undefined}
-              >
-                {!isPeeking && (
-                  <span
-                    className={`flex size-5 shrink-0 items-center justify-center bg-foreground text-[10px] text-background ${
-                      shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
-                    }`}
-                    style={{ fontVariationSettings: fontWeights.semibold }}
-                  >
-                    A
-                  </span>
-                )}
+              <SidebarMenuButton aria-label="Switch workspace" className="pl-9">
+                <span
+                  aria-hidden
+                  className={`pointer-events-none absolute left-2 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center bg-foreground text-[10px] text-background transition-opacity duration-80 ${
+                    shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
+                  } ${isPeeking ? "opacity-0" : "opacity-100"}`}
+                  style={{ fontVariationSettings: fontWeights.semibold }}
+                >
+                  A
+                </span>
                 <span
                   className="min-w-0 truncate text-[13px] text-foreground"
                   style={{ fontVariationSettings: fontWeights.semibold }}
@@ -636,9 +639,17 @@ function DemoMenu({ nested = true }: { nested?: boolean }) {
  *  The region itself stays blank on purpose: a bare topbar with the trigger
  *  and optional caption — skeleton page furniture competed with the rail. */
 function DemoInsetContent({ title }: { title?: ReactNode }) {
+  // While the sidebar is peeked the topbar trigger hides; pinning fades it
+  // back in slightly late, so it appears at its settled position instead of
+  // riding the inset's slide.
+  const { isPeeking } = useSidebar();
   return (
     <header className="flex h-12 shrink-0 items-center gap-2 px-1.5">
-      <SidebarTrigger />
+      <SidebarTrigger
+        className={`transition-opacity delay-200 duration-160 ${
+          isPeeking ? "opacity-0" : "opacity-100"
+        }`}
+      />
       <span className="text-[13px] text-muted-foreground">{title}</span>
     </header>
   );

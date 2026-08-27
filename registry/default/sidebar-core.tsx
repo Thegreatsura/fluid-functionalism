@@ -611,6 +611,19 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
     const [dragFlip, setDragFlip] = useState(false);
     const prevOpenRef = useRef(open);
     const openFlipped = prevOpenRef.current !== open;
+    // Pinning open from an active peek: the panel is already fully on screen
+    // as the overlay card, so while the width spring makes room the shell
+    // must not clip — otherwise the visible sidebar wipes in from a mask it
+    // never left. Detected synchronously (the provider clears isPeeking an
+    // effect later); the state hold keeps the clip off through the spring.
+    const [pinFromPeekHold, setPinFromPeekHold] = useState(false);
+    const pinnedFromPeek = (openFlipped && open && isPeeking) || pinFromPeekHold;
+    useEffect(() => {
+      if (!(open && isPeeking)) return;
+      setPinFromPeekHold(true);
+      const id = setTimeout(() => setPinFromPeekHold(false), exitFallbackMs(spring.slow));
+      return () => clearTimeout(id);
+    }, [open, isPeeking]);
     useEffect(() => {
       const flipped = prevOpenRef.current !== open;
       prevOpenRef.current = open;
@@ -654,8 +667,9 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
           "peer shrink-0 sticky top-0 h-svh",
           // While peek is armed the 0-width shell must not clip the edge
           // strip or the overlay card — and the shell must rise above the
-          // inset (a later sibling) so the card paints over it.
-          peekEnabled ? "z-40" : "overflow-hidden",
+          // inset (a later sibling) so the card paints over it. Pinning from
+          // a peek keeps both through the width spring for the same reason.
+          peekEnabled || pinnedFromPeek ? "z-40" : "overflow-hidden",
           // Flex order (not DOM order) decides the side, so consumers can
           // keep Sidebar before SidebarInset regardless of `side`.
           side === "right" && "order-last",
@@ -729,11 +743,23 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
                   data-sidebar="peek"
                   className={cn(
                     "absolute inset-y-2 z-50 flex flex-col overflow-hidden",
-                    side === "left" ? "left-2" : "right-2",
+                    // The card's edge inset matches where the PINNED rail's
+                    // content sits, so pinning from a peek never shifts the
+                    // rows sideways: floating pins into a card inset by the
+                    // same gutter; inset/sidebar pin flush to the edge.
+                    side === "left"
+                      ? variant === "floating"
+                        ? "left-2"
+                        : "left-0"
+                      : variant === "floating"
+                        ? "right-2"
+                        : "right-0",
                     shape.container,
                     surfaceClasses(floatingLevel, 3)
                   )}
-                  style={{ width: `calc(${width} - 1rem)` }}
+                  style={{
+                    width: `calc(${width} - ${variant === "floating" ? "1rem" : "0.5rem"})`,
+                  }}
                   initial={reduceMotion ? false : { x: side === "left" ? "-108%" : "108%" }}
                   animate={{ x: 0 }}
                   exit={{

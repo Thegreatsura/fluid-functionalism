@@ -9,9 +9,15 @@ import { fontWeights } from "@/lib/font-weight";
 // Standardized workspace-switcher menu content, shared by every sidebar demo
 // with a workspace header (doc page shells + the playground). Rows carry the
 // trigger's letter-tile treatment in grey shades; the visible square renders
-// at the trigger's 20px and hangs 4px left (the popup's own padding) so the
-// row tiles sit exactly under the trigger tile without shifting the label
-// column.
+// at the trigger's 20px, centred on the row's icon slot so the tiles land on
+// the sidebar's leading icon axis.
+
+/** Item padding for sidebar-anchored menus (the workspace and user
+ *  dropdowns): with the popup aligned to the trigger row, pl-1 puts the
+ *  leading icon slot's centre on the sidebar's 24px leading axis and pr-1.5
+ *  puts a trailing glyph (the check) on the trailing action axis. */
+export const SIDEBAR_MENU_GRID =
+  "[&_[role=menuitem]]:pl-1 [&_[role=menuitem]]:pr-1.5 [&_[role=menuitemradio]]:pl-1 [&_[role=menuitemradio]]:pr-1.5";
 
 export function WorkspaceMenuItems() {
   const icons = useIcons();
@@ -28,7 +34,7 @@ export function WorkspaceMenuItems() {
           style={{ width: size, height: size }}
         >
           <span
-            className={`absolute top-1/2 -left-1 flex size-5 -translate-y-1/2 items-center justify-center text-[10px] ${
+            className={`absolute top-1/2 left-1/2 flex size-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center text-[10px] ${
               shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
             } ${colorClasses}`}
             style={{ fontVariationSettings: fontWeights.semibold }}
@@ -39,14 +45,10 @@ export function WorkspaceMenuItems() {
       );
     };
 
-  // The bare plus glyph centers on the tiles' column axis (tiles hang 4px
-  // left; a 16px icon needs only a 2px nudge to share their center).
+  // The bare plus glyph shares the tiles' column axis (both centre on the
+  // row's icon slot).
   const PlusShifted = ({ size, strokeWidth, className }: IconComponentProps) =>
-    createElement(icons.plus, {
-      size,
-      strokeWidth,
-      className: `relative -left-0.5 ${className ?? ""}`,
-    });
+    createElement(icons.plus, { size, strokeWidth, className });
 
   return (
     <>

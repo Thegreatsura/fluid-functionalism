@@ -64,7 +64,7 @@ import {
   PlaygroundPanel,
 } from "@/lib/docs/playground";
 import { SIDEBAR_ITEMS, SIDEBAR_THREADS } from "@/app/components/demo-data";
-import { WorkspaceMenuItems } from "@/lib/docs/workspace-demo";
+import { WorkspaceMenuItems, SIDEBAR_MENU_GRID } from "@/lib/docs/workspace-demo";
 import type { PlaygroundProps } from "./types";
 
 // ── Sidebar playground ───────────────────────────────────
@@ -458,7 +458,7 @@ function BrandHeaderRow({ variant }: { variant: "dropdown" | "logo" }) {
   const tile = (
     <span
       aria-hidden
-      className={`pointer-events-none absolute left-2 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center bg-foreground text-[10px] text-background transition-opacity duration-80 ${
+      className={`pointer-events-none absolute left-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center bg-foreground text-[10px] text-background transition-opacity duration-80 ${
         shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
       } ${isPeeking ? "opacity-0" : "opacity-100"}`}
       style={{ fontVariationSettings: fontWeights.semibold }}
@@ -492,7 +492,7 @@ function BrandHeaderRow({ variant }: { variant: "dropdown" | "logo" }) {
           size="icon-compact"
           aria-hidden={!isPeeking || undefined}
           tabIndex={isPeeking ? undefined : -1}
-          className={`absolute left-0.5 top-1/2 -translate-y-1/2 ${triggerFade}`}
+          className={`absolute left-1 top-1/2 -translate-y-1/2 ${triggerFade}`}
         />
         {tile}
         {name}
@@ -509,7 +509,7 @@ function BrandHeaderRow({ variant }: { variant: "dropdown" | "logo" }) {
           size="icon-compact"
           aria-hidden={!isPeeking || undefined}
           tabIndex={isPeeking ? undefined : -1}
-          className={`absolute left-0.5 top-1/2 z-20 -translate-y-1/2 ${triggerFade}`}
+          className={`absolute left-1 top-1/2 z-20 -translate-y-1/2 ${triggerFade}`}
         />
         <DropdownMenu>
           <DropdownTrigger
@@ -528,7 +528,7 @@ function BrandHeaderRow({ variant }: { variant: "dropdown" | "logo" }) {
             }
           />
           <DropdownContent
-            className="min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]"
+            className={`min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))] ${SIDEBAR_MENU_GRID}`}
             align="start"
             sideOffset={4}
             checkedIndex={0}
@@ -1373,7 +1373,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                           }
                         />
                         <DropdownContent
-                          className="min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]"
+                          className={`min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))] ${SIDEBAR_MENU_GRID}`}
                           side="top"
                           align="start"
                           sideOffset={6}

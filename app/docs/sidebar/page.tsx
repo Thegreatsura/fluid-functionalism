@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, createElement, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
 import { spring } from "@/lib/springs";
@@ -45,7 +46,7 @@ import { DocPage, DocSection } from "@/lib/docs/DocPage";
 import { useNarrowFrame } from "@/lib/use-narrow-frame";
 import { PlaygroundLayout } from "@/lib/docs/playground";
 import { SidebarPlayground, FooterCalloutStack } from "@/lib/docs/playgrounds/sidebar";
-import { WorkspaceMenuItems } from "@/lib/docs/workspace-demo";
+import { WorkspaceMenuItems, SIDEBAR_MENU_GRID } from "@/lib/docs/workspace-demo";
 import {
   Card,
   CardDescription,
@@ -445,7 +446,7 @@ function DemoHeaderRow() {
           // The Button's first child is its hover/press bg layer — hidden here
           // because its box is off-axis from the tile slot the trigger
           // overlays, so a fill reads as a second, non-concentric rectangle.
-          className={`absolute left-0.5 top-1/2 z-20 -translate-y-1/2 [&>span:first-child]:hidden [&_svg]:size-4 transition-opacity duration-80 ${
+          className={`absolute left-1 top-1/2 z-20 -translate-y-1/2 [&>span:first-child]:hidden [&_svg]:size-4 transition-opacity duration-80 ${
             isPeeking ? "opacity-100" : "pointer-events-none opacity-0"
           }`}
         />
@@ -455,7 +456,7 @@ function DemoHeaderRow() {
               <SidebarMenuButton aria-label="Switch workspace" className="pl-9">
                 <span
                   aria-hidden
-                  className={`pointer-events-none absolute left-2 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center bg-foreground text-[10px] text-background transition-opacity duration-80 ${
+                  className={`pointer-events-none absolute left-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center bg-foreground text-[10px] text-background transition-opacity duration-80 ${
                     shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
                   } ${isPeeking ? "opacity-0" : "opacity-100"}`}
                   style={{ fontVariationSettings: fontWeights.semibold }}
@@ -474,7 +475,7 @@ function DemoHeaderRow() {
               </SidebarMenuButton>
             }
           />
-          <DropdownContent className="min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]" align="start" sideOffset={4} checkedIndex={0}>
+          <DropdownContent className={`min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))] ${SIDEBAR_MENU_GRID}`} align="start" sideOffset={4} checkedIndex={0}>
             <WorkspaceMenuItems />
           </DropdownContent>
         </DropdownMenu>
@@ -583,7 +584,7 @@ function DemoFooterUser() {
               </SidebarMenuButton>
             }
           />
-          <DropdownContent className="min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]" side="top" align="start" sideOffset={6}>
+          <DropdownContent className={`min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))] ${SIDEBAR_MENU_GRID}`} side="top" align="start" sideOffset={6}>
             <MenuItem index={0} icon={icons.user} label="Profile" onSelect={() => {}} />
             <MenuItem index={1} icon={icons.settings} label="Settings" onSelect={() => {}} />
             <MenuItem index={2} icon={icons["arrow-left"]} label="Log out" onSelect={() => {}} />
@@ -1271,12 +1272,22 @@ function AlignmentPreview() {
   const frameRef = useRef<HTMLDivElement>(null);
   const inView = useInView(frameRef, { amount: 0.5 });
   const [guides, setGuides] = useState<number[]>([]);
+  // The guides render in a body portal at z-[60] so they draw OVER the
+  // (body-portaled, z-50) dropdown popups too — the menus sit below the
+  // lines, which then vouch for the popup icons as well. Document-space
+  // coordinates keep them glued to the frame while the page scrolls.
+  const [frameBox, setFrameBox] = useState<{ left: number; top: number; height: number } | null>(null);
 
   useEffect(() => {
     const root = frameRef.current;
     if (!root) return;
     const measure = () => {
       const rootRect = root.getBoundingClientRect();
+      setFrameBox({
+        left: rootRect.left + window.scrollX,
+        top: rootRect.top + window.scrollY,
+        height: rootRect.height,
+      });
       const xs: number[] = [];
       // Each icon contributes both edges of its 24px slot (the size-6
       // button box, centred on the glyph), so every column reads as a pair
@@ -1303,6 +1314,9 @@ function AlignmentPreview() {
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(root);
+    // Content above the section changing height shifts the frame's document
+    // offset without resizing it — watching the body catches that.
+    observer.observe(document.body);
     return () => observer.disconnect();
   }, []);
 
@@ -1357,7 +1371,7 @@ function AlignmentPreview() {
                       }
                     />
                     <DropdownContent
-                      className="min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))]"
+                      className={`min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))] ${SIDEBAR_MENU_GRID}`}
                       align="start"
                       sideOffset={4}
                       checkedIndex={0}
@@ -1469,15 +1483,24 @@ function AlignmentPreview() {
         </SidebarFooter>
       </DemoRailShell>
       {/* One line per measured axis, on the accent so they read as guides,
-          not chrome. */}
-      {guides.map((x) => (
-        <span
-          key={x}
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 z-20 w-px opacity-40"
-          style={{ left: x - 0.5, backgroundColor: "var(--focus-ring, #6B97FF)" }}
-        />
-      ))}
+          not chrome — body-portaled above the dropdown popups. */}
+      {frameBox &&
+        createPortal(
+          guides.map((x) => (
+            <span
+              key={x}
+              aria-hidden
+              className="pointer-events-none absolute z-[60] w-px opacity-40"
+              style={{
+                left: frameBox.left + x - 0.5,
+                top: frameBox.top,
+                height: frameBox.height,
+                backgroundColor: "var(--focus-ring, #6B97FF)",
+              }}
+            />
+          )),
+          document.body
+        )}
     </div>
   );
 }
@@ -2012,12 +2035,10 @@ export default function SidebarDoc() {
         <IconRailVsPeekDemo />
       </DocSection>
 
-      <DocSection title="Icon alignment">
+      <DocSection title="Functional and perfectly aligned">
         <p className="text-body text-muted-foreground">
-          One rhythm everywhere: 24px icon buttons whose centres land 26px
-          from the sidebar&apos;s inner edge, 28px to the next column —
-          header, row actions and footer alike. The guides are measured from
-          the rendered icons, not drawn from constants.
+          One rhythm everywhere: 24px icon buttons with 16px icons from
+          header to footer.
         </p>
         <ComponentPreview
           code={alignmentCode}

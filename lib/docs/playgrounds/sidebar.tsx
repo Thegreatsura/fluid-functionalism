@@ -1348,17 +1348,21 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                         <DropdownTrigger
                           render={
                             <SidebarMenuButton aria-label="Open user menu">
+                              {/* -ml-0.5 centres the 20px avatar on the rows'
+                                  leading icon axis; the chevron rides a 24px
+                                  slot pulled -mr-0.5 onto the trailing action
+                                  axis — same idiom as the doc examples. */}
                               <Image
                                 src="/micka.png"
                                 alt=""
                                 width={20}
                                 height={20}
-                                className="size-5 shrink-0 rounded-full"
+                                className="-ml-0.5 size-5 shrink-0 rounded-full"
                               />
                               <span className="min-w-0 truncate text-[13px] text-foreground">
                                 Micka Touillaud
                               </span>
-                              <span className="ml-auto inline-flex">
+                              <span className="ml-auto -mr-0.5 flex size-6 shrink-0 items-center justify-center">
                                 {createElement(ChevronsUpDown, {
                                   size: iconSize,
                                   strokeWidth: 1.5,

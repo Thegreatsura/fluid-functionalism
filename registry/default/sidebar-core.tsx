@@ -1541,7 +1541,10 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
             : "absolute right-3.5 top-3 flex size-6 items-center justify-center text-muted-foreground outline-none",
           "hover:bg-hover hover:text-foreground transition-colors duration-80",
           "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
-          "[&_svg]:size-[var(--icon-size)] [&_svg]:shrink-0",
+          // Normalize bare icons to the site's 1.5 stroke (library defaults
+          // vary), thickening to 2 on hover — the same treatment Button's
+          // icon-only span applies.
+          "[&_svg]:size-[var(--icon-size)] [&_svg]:shrink-0 [&_svg]:stroke-[1.5] [&_svg]:transition-[stroke-width] [&_svg]:duration-80 hover:[&_svg]:stroke-[2]",
           shape.item,
           className
         ),

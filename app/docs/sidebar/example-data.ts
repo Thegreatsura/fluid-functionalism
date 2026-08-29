@@ -75,27 +75,77 @@ export const AI_NAV: readonly {
 
 /** Level 1 rows that own a level 2 sub-tree — the nesting example.
  *  Two branches so more than one can be open at once. */
-export const AI_TREE: readonly {
+/** The nesting example: Aurora AI's wiki, Notion-style. Three sections in
+ *  three states — Private folded to its label, Shared open with its
+ *  branches closed, Recent open down to level 2. */
+export const WIKI_PRIVATE: readonly {
+  icon: IconName;
+  label: string;
+  children: readonly { icon: IconName; label: string }[];
+}[] = [
+  {
+    icon: "pencil",
+    label: "Drafts",
+    children: [
+      { icon: "star", label: "Onboarding revamp" },
+      { icon: "search", label: "Competitor teardown" },
+    ],
+  },
+  {
+    icon: "calendar",
+    label: "Weekly notes",
+    children: [
+      { icon: "clock", label: "Week 35 — planning" },
+      { icon: "mail", label: "Week 34 — retro" },
+    ],
+  },
+];
+
+export const WIKI_SHARED: readonly {
   icon: IconName;
   label: string;
   children: readonly { icon: IconName; label: string }[];
 }[] = [
   {
     icon: "brain",
-    label: "Agents",
+    label: "Engineering",
     children: [
-      { icon: "inbox", label: "Support triage" },
-      { icon: "pencil", label: "Release notes" },
-      { icon: "search", label: "SQL analyst" },
+      { icon: "link", label: "API guidelines" },
+      { icon: "play", label: "Release process" },
     ],
   },
   {
-    icon: "square-library",
-    label: "Knowledge",
+    icon: "globe",
+    label: "Product hub",
     children: [
-      { icon: "globe", label: "Product docs" },
-      { icon: "mail", label: "Support macros" },
-      { icon: "link", label: "API reference" },
+      { icon: "message-circle", label: "Customer interviews" },
+      { icon: "star", label: "Roadmap" },
+    ],
+  },
+];
+
+/** Recents grouped by day — pages the visitor was just on, echoing entries
+ *  from the trees above the way a real wiki's recents do. Both branches
+ *  render open so the example leads with a fully expanded tree. */
+export const WIKI_RECENT: readonly {
+  icon: IconName;
+  label: string;
+  children: readonly { icon: IconName; label: string }[];
+}[] = [
+  {
+    icon: "clock",
+    label: "Today",
+    children: [
+      { icon: "star", label: "Onboarding revamp" },
+      { icon: "link", label: "API guidelines" },
+    ],
+  },
+  {
+    icon: "calendar",
+    label: "Yesterday",
+    children: [
+      { icon: "message-circle", label: "Customer interviews" },
+      { icon: "play", label: "Release process" },
     ],
   },
 ];

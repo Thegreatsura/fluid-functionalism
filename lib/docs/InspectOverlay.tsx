@@ -459,6 +459,77 @@ export function InspectOverlay({
   }, [comp, w, h]);
 
   return (
+    <>
+    {/* Ruler layer — BELOW the demo content (z-10 vs the demo shells' z-20):
+        an opaque demo masks the ticks and numbers, so full-bleed previews
+        never get rulers drawn over their chrome. Only the crosshair layer
+        below stays above the content. */}
+    <motion.div
+      data-inspect-ui
+      className="absolute inset-0 z-10 pointer-events-none overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, transition: spring.moderate.exit }}
+      transition={spring.moderate}
+    >
+      {/* Top ruler — sits in the gutter just below the header. The ticks run up
+          past the top of the gutter (negative y) so they tuck under the opaque
+          header (z-40); the numbers sit below the ticks with ~2px of breathing
+          room above them. overflow:visible lets the ticks bleed under. */}
+      <motion.div
+        className="absolute inset-0"
+        initial={{ y: -4 }}
+        animate={{ y: 0 }}
+        exit={{ y: -4, transition: spring.moderate.exit }}
+        transition={spring.moderate}
+      >
+        <svg width={w} height={RULER_TOP} className="absolute left-0" style={{ top: capTop, overflow: "visible" }}>
+          {target && <rect x={Math.max(target.left, leftStripEnd)} y={0} width={target.width - Math.max(0, leftStripEnd - target.left)} height={RULER_TOP} fill={BAND} />}
+          {xTicks.filter((t) => t.pos >= leftStripEnd).map((t, i) => (
+            <line key={i} x1={t.pos} y1={-6} x2={t.pos} y2={6} stroke={BLUE} strokeWidth={1} opacity={t.inComp ? (t.labeled ? 0.9 : 0.45) : 0.16} />
+          ))}
+          {xTicks.filter((t) => t.labeled && t.pos >= leftStripEnd).map((t, i) => (
+            <text key={`l${i}`} x={t.pos} y={16} fontSize={9} fill={BLUE} fontFamily="monospace" textAnchor="middle">
+              {t.value}
+            </text>
+          ))}
+        </svg>
+      </motion.div>
+
+      {/* Left ruler — ticks sit on the outer (left) edge; the rotated numbers
+          sit on the inner (right) edge next to the content, mirroring the top
+          ruler where the numbers face the content. */}
+      <motion.div
+        className="absolute inset-0"
+        initial={{ x: -4 }}
+        animate={{ x: 0 }}
+        exit={{ x: -4, transition: spring.moderate.exit }}
+        transition={spring.moderate}
+      >
+        <svg width={RULER_LEFT} height={h} className="absolute top-0" style={{ left: capLeft, overflow: "visible" }}>
+          {target && <rect x={0} y={Math.max(target.top, topStripEnd)} width={RULER_LEFT} height={target.height - Math.max(0, topStripEnd - target.top)} fill={BAND} />}
+          {yTicks.filter((t) => t.pos >= topStripEnd).map((t, i) => (
+            <line key={i} x1={0} y1={t.pos} x2={6} y2={t.pos} stroke={BLUE} strokeWidth={1} opacity={t.inComp ? (t.labeled ? 0.9 : 0.45) : 0.16} />
+          ))}
+          {yTicks.filter((t) => t.labeled && t.pos >= topStripEnd).map((t, i) => (
+            <text
+              key={`l${i}`}
+              x={16}
+              y={t.pos}
+              fontSize={9}
+              fill={BLUE}
+              fontFamily="monospace"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              transform={`rotate(-90 16 ${t.pos})`}
+            >
+              {t.value}
+            </text>
+          ))}
+        </svg>
+      </motion.div>
+    </motion.div>
+
     <motion.div
       data-inspect-ui
       className="absolute inset-0 z-30 pointer-events-none overflow-hidden"
@@ -523,63 +594,6 @@ export function InspectOverlay({
         </>
       )}
 
-      {/* Top ruler — sits in the gutter just below the header. The ticks run up
-          past the top of the gutter (negative y) so they tuck under the opaque
-          header (z-40); the numbers sit below the ticks with ~2px of breathing
-          room above them. overflow:visible lets the ticks bleed under. */}
-      <motion.div
-        className="absolute inset-0"
-        initial={{ y: -4 }}
-        animate={{ y: 0 }}
-        exit={{ y: -4, transition: spring.moderate.exit }}
-        transition={spring.moderate}
-      >
-        <svg width={w} height={RULER_TOP} className="absolute left-0" style={{ top: capTop, overflow: "visible" }}>
-          {target && <rect x={Math.max(target.left, leftStripEnd)} y={0} width={target.width - Math.max(0, leftStripEnd - target.left)} height={RULER_TOP} fill={BAND} />}
-          {xTicks.filter((t) => t.pos >= leftStripEnd).map((t, i) => (
-            <line key={i} x1={t.pos} y1={-6} x2={t.pos} y2={6} stroke={BLUE} strokeWidth={1} opacity={t.inComp ? (t.labeled ? 0.9 : 0.45) : 0.16} />
-          ))}
-          {xTicks.filter((t) => t.labeled && t.pos >= leftStripEnd).map((t, i) => (
-            <text key={`l${i}`} x={t.pos} y={16} fontSize={9} fill={BLUE} fontFamily="monospace" textAnchor="middle">
-              {t.value}
-            </text>
-          ))}
-        </svg>
-      </motion.div>
-
-      {/* Left ruler — ticks sit on the outer (left) edge; the rotated numbers
-          sit on the inner (right) edge next to the content, mirroring the top
-          ruler where the numbers face the content. */}
-      <motion.div
-        className="absolute inset-0"
-        initial={{ x: -4 }}
-        animate={{ x: 0 }}
-        exit={{ x: -4, transition: spring.moderate.exit }}
-        transition={spring.moderate}
-      >
-        <svg width={RULER_LEFT} height={h} className="absolute top-0" style={{ left: capLeft, overflow: "visible" }}>
-          {target && <rect x={0} y={Math.max(target.top, topStripEnd)} width={RULER_LEFT} height={target.height - Math.max(0, topStripEnd - target.top)} fill={BAND} />}
-          {yTicks.filter((t) => t.pos >= topStripEnd).map((t, i) => (
-            <line key={i} x1={0} y1={t.pos} x2={6} y2={t.pos} stroke={BLUE} strokeWidth={1} opacity={t.inComp ? (t.labeled ? 0.9 : 0.45) : 0.16} />
-          ))}
-          {yTicks.filter((t) => t.labeled && t.pos >= topStripEnd).map((t, i) => (
-            <text
-              key={`l${i}`}
-              x={16}
-              y={t.pos}
-              fontSize={9}
-              fill={BLUE}
-              fontFamily="monospace"
-              textAnchor="middle"
-              dominantBaseline="middle"
-              transform={`rotate(-90 16 ${t.pos})`}
-            >
-              {t.value}
-            </text>
-          ))}
-        </svg>
-      </motion.div>
-
       {/* Info tooltip — the FF Tooltip, anchored to the hovered element. */}
       {target && (
         <Tooltip
@@ -622,5 +636,6 @@ export function InspectOverlay({
         </Tooltip>
       )}
     </motion.div>
+    </>
   );
 }

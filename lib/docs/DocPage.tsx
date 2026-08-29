@@ -158,10 +158,15 @@ interface DocSectionProps {
 
 export function DocSection({ title, children }: DocSectionProps) {
   // Section headings are the title role of the type scale (see /docs/sizes).
+  // The extra top padding (over the page's gap-8) lets each section breathe
+  // and makes the title read as a fresh start rather than a caption for
+  // whatever sat above it. The heading's negative margin tucks the
+  // description against its title (8px) while the gap gives the content
+  // below the description a fuller 16px.
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4 pt-6">
       <h2
-        className="text-title text-foreground leading-none"
+        className="-mb-2 text-title text-foreground leading-none"
         style={{ fontVariationSettings: fontWeights.semibold }}
       >
         {title}

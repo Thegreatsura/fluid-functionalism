@@ -1051,15 +1051,17 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
             : "absolute right-1.5 z-10 flex size-6 items-center justify-center text-muted-foreground outline-none",
           !inCluster &&
             (item?.isSubRow
-              ? "group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:right-8"
-              : "group-has-[>[data-sidebar=menu-badge]]/menu-item:right-8"),
+              ? "group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:right-8.5"
+              : "group-has-[>[data-sidebar=menu-badge]]/menu-item:right-8.5"),
           !inCluster &&
             (item?.isSubRow || sizeClasses.variant === "compact" ? "top-0.5" : "top-1"),
           "hover:bg-hover hover:text-foreground transition-[color,background-color,opacity] duration-80",
           "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
           // One icon size across the sidebar: row actions match the leading
           // icons and the section header's actions, all on the size ladder.
-          "[&_svg]:size-[var(--icon-size)] [&_svg]:shrink-0",
+          // Normalize bare icons to the site's 1.5 stroke (library defaults
+          // vary), thickening to 2 on hover — Button's icon-only treatment.
+          "[&_svg]:size-[var(--icon-size)] [&_svg]:shrink-0 [&_svg]:stroke-[1.5] [&_svg]:transition-[stroke-width] [&_svg]:duration-80 hover:[&_svg]:stroke-[2]",
           shape.item,
           // Reveal on the OWN row only. A sub action must not use the
           // menu-item group — its nearest one is the parent li, which would
@@ -1119,8 +1121,8 @@ const SidebarMenuActions = forwardRef<HTMLDivElement, SidebarMenuActionsProps>(
           "absolute right-1.5 z-10 flex items-center gap-1",
           // The badge keeps the rightmost slot; the cluster sits left of it.
           item?.isSubRow
-            ? "group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:right-8"
-            : "group-has-[>[data-sidebar=menu-badge]]/menu-item:right-8",
+            ? "group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:right-8.5"
+            : "group-has-[>[data-sidebar=menu-badge]]/menu-item:right-8.5",
           item?.isSubRow || sizeClasses.variant === "compact" ? "top-0.5" : "top-1",
           showOnHover &&
             (item?.isSubRow

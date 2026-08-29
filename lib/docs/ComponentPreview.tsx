@@ -45,6 +45,9 @@ interface ComponentPreviewProps {
   /** Show the Inspect toggle (pixel rulers + box-model inspector). Defaults to
    *  true; set false for previews where an overlay would get in the way. */
   inspectable?: boolean;
+  /** Start with Inspect already on — for previews whose subject IS the
+   *  geometry. The toggle still works. */
+  defaultInspect?: boolean;
   children: ReactNode;
 }
 
@@ -57,10 +60,11 @@ export function ComponentPreview({
   minHeightClass = "min-h-[120px]",
   align = "center",
   inspectable = true,
+  defaultInspect = false,
   children,
 }: ComponentPreviewProps) {
   const [tab, setTab] = useState(0);
-  const [inspect, setInspect] = useState(false);
+  const [inspect, setInspect] = useState(defaultInspect);
   const [html, setHtml] = useState("");
   const shape = useShape();
   const ReplayIcon = useIcon("rotate-ccw");

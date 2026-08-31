@@ -222,7 +222,15 @@ const alignmentCode = `// One rhythm everywhere: 24px icon buttons, gap-1, insid
       {/* icon buttons, as many as the row holds */}
     </div>
   </div>
-</SidebarFooter>`;
+</SidebarFooter>
+
+{/* The workspace and user menus hang off the same axes: SIDEBAR_MENU_POPUP
+    (from the sidebar-menu-grid lib) sizes the popup to the trigger +10px,
+    shifts it -ml-1 onto the row's edge, and grids the items so tiles and
+    labels land on the rows' 16px/32px axes. Interpolated live, so this
+    snippet can never drift from the shipped value:
+    "${SIDEBAR_MENU_POPUP}" */}
+<DropdownContent className={SIDEBAR_MENU_POPUP} align="start" sideOffset={4}>`;
 
 // ── Props tables ─────────────────────────────────────────
 // Grouped the way the sidebar is built — shell, sections, rows — so a prop

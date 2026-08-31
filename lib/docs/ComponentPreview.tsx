@@ -20,7 +20,9 @@ export interface PlaybackButton {
 
 interface ComponentPreviewProps {
   title?: string;
-  code: string;
+  /** Source snippet for the Code tab. Optional for hideHeader previews,
+   *  which have no tab bar to reach it from. */
+  code?: string;
   /** Legacy replay callback */
   onReplay?: () => void;
   /** Custom playback button (overrides onReplay) */
@@ -57,6 +59,8 @@ interface ComponentPreviewProps {
    *  the live demo. For gallery-style rows (the Layouts variants) where the
    *  chrome would repeat three times for one code sample. */
   hideHeader?: boolean;
+  /** Centered label rendered under the frame — the gallery rows' captions. */
+  caption?: string;
   children: ReactNode;
 }
 
@@ -72,6 +76,7 @@ export function ComponentPreview({
   defaultInspect = false,
   inspectRulers = true,
   hideHeader = false,
+  caption,
   children,
 }: ComponentPreviewProps) {
   const [tab, setTab] = useState(0);
@@ -89,7 +94,7 @@ export function ComponentPreview({
     routeKeyboardOnMouseDown(e, previewRef.current);
 
   useEffect(() => {
-    highlight(code).then(setHtml);
+    if (code) highlight(code).then(setHtml);
   }, [code]);
 
   const showButton = !!playbackButton || !!onReplay;
@@ -98,7 +103,7 @@ export function ComponentPreview({
   // fit the outer border without overlapping the header or content).
   const inspecting = inspectable && inspect && tab === 0;
 
-  return (
+  const frame = (
     <div
       ref={frameRef}
       // `isolate` scopes the frame's internal z ladder (the z-[70] tab bar,

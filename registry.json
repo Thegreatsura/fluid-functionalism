@@ -1401,6 +1401,41 @@
       ]
     },
     {
+      "name": "sidebar-search-field",
+      "type": "registry:block",
+      "title": "Sidebar Search Field",
+      "description": "Header search on the menu rows' rhythm: leading icon on the rows' 16px axis, text on the 32px axis, and a hover-revealed keystroke chip at the trailing edge.",
+      "registryDependencies": [
+        "size-context",
+        "icon-context",
+        "sidebar"
+      ],
+      "files": [
+        {
+          "path": "registry/blocks/sidebar-app/search-field.tsx",
+          "type": "registry:component",
+          "target": "components/sidebar-app/search-field.tsx"
+        }
+      ]
+    },
+    {
+      "name": "sidebar-inset-topbar",
+      "type": "registry:block",
+      "title": "Sidebar Inset Topbar",
+      "description": "The main region's topbar: h-12 with the trigger that hides while the rail peeks and fades back in at its settled spot after a pin.",
+      "registryDependencies": [
+        "utils",
+        "sidebar"
+      ],
+      "files": [
+        {
+          "path": "registry/blocks/sidebar-app/inset-topbar.tsx",
+          "type": "registry:component",
+          "target": "components/sidebar-app/inset-topbar.tsx"
+        }
+      ]
+    },
+    {
       "name": "sidebar-app",
       "type": "registry:block",
       "title": "App Sidebar",
@@ -1413,23 +1448,15 @@
         "tooltip",
         "dropdown",
         "sidebar-workspace-header",
-        "sidebar-user-footer"
+        "sidebar-user-footer",
+        "sidebar-search-field",
+        "sidebar-inset-topbar"
       ],
       "files": [
         {
           "path": "registry/blocks/sidebar-app/app-sidebar.tsx",
           "type": "registry:component",
           "target": "components/sidebar-app/app-sidebar.tsx"
-        },
-        {
-          "path": "registry/blocks/sidebar-app/search-field.tsx",
-          "type": "registry:component",
-          "target": "components/sidebar-app/search-field.tsx"
-        },
-        {
-          "path": "registry/blocks/sidebar-app/inset-topbar.tsx",
-          "type": "registry:component",
-          "target": "components/sidebar-app/inset-topbar.tsx"
         },
         {
           "path": "registry/blocks/sidebar-app/nav-data.ts",

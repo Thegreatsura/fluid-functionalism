@@ -71,6 +71,8 @@ export const CUSTOM_ITEMS = new Set([
   // blocks (single-source compositions over flavoured components)
   "sidebar-workspace-header",
   "sidebar-user-footer",
+  "sidebar-search-field",
+  "sidebar-inset-topbar",
   // primitive-agnostic UI components (single source under @fluid)
   "badge",
   "chat-message",

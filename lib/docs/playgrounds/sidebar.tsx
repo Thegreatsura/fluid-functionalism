@@ -30,7 +30,22 @@ import {
 } from "@/components/flavored/sidebar";
 import { useIcons, type IconName } from "@/lib/icon-context";
 import { useShape } from "@/lib/shape-context";
-import { useSize } from "@/lib/size-context";
+import { useSize, useSizeVariant } from "@/lib/size-context";
+import { useBase } from "@/lib/base-context";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/registry/radix/dialog";
+import { InputCopy } from "@/registry/default/input-copy";
+import {
+  encodeSidebarPreset,
+  decodeSidebarPreset,
+  SIDEBAR_DEFAULT_CODE,
+} from "@/lib/preset/codec";
 import { Switch } from "@/registry/radix/switch";
 import { Button } from "@/registry/radix/button";
 import { Tooltip } from "@/registry/radix/tooltip";
@@ -78,105 +93,23 @@ import type { PlaygroundProps } from "./types";
 // you what it touches. Each content level answers the same few questions:
 // what leads the row, whether it nests, how many actions, badges on or off.
 
-type Count3 = 0 | 1 | 2 | 3;
-type Count2 = 0 | 1 | 2;
-type Stack = "horizontal" | "vertical";
-
-interface PlayState {
-  // Layout
-  design: SidebarVariant;
-  /** What the collapsed edge does: nothing, or peek the sidebar back. */
-  collapsedBehavior: "none" | "hover" | "click";
-  state: "opened" | "closed" | "loading";
-  // Header
-  headerPrimary: "dropdown" | "logo" | "none";
-  headerStack: Stack;
-  headerActions: Count2;
-  // Sections
-  sectionsCollapsible: boolean;
-  sectionActions: Count3;
-  // Content level 1
-  l1Primary: "threads" | "menu";
-  l1Children: boolean;
-  l1Actions: Count3;
-  l1Badges: boolean;
-  // Content level 2 — the deepest level the menu nests to.
-  l2Icon: boolean;
-  l2Actions: Count3;
-  l2Badges: boolean;
-  // Footer
-  footerPrimary: "dropdown" | "none";
-  footerStack: Stack;
-  footerActions: Count2;
-  /** Anchored callout above the footer rows: an inline icon row or a
-   *  banner card. */
-  footerCallout: "none" | "inline" | "banner";
-  /** Render the callout as a sonner-style stack of cards instead of one. */
-  footerCalloutStacked: boolean;
-}
-
-const DEFAULT_STATE: PlayState = {
-  design: "inset",
-  collapsedBehavior: "none",
-  state: "opened",
-  headerPrimary: "dropdown",
-  headerStack: "vertical",
-  headerActions: 1,
-  sectionsCollapsible: true,
-  sectionActions: 1,
-  l1Primary: "threads",
-  l1Children: false,
-  l1Actions: 1,
-  l1Badges: false,
-  l2Icon: true,
-  l2Actions: 1,
-  l2Badges: true,
-  footerPrimary: "dropdown",
-  footerStack: "horizontal",
-  footerActions: 2,
-  footerCallout: "none",
-  footerCalloutStacked: false,
-};
-
-// ── Content sets ─────────────────────────────────────────
-// Row actions are sliced from the END, so the overflow menu is the one you
-// always keep: it stays rightmost and demos the dropdown at every count.
-const ROW_ACTION_SET = [
-  { icon: "plus", label: "Add" },
-  { icon: "pencil", label: "Rename" },
-  { icon: "more-vertical", label: "More options", menu: true },
-] as const;
-
-const GROUP_ACTION_SET = [
-  { icon: "plus", label: "Add item" },
-  { icon: "sliders-horizontal", label: "Section settings" },
-  { icon: "more-vertical", label: "More options" },
-] as const;
-
-const SEARCH_SHORTCUT = "⌘K";
-
-const HEADER_ACTION_SET = [
-  { icon: "plus", label: "New", shortcut: "⇧⌘O" },
-  { icon: "users", label: "Invite", shortcut: "⇧⌘I" },
-] as const;
-
-const FOOTER_ACTION_SET = [
-  { icon: "settings", label: "Settings" },
-  { icon: "moon", label: "Theme" },
-] as const;
-
-/** Level-2 rows, hosted by every level-1 row while "Has children" is on —
- *  matching the generated code, which nests every item. */
-const L2_ROWS = [
-  { icon: "folder", label: "Design system", badge: "4" },
-  { icon: "folder", label: "Marketing site", badge: "2" },
-  { icon: "folder", label: "Travel app" },
-] as const;
-
-const SECTION_LABELS = {
-  threads: ["fluid-functionalism", "portfolio-site"],
-  menu: ["Platform", "Workspace"],
-} as const;
+// State shape, defaults, and demo content live in lib/preset/sidebar-options —
+// shared with the preset codec, the "Get code" route, and both generators.
+import {
+  type Count3,
+  type Count2,
+  type Stack,
+  type PlayState,
+  DEFAULT_STATE,
+  ROW_ACTION_SET,
+  GROUP_ACTION_SET,
+  SEARCH_SHORTCUT,
+  HEADER_ACTION_SET,
+  FOOTER_ACTION_SET,
+  L2_ROWS,
+  SECTION_LABELS,
+  iconTag,
+} from "@/lib/preset/sidebar-options";
 
 /** Anchored footer callout — the Card component on a surface one step above
  *  the sidebar it sits in, so it reads as a card resting on the rail.
@@ -473,15 +406,6 @@ function pick<T>(options: readonly T[]): T {
   return options[Math.floor(Math.random() * options.length)];
 }
 
-/** "more-vertical" → "MoreVerticalIcon", for the generated snippet. */
-function iconTag(name: string): string {
-  return (
-    name
-      .split("-")
-      .map((w) => w[0].toUpperCase() + w.slice(1))
-      .join("") + "Icon"
-  );
-}
 
 // ── Generated code ───────────────────────────────────────
 
@@ -1140,6 +1064,38 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
   const iconSize = useSize().icon;
   const shape = useShape();
 
+  // ── Get code (presets) ─────────────────────────────────
+  // The rail's configuration bit-packs into a stateless code (shadcn's
+  // preset principle) that the /r/preset route turns into an installable
+  // registry item. Flavor/shape/size ride along so the install matches the
+  // site's current "Make them yours" settings.
+  const { base } = useBase();
+  const sizeVariant = useSizeVariant();
+  const presetCode = encodeSidebarPreset({
+    ...state,
+    flavor: base === "base" ? "base" : "radix",
+    shape: shape.bgRadius >= 20 ? "pill" : "rounded",
+    size: sizeVariant === "compact" ? "compact" : "default",
+  });
+  // Share-links: ?preset=<code> hydrates the rail once on mount…
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("preset");
+    if (!code) return;
+    const res = decodeSidebarPreset(code);
+    if (res.ok) {
+      const { flavor: _f, shape: _s, size: _z, ...play } = res.preset;
+      setState(play);
+    }
+  }, []);
+  // …and the address bar tracks the current variant, so it's always
+  // copyable. replaceState keeps Next's router out of the loop.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (presetCode === SIDEBAR_DEFAULT_CODE) url.searchParams.delete("preset");
+    else url.searchParams.set("preset", presetCode);
+    window.history.replaceState(window.history.state, "", url);
+  }, [presetCode]);
+
   /** Tooltip content with the action's keystroke, on the same inverted
    *  surface treatment the sidebar trigger's tooltip uses. */
   const tipWithShortcut = (label: string, shortcut: string) => (
@@ -1741,6 +1697,44 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
         disabled={state.footerCallout === "none"}
         className={PLAY_SWITCH}
       />
+      <PlayDivider />
+      {/* shadcn's preset principle: the exact configuration above, as a
+          stateless code the registry can turn into an installable block. */}
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button variant="secondary" size="sm" className="w-full">
+            Get code
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Install this configuration</DialogTitle>
+            <DialogDescription>
+              The exact variant you built — sidebar, sections, footer, motion
+              details and all — as one installable block
+              {presetCode === SIDEBAR_DEFAULT_CODE ? "" : ` (preset ${presetCode})`}
+              .
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            <InputCopy
+              value={`npx shadcn@latest add https://www.fluidfunctionalism.com/r/preset/${presetCode}.json`}
+            />
+            <p className="text-caption text-muted-foreground">
+              Ships <code>components/sidebar-preset/</code> plus a
+              ready-to-run <code>app/sidebar/page.tsx</code>, pulling the{" "}
+              {base === "base" ? "Base UI" : "Radix"} flavor and every shared
+              block it composes.
+            </p>
+            <InputCopy
+              value={`https://www.fluidfunctionalism.com/docs/sidebar?preset=${presetCode}`}
+            />
+            <p className="text-caption text-muted-foreground">
+              Share link — reopens this playground exactly as configured.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PlaygroundPanel>
   );
 

@@ -77,7 +77,7 @@ export function PlaySection({ label }: { label: string }) {
   // headings of the list rather than a smaller muted caption.
   return (
     <div
-      className="px-1 pb-1 pt-1 text-body text-foreground"
+      className="px-1 pb-1 pt-2 text-body text-foreground"
       style={{ fontVariationSettings: fontWeights.semibold }}
     >
       {label}
@@ -85,9 +85,9 @@ export function PlaySection({ label }: { label: string }) {
   );
 }
 
-/** Hairline between two control groups. */
+/** Hairline between two control groups — full bleed across the panel. */
 export function PlayDivider() {
-  return <div className="my-2 border-t border-border/60" />;
+  return <div className="my-2 -mx-3 border-t border-border/60" />;
 }
 
 /** The muted controls card: title row with a shuffle button, fields below. */

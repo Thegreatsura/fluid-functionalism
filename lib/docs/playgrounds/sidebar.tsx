@@ -1321,6 +1321,12 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       <SidebarProvider
         className="h-full min-h-0"
         persist={false}
+        // Never flip to the sheet inside the preview: on a phone the drawer
+        // reduced the playground to one "Open sidebar" button, so shuffling
+        // and every rail control looked inert. Rendering the real rail
+        // inline (like every other demo on the page) keeps the state visible
+        // at any width.
+        mobileBreakpoint={0}
         open={state.state !== "closed"}
         onOpenChange={(next) => set("state", next ? "opened" : "closed")}
         peek={state.collapsedBehavior}

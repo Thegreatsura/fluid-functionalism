@@ -285,9 +285,9 @@ export function CardPlayground({ children }: PlaygroundProps) {
         />
       </div>
 
-      <PlayDivider />
 
       {/* Card group (layout props) */}
+      <PlayDivider />
       <PlaySection label="Card group" />
       <div>
         <PlayField label="Orientation">

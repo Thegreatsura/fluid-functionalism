@@ -179,8 +179,8 @@ export function ButtonPlayground({ children }: PlaygroundProps) {
         />
       </div>
 
-      <PlayDivider />
 
+      <PlayDivider />
       <PlaySection label="State" />
       <div>
         <Switch

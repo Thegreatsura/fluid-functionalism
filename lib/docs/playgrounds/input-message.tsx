@@ -417,8 +417,8 @@ export function InputMessagePlayground({ children }: PlaygroundProps) {
         />
       </div>
 
-      <PlayDivider />
 
+      <PlayDivider />
       <PlaySection label="Slots" />
       <div>
         <Switch
@@ -435,8 +435,8 @@ export function InputMessagePlayground({ children }: PlaygroundProps) {
         />
       </div>
 
-      <PlayDivider />
 
+      <PlayDivider />
       <PlaySection label="Queue" />
       <div>
         <PlayField label="Status">

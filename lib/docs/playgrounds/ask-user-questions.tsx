@@ -234,8 +234,8 @@ export function AskUserQuestionsPlayground({ children }: PlaygroundProps) {
         />
       </div>
 
-      <PlayDivider />
 
+      <PlayDivider />
       <PlaySection label="Flow" />
       <div>
         <PlayField label="Questions">

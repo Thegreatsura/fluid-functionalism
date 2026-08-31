@@ -18,7 +18,8 @@
     "https://www.fluidfunctionalism.com/r/icon-context.json",
     "https://www.fluidfunctionalism.com/r/use-proximity-hover.json",
     "https://www.fluidfunctionalism.com/r/elevated.json",
-    "https://www.fluidfunctionalism.com/r/size-context.json"
+    "https://www.fluidfunctionalism.com/r/size-context.json",
+    "https://www.fluidfunctionalism.com/r/tokens.json"
   ],
   "files": [
     {
@@ -27,6 +28,10 @@
       "type": "registry:ui",
       "target": "components/ui/select.tsx"
     }
+  ],
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/select.",
+  "categories": [
+    "components"
   ],
   "type": "registry:ui"
 }

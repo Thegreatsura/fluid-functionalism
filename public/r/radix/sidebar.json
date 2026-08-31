@@ -21,7 +21,8 @@
     "https://www.fluidfunctionalism.com/r/use-proximity-hover.json",
     "https://www.fluidfunctionalism.com/r/radix/tooltip.json",
     "https://www.fluidfunctionalism.com/r/radix/scroll-area.json",
-    "https://www.fluidfunctionalism.com/r/radix/button.json"
+    "https://www.fluidfunctionalism.com/r/radix/button.json",
+    "https://www.fluidfunctionalism.com/r/tokens.json"
   ],
   "files": [
     {
@@ -42,6 +43,10 @@
       "type": "registry:ui",
       "target": "components/ui/sidebar-menu.tsx"
     }
+  ],
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/sidebar. Related blocks: sidebar-app, sidebar-workspace-header, sidebar-user-footer.",
+  "categories": [
+    "components"
   ],
   "type": "registry:ui"
 }

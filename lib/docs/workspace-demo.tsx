@@ -12,21 +12,9 @@ import { fontWeights } from "@/lib/font-weight";
 // at the trigger's 20px, centred on the row's icon slot so the tiles land on
 // the sidebar's leading icon axis.
 
-/** Item grid for sidebar-anchored menus (the workspace and user dropdowns).
- *  The popup rides SIDEBAR_MENU_POPUP's -ml-1 (its width grows 4px to keep
- *  the trigger-flush right edge), so each item's box starts exactly at the
- *  trigger row's edge: pl-2 then lands the leading icon slot's centre on the
- *  sidebar's 16px leading axis, gap-2 lands the label on the rows' 32px
- *  text axis (8px from the slot; a 20px letter-tile overhangs the slot 2px
- *  per side, so ~6px visually), and pr-1.5 keeps the trailing check on the
- *  action axis. */
-export const SIDEBAR_MENU_GRID =
-  "[&_[role=menuitem]]:pl-2 [&_[role=menuitem]]:pr-1.5 [&_[role=menuitem]]:gap-2 [&_[role=menuitemradio]]:pl-2 [&_[role=menuitemradio]]:pr-1.5 [&_[role=menuitemradio]]:gap-2";
-
-/** Popup class for those menus: trigger-width plus the 4px the popup shifts
- *  left, plus 8px on the right so the items' trailing check sits on the
- *  trigger chevron's vertical axis. */
-export const SIDEBAR_MENU_POPUP = `min-w-[240px] -ml-1 w-[calc(var(--radix-dropdown-menu-trigger-width,var(--anchor-width))_+_10px)] ${SIDEBAR_MENU_GRID}`;
+// The menu geometry now lives with the sidebar blocks — one string for the
+// doc demos, the playground, and the installable registry payloads alike.
+export { SIDEBAR_MENU_GRID, SIDEBAR_MENU_POPUP } from "@/lib/sidebar-menu-grid";
 
 export function WorkspaceMenuItems() {
   const icons = useIcons();

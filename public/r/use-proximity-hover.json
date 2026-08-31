@@ -10,5 +10,9 @@
       "type": "registry:hook"
     }
   ],
+  "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
+  "categories": [
+    "hook"
+  ],
   "type": "registry:hook"
 }

@@ -16,5 +16,9 @@
       "type": "registry:lib"
     }
   ],
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/surfaces.",
+  "categories": [
+    "lib"
+  ],
   "type": "registry:lib"
 }

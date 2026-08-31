@@ -18,5 +18,9 @@
       "type": "registry:ui"
     }
   ],
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/badge.",
+  "categories": [
+    "components"
+  ],
   "type": "registry:ui"
 }

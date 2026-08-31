@@ -20,5 +20,9 @@
       "target": "components/ui/mobile-drawer.tsx"
     }
   ],
+  "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
+  "categories": [
+    "components"
+  ],
   "type": "registry:ui"
 }

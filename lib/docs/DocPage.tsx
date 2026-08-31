@@ -144,6 +144,22 @@ export function DocPage({
               flavors.
             </p>
           ) : null}
+          {/* Namespaced form, once `npx shadcn@latest registry add @fluid`
+              has been run (see the Introduction). Only for the flat/Radix
+              flavor — the base namespace isn't published. */}
+          {!(base === "base" && DUAL_FLAVOR_SLUGS.has(installSlug ?? slug)) && (
+            <p className="text-caption text-muted-foreground">
+              With the{" "}
+              <Link
+                href="/docs"
+                className="underline underline-offset-4 hover:text-foreground"
+              >
+                @fluid registry
+              </Link>{" "}
+              added, this is just{" "}
+              <code>npx shadcn@latest add @fluid/{installSlug ?? slug}</code>.
+            </p>
+          )}
         </div>
       )}
       {children}

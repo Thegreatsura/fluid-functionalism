@@ -21,5 +21,9 @@
       "target": "components/ui/tooltip.tsx"
     }
   ],
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/tooltip.",
+  "categories": [
+    "components"
+  ],
   "type": "registry:ui"
 }

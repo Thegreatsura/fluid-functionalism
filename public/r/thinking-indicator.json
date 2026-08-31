@@ -36,5 +36,9 @@
       "animation": "shimmer 1.5s ease-in-out infinite"
     }
   },
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/thinking-indicator.",
+  "categories": [
+    "components"
+  ],
   "type": "registry:ui"
 }

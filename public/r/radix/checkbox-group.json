@@ -14,7 +14,8 @@
     "https://www.fluidfunctionalism.com/r/shape-context.json",
     "https://www.fluidfunctionalism.com/r/use-proximity-hover.json",
     "https://www.fluidfunctionalism.com/r/use-merge-split.json",
-    "https://www.fluidfunctionalism.com/r/size-context.json"
+    "https://www.fluidfunctionalism.com/r/size-context.json",
+    "https://www.fluidfunctionalism.com/r/tokens.json"
   ],
   "files": [
     {
@@ -23,6 +24,10 @@
       "type": "registry:ui",
       "target": "components/ui/checkbox-group.tsx"
     }
+  ],
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/checkbox-group.",
+  "categories": [
+    "components"
   ],
   "type": "registry:ui"
 }

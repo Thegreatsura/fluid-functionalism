@@ -26,5 +26,9 @@
       "target": "components/ui/dialog.tsx"
     }
   ],
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/dialog.",
+  "categories": [
+    "components"
+  ],
   "type": "registry:ui"
 }

@@ -14,7 +14,8 @@
     "https://www.fluidfunctionalism.com/r/font-weight.json",
     "https://www.fluidfunctionalism.com/r/icon-context.json",
     "https://www.fluidfunctionalism.com/r/use-proximity-hover.json",
-    "https://www.fluidfunctionalism.com/r/size-context.json"
+    "https://www.fluidfunctionalism.com/r/size-context.json",
+    "https://www.fluidfunctionalism.com/r/tokens.json"
   ],
   "files": [
     {
@@ -23,6 +24,19 @@
       "type": "registry:ui",
       "target": "components/ui/tabs-subtle.tsx"
     }
+  ],
+  "css": {
+    ".scrollbar-hide": {
+      "-ms-overflow-style": "none",
+      "scrollbar-width": "none"
+    },
+    ".scrollbar-hide::-webkit-scrollbar": {
+      "display": "none"
+    }
+  },
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/tabs-subtle.",
+  "categories": [
+    "components"
   ],
   "type": "registry:ui"
 }

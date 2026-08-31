@@ -15,7 +15,8 @@
     "https://www.fluidfunctionalism.com/r/shape-context.json",
     "https://www.fluidfunctionalism.com/r/size-context.json",
     "https://www.fluidfunctionalism.com/r/icon-context.json",
-    "https://www.fluidfunctionalism.com/r/badge.json"
+    "https://www.fluidfunctionalism.com/r/badge.json",
+    "https://www.fluidfunctionalism.com/r/tokens.json"
   ],
   "files": [
     {
@@ -43,5 +44,9 @@
       "animation": "shimmer 1.5s ease-in-out infinite"
     }
   },
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/thinking-steps.",
+  "categories": [
+    "components"
+  ],
   "type": "registry:ui"
 }

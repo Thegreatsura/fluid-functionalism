@@ -14,7 +14,8 @@
     "https://www.fluidfunctionalism.com/r/font-weight.json",
     "https://www.fluidfunctionalism.com/r/shape-context.json",
     "https://www.fluidfunctionalism.com/r/icon-context.json",
-    "https://www.fluidfunctionalism.com/r/size-context.json"
+    "https://www.fluidfunctionalism.com/r/size-context.json",
+    "https://www.fluidfunctionalism.com/r/tokens.json"
   ],
   "files": [
     {
@@ -39,5 +40,9 @@
       }
     }
   },
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/button.",
+  "categories": [
+    "components"
+  ],
   "type": "registry:ui"
 }

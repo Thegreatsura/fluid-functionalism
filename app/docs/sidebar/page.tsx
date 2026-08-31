@@ -8,9 +8,7 @@ import { spring } from "@/lib/springs";
 import {
   SidebarProvider,
   Sidebar,
-  SidebarTrigger,
   SidebarInset,
-  SidebarInput,
   SidebarHeader,
   SidebarContent,
   SidebarFooter,
@@ -27,7 +25,6 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
-  useSidebar,
 } from "@/components/flavored/sidebar";
 import { Button } from "@/registry/radix/button";
 import { Tooltip, TooltipPortalContainer } from "@/registry/radix/tooltip";
@@ -43,10 +40,17 @@ import { fontWeights } from "@/lib/font-weight";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
+import { InputCopy } from "@/registry/default/input-copy";
 import { useNarrowFrame } from "@/lib/use-narrow-frame";
 import { PlaygroundLayout } from "@/lib/docs/playground";
 import { SidebarPlayground, FooterCalloutStack } from "@/lib/docs/playgrounds/sidebar";
 import { WorkspaceMenuItems, SIDEBAR_MENU_POPUP } from "@/lib/docs/workspace-demo";
+import {
+  SidebarWorkspaceHeader,
+  WorkspaceTile,
+} from "@/components/sidebar-app/workspace-header";
+import { SidebarSearchField } from "@/components/sidebar-app/search-field";
+import { SidebarInsetTopbar } from "@/components/sidebar-app/inset-topbar";
 import {
   Card,
   CardDescription,
@@ -214,11 +218,10 @@ const actionsCode = `{/* The section label carries actions of its own */}
 
 const headerFooterCode = `/* Sidebar-anchored menus: trigger width +10px, shifted -4px — items start
    at the trigger row's edge, icon slots land on the rows' leading axis,
-   and the trailing check sits on the trigger chevron's axis. */
+   and the trailing check sits on the trigger chevron's axis. Installable:
+   npx shadcn add @fluid/sidebar-menu-grid */
 const SIDEBAR_MENU_POPUP =
-  "min-w-[240px] -ml-1 w-[calc(var(--radix-dropdown-menu-trigger-width,var(--anchor-width))_+_10px)] " +
-  "[&_[role=menuitem]]:pl-2 [&_[role=menuitem]]:pr-1.5 [&_[role=menuitem]]:gap-2.5 " +
-  "[&_[role=menuitemradio]]:pl-2 [&_[role=menuitemradio]]:pr-1.5 [&_[role=menuitemradio]]:gap-2.5";
+  "${SIDEBAR_MENU_POPUP}";
 
 {/* Vertical: every element gets its own full-width row */}
 <SidebarHeader>
@@ -585,64 +588,16 @@ function SidebarShellFrame({
   );
 }
 
+/** The header's brand row — the sidebar-workspace-header block, fed this
+ *  page's workspace name and the shared switcher menu. */
 function DemoHeaderRow() {
-  const ChevronDown = useIcon("chevron-down");
-  const shape = useShape();
-  const { isPeeking } = useSidebar();
   return (
-    // @container: the row hides its dropdown chevron once it gets too narrow
-    // to show a useful slice of the name (squeezed by trailing header actions
-    // or a mid-drag width) — the text keeps whatever room is left.
-    <SidebarMenu aria-label="Workspace" className="@container">
-      <SidebarMenuItem>
-        {/* While the sidebar is only PEEKING, the pointer's one way to pin it
-            open is covered by the overlay itself — so the trigger takes the
-            logo's slot. A sibling positioned over the row (the menu-action
-            pattern), never a button nested inside the row button. Trigger and
-            tile cross-fade in place; the constant pl-8 (the rows' 32px text axis) keeps the name pinned
-            while they swap. */}
-        <SidebarTrigger
-          size="icon-compact"
-          aria-hidden={!isPeeking || undefined}
-          tabIndex={isPeeking ? undefined : -1}
-          // The Button's first child is its hover/press bg layer — hidden here
-          // because its box is off-axis from the tile slot the trigger
-          // overlays, so a fill reads as a second, non-concentric rectangle.
-          className={`absolute left-1 top-1/2 z-20 -translate-y-1/2 [&>span:first-child]:hidden [&_svg]:size-4 transition-opacity duration-80 ${
-            isPeeking ? "opacity-100" : "pointer-events-none opacity-0"
-          }`}
-        />
-        <DropdownMenu>
-          <DropdownTrigger
-            render={
-              <SidebarMenuButton aria-label="Switch workspace" className="pl-8">
-                <span
-                  aria-hidden
-                  className={`pointer-events-none absolute left-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center bg-foreground text-[10px] text-background transition-opacity duration-80 ${
-                    shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
-                  } ${isPeeking ? "opacity-0" : "opacity-100"}`}
-                  style={{ fontVariationSettings: fontWeights.semibold }}
-                >
-                  A
-                </span>
-                <span
-                  className="min-w-0 truncate text-[13px] text-foreground"
-                  style={{ fontVariationSettings: fontWeights.semibold }}
-                >
-                  {AI_WORKSPACE}
-                </span>
-                <span className="ml-auto inline-flex @max-[7rem]:hidden">
-                  <ChevronDown size={16} strokeWidth={1.5} className="text-muted-foreground" />
-                </span>
-              </SidebarMenuButton>
-            }
-          />
-          <DropdownContent className={SIDEBAR_MENU_POPUP} align="start" sideOffset={4} checkedIndex={0}>
-            <WorkspaceMenuItems />
-          </DropdownContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
+    <SidebarWorkspaceHeader
+      name={AI_WORKSPACE}
+      tile={<WorkspaceTile>A</WorkspaceTile>}
+      menu={<WorkspaceMenuItems />}
+      checkedIndex={0}
+    />
   );
 }
 
@@ -663,22 +618,10 @@ function tipWithShortcut(label: string, shortcut: string) {
   );
 }
 
+/** The header's search row — the sidebar-search-field block with its default
+ *  placeholder and shortcut chip. */
 function DemoSearch() {
-  const SearchIcon = useIcon("search");
-  return (
-    <div className="group/search relative">
-      <SearchIcon
-        size={14}
-        strokeWidth={1.5}
-        className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground"
-      />
-      <SidebarInput placeholder="Search…" aria-label="Search" className="pl-8 pr-12" />
-      {/* Revealed on hover / focus — the placeholder owns the field at rest. */}
-      <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 font-sans text-[11px] text-muted-foreground opacity-0 transition-opacity duration-80 group-hover/search:opacity-100 group-focus-within/search:opacity-100">
-        {SEARCH_SHORTCUT}
-      </kbd>
-    </div>
-  );
+  return <SidebarSearchField />;
 }
 
 /** Workspace menu + search — the header block every example shares.
@@ -717,6 +660,8 @@ function DemoHeader({ search = "below" }: { search?: "below" | "inline" }) {
   );
 }
 
+// Local twin of the sidebar-user-footer block — carries the alignment demo's
+// data-guide hooks; keep its classes in lockstep with the block.
 function DemoFooterUser() {
   const ChevronsUpDown = useIcon("chevrons-up-down");
   const icons = useIcons();
@@ -856,19 +801,10 @@ function DemoMenu({ nested = true }: { nested?: boolean }) {
  *  The region itself stays blank on purpose: a bare topbar with the trigger
  *  and optional caption — skeleton page furniture competed with the rail. */
 function DemoInsetContent({ title }: { title?: ReactNode }) {
-  // While the sidebar is peeked the topbar trigger hides; pinning fades it
-  // back in slightly late, so it appears at its settled position instead of
-  // riding the inset's slide.
-  const { isPeeking } = useSidebar();
   return (
-    <header className="flex h-12 shrink-0 items-center gap-2 px-1.5">
-      <SidebarTrigger
-        className={`transition-opacity delay-200 duration-160 ${
-          isPeeking ? "opacity-0" : "opacity-100"
-        }`}
-      />
+    <SidebarInsetTopbar>
       <span className="text-[13px] text-muted-foreground">{title}</span>
-    </header>
+    </SidebarInsetTopbar>
   );
 }
 
@@ -2107,6 +2043,22 @@ export default function SidebarDoc() {
     >
       <DocSection title="Playground">
         <SidebarPlaygroundSection />
+      </DocSection>
+
+      <DocSection title="Blocks">
+        <p className="text-body text-muted-foreground">
+          The finetuned compositions on this page install as blocks — the
+          full app shell in one command:
+        </p>
+        <InputCopy value="npx shadcn@latest add https://www.fluidfunctionalism.com/r/sidebar-app.json" />
+        <p className="text-caption text-muted-foreground">
+          Ships the workspace header with its peek cross-fade, the search
+          field, sections, the user footer, and the inset topbar — plus a
+          ready-to-run page. À la carte:{" "}
+          <code>@fluid/sidebar-workspace-header</code>,{" "}
+          <code>@fluid/sidebar-user-footer</code>,{" "}
+          <code>@fluid/sidebar-menu-grid</code>.
+        </p>
       </DocSection>
 
       <DocSection title="Layouts">

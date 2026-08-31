@@ -152,3 +152,124 @@ describe("committed build output (public/r)", () => {
     expect(strays).toEqual([]);
   });
 });
+
+describe("shipped CSS variables reach installers", () => {
+  // Every `var(--x)` a payload's embedded source references must resolve in an
+  // installer project. Valid sources of a definition, in order of checking:
+  //  1. the allowlists below (things installers already have),
+  //  2. an assignment inside the payload's own shipped source
+  //     (`[--btn-bg:...]` arbitrary properties, `"--icon-size": ...` style objects),
+  //  3. the payload's own cssVars/css,
+  //  4. the cssVars/css of any item reachable through its registryDependencies
+  //     chain (following the rewritten fluidfunctionalism.com URLs).
+  // Anything else is a variable that renders as `unset` in installer projects.
+  const outDir = join(ROOT, "public/r");
+
+  // 1a. Tokens every shadcn/Tailwind v4 project defines in its own globals.css
+  //     (the standard shadcn base theme), plus names Tailwind itself provides:
+  //     Tailwind v4 emits `--color-<name>` for every @theme color, `--spacing`
+  //     and `--font-*` come from the default theme, and `--tw-*` are Tailwind's
+  //     internal composition properties.
+  const INSTALLER_PROVIDED = new Set([
+    "--background",
+    "--foreground",
+    "--card",
+    "--card-foreground",
+    "--muted",
+    "--muted-foreground",
+    "--accent",
+    "--accent-foreground",
+    "--border",
+    "--input",
+    "--ring",
+    "--destructive",
+    "--color-accent", // Tailwind-emitted alias of the shadcn `accent` theme color
+    "--spacing",
+    "--font-sans",
+  ]);
+  // 1b. Variables the primitives set on their own nodes at runtime — they are
+  //     never defined in any stylesheet.
+  const RUNTIME_PROVIDED = [
+    /^--radix-/, // Radix poppers publish trigger/content metrics
+    /^--tw-/, // Tailwind internal custom properties
+    /^--anchor-/, // Base UI popup positioning
+    /^--available-/, // Base UI popup available-size
+    /^--scroll-area-thumb-/, // Base UI ScrollArea thumb metrics
+  ];
+
+  /** All payloads keyed by their public/r-relative path. */
+  const payloads = new Map();
+  (function collect(dir, prefix = "") {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        collect(join(dir, entry.name), `${prefix}${entry.name}/`);
+      } else if (entry.name.endsWith(".json")) {
+        const data = JSON.parse(readFileSync(join(dir, entry.name), "utf-8"));
+        if (!Array.isArray(data.items)) payloads.set(`${prefix}${entry.name}`, data);
+      }
+    }
+  })(outDir);
+
+  /** Custom-property names defined by a payload's cssVars + css blocks. */
+  function cssDefinedVars(payload) {
+    const defined = new Set();
+    for (const scope of Object.values(payload.cssVars ?? {})) {
+      for (const key of Object.keys(scope)) defined.add(`--${key}`);
+    }
+    (function walk(node) {
+      if (typeof node !== "object" || node === null) return;
+      for (const [key, value] of Object.entries(node)) {
+        if (key.startsWith("--")) defined.add(key);
+        const prop = key.match(/^@property\s+(--[\w-]+)/);
+        if (prop) defined.add(prop[1]);
+        walk(value);
+      }
+    })(payload.css ?? {});
+    return defined;
+  }
+
+  /** Payload paths reachable from `rel` through registryDependencies URLs. */
+  function reachable(rel, seen = new Set()) {
+    if (seen.has(rel)) return seen;
+    seen.add(rel);
+    const payload = payloads.get(rel);
+    for (const dep of payload?.registryDependencies ?? []) {
+      if (!dep.startsWith(BASE_URL)) continue; // "utils" etc. — shadcn default
+      reachable(dep.slice(BASE_URL.length + 1), seen);
+    }
+    return seen;
+  }
+
+  it.each([...payloads.keys()])("%s resolves every var(--x) its source references", (rel) => {
+    const chain = [...reachable(rel)];
+    const defined = new Set();
+    const sources = [];
+    for (const dep of chain) {
+      const payload = payloads.get(dep);
+      if (!payload) continue; // dangling URLs are caught by the dep-URL test above
+      for (const name of cssDefinedVars(payload)) defined.add(name);
+      for (const file of payload.files ?? []) sources.push(file.content ?? "");
+    }
+    // 2. Assignments anywhere in the chain's shipped source: `--x:` (arbitrary
+    //    property syntax) or `"--x":` / `'--x':` (React style objects).
+    const localAssign = /(--[\w-]+)["']?\s*:/g;
+    for (const content of sources) {
+      for (const m of content.matchAll(localAssign)) defined.add(m[1]);
+    }
+
+    const payload = payloads.get(rel);
+    for (const file of payload.files ?? []) {
+      for (const m of (file.content ?? "").matchAll(/var\(\s*(--[\w-]+)/g)) {
+        const name = m[1];
+        const ok =
+          INSTALLER_PROVIDED.has(name) ||
+          RUNTIME_PROVIDED.some((re) => re.test(name)) ||
+          defined.has(name);
+        expect(
+          ok,
+          `${rel}: ${file.path} references var(${name}) but nothing in its registryDependencies chain defines it`
+        ).toBe(true);
+      }
+    }
+  });
+});

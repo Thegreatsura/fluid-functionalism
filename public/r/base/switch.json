@@ -11,7 +11,8 @@
     "utils",
     "https://www.fluidfunctionalism.com/r/springs.json",
     "https://www.fluidfunctionalism.com/r/font-weight.json",
-    "https://www.fluidfunctionalism.com/r/size-context.json"
+    "https://www.fluidfunctionalism.com/r/size-context.json",
+    "https://www.fluidfunctionalism.com/r/tokens.json"
   ],
   "files": [
     {
@@ -20,6 +21,10 @@
       "type": "registry:ui",
       "target": "components/ui/switch.tsx"
     }
+  ],
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/switch.",
+  "categories": [
+    "components"
   ],
   "type": "registry:ui"
 }

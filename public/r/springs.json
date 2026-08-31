@@ -10,5 +10,9 @@
       "type": "registry:lib"
     }
   ],
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/motion.",
+  "categories": [
+    "lib"
+  ],
   "type": "registry:lib"
 }

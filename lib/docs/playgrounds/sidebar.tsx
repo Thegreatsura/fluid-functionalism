@@ -7,9 +7,7 @@ import { spring } from "@/registry/default/lib/springs";
 import {
   SidebarProvider,
   Sidebar,
-  SidebarTrigger,
   SidebarHeader,
-  SidebarInput,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
@@ -33,7 +31,6 @@ import {
 import { useIcons, type IconName } from "@/lib/icon-context";
 import { useShape } from "@/lib/shape-context";
 import { useSize } from "@/lib/size-context";
-import { fontWeights } from "@/lib/font-weight";
 import { Switch } from "@/registry/radix/switch";
 import { Button } from "@/registry/radix/button";
 import { Tooltip } from "@/registry/radix/tooltip";
@@ -64,7 +61,15 @@ import {
   PlaygroundPanel,
 } from "@/lib/docs/playground";
 import { SIDEBAR_ITEMS, SIDEBAR_THREADS } from "@/app/components/demo-data";
-import { WorkspaceMenuItems, SIDEBAR_MENU_POPUP } from "@/lib/docs/workspace-demo";
+import { WorkspaceMenuItems } from "@/lib/docs/workspace-demo";
+import {
+  SidebarWorkspaceHeader,
+  WorkspaceTile,
+} from "@/components/sidebar-app/workspace-header";
+import { SidebarUserFooter } from "@/components/sidebar-app/user-footer";
+import { SidebarSearchField } from "@/components/sidebar-app/search-field";
+import { SidebarInsetTopbar } from "@/components/sidebar-app/inset-topbar";
+import { SIDEBAR_MENU_POPUP } from "@/lib/sidebar-menu-grid";
 import type { PlaygroundProps } from "./types";
 
 // ── Sidebar playground ───────────────────────────────────
@@ -441,103 +446,26 @@ export function FooterCalloutStack({
   );
 }
 
-/** Workspace brand row for the playground header. While the sidebar is only
- *  PEEKING, the pointer's one way to pin it open is covered by the overlay
- *  itself — so the trigger takes the logo's slot: a sibling positioned over
- *  the row (the menu-action pattern), never a button nested inside the row
- *  button. */
+/** Workspace brand row for the playground header — the
+ *  sidebar-workspace-header block, fed the playground's standard content.
+ *  The "logo" variant omits the menu, so the block renders the
+ *  non-interactive lockup. */
 function BrandHeaderRow({ variant }: { variant: "dropdown" | "logo" }) {
-  const icons = useIcons();
-  const shape = useShape();
-  const iconSize = useSize().icon;
-  const { isPeeking } = useSidebar();
-
-  // The tile sits absolutely in the row's leading slot so the trigger can
-  // cross-fade with it in place — neither element ever moves, and the
-  // constant pl-8 (the rows' 32px text axis) keeps the name pinned while they swap.
-  const tile = (
-    <span
-      aria-hidden
-      className={`pointer-events-none absolute left-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center bg-foreground text-[10px] text-background transition-opacity duration-80 ${
-        shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
-      } ${isPeeking ? "opacity-0" : "opacity-100"}`}
-      style={{ fontVariationSettings: fontWeights.semibold }}
-    >
-      A
-    </span>
-  );
-  // No hover/press fill on this trigger (the Button's first child is its bg
-  // layer): its box is off-axis from the tile slot it overlays, so a
-  // background reads as a second, non-concentric rectangle behind the glyph.
-  // [&_svg]:size-4 matches the topbar trigger's 16px glyph — icon-compact
-  // would otherwise draw this one at 14px.
-  const triggerFade = `[&>span:first-child]:hidden [&_svg]:size-4 transition-opacity duration-80 ${
-    isPeeking ? "opacity-100" : "pointer-events-none opacity-0"
-  }`;
-  const name = (
-    <span
-      className="min-w-0 truncate text-[13px] text-foreground"
-      style={{ fontVariationSettings: fontWeights.semibold }}
-    >
-      Acme Inc
-    </span>
-  );
-
   if (variant === "logo") {
-    // Not interactive, so it renders outside SidebarMenu — a menu row would
-    // track the traveling hover background.
     return (
-      <div className="relative flex h-8 items-center pl-8 pr-2">
-        <SidebarTrigger
-          size="icon-compact"
-          aria-hidden={!isPeeking || undefined}
-          tabIndex={isPeeking ? undefined : -1}
-          className={`absolute left-1 top-1/2 -translate-y-1/2 ${triggerFade}`}
-        />
-        {tile}
-        {name}
-      </div>
+      <SidebarWorkspaceHeader
+        name="Acme Inc"
+        tile={<WorkspaceTile>A</WorkspaceTile>}
+      />
     );
   }
   return (
-    // @container: the row hides its dropdown chevron once it gets too narrow
-    // to show a useful slice of the name (squeezed by trailing header actions
-    // or a mid-drag width) — the text keeps whatever room is left.
-    <SidebarMenu aria-label="Workspace" className="@container">
-      <SidebarMenuItem>
-        <SidebarTrigger
-          size="icon-compact"
-          aria-hidden={!isPeeking || undefined}
-          tabIndex={isPeeking ? undefined : -1}
-          className={`absolute left-1 top-1/2 z-20 -translate-y-1/2 ${triggerFade}`}
-        />
-        <DropdownMenu>
-          <DropdownTrigger
-            render={
-              <SidebarMenuButton aria-label="Switch workspace" className="pl-8">
-                {tile}
-                {name}
-                <span className="ml-auto inline-flex @max-[7rem]:hidden">
-                  {createElement(icons["chevron-down"], {
-                    size: iconSize,
-                    strokeWidth: 1.5,
-                    className: "text-muted-foreground",
-                  })}
-                </span>
-              </SidebarMenuButton>
-            }
-          />
-          <DropdownContent
-            className={SIDEBAR_MENU_POPUP}
-            align="start"
-            sideOffset={4}
-            checkedIndex={0}
-          >
-            <WorkspaceMenuItems />
-          </DropdownContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
+    <SidebarWorkspaceHeader
+      name="Acme Inc"
+      tile={<WorkspaceTile>A</WorkspaceTile>}
+      menu={<WorkspaceMenuItems />}
+      checkedIndex={0}
+    />
   );
 }
 
@@ -597,16 +525,16 @@ function rowActionLines(count: Count3, indent: string): string[] {
 }
 
 /** The popup class both sidebar-anchored menus share — emitted once as a
- *  const so the generated snippet mirrors lib/docs/workspace-demo.tsx. */
+ *  const, interpolated from the shipped lib so the generated snippet can
+ *  never drift from what installs. */
 function popupConstLines(): string[] {
   return [
     `/* Sidebar-anchored menus: trigger width +10px, shifted -4px — items start`,
     `   at the trigger row's edge, icon slots land on the rows' leading axis,`,
-    `   and the trailing check sits on the trigger chevron's axis. */`,
+    `   and the trailing check sits on the trigger chevron's axis.`,
+    `   Installable: npx shadcn add @fluid/sidebar-menu-grid */`,
     `const SIDEBAR_MENU_POPUP =`,
-    `  "min-w-[240px] -ml-1 w-[calc(var(--radix-dropdown-menu-trigger-width,var(--anchor-width))_+_10px)] " +`,
-    `  "[&_[role=menuitem]]:pl-2 [&_[role=menuitem]]:pr-1.5 [&_[role=menuitem]]:gap-2 " +`,
-    `  "[&_[role=menuitemradio]]:pl-2 [&_[role=menuitemradio]]:pr-1.5 [&_[role=menuitemradio]]:gap-2";`,
+    `  "${SIDEBAR_MENU_POPUP}";`,
   ];
 }
 
@@ -1145,7 +1073,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
  *  matters: the button that opens it. Reads `isMobile` from the provider
  *  rather than a media query so the swap lands exactly when the sheet does. */
 function PlaygroundInsetBody() {
-  const { isMobile, toggleSidebar, isPeeking } = useSidebar();
+  const { isMobile, toggleSidebar } = useSidebar();
 
   if (isMobile) {
     return (
@@ -1159,18 +1087,7 @@ function PlaygroundInsetBody() {
 
   // The main region stays blank on purpose — a bare topbar with the trigger.
   // Skeleton page furniture competed with the sidebar for attention.
-  // While the sidebar is peeked the topbar trigger hides; pinning fades it
-  // back in slightly late, so it appears at its settled position instead of
-  // riding the inset's slide.
-  return (
-    <header className="flex h-12 shrink-0 items-center gap-2 px-1.5">
-      <SidebarTrigger
-        className={`transition-opacity delay-200 duration-160 ${
-          isPeeking ? "opacity-0" : "opacity-100"
-        }`}
-      />
-    </header>
-  );
+  return <SidebarInsetTopbar />;
 }
 
 export function SidebarPlayground({ children }: PlaygroundProps) {
@@ -1218,9 +1135,8 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
     }));
   };
 
-  const ChevronsUpDown = icons["chevrons-up-down"];
-  // Chevrons and the header/footer trailing glyphs ride the same ladder step
-  // as every other sidebar icon.
+  // Chevrons and the rows' trailing glyphs ride the same ladder step as
+  // every other sidebar icon.
   const iconSize = useSize().icon;
   const shape = useShape();
 
@@ -1520,24 +1436,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
               // separates it from the brand row, while inside it the search
               // field reads as the list's first row (menu row rhythm).
               <div className="flex flex-col gap-0.5">
-                <div className="group/search relative">
-                  {createElement(icons.search, {
-                    size: iconSize,
-                    strokeWidth: 1.5,
-                    className:
-                      "pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground",
-                  })}
-                  <SidebarInput
-                    placeholder="Search…"
-                    aria-label="Search"
-                    className="pl-8 pr-12"
-                  />
-                  {/* Revealed on hover / focus, like the action rows' chips —
-                      the placeholder owns the field at rest. */}
-                  <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 font-sans text-[11px] text-muted-foreground opacity-0 transition-opacity duration-80 group-hover/search:opacity-100 group-focus-within/search:opacity-100">
-                    {SEARCH_SHORTCUT}
-                  </kbd>
-                </div>
+                <SidebarSearchField />
                 {headerActionSet.length > 0 && (
                   <SidebarMenu aria-label="Actions">
                     {headerActionSet.map((a) => (
@@ -1596,52 +1495,26 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                 (footerHorizontal && footerActionSet.length > 0)) && (
               <div className={footerHorizontal ? "flex items-center gap-1 pr-1.5" : "contents"}>
                 {state.footerPrimary === "dropdown" && (
-                  <SidebarMenu
-                    aria-label="User"
+                  <SidebarUserFooter
+                    name="Micka Touillaud"
+                    avatar={
+                      <Image
+                        src="/micka.png"
+                        alt=""
+                        width={20}
+                        height={20}
+                        className="size-5 shrink-0 rounded-full"
+                      />
+                    }
                     className={footerHorizontal ? "min-w-0 flex-1" : undefined}
-                  >
-                    <SidebarMenuItem>
-                      <DropdownMenu>
-                        <DropdownTrigger
-                          render={
-                            <SidebarMenuButton aria-label="Open user menu">
-                              {/* -ml-0.5 centres the 20px avatar on the rows'
-                                  leading icon axis; the chevron rides a 24px
-                                  slot pulled -mr-0.5 onto the trailing action
-                                  axis — same idiom as the doc examples. */}
-                              <Image
-                                src="/micka.png"
-                                alt=""
-                                width={20}
-                                height={20}
-                                className="-ml-0.5 -mr-0.5 size-5 shrink-0 rounded-full"
-                              />
-                              <span className="min-w-0 truncate text-[13px] text-foreground">
-                                Micka Touillaud
-                              </span>
-                              <span className="ml-auto -mr-0.5 flex size-6 shrink-0 items-center justify-center">
-                                {createElement(ChevronsUpDown, {
-                                  size: iconSize,
-                                  strokeWidth: 1.5,
-                                  className: "text-muted-foreground",
-                                })}
-                              </span>
-                            </SidebarMenuButton>
-                          }
-                        />
-                        <DropdownContent
-                          className={SIDEBAR_MENU_POPUP}
-                          side="top"
-                          align="start"
-                          sideOffset={6}
-                        >
-                          <MenuItem index={0} icon={icons.user} label="Profile" onSelect={() => {}} />
-                          <MenuItem index={1} icon={icons.settings} label="Settings" onSelect={() => {}} />
-                          <MenuItem index={2} icon={icons["arrow-left"]} label="Log out" onSelect={() => {}} />
-                        </DropdownContent>
-                      </DropdownMenu>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
+                    menu={
+                      <>
+                        <MenuItem index={0} icon={icons.user} label="Profile" onSelect={() => {}} />
+                        <MenuItem index={1} icon={icons.settings} label="Settings" onSelect={() => {}} />
+                        <MenuItem index={2} icon={icons["arrow-left"]} label="Log out" onSelect={() => {}} />
+                      </>
+                    }
+                  />
                 )}
                 {footerHorizontal &&
                   footerActionSet.map((a) => (

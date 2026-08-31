@@ -15,7 +15,8 @@
     "https://www.fluidfunctionalism.com/r/shape-context.json",
     "https://www.fluidfunctionalism.com/r/icon-context.json",
     "https://www.fluidfunctionalism.com/r/use-proximity-hover.json",
-    "https://www.fluidfunctionalism.com/r/size-context.json"
+    "https://www.fluidfunctionalism.com/r/size-context.json",
+    "https://www.fluidfunctionalism.com/r/tokens.json"
   ],
   "files": [
     {
@@ -24,6 +25,10 @@
       "type": "registry:ui",
       "target": "components/ui/accordion.tsx"
     }
+  ],
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/accordion.",
+  "categories": [
+    "components"
   ],
   "type": "registry:ui"
 }

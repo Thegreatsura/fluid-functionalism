@@ -34,6 +34,7 @@
  */
 
 import { mkdir, readdir, readFile, writeFile, rm } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { DUAL_FLAVOR_SLUGS } from "../lib/dual-flavor-slugs.mjs";
@@ -56,14 +57,20 @@ export const CUSTOM_ITEMS = new Set([
   "surface-classes",
   "icon-context",
   "springs",
+  "sidebar-menu-grid",
   "use-proximity-hover",
   "use-merge-split",
   "use-touch-primary",
   "elevated",
-  // themes (cssVars-only items, e.g. the elevation surface ladder)
+  // themes (cssVars/css-only items: the elevation surface ladder and the
+  // shared interaction/focus tokens)
   "surfaces",
+  "tokens",
   // primitive-touching components (have both Radix and Base flavours)
   ...DUAL_FLAVOR_SLUGS,
+  // blocks (single-source compositions over flavoured components)
+  "sidebar-workspace-header",
+  "sidebar-user-footer",
   // primitive-agnostic UI components (single source under @fluid)
   "badge",
   "chat-message",
@@ -72,6 +79,7 @@ export const CUSTOM_ITEMS = new Set([
   "file-thumbnail",
   "input-copy",
   "input-group",
+  "input-message",
   "select",
   "table",
   "tabs-subtle",
@@ -80,14 +88,38 @@ export const CUSTOM_ITEMS = new Set([
 ]);
 
 /**
+ * Single-source items that themselves depend on a dual-flavour component.
+ * They get `base/` and `radix/` payload variants emitted below, so a
+ * flavoured consumer must reference the matching variant — otherwise a Base
+ * install of e.g. `sidebar-app` would drag the Radix sidebar in through the
+ * flat URL. Derived from registry.json so the set can never drift from what
+ * the emit loop actually clones.
+ */
+const REGISTRY_MANIFEST = JSON.parse(
+  readFileSync(new URL("../registry.json", import.meta.url), "utf-8")
+);
+export const FLAVORED_SINGLE_SOURCE = new Set(
+  REGISTRY_MANIFEST.items
+    .filter(
+      (i) =>
+        typeof i.name === "string" &&
+        !i.name.endsWith("-base") &&
+        !DUAL_FLAVOR_ITEMS.has(i.name) &&
+        (i.registryDependencies ?? []).some((d) => DUAL_FLAVOR_ITEMS.has(d))
+    )
+    .map((i) => i.name)
+);
+
+/**
  * Build the URL for a dependency, given the consuming flavour.
- *  - For dual-flavour deps: pick the matching flavour subpath.
+ *  - For dual-flavour deps (and single-source deps that carry flavoured
+ *    variants): pick the matching flavour subpath.
  *  - For primitive-agnostic deps: always bare `r/<dep>.json`.
  *  - "utils" stays plain (resolves from default shadcn registry).
  */
 export function depUrl(dep, flavor /* 'flat' | 'radix' | 'base' */) {
   if (!CUSTOM_ITEMS.has(dep)) return dep; // e.g. "utils"
-  if (DUAL_FLAVOR_ITEMS.has(dep)) {
+  if (DUAL_FLAVOR_ITEMS.has(dep) || FLAVORED_SINGLE_SOURCE.has(dep)) {
     if (flavor === "base") return `${BASE_URL}/base/${dep}.json`;
     if (flavor === "radix") return `${BASE_URL}/radix/${dep}.json`;
     return `${BASE_URL}/${dep}.json`; // flat / back-compat
@@ -174,10 +206,14 @@ export async function processRegistry(registryDir = REGISTRY_DIR) {
       // Single-source item that depends on dual-flavour components (e.g.
       // InputMessage → Button/Tooltip): clone before the flat rewrite too, so
       // base/ and radix/ variants below can pick flavour-matched dep URLs.
+      // Clone when the manifest says so, or when this payload's own deps
+      // include a dual-flavour slug (keeps the pipeline testable against
+      // synthetic fixtures that aren't in registry.json).
       const flavourClone =
         !DUAL_FLAVOR_ITEMS.has(baseName) &&
-        Array.isArray(data.registryDependencies) &&
-        data.registryDependencies.some((dep) => DUAL_FLAVOR_ITEMS.has(dep))
+        (FLAVORED_SINGLE_SOURCE.has(baseName) ||
+          (Array.isArray(data.registryDependencies) &&
+            data.registryDependencies.some((dep) => DUAL_FLAVOR_ITEMS.has(dep))))
           ? JSON.parse(JSON.stringify(data))
           : null;
 

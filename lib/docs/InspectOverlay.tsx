@@ -367,8 +367,23 @@ export function InspectOverlay({
       const stack = document.elementsFromPoint(clientX, clientY);
       const el = stack.find((e) => {
         const inContent = content.contains(e) && e !== content;
-        const inPopup = !!e.closest('[role="menu"],[role="listbox"]');
-        if (!inContent && !inPopup) return false;
+        if (!inContent) {
+          // Portalled popups are only inspectable when THIS demo owns them:
+          // the popup must be labelled by (aria-labelledby) or controlled
+          // from (aria-controls) a trigger inside this preview's content.
+          // A menu opened by site chrome or an adjacent preview fails both
+          // checks and stays out of scope.
+          const popup = e.closest('[role="menu"],[role="listbox"]');
+          if (!popup) return false;
+          const labelId = popup.getAttribute("aria-labelledby");
+          const labelledFromHere =
+            !!labelId &&
+            !!document.getElementById(labelId) &&
+            content.contains(document.getElementById(labelId));
+          const controlledFromHere =
+            !!popup.id && !!content.querySelector(`[aria-controls="${CSS.escape(popup.id)}"]`);
+          if (!labelledFromHere && !controlledFromHere) return false;
+        }
         if (e.closest("[data-inspect-ui]")) return false;
         const r = e.getBoundingClientRect();
         return r.width >= 1 && r.height >= 1;

@@ -101,7 +101,11 @@ export function ComponentPreview({
   return (
     <div
       ref={frameRef}
-      className={`relative flex flex-col gap-0 w-full border border-border/60 transition-[border-color] duration-150 ease-out focus-within:border-foreground/40 ${shape.container}`}
+      // `isolate` scopes the frame's internal z ladder (the z-[70] tab bar,
+      // the inspect overlay's layers) to its own stacking context, so a
+      // portalled dialog's z-50 overlay dims the WHOLE frame instead of
+      // sliding underneath the header.
+      className={`relative isolate flex flex-col gap-0 w-full border border-border/60 transition-[border-color] duration-150 ease-out focus-within:border-foreground/40 ${shape.container}`}
     >
       {/* Tab bar — min-height reserves the playback button's height (h-10 + pt-3)
           so the header doesn't shift when the button mounts/unmounts. A hairline
@@ -231,6 +235,14 @@ export function ComponentPreview({
           />
         )}
       </AnimatePresence>
+    </div>
+  );
+
+  if (!caption) return frame;
+  return (
+    <div className="flex flex-col gap-3">
+      {frame}
+      <p className="pb-2 text-center text-caption text-muted-foreground">{caption}</p>
     </div>
   );
 }

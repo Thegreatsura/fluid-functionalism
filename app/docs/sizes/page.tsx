@@ -529,14 +529,15 @@ function TokenInspectorDemo() {
   return (
     // A stripped-down preview frame: no Preview/Code tabs, no Inspect
     // switch — the overlay is permanently on and the header holds the step
-    // toggle instead. The header keeps z-40 so it sits above the overlay
-    // (z-30) and stays clickable while the content is frozen.
+    // toggle instead. The header keeps z-[70] so it sits above the overlay's
+    // crosshair layer (z-[60], raised to clear z-50 popups) and stays
+    // clickable while the content is frozen — same ladder as ComponentPreview.
     <div
       ref={frameRef}
       className={`relative flex flex-col w-full border border-border/60 ${shape.container}`}
     >
       <div
-        className="relative z-40 flex items-center px-3 py-3 min-h-[52px] border-b border-border/60 bg-background"
+        className="relative z-[70] flex items-center px-3 py-3 min-h-[52px] border-b border-border/60 bg-background"
         style={{ borderTopLeftRadius: "inherit", borderTopRightRadius: "inherit" }}
       >
         <TabsSubtle

@@ -587,10 +587,13 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   // Threads are leaves — only the icon menu nests.
   const nests = o.l1Primary === "menu" && o.l1Children;
   // What the snippet actually renders, so the import list stays honest:
-  // loading swaps the body rows for skeletons (and drops the sub-tree), and
-  // the vertical header/footer stacks are the only other menu-row consumers.
+  // loading swaps the body rows for skeletons (and drops the sub-tree), but
+  // the brand row (dropdown variant), the user row, and the vertical
+  // header/footer action stacks still emit menu rows even while loading.
   const menuRows =
     !loading ||
+    o.headerPrimary === "dropdown" ||
+    o.footerPrimary === "dropdown" ||
     (o.headerStack === "vertical" && o.headerActions > 0) ||
     (o.footerStack === "vertical" && o.footerActions > 0);
   const maxActions = loading ? 0 : Math.max(o.l1Actions, nests ? o.l2Actions : 0);
@@ -1702,37 +1705,25 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           stateless code the registry can turn into an installable block. */}
       <Dialog>
         <DialogTrigger asChild>
-          <Button variant="secondary" size="sm" className="w-full">
+          <Button variant="primary" size="sm" className="w-full">
             Get code
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-[480px]">
+        <DialogContent
+          className="max-w-[480px]"
+          // Don't auto-focus the copy field — its focus ring and tooltip
+          // firing on open read as noise, and ⌘C still works via the button.
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader>
-            <DialogTitle>Install this configuration</DialogTitle>
+            <DialogTitle>Install this component</DialogTitle>
             <DialogDescription>
-              The exact variant you built — sidebar, sections, footer, motion
-              details and all — as one installable block
-              {presetCode === SIDEBAR_DEFAULT_CODE ? "" : ` (preset ${presetCode})`}
-              .
+              The exact Sidebar variant you personalized, as one block.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-3">
-            <InputCopy
-              value={`npx shadcn@latest add https://www.fluidfunctionalism.com/r/preset/${presetCode}.json`}
-            />
-            <p className="text-caption text-muted-foreground">
-              Ships <code>components/sidebar-preset/</code> plus a
-              ready-to-run <code>app/sidebar/page.tsx</code>, pulling the{" "}
-              {base === "base" ? "Base UI" : "Radix"} flavor and every shared
-              block it composes.
-            </p>
-            <InputCopy
-              value={`https://www.fluidfunctionalism.com/docs/sidebar?preset=${presetCode}`}
-            />
-            <p className="text-caption text-muted-foreground">
-              Share link — reopens this playground exactly as configured.
-            </p>
-          </div>
+          <InputCopy
+            value={`npx shadcn@latest add https://www.fluidfunctionalism.com/r/preset/${presetCode}.json`}
+          />
         </DialogContent>
       </Dialog>
     </PlaygroundPanel>

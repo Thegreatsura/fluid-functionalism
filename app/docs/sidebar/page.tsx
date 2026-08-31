@@ -40,7 +40,6 @@ import { fontWeights } from "@/lib/font-weight";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
-import { InputCopy } from "@/registry/default/input-copy";
 import { useNarrowFrame } from "@/lib/use-narrow-frame";
 import { PlaygroundLayout } from "@/lib/docs/playground";
 import { SidebarPlayground, FooterCalloutStack } from "@/lib/docs/playgrounds/sidebar";
@@ -75,54 +74,6 @@ import {
 } from "./example-data";
 
 // ── Code snippets ────────────────────────────────────────
-
-const layoutsCode = `import {
-  SidebarProvider, Sidebar, SidebarTrigger, SidebarInset,
-  SidebarHeader, SidebarContent, SidebarFooter,
-  SidebarGroup, SidebarGroupLabel,
-  SidebarMenu, SidebarMenuItem, SidebarMenuButton,
-} from "./components";
-
-// variant is the only thing that changes between the three:
-//   "sidebar"  — flush rail, the default
-//   "floating" — the rail is its own card over the canvas
-//   "inset"    — the MAIN region is the card; the rail recedes
-const [current, setCurrent] = useState(nav[0].label);
-
-<SidebarProvider>
-  <Sidebar variant="inset">
-    {/* workspace row — full anatomy under "Header, footer & callout" */}
-    <SidebarHeader>{/* … */}</SidebarHeader>
-    <SidebarContent>
-      <SidebarGroup collapsible>
-        <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-        <SidebarMenu>
-          {nav.map((item) => (
-            <SidebarMenuItem key={item.label}>
-              <SidebarMenuButton
-                icon={item.icon}
-                isActive={item.label === current}
-                onClick={() => setCurrent(item.label)}
-              >
-                {item.label}
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarGroup>
-    </SidebarContent>
-    {/* user row — full anatomy under "Header, footer & callout" */}
-    <SidebarFooter>{/* … */}</SidebarFooter>
-  </Sidebar>
-  {/* floating pairs with <SidebarInset className="pt-2"> so the inset's top
-      aligns with the rail card's edge */}
-  <SidebarInset>
-    <header className="flex h-12 shrink-0 items-center gap-2 px-1.5">
-      <SidebarTrigger />
-    </header>
-    {children}
-  </SidebarInset>
-</SidebarProvider>`;
 
 const nestingCode = `const [open, setOpen] = useState<string | null>("Agents");
 
@@ -215,235 +166,6 @@ const actionsCode = `{/* The section label carries actions of its own */}
     ))}
   </SidebarMenu>
 </SidebarGroup>`;
-
-const headerFooterCode = `/* Sidebar-anchored menus: trigger width +10px, shifted -4px — items start
-   at the trigger row's edge, icon slots land on the rows' leading axis,
-   and the trailing check sits on the trigger chevron's axis. Installable:
-   npx shadcn add @fluid/sidebar-menu-grid */
-const SIDEBAR_MENU_POPUP =
-  "${SIDEBAR_MENU_POPUP}";
-
-{/* Vertical: every element gets its own full-width row */}
-<SidebarHeader>
-  {/* Brand row. While the rail is only PEEKED (isPeeking from useSidebar),
-      the overlay covers the pointer's one way to pin it open — so a trigger
-      cross-fades with the 20px tile, in place: the tile sits at left-1.5 on
-      the rows' 16px leading axis, and the constant pl-8 (the rows' 32px
-      text axis) keeps the name pinned while the slot swaps. */}
-  <SidebarMenu aria-label="Workspace" className="@container">
-    <SidebarMenuItem>
-      <SidebarTrigger
-        size="icon-compact"
-        aria-hidden={!isPeeking || undefined}
-        tabIndex={isPeeking ? undefined : -1}
-        className={\`absolute left-1 top-1/2 z-20 -translate-y-1/2
-          [&>span:first-child]:hidden [&_svg]:size-4 transition-opacity duration-80
-          \${isPeeking ? "opacity-100" : "pointer-events-none opacity-0"}\`}
-      />
-      <DropdownMenu>
-        <DropdownTrigger render={
-          <SidebarMenuButton aria-label="Switch workspace" className="pl-8">
-            <span aria-hidden className={\`pointer-events-none absolute left-1.5 top-1/2
-              flex size-5 -translate-y-1/2 items-center justify-center rounded-md
-              bg-foreground text-[10px] text-background transition-opacity duration-80
-              \${isPeeking ? "opacity-0" : "opacity-100"}\`}>A</span>
-            <span className="min-w-0 truncate text-[13px] text-foreground">Aurora AI</span>
-            {/* @container: the chevron hides once the row gets too narrow */}
-            <span className="ml-auto inline-flex @max-[7rem]:hidden">
-              <ChevronDownIcon size={16} strokeWidth={1.5} className="text-muted-foreground" />
-            </span>
-          </SidebarMenuButton>
-        } />
-        <DropdownContent className={SIDEBAR_MENU_POPUP} align="start" sideOffset={4} checkedIndex={0}>
-          <MenuItem index={0} icon={AuroraTile} label="Aurora AI" checked onSelect={() => {}} />
-        </DropdownContent>
-      </DropdownMenu>
-    </SidebarMenuItem>
-  </SidebarMenu>
-  {/* Search + action rows are ONE block: the field reads as the list's
-      first row, on the menu rows' own tight rhythm */}
-  <div className="flex flex-col gap-0.5">
-    <div className="group/search relative">
-      <SearchIcon size={16} strokeWidth={1.5}
-        className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-      <SidebarInput placeholder="Search threads…" aria-label="Search" className="pl-8 pr-12" />
-      {/* revealed on hover/focus — the placeholder owns the field at rest */}
-      <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 font-sans
-        text-[11px] text-muted-foreground opacity-0 transition-opacity duration-80
-        group-hover/search:opacity-100 group-focus-within/search:opacity-100">⌘K</kbd>
-    </div>
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <SidebarMenuButton icon={PlusIcon}>
-          New thread
-          {/* shortcut chip, revealed on row hover */}
-          <span className="ml-auto inline-flex opacity-0 transition-opacity duration-80
-            group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100">
-            <kbd className="font-sans text-[11px] text-muted-foreground">⇧⌘O</kbd>
-          </span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  </div>
-</SidebarHeader>
-
-{/* Horizontal is the same pieces sharing the brand's line as 24px icon
-    buttons, the row inset pr-1.5 onto the section actions' axis */}
-<SidebarHeader>
-  <div className="flex items-center gap-1 pr-1.5">
-    <div className="min-w-0 flex-1">{/* brand row, as above */}</div>
-    <Tooltip content={tipWithShortcut("Search", "⌘K")} side="bottom">
-      <Button variant="ghost" size="icon-compact" className="size-6 shrink-0" aria-label="Search">
-        <SearchIcon />
-      </Button>
-    </Tooltip>
-    <Tooltip content={tipWithShortcut("New thread", "⇧⌘O")} side="bottom">
-      <Button variant="ghost" size="icon-compact" className="size-6 shrink-0" aria-label="New thread">
-        <PlusIcon />
-      </Button>
-    </Tooltip>
-  </div>
-</SidebarHeader>
-
-<SidebarFooter>
-  {/* Anchored callout: a Card resting one surface step above the rail and
-      rising another under the pointer — the inset shadow keeps its hairline
-      inside the box. dismissible reveals its ✕ on hover (the default). */}
-  <Card size="compact" dismissible onDismiss={hide} href="/docs/sidebar" label="Aurora 2 is here"
-    className={\`rounded-xl overflow-hidden transition-[background-color,box-shadow] duration-80
-      \${surfaceClasses(level, 2)} \${surfaceHoverClasses(level + 1, 3)}
-      shadow-[var(--shadow-2-inset)] hover:shadow-[var(--shadow-3-inset)]\`}>
-    <CardImage src={banner} className="aspect-[2/1] max-h-28" />
-    <CardHeader className="gap-0 pt-3">
-      <CardTitle>Aurora 2 is here</CardTitle>
-      <CardDescription>Longer context, faster agents</CardDescription>
-    </CardHeader>
-  </Card>
-
-  {/* Actions above, the user row last — identity anchors the outer edge */}
-  <SidebarMenu>
-    <SidebarMenuItem>
-      <SidebarMenuButton icon={SettingsIcon}>Settings</SidebarMenuButton>
-    </SidebarMenuItem>
-  </SidebarMenu>
-  <SidebarMenu aria-label="User">
-    <SidebarMenuItem>
-      <DropdownMenu>
-        <DropdownTrigger render={
-          <SidebarMenuButton aria-label="Open user menu">
-            {/* -ml-0.5 centres the 20px avatar on the rows' leading icon axis;
-                the chevron rides a 24px slot pulled -mr-0.5 onto the trailing
-                action axis */}
-            <img src="/avatar.png" alt="" width={20} height={20}
-              className="-ml-0.5 size-5 shrink-0 rounded-full" />
-            <span className="min-w-0 truncate text-[13px] text-foreground">Micka Touillaud</span>
-            <span className="ml-auto -mr-0.5 flex size-6 shrink-0 items-center justify-center">
-              <ChevronsUpDownIcon size={16} strokeWidth={1.5} className="text-muted-foreground" />
-            </span>
-          </SidebarMenuButton>
-        } />
-        <DropdownContent className={SIDEBAR_MENU_POPUP} side="top" align="start" sideOffset={6}>
-          <MenuItem index={0} icon={UserIcon} label="Profile" onSelect={() => {}} />
-        </DropdownContent>
-      </DropdownMenu>
-    </SidebarMenuItem>
-  </SidebarMenu>
-</SidebarFooter>`;
-
-const stackedCalloutCode = `/* A sonner-style pile in the footer: cards peek 12px apiece behind the
-   front one, scaling down 0.05 a step, two peeks max. The inline pile
-   fans out on hover; dismissing the front card promotes the next. Each
-   card keeps its own step of the brand mesh's intensity ladder. */
-const [expanded, setExpanded] = useState(false);
-// CARD_H is the front card's measured offsetHeight — never an animated "auto"
-const collapsedH = CARD_H + Math.min(callouts.length - 1, 2) * 12;
-const expandedH = callouts.length * CARD_H + (callouts.length - 1) * 4;
-
-<SidebarFooter>
-  <motion.div
-    className="relative"
-    animate={{ height: expanded ? expandedH : collapsedH }}
-    transition={{ ...spring.moderate, bounce: 0 }}
-    onMouseEnter={() => setExpanded(true)}
-    onMouseLeave={() => setExpanded(false)}
-  >
-    <AnimatePresence initial={false}>
-      {callouts.map((c, i) => (
-        <motion.div
-          key={c.id}
-          className="absolute inset-x-0 bottom-0"
-          style={{ transformOrigin: "bottom center", zIndex: 100 - i }}
-          initial={{ opacity: 0, y: 14, scale: 0.96 }}
-          animate={expanded
-            ? { y: -i * (CARD_H + 4), scale: 1, opacity: 1 }
-            : { y: -Math.min(i, 2) * 12, scale: 1 - Math.min(i, 2) * 0.05,
-                opacity: i <= 2 ? 1 : 0 }}
-          exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.12 } }}
-          transition={spring.moderate}
-        >
-          {/* inline orientation puts the icon beside the text; each card
-              rests one surface step above the rail and rises another under
-              the pointer — the inset shadow keeps its hairline inside */}
-          <CardGroup orientation="inline" proximityHover={false}>
-            <Card size="compact" dismissible onDismiss={() => dismiss(c.id)}
-              label={\`\${c.title} — \${c.desc}\`}
-              className={\`rounded-xl overflow-hidden min-h-0 pl-2.5
-                transition-[background-color,box-shadow] duration-80
-                \${surfaceClasses(level, 2)} \${surfaceHoverClasses(level + 1, 3)}
-                shadow-[var(--shadow-2-inset)] hover:shadow-[var(--shadow-3-inset)]\`}>
-              {/* full-strength brand glyph on the card's own tint step */}
-              <CardMedia icon={c.icon} size={18} className={\`\${c.tint} [&_svg]:text-[#6B97FF]\`} />
-              <CardHeader className="gap-[2px] py-3">
-                <CardTitle className="truncate">{c.title}</CardTitle>
-                <CardDescription className="truncate text-caption">{c.desc}</CardDescription>
-              </CardHeader>
-            </Card>
-          </CardGroup>
-        </motion.div>
-      ))}
-    </AnimatePresence>
-  </motion.div>
-  {/* user row */}
-</SidebarFooter>`;
-
-const collapseCode = `// The bare "[" key toggles a left sidebar, "]" a right one (Provider's
-// \`shortcut\` prop overrides, null disables). The rail handle on the
-// sidebar's edge is built in: drag it to resize, click it to collapse.
-// \`peek\` gives the collapsed edge a hover or click strip that floats the
-// rail back as an overlay without pinning it — in hover mode, resting on
-// the trigger peeks it too.
-// setOpen persists to the "sidebar_state" cookie — read it back in a
-// server layout for a flicker-free default:
-//
-//   const cookieStore = await cookies();
-//   const defaultOpen =
-//     cookieStore.get("sidebar_state")?.value !== "false";
-//   <SidebarProvider defaultOpen={defaultOpen}>…
-
-<SidebarProvider peek="hover">
-  {/* railTooltipOpen pins the rail's tooltip open (the demo spotlights the
-      handle until your cursor takes over); undefined restores hover */}
-  <Sidebar variant="inset" railTooltipOpen={spotlight || undefined}>
-    <SidebarContent>…</SidebarContent>
-  </Sidebar>
-  <SidebarInset>
-    <header className="flex h-12 shrink-0 items-center gap-2 px-1.5">
-      {/* hidden while the rail is peeked; after a pin it fades back in late,
-          appearing at its settled spot instead of riding the inset's slide */}
-      <SidebarTrigger className={\`transition-opacity delay-200 duration-160
-        \${isPeeking ? "opacity-0" : "opacity-100"}\`} />
-      <StateReadout />
-    </header>
-  </SidebarInset>
-</SidebarProvider>
-
-// Own the state instead, or just read it — useSidebar is the same hook
-// SidebarTrigger is built on (isPeeking above comes from it too):
-//   <SidebarProvider open={open} onOpenChange={setOpen}>
-function StateReadout() {
-  const { state, toggleSidebar } = useSidebar();
-  return <button onClick={toggleSidebar}>Sidebar is {state}</button>;
-}`;
 
 const noIconRailCode = `// ❌ The icon rail. Collapsing to a strip of glyphs keeps the
 // sidebar's cost without its value: every destination takes a
@@ -705,7 +427,7 @@ function DemoFooterUser() {
 /** The product's top-level nav — Chat, Agents, Knowledge, Runs, Evals under
  *  a section label that collapses the lot. The Layouts previews render it
  *  FLAT (`nested={false}`): those examples are about the shell, so plain
- *  selectable rows keep the rail quiet — and match the flat layoutsCode
+ *  selectable rows keep the rail quiet — and keep the layout galleries quiet
  *  snippet. The collapse example keeps the tree: each row owns a sub-tree,
  *  one starting open (five expanded sub-trees would outrun the frame, and a
  *  mix of open and closed is what a real tree looks like anyway). */
@@ -1377,13 +1099,23 @@ function AlignmentPreview() {
   useEffect(() => {
     const root = frameRef.current;
     if (!root) return;
-    const measure = () => {
+    const sameBox = (a: { left: number; top: number; height: number } | null, b: { left: number; top: number; height: number }) =>
+      !!a && a.left === b.left && a.top === b.top && a.height === b.height;
+    // Body-resize events only shift the frame's document offset — the guide
+    // xs are frame-relative and unchanged — so that path refreshes just the
+    // portal anchor instead of re-running the selector sweep.
+    const measureFrameBox = () => {
       const rootRect = root.getBoundingClientRect();
-      setFrameBox({
+      const next = {
         left: rootRect.left + window.scrollX,
         top: rootRect.top + window.scrollY,
         height: rootRect.height,
-      });
+      };
+      setFrameBox((prev) => (sameBox(prev, next) ? prev : next));
+    };
+    const measure = () => {
+      measureFrameBox();
+      const rootRect = root.getBoundingClientRect();
       const xs: number[] = [];
       // Each icon contributes both edges of its 24px slot (the size-6
       // button box, centred on the glyph), so every column reads as a pair
@@ -1414,15 +1146,25 @@ function AlignmentPreview() {
       for (const x of xs) {
         if (!merged.length || x - merged[merged.length - 1] > 2) merged.push(x);
       }
-      setGuides(merged);
+      setGuides((prev) =>
+        prev.length === merged.length && prev.every((v, i) => v === merged[i])
+          ? prev
+          : merged
+      );
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(root);
     // Content above the section changing height shifts the frame's document
-    // offset without resizing it — watching the body catches that.
-    observer.observe(document.body);
-    return () => observer.disconnect();
+    // offset without resizing it — watching the body catches that, but only
+    // the cheap frame-box refresh rides it (any height animation elsewhere
+    // on the page fires this per frame).
+    const bodyObserver = new ResizeObserver(measureFrameBox);
+    bodyObserver.observe(document.body);
+    return () => {
+      observer.disconnect();
+      bodyObserver.disconnect();
+    };
   }, []);
 
   return (
@@ -2045,46 +1787,21 @@ export default function SidebarDoc() {
         <SidebarPlaygroundSection />
       </DocSection>
 
-      <DocSection title="Blocks">
-        <p className="text-body text-muted-foreground">
-          The finetuned compositions on this page install as blocks — the
-          full app shell in one command:
-        </p>
-        <InputCopy value="npx shadcn@latest add https://www.fluidfunctionalism.com/r/sidebar-app.json" />
-        <p className="text-caption text-muted-foreground">
-          Ships the workspace header with its peek cross-fade, the search
-          field, sections, the user footer, and the inset topbar — plus a
-          ready-to-run page. À la carte:{" "}
-          <code>@fluid/sidebar-workspace-header</code>,{" "}
-          <code>@fluid/sidebar-user-footer</code>,{" "}
-          <code>@fluid/sidebar-menu-grid</code>.
-        </p>
-      </DocSection>
-
       <DocSection title="Layouts">
         <p className="text-body text-muted-foreground">
           3 layout options: <code>sidebar</code> default,{" "}
           <code>floating</code> to elevate the sidebar in a higher surface,{" "}
           <code>inset</code> to make your content stand out.
         </p>
-        <div className="flex flex-col gap-3">
-          <ComponentPreview code={layoutsCode} padding="none" minHeightClass={SHELL_HEIGHT} inspectRulers={false} hideHeader>
-            <DemoShell />
-          </ComponentPreview>
-          <p className="pb-2 text-center text-caption text-muted-foreground">Sidebar</p>
-        </div>
-        <div className="flex flex-col gap-3">
-          <ComponentPreview code={layoutsCode} padding="none" minHeightClass={SHELL_HEIGHT} inspectRulers={false} hideHeader>
-            <DemoShell variant="floating" />
-          </ComponentPreview>
-          <p className="pb-2 text-center text-caption text-muted-foreground">Floating</p>
-        </div>
-        <div className="flex flex-col gap-3">
-          <ComponentPreview code={layoutsCode} padding="none" minHeightClass={SHELL_HEIGHT} inspectRulers={false} hideHeader>
-            <DemoShell variant="inset" />
-          </ComponentPreview>
-          <p className="pb-2 text-center text-caption text-muted-foreground">Inset</p>
-        </div>
+        <ComponentPreview padding="none" minHeightClass={SHELL_HEIGHT} hideHeader caption="Sidebar">
+          <DemoShell />
+        </ComponentPreview>
+        <ComponentPreview padding="none" minHeightClass={SHELL_HEIGHT} hideHeader caption="Floating">
+          <DemoShell variant="floating" />
+        </ComponentPreview>
+        <ComponentPreview padding="none" minHeightClass={SHELL_HEIGHT} hideHeader caption="Inset">
+          <DemoShell variant="inset" />
+        </ComponentPreview>
       </DocSection>
 
       <DocSection title="Nesting">
@@ -2111,18 +1828,12 @@ export default function SidebarDoc() {
           Stack the header and footer content <code>vertically</code> or{" "}
           <code>horizontally</code>.
         </p>
-        <div className="flex flex-col gap-3">
-          <ComponentPreview code={headerFooterCode} padding="none" inspectRulers={false} hideHeader>
-            <HeaderFooterPreview stack="vertical" />
-          </ComponentPreview>
-          <p className="pb-2 text-center text-caption text-muted-foreground">Vertical stacking</p>
-        </div>
-        <div className="flex flex-col gap-3">
-          <ComponentPreview code={headerFooterCode} padding="none" inspectRulers={false} hideHeader>
-            <HeaderFooterPreview stack="horizontal" />
-          </ComponentPreview>
-          <p className="pb-2 text-center text-caption text-muted-foreground">Horizontal stacking</p>
-        </div>
+        <ComponentPreview padding="none" hideHeader caption="Vertical stacking">
+          <HeaderFooterPreview stack="vertical" />
+        </ComponentPreview>
+        <ComponentPreview padding="none" hideHeader caption="Horizontal stacking">
+          <HeaderFooterPreview stack="horizontal" />
+        </ComponentPreview>
       </DocSection>
 
       <DocSection title="Callouts">
@@ -2130,18 +1841,12 @@ export default function SidebarDoc() {
           Elevate &amp; promote news using the callout with stackable{" "}
           <code>Banners</code> or <code>Inlines</code>.
         </p>
-        <div className="flex flex-col gap-3">
-          <ComponentPreview code={stackedCalloutCode} padding="none" inspectRulers={false} hideHeader>
-            <StackedCalloutPreview variant="inline" />
-          </ComponentPreview>
-          <p className="pb-2 text-center text-caption text-muted-foreground">Stacked inlines</p>
-        </div>
-        <div className="flex flex-col gap-3">
-          <ComponentPreview code={stackedCalloutCode} padding="none" inspectRulers={false} hideHeader>
-            <StackedCalloutPreview variant="banner" />
-          </ComponentPreview>
-          <p className="pb-2 text-center text-caption text-muted-foreground">Stacked banners</p>
-        </div>
+        <ComponentPreview padding="none" hideHeader caption="Stacked inlines">
+          <StackedCalloutPreview variant="inline" />
+        </ComponentPreview>
+        <ComponentPreview padding="none" hideHeader caption="Stacked banners">
+          <StackedCalloutPreview variant="banner" />
+        </ComponentPreview>
       </DocSection>
 
       <DocSection title="Resize, collapse & peek">
@@ -2149,18 +1854,12 @@ export default function SidebarDoc() {
           Drag to resize, click to collapse, or press <code>[</code> key.
           Open sidebar on <code>click</code> or <code>hover</code>.
         </p>
-        <div className="flex flex-col gap-3">
-          <ComponentPreview code={collapseCode} padding="none" inspectRulers={false} hideHeader>
-            <CollapsePreview />
-          </ComponentPreview>
-          <p className="pb-2 text-center text-caption text-muted-foreground">On hover</p>
-        </div>
-        <div className="flex flex-col gap-3">
-          <ComponentPreview code={collapseCode} padding="none" inspectRulers={false} hideHeader>
-            <CollapsePreview peek="click" defaultOpen={false} />
-          </ComponentPreview>
-          <p className="pb-2 text-center text-caption text-muted-foreground">On click</p>
-        </div>
+        <ComponentPreview padding="none" hideHeader caption="On hover">
+          <CollapsePreview />
+        </ComponentPreview>
+        <ComponentPreview padding="none" hideHeader caption="On click">
+          <CollapsePreview peek="click" defaultOpen={false} />
+        </ComponentPreview>
       </DocSection>
 
       <DocSection title="No icon rail version?">

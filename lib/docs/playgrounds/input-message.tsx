@@ -120,7 +120,9 @@ function buildImPlaygroundCode(o: {
   l.push(`useEffect(() => {`);
   l.push(`  const el = scrollRef.current;`);
   l.push(`  if (el) el.scrollTop = el.scrollHeight;`);
-  l.push(`}, [messages, inputH]);`);
+  // The queue is a dep: enqueuing grows the transcript's reserved bottom
+  // padding, which must re-pin the scroll too.
+  l.push(`}, [messages, inputH${queueOn ? ", queue" : ""}]);`);
   if (queueOn) {
     l.push(``);
     l.push(`// Height of the collapsed queue stack (44px front card + 12px per peek,`);
@@ -282,7 +284,8 @@ export function InputMessagePlayground({ children }: PlaygroundProps) {
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [messages, inputH]);
+    // `queue` is a dep: enqueuing grows reservedBottom, which must re-pin.
+  }, [messages, inputH, queue]);
 
   // Double-click a queued card to pull it back into the composer.
   const editQueued = (item: QueuedMessage) => {

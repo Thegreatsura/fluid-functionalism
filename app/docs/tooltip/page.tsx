@@ -96,6 +96,11 @@ const tooltipProps: PropDef[] = [
     type: "string",
     description: "Additional classes applied to the tooltip content container.",
   },
+  {
+    name: "contentClassName",
+    type: "string",
+    description: "Classes for the portalled content element — pass a z-index utility here to lift the whole tooltip above other fixed layers (defaults to z-50). The docs inspector uses it to clear the preview header.",
+  },
 ];
 
 // ---------------------------------------------------------------------------

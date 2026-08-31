@@ -22,7 +22,9 @@ import { Tooltip } from "@/registry/radix/tooltip";
 // lines at its box edges, a green box-model overlay (padding + flex/grid gaps),
 // and an FF tooltip with the tag, selector, display, size, padding, and margin.
 // Only the content region captures the pointer, so the toggles stay clickable
-// and the component underneath is frozen while you inspect it.
+// and the component underneath is frozen while you inspect it. Portalled
+// menus/listboxes the demo holds open are inspectable like any in-frame
+// element wherever they overlap the content region.
 // ---------------------------------------------------------------------------
 
 const BLUE = "#6B97FF"; // --focus-ring "clarity" blue
@@ -114,12 +116,17 @@ export function InspectOverlay({
   frameRef,
   contentRef,
   renderTooltip,
+  rulers = true,
 }: {
   frameRef: RefObject<HTMLElement | null>;
   contentRef: RefObject<HTMLElement | null>;
   /** Replaces the default tag/box/font tooltip with custom content built
    *  from the raw measurements — e.g. the token readout on /docs/sizes. */
   renderTooltip?: (raw: InspectRaw) => ReactNode;
+  /** Draw the top/left pixel rulers. Off for full-bleed previews, where the
+   *  demo reaches the frame edges and the rulers would draw over (or be
+   *  masked by) its chrome — the crosshair, box model, and tooltip remain. */
+  rulers?: boolean;
 }) {
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [capture, setCapture] = useState<Box | null>(null);
@@ -348,12 +355,20 @@ export function InspectOverlay({
       const content = contentRef.current;
       if (!content) return;
       // Deepest element under the cursor that belongs to the component (skip
-      // the overlay's own UI and the content wrapper itself). Degenerate boxes
-      // — the invisible text-box-trim sizer spans report ~0 height — measure
-      // as noise, so fall through to the next element in the stack.
+      // the overlay's own UI and the content wrapper itself). Portalled
+      // popups the demo has open — menus, listboxes — live outside the
+      // content subtree but are the demo's too, so anything inside one under
+      // the cursor is inspectable as well (a dropdown held open through the
+      // Inspect toggle can be measured item by item). Tooltips stay excluded:
+      // role="tooltip" never matches, so the inspector can't chase its own
+      // readout. Degenerate boxes — the invisible text-box-trim sizer spans
+      // report ~0 height — measure as noise, so fall through to the next
+      // element in the stack.
       const stack = document.elementsFromPoint(clientX, clientY);
       const el = stack.find((e) => {
-        if (!content.contains(e) || e === content) return false;
+        const inContent = content.contains(e) && e !== content;
+        const inPopup = !!e.closest('[role="menu"],[role="listbox"]');
+        if (!inContent && !inPopup) return false;
         if (e.closest("[data-inspect-ui]")) return false;
         const r = e.getBoundingClientRect();
         return r.width >= 1 && r.height >= 1;
@@ -460,10 +475,11 @@ export function InspectOverlay({
 
   return (
     <>
-    {/* Ruler layer — BELOW the demo content (z-10 vs the demo shells' z-20):
-        an opaque demo masks the ticks and numbers, so full-bleed previews
-        never get rulers drawn over their chrome. Only the crosshair layer
-        below stays above the content. */}
+    {/* Ruler layer — BELOW the demo content (z-10): an opaque demo masks the
+        ticks and numbers, and portalled popups cover them too — only the
+        crosshair layer below rides above those. Full-bleed previews opt out
+        of rulers entirely with `rulers={false}`. */}
+    {rulers && (
     <motion.div
       data-inspect-ui
       className="absolute inset-0 z-10 pointer-events-none overflow-hidden"
@@ -529,10 +545,16 @@ export function InspectOverlay({
         </svg>
       </motion.div>
     </motion.div>
+    )}
 
+    {/* Crosshair layer — ABOVE portalled popups (z-[60] vs their z-50): a
+        dropdown held open through the Inspect toggle gets the hover guides
+        and box-model strips drawn over it, not clipped under it. The preview
+        header sits higher (z-[70]) so guides still tuck under its opaque
+        background, and the info tooltip clears the header at z-[80]. */}
     <motion.div
       data-inspect-ui
-      className="absolute inset-0 z-30 pointer-events-none overflow-hidden"
+      className="absolute inset-0 z-[60] pointer-events-none overflow-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: spring.moderate.exit }}
@@ -628,6 +650,8 @@ export function InspectOverlay({
             )
           }
           className="!px-3.5 !py-4 max-w-[240px]"
+          // The portalled tooltip must clear the preview header (z-[70]).
+          contentClassName="z-[80]"
         >
           <div
             className="absolute"

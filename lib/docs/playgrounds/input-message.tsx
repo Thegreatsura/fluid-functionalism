@@ -60,11 +60,7 @@ function buildImPlaygroundCode(o: {
   if (queueOn) imports.push("type QueuedMessage");
 
   const l: string[] = [];
-  l.push(
-    o.attachments
-      ? `import { useEffect, useState } from "react";`
-      : `import { useState } from "react";`
-  );
+  l.push(`import { useEffect, useRef, useState } from "react";`);
   l.push(`import { ${imports.join(", ")} } from "./components";`);
   if (o.leftSlot || o.rightSlot)
     l.push(`import { useIcon } from "@/lib/icon-context";`);
@@ -102,54 +98,111 @@ function buildImPlaygroundCode(o: {
     l.push(`}, []);`);
   }
   l.push(``);
-  l.push(`<InputMessage`);
-  l.push(`  value={value}`);
-  l.push(`  onValueChange={setValue}`);
-  l.push(`  onSend={(text, sent) => {`);
-  l.push(`    if (text || sent.length) setMessages((m) => [...m, { text, files: sent }]);`);
-  l.push(`    setValue("");`);
-  if (filesOn) l.push(`    setFiles([]);`);
-  l.push(`  }}`);
+  l.push(`// Float the composer over the transcript: measure it to reserve scroll`);
+  l.push(
+    queueOn
+      ? `// padding (plus the collapsed queue stack) and to position the stack, and`
+      : `// padding, and keep the transcript pinned to the latest message.`
+  );
+  if (queueOn) l.push(`// keep the transcript pinned to the latest message.`);
+  l.push(`const inputRef = useRef<HTMLDivElement>(null);`);
+  l.push(`const [inputH, setInputH] = useState(0);`);
+  l.push(`useEffect(() => {`);
+  l.push(`  const el = inputRef.current;`);
+  l.push(`  if (!el) return;`);
+  l.push(`  const ro = new ResizeObserver(() => setInputH(el.offsetHeight));`);
+  l.push(`  ro.observe(el);`);
+  l.push(`  setInputH(el.offsetHeight);`);
+  l.push(`  return () => ro.disconnect();`);
+  l.push(`}, []);`);
+  l.push(``);
+  l.push(`const scrollRef = useRef<HTMLDivElement>(null);`);
+  l.push(`useEffect(() => {`);
+  l.push(`  const el = scrollRef.current;`);
+  l.push(`  if (el) el.scrollTop = el.scrollHeight;`);
+  l.push(`}, [messages, inputH]);`);
+  if (queueOn) {
+    l.push(``);
+    l.push(`// Height of the collapsed queue stack (44px front card + 12px per peek,`);
+    l.push(`// max 2 peeks) — reserved under the transcript alongside the composer.`);
+    l.push(`const collapsedStackH = 44 + Math.min(Math.max(queue.length - 1, 0), 2) * 12;`);
+  }
+  l.push(``);
+  l.push(`<div className="relative w-full self-stretch">`);
+  l.push(`  <div ref={scrollRef} className="absolute inset-0 overflow-y-auto scrollbar-hide">`);
+  l.push(`    <div`);
+  l.push(`      className="flex min-h-full flex-col justify-start gap-2"`);
+  l.push(
+    queueOn
+      ? `      style={{ paddingBottom: inputH + 8 + (queue.length > 0 ? collapsedStackH + 8 : 0) }}`
+      : `      style={{ paddingBottom: inputH + 8 }}`
+  );
+  l.push(`    >`);
+  l.push(`      {messages.map((m, i) => (`);
+  l.push(`        <ChatMessage key={i} from="user" files={m.files}>`);
+  l.push(`          {m.text}`);
+  l.push(`        </ChatMessage>`);
+  l.push(`      ))}`);
+  l.push(`    </div>`);
+  l.push(`  </div>`);
+  if (queueOn) {
+    l.push(`  {/* Render the queued messages yourself here — e.g. the Sonner-style`);
+    l.push(`      stack from the "Queued messages" demo — absolutely positioned over`);
+    l.push(`      the transcript at style={{ bottom: inputH + 8 }}, just above the`);
+    l.push(`      measured composer. */}`);
+  }
+  l.push(`  <InputMessage`);
+  l.push(`    ref={inputRef}`);
+  l.push(`    className="absolute inset-x-0 bottom-0"`);
+  l.push(`    value={value}`);
+  l.push(`    onValueChange={setValue}`);
+  l.push(`    onSend={(text, sent) => {`);
+  l.push(`      if (text || sent.length) setMessages((m) => [...m, { text, files: sent }]);`);
+  l.push(`      setValue("");`);
+  if (filesOn) l.push(`      setFiles([]);`);
+  l.push(`    }}`);
   if (o.suggestion)
-    l.push(`  placeholderSuggestion=${JSON.stringify(PLACEHOLDER_PROMPT)}`);
-  if (o.suggestionsOn) l.push(`  suggestions={SUGGESTIONS}`);
+    l.push(`    placeholderSuggestion=${JSON.stringify(PLACEHOLDER_PROMPT)}`);
+  if (o.suggestionsOn) l.push(`    suggestions={SUGGESTIONS}`);
   if (o.historyOn)
-    l.push(`  // ArrowUp recalls sent messages, ArrowDown walks back to the draft.`);
-  if (o.historyOn) l.push(`  history={messages.map((m) => m.text).filter(Boolean)}`);
-  if (o.minRows > 1) l.push(`  minRows={${o.minRows}}`);
-  if (o.disabled) l.push(`  disabled`);
+    l.push(`    // ArrowUp recalls sent messages, ArrowDown walks back to the draft.`);
+  if (o.historyOn) l.push(`    history={messages.map((m) => m.text).filter(Boolean)}`);
+  if (o.minRows > 1) l.push(`    minRows={${o.minRows}}`);
+  if (o.disabled) l.push(`    disabled`);
   if (filesOn) {
-    l.push(`  files={files}`);
-    l.push(`  onFilesChange={setFiles}`);
+    l.push(`    files={files}`);
+    l.push(`    onFilesChange={setFiles}`);
   }
   if (o.leftSlot) {
-    l.push(`  leftSlot={({ openFilePicker }) => (`);
-    l.push(`    <Tooltip content="Attach" side="top">`);
-    l.push(`      <Button variant="ghost" size="icon-sm" aria-label="Attach files" onClick={() => openFilePicker()}>`);
-    l.push(`        <PlusIcon />`);
-    l.push(`      </Button>`);
-    l.push(`    </Tooltip>`);
-    l.push(`  )}`);
+    l.push(`    leftSlot={({ openFilePicker }) => (`);
+    l.push(`      <Tooltip content="Attach" side="top">`);
+    l.push(`        <Button variant="ghost" size="icon-sm" aria-label="Attach files" onClick={() => openFilePicker()}>`);
+    l.push(`          <PlusIcon />`);
+    l.push(`        </Button>`);
+    l.push(`      </Tooltip>`);
+    l.push(`    )}`);
   }
   if (o.rightSlot) {
-    l.push(`  rightSlot={`);
-    l.push(`    <Button variant="ghost" size="sm" trailingIcon={ChevronDownIcon}>`);
-    l.push(`      Sonnet 5`);
-    l.push(`    </Button>`);
-    l.push(`  }`);
+    l.push(`    rightSlot={`);
+    l.push(`      <Button variant="ghost" size="sm" trailingIcon={ChevronDownIcon}>`);
+    l.push(`        Sonnet 5`);
+    l.push(`      </Button>`);
+    l.push(`    }`);
   }
   if (queueOn) {
-    l.push(`  // While streaming, submits enqueue; flipping back to idle dispatches`);
-    l.push(`  // the head of the queue through onSend.`);
-    l.push(`  status={status}`);
-    l.push(`  queue={queue}`);
-    l.push(`  onQueueChange={setQueue}`);
-    l.push(`  onStop={() => setStatus("idle")}`);
-    l.push(`  // Suppress the built-in queue rows and render the queue yourself —`);
-    l.push(`  // e.g. the stacked cards above the composer (see Queued messages).`);
-    l.push(`  showQueue={false}`);
+    l.push(`    // While streaming, submits enqueue; flipping back to idle dispatches`);
+    l.push(`    // the head of the queue through onSend.`);
+    l.push(`    status={status}`);
+    l.push(`    queue={queue}`);
+    l.push(`    onQueueChange={setQueue}`);
+    l.push(`    onStop={() => setStatus("idle")}`);
+    l.push(`    // Suppress the built-in queue rows and render the queue yourself —`);
+    l.push(`    // the stacked cards floated at bottom: inputH + 8, just above the`);
+    l.push(`    // composer (see Queued messages).`);
+    l.push(`    showQueue={false}`);
   }
-  l.push(`/>`);
+  l.push(`  />`);
+  l.push(`</div>`);
   return l.join("\n");
 }
 

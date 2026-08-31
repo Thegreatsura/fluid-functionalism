@@ -48,6 +48,15 @@ interface ComponentPreviewProps {
   /** Start with Inspect already on — for previews whose subject IS the
    *  geometry. The toggle still works. */
   defaultInspect?: boolean;
+  /** Draw the inspector's top/left pixel rulers. Defaults to true; set false
+   *  for full-width/full-height demos where the rulers would overlap (or be
+   *  masked by) the component's own chrome — the crosshair, box model, and
+   *  measurement tooltip still work. */
+  inspectRulers?: boolean;
+  /** Drop the Preview/Code + Inspect header entirely — the frame shows just
+   *  the live demo. For gallery-style rows (the Layouts variants) where the
+   *  chrome would repeat three times for one code sample. */
+  hideHeader?: boolean;
   children: ReactNode;
 }
 
@@ -61,6 +70,8 @@ export function ComponentPreview({
   align = "center",
   inspectable = true,
   defaultInspect = false,
+  inspectRulers = true,
+  hideHeader = false,
   children,
 }: ComponentPreviewProps) {
   const [tab, setTab] = useState(0);
@@ -95,10 +106,11 @@ export function ComponentPreview({
       {/* Tab bar — min-height reserves the playback button's height (h-10 + pt-3)
           so the header doesn't shift when the button mounts/unmounts. A hairline
           along the bottom separates it from the preview/code below. Its own
-          opaque background sits above the inspect overlay (z-40 > z-30) so the
-          ruler ticks tuck cleanly under it. */}
+          opaque background sits above the inspect overlay's ruler layer
+          (z-[70] > z-[60]) so the ruler ticks tuck cleanly under it. */}
+      {!hideHeader && (
       <div
-        className="relative z-40 flex items-center gap-0 px-3 py-3 min-h-[52px] border-b border-border/60 bg-background"
+        className="relative z-[70] flex items-center gap-0 px-3 py-3 min-h-[52px] border-b border-border/60 bg-background"
         style={{ borderTopLeftRadius: "inherit", borderTopRightRadius: "inherit" }}
       >
         {title && (
@@ -115,12 +127,30 @@ export function ComponentPreview({
         </TabsSubtle>
         <div className="ml-auto flex items-center gap-1">
           {inspectable && tab === 0 && (
-            <Switch
-              label="Inspect"
-              checked={inspect}
-              onToggle={() => setInspect((v) => !v)}
-              className="h-8 px-2 rounded-md"
-            />
+            // Toggling Inspect must not dismiss whatever the preview has open
+            // (a dropdown, a popover) — inspecting THAT state is the point.
+            // The demos' menus are non-modal, so they dismiss on any outside
+            // pointerdown reaching the document and on focus moving outside.
+            // stopIMMEDIATEPropagation is what blocks them: the App Router
+            // hydrates React on `document`, so Radix's document listener sits
+            // on the same node as React's delegation and plain stopPropagation
+            // can't cut it off. preventDefault on mousedown keeps focus (and
+            // the focus-out dismissal) where it is; the Switch still toggles
+            // on click.
+            <span
+              onPointerDown={(e) => e.nativeEvent.stopImmediatePropagation()}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.nativeEvent.stopImmediatePropagation();
+              }}
+            >
+              <Switch
+                label="Inspect"
+                checked={inspect}
+                onToggle={() => setInspect((v) => !v)}
+                className="h-8 px-2 rounded-md"
+              />
+            </span>
           )}
           {showButton && (
             <Tooltip content={playbackButton?.tooltip ?? "Replay animation"} side="top">
@@ -135,6 +165,7 @@ export function ComponentPreview({
           )}
         </div>
       </div>
+      )}
 
       {/* Content. Wrapped so its rectangular bottom corners get clipped
           to the outer container's rounded shape (rounded-xl / rounded-3xl
@@ -145,10 +176,15 @@ export function ComponentPreview({
           bar sits above, well below the outer's curved top edge). */}
       <div
         className="overflow-hidden"
-        style={{
-          borderBottomLeftRadius: "inherit",
-          borderBottomRightRadius: "inherit",
-        }}
+        // With no header above it, the content owns all four corners.
+        style={
+          hideHeader
+            ? { borderRadius: "inherit" }
+            : {
+                borderBottomLeftRadius: "inherit",
+                borderBottomRightRadius: "inherit",
+              }
+        }
       >
         {tab === 0 ? (
           <div
@@ -187,7 +223,12 @@ export function ComponentPreview({
           border and clear the header toggles. Fades in/out with the toggle. */}
       <AnimatePresence>
         {inspecting && (
-          <InspectOverlay key="inspect" frameRef={frameRef} contentRef={previewRef} />
+          <InspectOverlay
+            key="inspect"
+            frameRef={frameRef}
+            contentRef={previewRef}
+            rulers={inspectRulers}
+          />
         )}
       </AnimatePresence>
     </div>

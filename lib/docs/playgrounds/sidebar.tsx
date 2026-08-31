@@ -64,7 +64,7 @@ import {
   PlaygroundPanel,
 } from "@/lib/docs/playground";
 import { SIDEBAR_ITEMS, SIDEBAR_THREADS } from "@/app/components/demo-data";
-import { WorkspaceMenuItems, SIDEBAR_MENU_GRID } from "@/lib/docs/workspace-demo";
+import { WorkspaceMenuItems, SIDEBAR_MENU_POPUP } from "@/lib/docs/workspace-demo";
 import type { PlaygroundProps } from "./types";
 
 // ── Sidebar playground ───────────────────────────────────
@@ -454,7 +454,7 @@ function BrandHeaderRow({ variant }: { variant: "dropdown" | "logo" }) {
 
   // The tile sits absolutely in the row's leading slot so the trigger can
   // cross-fade with it in place — neither element ever moves, and the
-  // constant pl-9 keeps the name pinned while they swap.
+  // constant pl-8 (the rows' 32px text axis) keeps the name pinned while they swap.
   const tile = (
     <span
       aria-hidden
@@ -487,7 +487,7 @@ function BrandHeaderRow({ variant }: { variant: "dropdown" | "logo" }) {
     // Not interactive, so it renders outside SidebarMenu — a menu row would
     // track the traveling hover background.
     return (
-      <div className="relative flex h-8 items-center pl-9 pr-2">
+      <div className="relative flex h-8 items-center pl-8 pr-2">
         <SidebarTrigger
           size="icon-compact"
           aria-hidden={!isPeeking || undefined}
@@ -514,7 +514,7 @@ function BrandHeaderRow({ variant }: { variant: "dropdown" | "logo" }) {
         <DropdownMenu>
           <DropdownTrigger
             render={
-              <SidebarMenuButton aria-label="Switch workspace" className="pl-9">
+              <SidebarMenuButton aria-label="Switch workspace" className="pl-8">
                 {tile}
                 {name}
                 <span className="ml-auto inline-flex @max-[7rem]:hidden">
@@ -528,7 +528,7 @@ function BrandHeaderRow({ variant }: { variant: "dropdown" | "logo" }) {
             }
           />
           <DropdownContent
-            className={`min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))] ${SIDEBAR_MENU_GRID}`}
+            className={SIDEBAR_MENU_POPUP}
             align="start"
             sideOffset={4}
             checkedIndex={0}
@@ -560,23 +560,173 @@ function iconTag(name: string): string {
 function rowActionLines(count: Count3, indent: string): string[] {
   if (count === 0) return [];
   const actions = ROW_ACTION_SET.slice(-count);
-  if (count === 1) {
-    return [
-      `${indent}<SidebarMenuAction showOnHover aria-label="${actions[0].label}">`,
-      `${indent}  <${iconTag(actions[0].icon)} />`,
-      `${indent}</SidebarMenuAction>`,
-    ];
-  }
+  // Mirrors the preview's render(): plain actions get a Tooltip; the
+  // overflow action (always kept — it's sliced from the end) is a
+  // DropdownMenu whose 240px content matches the header/footer triggers,
+  // so every menu in the sidebar reads as one family.
+  const one = (a: (typeof ROW_ACTION_SET)[number], showOnHover: boolean, ind: string): string[] =>
+    "menu" in a && a.menu
+      ? [
+          `${ind}<DropdownMenu>`,
+          `${ind}  <DropdownTrigger render={`,
+          `${ind}    <SidebarMenuAction${showOnHover ? " showOnHover" : ""} aria-label="${a.label}">`,
+          `${ind}      <${iconTag(a.icon)} />`,
+          `${ind}    </SidebarMenuAction>`,
+          `${ind}  } />`,
+          `${ind}  {/* 240px — the header/footer trigger width */}`,
+          `${ind}  <DropdownContent className="min-w-0 w-[240px]" align="start" sideOffset={4}>`,
+          `${ind}    <MenuItem index={0} icon={PencilIcon} label="Rename" onSelect={() => {}} />`,
+          `${ind}    <MenuItem index={1} icon={LinkIcon} label="Share" onSelect={() => {}} />`,
+          `${ind}  </DropdownContent>`,
+          `${ind}</DropdownMenu>`,
+        ]
+      : [
+          `${ind}<Tooltip content="${a.label}" side="top">`,
+          `${ind}  <SidebarMenuAction${showOnHover ? " showOnHover" : ""} aria-label="${a.label}">`,
+          `${ind}    <${iconTag(a.icon)} />`,
+          `${ind}  </SidebarMenuAction>`,
+          `${ind}</Tooltip>`,
+        ];
+  if (count === 1) return one(actions[0], true, indent);
   return [
     `${indent}{/* more than one action: the cluster owns the row's gutter */}`,
     `${indent}<SidebarMenuActions showOnHover>`,
-    ...actions.flatMap((a) => [
-      `${indent}  <SidebarMenuAction aria-label="${a.label}">`,
-      `${indent}    <${iconTag(a.icon)} />`,
-      `${indent}  </SidebarMenuAction>`,
-    ]),
+    ...actions.flatMap((a) => one(a, false, `${indent}  `)),
     `${indent}</SidebarMenuActions>`,
   ];
+}
+
+/** The popup class both sidebar-anchored menus share — emitted once as a
+ *  const so the generated snippet mirrors lib/docs/workspace-demo.tsx. */
+function popupConstLines(): string[] {
+  return [
+    `/* Sidebar-anchored menus: trigger width +10px, shifted -4px — items start`,
+    `   at the trigger row's edge, icon slots land on the rows' leading axis,`,
+    `   and the trailing check sits on the trigger chevron's axis. */`,
+    `const SIDEBAR_MENU_POPUP =`,
+    `  "min-w-[240px] -ml-1 w-[calc(var(--radix-dropdown-menu-trigger-width,var(--anchor-width))_+_10px)] " +`,
+    `  "[&_[role=menuitem]]:pl-2 [&_[role=menuitem]]:pr-1.5 [&_[role=menuitem]]:gap-2 " +`,
+    `  "[&_[role=menuitemradio]]:pl-2 [&_[role=menuitemradio]]:pr-1.5 [&_[role=menuitemradio]]:gap-2";`,
+  ];
+}
+
+/** Tooltip content used by the horizontal header's icon buttons: the label
+ *  plus a keystroke chip, height-matched to a chipless tooltip. */
+function tipHelperLines(): string[] {
+  return [
+    `/* Tooltip label + keystroke chip, height-matched to a chipless tooltip:`,
+    `   the flex row escapes the surface's text-box trim, so the label`,
+    `   re-applies it and the chip pulls its box back with -my-1. */`,
+    `const tipWithShortcut = (label: string, shortcut: string) => (`,
+    `  <span className="flex items-center gap-2">`,
+    `    <span className="[text-box:trim-both_cap_alphabetic]">{label}</span>`,
+    `    <kbd className="-my-1 flex h-4 min-w-4 items-center justify-center rounded border`,
+    `      border-background/30 px-1 font-sans text-[10px] text-background/80">{shortcut}</kbd>`,
+    `  </span>`,
+    `);`,
+  ];
+}
+
+/** The footer's user row, emitted for real — avatar on the leading icon
+ *  axis, chevron on the trailing action axis, popup on the shared grid. */
+function userRowLines(horizontal: boolean, indent: string): string[] {
+  const pad = (s: string) => `${indent}${s}`;
+  return [
+    `<SidebarMenu aria-label="User"${horizontal ? ` className="min-w-0 flex-1"` : ``}>`,
+    `  <SidebarMenuItem>`,
+    `    <DropdownMenu>`,
+    `      <DropdownTrigger render={`,
+    `        <SidebarMenuButton aria-label="Open user menu">`,
+    `          {/* -ml-0.5 centres the 20px avatar on the rows' leading icon axis;`,
+    `              the chevron rides a 24px slot pulled -mr-0.5 onto the trailing`,
+    `              action axis */}`,
+    `          <img src="/avatar.png" alt="" width={20} height={20}`,
+    `            className="-ml-0.5 -mr-0.5 size-5 shrink-0 rounded-full" />`,
+    `          <span className="min-w-0 truncate text-[13px] text-foreground">Micka Touillaud</span>`,
+    `          <span className="ml-auto -mr-0.5 flex size-6 shrink-0 items-center justify-center">`,
+    `            <ChevronsUpDownIcon size={16} strokeWidth={1.5} className="text-muted-foreground" />`,
+    `          </span>`,
+    `        </SidebarMenuButton>`,
+    `      } />`,
+    `      <DropdownContent className={SIDEBAR_MENU_POPUP} side="top" align="start" sideOffset={6}>`,
+    `        <MenuItem index={0} icon={UserIcon} label="Profile" onSelect={() => {}} />`,
+    `        <MenuItem index={1} icon={SettingsIcon} label="Settings" onSelect={() => {}} />`,
+    `      </DropdownContent>`,
+    `    </DropdownMenu>`,
+    `  </SidebarMenuItem>`,
+    `</SidebarMenu>`,
+  ].map(pad);
+}
+
+/** The brand row, emitted for real — the crossfade slot is the single most
+ *  finetuned pattern in the sidebar and must survive into the snippet. */
+function brandRowLines(
+  variant: "dropdown" | "logo",
+  peek: boolean,
+  indent: string
+): string[] {
+  const pad = (s: string) => `${indent}${s}`;
+  // While the sidebar is only peeked, the trigger fades into the tile's
+  // slot; without peek the swap never shows, so the snippet skips it.
+  const trigger = peek
+    ? [
+        `  {/* isPeeking comes from useSidebar(), read in a child of the provider.`,
+        `      While the rail is only PEEKED the overlay covers the pointer's one`,
+        `      way to pin it open — so the trigger cross-fades with the tile,`,
+        `      in place: neither element moves, only opacity. */}`,
+        `  <SidebarTrigger`,
+        `    size="icon-compact"`,
+        `    aria-hidden={!isPeeking || undefined}`,
+        `    tabIndex={isPeeking ? undefined : -1}`,
+        `    className={\`absolute left-1 top-1/2 z-20 -translate-y-1/2`,
+        `      [&>span:first-child]:hidden [&_svg]:size-4 transition-opacity duration-80`,
+        `      \${isPeeking ? "opacity-100" : "pointer-events-none opacity-0"}\`}`,
+        `  />`,
+      ]
+    : [];
+  const tile = [
+    `  {/* 20px tile at left-1.5 — centred on the rows' 16px leading axis;`,
+    `      the constant pl-8 keeps the name pinned while the slot swaps */}`,
+    `  <span aria-hidden className={\`pointer-events-none absolute left-1.5 top-1/2 flex size-5`,
+    `    -translate-y-1/2 items-center justify-center rounded-md bg-foreground text-[10px]`,
+    `    text-background${peek ? ` transition-opacity duration-80 \${isPeeking ? "opacity-0" : "opacity-100"}` : ""}\`}>A</span>`,
+  ];
+  const name = `<span className="min-w-0 truncate text-[13px] text-foreground">Acme Inc</span>`;
+  if (variant === "logo") {
+    return [
+      `{/* logo lockup — not interactive, so it lives OUTSIDE SidebarMenu`,
+      `    (a menu row would track the traveling hover background) */}`,
+      `<div className="relative flex h-8 items-center pl-8 pr-2">`,
+      ...trigger,
+      ...tile,
+      `  ${name}`,
+      `</div>`,
+    ].map(pad);
+  }
+  return [
+    `{/* workspace switcher. @container: the chevron hides once the row gets`,
+    `    too narrow to show a useful slice of the name */}`,
+    `<SidebarMenu aria-label="Workspace" className="@container">`,
+    `  <SidebarMenuItem>`,
+    ...trigger.map((l) => `  ${l}`),
+    `    <DropdownMenu>`,
+    `      <DropdownTrigger render={`,
+    `        <SidebarMenuButton aria-label="Switch workspace" className="pl-8">`,
+    ...tile.map((l) => `        ${l}`),
+    `          ${name}`,
+    `          <span className="ml-auto inline-flex @max-[7rem]:hidden">`,
+    `            <ChevronDownIcon size={16} strokeWidth={1.5} className="text-muted-foreground" />`,
+    `          </span>`,
+    `        </SidebarMenuButton>`,
+    `      } />`,
+    `      <DropdownContent className={SIDEBAR_MENU_POPUP} align="start" sideOffset={4} checkedIndex={0}>`,
+    `        <MenuItem index={0} icon={AcmeTile} label="Acme Inc" checked onSelect={() => {}} />`,
+    `        <MenuItem index={1} icon={PlusIcon} label="New workspace" onSelect={() => {}} />`,
+    `      </DropdownContent>`,
+    `    </DropdownMenu>`,
+    `  </SidebarMenuItem>`,
+    `</SidebarMenu>`,
+  ].map(pad);
 }
 
 export function buildSidebarPlaygroundCode(o: PlayState): string {
@@ -619,7 +769,28 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   ];
   lines.push(`  ${menuExtras.join(", ")},`);
   lines.push(`} from "./components";`);
+  // The brand/user menus, row overflow menus, and action tooltips all pull
+  // from the same flavored primitives; import them only when rendered.
+  const anyMenuPopup = o.headerPrimary === "dropdown" || o.footerPrimary === "dropdown";
+  const anyTooltip =
+    maxActions > 0 ||
+    o.sectionActions > 0 ||
+    o.headerStack === "horizontal" ||
+    (o.footerStack === "horizontal" && o.footerActions > 0);
+  if (anyMenuPopup || maxActions > 0 || anyTooltip) {
+    lines.push(
+      `import { DropdownMenu, DropdownTrigger, DropdownContent, MenuItem, Tooltip } from "./components";`
+    );
+  }
   lines.push(``);
+  if (anyMenuPopup) {
+    lines.push(...popupConstLines());
+    lines.push(``);
+  }
+  if (o.headerStack === "horizontal") {
+    lines.push(...tipHelperLines());
+    lines.push(``);
+  }
 
   const providerProps =
     ` open={open} onOpenChange={setOpen}` +
@@ -629,12 +800,16 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
 
   // Header
   const headerActions = HEADER_ACTION_SET.slice(0, o.headerActions);
-  const brandComment =
-    o.headerPrimary === "logo"
-      ? `{/* logo lockup */}`
-      : o.headerPrimary === "dropdown"
-        ? `{/* workspace switcher */}`
-        : null;
+  const peek = o.collapsedBehavior !== "none";
+  const iconButton = (label: string, icon: string, shortcut: string | null, indent: string) => [
+    shortcut
+      ? `${indent}<Tooltip content={tipWithShortcut("${label}", "${shortcut}")} side="bottom">`
+      : `${indent}<Tooltip content="${label}" side="bottom">`,
+    `${indent}  <Button variant="ghost" size="icon-compact" className="size-6 shrink-0" aria-label="${label}">`,
+    `${indent}    <${icon} />`,
+    `${indent}  </Button>`,
+    `${indent}</Tooltip>`,
+  ];
   lines.push(`    <SidebarHeader>`);
   if (o.headerStack === "horizontal") {
     lines.push(`      {/* horizontal: search + actions share the brand line as 24px`);
@@ -642,36 +817,51 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
     lines.push(`      <div className="flex items-center gap-1 pr-1.5">`);
     // The brand slot keeps its flex-1 spacer even when empty, so the icon
     // buttons hold the trailing edge exactly as the preview does.
-    lines.push(
-      brandComment
-        ? `        <div className="min-w-0 flex-1">${brandComment}</div>`
-        : `        <div className="min-w-0 flex-1" />`
-    );
-    lines.push(`        <Button variant="ghost" size="icon-compact" className="size-6" aria-label="Search">`);
-    lines.push(`          <SearchIcon />`);
-    lines.push(`        </Button>`);
+    if (o.headerPrimary === "none") {
+      lines.push(`        <div className="min-w-0 flex-1" />`);
+    } else {
+      lines.push(`        <div className="min-w-0 flex-1">`);
+      lines.push(...brandRowLines(o.headerPrimary, peek, `          `));
+      lines.push(`        </div>`);
+    }
+    lines.push(...iconButton("Search", "SearchIcon", SEARCH_SHORTCUT, `        `));
     for (const a of headerActions) {
-      lines.push(`        <Button variant="ghost" size="icon-compact" className="size-6" aria-label="${a.label}">`);
-      lines.push(`          <${iconTag(a.icon)} />`);
-      lines.push(`        </Button>`);
+      lines.push(...iconButton(a.label, iconTag(a.icon), a.shortcut, `        `));
     }
     lines.push(`      </div>`);
   } else {
-    if (brandComment) lines.push(`      ${brandComment}`);
-    lines.push(`      <SidebarInput placeholder="Search…" />`);
-    if (headerActions.length > 0) {
-      lines.push(`      <SidebarMenu>`);
-      for (const a of headerActions) {
-        lines.push(`        <SidebarMenuItem>`);
-        lines.push(`          <SidebarMenuButton icon={${iconTag(a.icon)}}>`);
-        lines.push(`            ${a.label}`);
-        lines.push(`            {/* shortcut chip, revealed on row hover */}`);
-        lines.push(`            <kbd>${a.shortcut}</kbd>`);
-        lines.push(`          </SidebarMenuButton>`);
-        lines.push(`        </SidebarMenuItem>`);
-      }
-      lines.push(`      </SidebarMenu>`);
+    if (o.headerPrimary !== "none") {
+      lines.push(...brandRowLines(o.headerPrimary, peek, `      `));
     }
+    lines.push(`      {/* search + action rows are ONE block: the field reads as the`);
+    lines.push(`          list's first row, on the menu rows' own tight rhythm */}`);
+    lines.push(`      <div className="flex flex-col gap-0.5">`);
+    lines.push(`        <div className="group/search relative">`);
+    lines.push(`          <SearchIcon size={16} strokeWidth={1.5}`);
+    lines.push(`            className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />`);
+    lines.push(`          <SidebarInput placeholder="Search…" aria-label="Search" className="pl-8 pr-12" />`);
+    lines.push(`          {/* revealed on hover/focus — the placeholder owns the field at rest */}`);
+    lines.push(`          <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 font-sans`);
+    lines.push(`            text-[11px] text-muted-foreground opacity-0 transition-opacity duration-80`);
+    lines.push(`            group-hover/search:opacity-100 group-focus-within/search:opacity-100">${SEARCH_SHORTCUT}</kbd>`);
+    lines.push(`        </div>`);
+    if (headerActions.length > 0) {
+      lines.push(`        <SidebarMenu>`);
+      for (const a of headerActions) {
+        lines.push(`          <SidebarMenuItem>`);
+        lines.push(`            <SidebarMenuButton icon={${iconTag(a.icon)}}>`);
+        lines.push(`              ${a.label}`);
+        lines.push(`              {/* shortcut chip, revealed on row hover */}`);
+        lines.push(`              <span className="ml-auto inline-flex opacity-0 transition-opacity duration-80`);
+        lines.push(`                group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100">`);
+        lines.push(`                <kbd className="font-sans text-[11px] text-muted-foreground">${a.shortcut}</kbd>`);
+        lines.push(`              </span>`);
+        lines.push(`            </SidebarMenuButton>`);
+        lines.push(`          </SidebarMenuItem>`);
+      }
+      lines.push(`        </SidebarMenu>`);
+    }
+    lines.push(`      </div>`);
   }
   lines.push(`    </SidebarHeader>`);
 
@@ -682,9 +872,11 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
   if (o.sectionActions > 0) {
     lines.push(`        <SidebarGroupActions>`);
     for (const a of GROUP_ACTION_SET.slice(0, o.sectionActions)) {
-      lines.push(`          <SidebarGroupAction aria-label="${a.label}">`);
-      lines.push(`            <${iconTag(a.icon)} />`);
-      lines.push(`          </SidebarGroupAction>`);
+      lines.push(`          <Tooltip content="${a.label}" side="top">`);
+      lines.push(`            <SidebarGroupAction aria-label="${a.label}">`);
+      lines.push(`              <${iconTag(a.icon)} />`);
+      lines.push(`            </SidebarGroupAction>`);
+      lines.push(`          </Tooltip>`);
     }
     lines.push(`        </SidebarGroupActions>`);
   }
@@ -700,6 +892,28 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
       lines.push(`              {/* semantic status drives the dot, data-status,`);
       lines.push(`                  and the screen-reader "unread" text */}`);
       lines.push(`              <SidebarMenuButton status={item.status}>{item.label}</SidebarMenuButton>`);
+    } else if (nests) {
+      lines.push(`              {/* group/parent-row scopes the chevron reveal to the row's own`);
+      lines.push(`                  button; the pinned gutter keeps it from sliding on hover */}`);
+      lines.push(`              <SidebarMenuButton icon={item.icon} isActive={item.active}`);
+      lines.push(`                className={item.children ? "group/parent-row" : undefined}`);
+      lines.push(`                aria-expanded={item.children ? item.open : undefined}`);
+      lines.push(`                style={item.children ? { "--row-gutter": "var(--row-gutter-hover)" } : undefined}>`);
+      lines.push(`                {item.label}`);
+      lines.push(`                {item.children && (`);
+      lines.push(`                  <span className="ml-auto -mr-0.5 flex size-6 shrink-0 items-center justify-center">`);
+      lines.push(`                    {/* one chevron-right glyph, sprung 90° while open; at rest an`);
+      lines.push(`                        open row hides it — hover/focus brings it back */}`);
+      lines.push(`                    <motion.span className="inline-flex" animate={{ rotate: item.open ? 90 : 0 }}`);
+      lines.push(`                      transition={spring.fast}>`);
+      lines.push(`                      <ChevronRightIcon size={16} strokeWidth={1.5}`);
+      lines.push(`                        className={\`text-muted-foreground transition-opacity duration-80 \${item.open`);
+      lines.push(`                          ? "opacity-0 group-hover/parent-row:opacity-100 group-focus-within/parent-row:opacity-100"`);
+      lines.push(`                          : "opacity-100"}\`} />`);
+      lines.push(`                    </motion.span>`);
+      lines.push(`                  </span>`);
+      lines.push(`                )}`);
+      lines.push(`              </SidebarMenuButton>`);
     } else {
       lines.push(`              <SidebarMenuButton icon={item.icon} isActive={item.active}>`);
       lines.push(`                {item.label}`);
@@ -782,74 +996,105 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
       lines.push(`          offsetHeight). */}`);
       lines.push(
         o.footerCallout === "banner"
-          ? `      <motion.div className="relative" animate={{ height: collapsedH }}>`
-          : `      <motion.div className="relative" animate={{ height: expanded ? expandedH : collapsedH }}\n        onMouseEnter={() => setExpanded(true)} onMouseLeave={() => setExpanded(false)}>`
+          ? `      <motion.div className="relative" animate={{ height: collapsedH }}\n        transition={{ ...spring.moderate, bounce: 0 }}>`
+          : `      <motion.div className="relative" animate={{ height: expanded ? expandedH : collapsedH }}\n        transition={{ ...spring.moderate, bounce: 0 }}\n        onMouseEnter={() => setExpanded(true)} onMouseLeave={() => setExpanded(false)}>`
       );
-      lines.push(`        {callouts.map((c, i) => (`);
-      lines.push(`          <motion.div key={c.id} className="absolute inset-x-0 bottom-0"`);
-      lines.push(`            style={{ transformOrigin: "bottom center", zIndex: 100 - i }}`);
+      lines.push(`        <AnimatePresence initial={false}>`);
+      lines.push(`          {callouts.map((c, i) => (`);
+      lines.push(`            <motion.div key={c.id} className="absolute inset-x-0 bottom-0"`);
+      lines.push(`              style={{ transformOrigin: "bottom center", zIndex: 100 - i }}`);
+      lines.push(`              initial={{ opacity: 0, y: 14, scale: 0.96 }}`);
       lines.push(
         o.footerCallout === "banner"
-          ? `            animate={{ y: -Math.min(i, 2) * 12, scale: 1 - Math.min(i, 2) * 0.05,\n              opacity: i <= 2 ? 1 : 0 }}>`
-          : `            animate={expanded\n              ? { y: -i * (CARD_H + 4), scale: 1, opacity: 1 }\n              : { y: -Math.min(i, 2) * 12, scale: 1 - Math.min(i, 2) * 0.05,\n                  opacity: i <= 2 ? 1 : 0 }}>`
+          ? `              animate={{ y: -Math.min(i, 2) * 12, scale: 1 - Math.min(i, 2) * 0.05,\n                opacity: i <= 2 ? 1 : 0 }}`
+          : `              animate={expanded\n                ? { y: -i * (CARD_H + 4), scale: 1, opacity: 1 }\n                : { y: -Math.min(i, 2) * 12, scale: 1 - Math.min(i, 2) * 0.05,\n                    opacity: i <= 2 ? 1 : 0 }}`
       );
-      lines.push(`            <Card size="compact" dismissible onDismiss={() => dismiss(c.id)}>`);
+      lines.push(`              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.12 } }}`);
+      lines.push(`              transition={spring.moderate}>`);
+      if (o.footerCallout === "inline") {
+        lines.push(`              {/* inline orientation puts the icon beside the text */}`);
+        lines.push(`              <CardGroup orientation="inline" proximityHover={false}>`);
+      }
+      const stackCardIndent = o.footerCallout === "inline" ? `                ` : `              `;
+      lines.push(`${stackCardIndent}{/* one surface step above the rail, rising another under the`);
+      lines.push(`${stackCardIndent}    pointer — the inset shadow keeps the hairline inside the box */}`);
+      lines.push(`${stackCardIndent}<Card size="compact" dismissible onDismiss={() => dismiss(c.id)}`);
+      lines.push(`${stackCardIndent}  label={\`\${c.title} — \${c.desc}\`}`);
+      lines.push(`${stackCardIndent}  className={\`rounded-xl overflow-hidden min-h-0 transition-[background-color,box-shadow]`);
+      lines.push(`${stackCardIndent}    duration-80 \${surfaceClasses(level, 2)} \${surfaceHoverClasses(level + 1, 3)}`);
+      lines.push(
+        `${stackCardIndent}    shadow-[var(--shadow-2-inset)] hover:shadow-[var(--shadow-3-inset)]${o.footerCallout === "inline" ? " pl-2.5" : ""}\`}>`
+      );
       lines.push(
         o.footerCallout === "banner"
-          ? `              {/* meshAt scales the brand mesh's stops to the card's step */}\n              <CardImage src={meshAt(banner, c.intensity)} className="aspect-[2/1] max-h-28" />`
-          : `              <CardMedia icon={c.icon} size={18} className={\`\${c.tint} [&_svg]:text-[#6B97FF]\`} />`
+          ? `${stackCardIndent}  {/* meshAt scales the brand mesh's stops to the card's step */}\n${stackCardIndent}  <CardImage src={meshAt(banner, c.intensity)} className="aspect-[2/1] max-h-28" />`
+          : `${stackCardIndent}  <CardMedia icon={c.icon} size={18} className={\`\${c.tint} [&_svg]:text-[#6B97FF]\`} />`
       );
       lines.push(
         o.footerCallout === "banner"
-          ? `              <CardHeader className="gap-0 pt-3">`
-          : `              <CardHeader className="gap-[2px] py-3">`
+          ? `${stackCardIndent}  <CardHeader className="gap-0 pt-3">`
+          : `${stackCardIndent}  <CardHeader className="gap-[2px] py-3">`
       );
-      lines.push(`                <CardTitle className="truncate">{c.title}</CardTitle>`);
-      lines.push(`                <CardDescription className="truncate text-caption">{c.desc}</CardDescription>`);
-      lines.push(`              </CardHeader>`);
-      lines.push(`            </Card>`);
-      lines.push(`          </motion.div>`);
-      lines.push(`        ))}`);
+      lines.push(`${stackCardIndent}    <CardTitle className="truncate">{c.title}</CardTitle>`);
+      lines.push(`${stackCardIndent}    <CardDescription className="truncate text-caption">{c.desc}</CardDescription>`);
+      lines.push(`${stackCardIndent}  </CardHeader>`);
+      lines.push(`${stackCardIndent}</Card>`);
+      if (o.footerCallout === "inline") {
+        lines.push(`              </CardGroup>`);
+      }
+      lines.push(`            </motion.div>`);
+      lines.push(`          ))}`);
+      lines.push(`        </AnimatePresence>`);
       lines.push(`      </motion.div>`);
     } else if (o.footerCallout !== "none") {
-      const media =
+      const mediaTag =
         o.footerCallout === "banner"
-          ? `        <CardImage src={banner} className="aspect-[2/1] max-h-28" />`
-          : `        <CardMedia icon={PanelLeftIcon} size={18} />`;
-      lines.push(`      {/* anchored callout: Card on a surface one step above */}`);
+          ? `<CardImage src={banner} className="aspect-[2/1] max-h-28" />`
+          : `<CardMedia icon={PanelLeftIcon} size={18} />`;
+      lines.push(`      {/* anchored callout: a Card resting one surface step above the`);
+      lines.push(`          rail, rising another under the pointer — the inset shadow keeps`);
+      lines.push(`          its hairline inside the box */}`);
       if (o.footerCallout === "inline") {
         lines.push(`      {/* inline orientation puts the icon beside the text */}`);
         lines.push(`      <CardGroup orientation="inline" proximityHover={false}>`);
       }
-      lines.push(`      <Card size="compact" dismissible onDismiss={hide} href="/docs/sidebar">`);
-      lines.push(media);
+      const calloutIndent = o.footerCallout === "inline" ? `        ` : `      `;
+      lines.push(`${calloutIndent}<Card size="compact" dismissible onDismiss={hide} href="/docs/sidebar"`);
+      lines.push(`${calloutIndent}  label="Sidebar is here — new in Fluid Functionalism"`);
+      lines.push(`${calloutIndent}  className={\`rounded-xl overflow-hidden transition-[background-color,box-shadow] duration-80`);
+      lines.push(`${calloutIndent}    \${surfaceClasses(level, 2)} \${surfaceHoverClasses(level + 1, 3)}`);
+      lines.push(
+        `${calloutIndent}    shadow-[var(--shadow-2-inset)] hover:shadow-[var(--shadow-3-inset)]${o.footerCallout === "inline" ? " min-h-0 pl-2.5" : ""}\`}>`
+      );
+      lines.push(`${calloutIndent}  ${mediaTag}`);
       lines.push(
         o.footerCallout === "inline"
-          ? `        <CardHeader className="gap-[2px] py-3">`
-          : `        <CardHeader className="gap-0 pt-3">`
+          ? `${calloutIndent}  <CardHeader className="gap-[2px] py-3">`
+          : `${calloutIndent}  <CardHeader className="gap-0 pt-3">`
       );
-      lines.push(`          <CardTitle className="truncate">Sidebar is here</CardTitle>`);
+      lines.push(`${calloutIndent}    <CardTitle className="truncate">Sidebar is here</CardTitle>`);
       lines.push(
-        `          <CardDescription className="truncate text-caption">New in Fluid Functionalism</CardDescription>`
+        `${calloutIndent}    <CardDescription className="truncate text-caption">New in Fluid Functionalism</CardDescription>`
       );
-      lines.push(`        </CardHeader>`);
-      lines.push(`      </Card>`);
+      lines.push(`${calloutIndent}  </CardHeader>`);
+      lines.push(`${calloutIndent}</Card>`);
       if (o.footerCallout === "inline") lines.push(`      </CardGroup>`);
     }
     if (o.footerStack === "horizontal") {
-      if (footerActions.length > 0) {
+      if (footerActions.length > 0 || o.footerPrimary === "dropdown") {
         lines.push(`      <div className="flex items-center gap-1 pr-1.5">`);
         // The user row owns the leftover width, as in the preview.
-        if (o.footerPrimary === "dropdown")
-          lines.push(`        <div className="min-w-0 flex-1">{/* user row */}</div>`);
+        if (o.footerPrimary === "dropdown") {
+          lines.push(...userRowLines(true, `        `));
+        }
         for (const a of footerActions) {
-          lines.push(`        <Button variant="ghost" size="icon-compact" className="size-6" aria-label="${a.label}">`);
-          lines.push(`          <${iconTag(a.icon)} />`);
-          lines.push(`        </Button>`);
+          lines.push(`        <Tooltip content="${a.label}" side="top">`);
+          lines.push(`          <Button variant="ghost" size="icon-compact" className="size-6 shrink-0" aria-label="${a.label}">`);
+          lines.push(`            <${iconTag(a.icon)} />`);
+          lines.push(`          </Button>`);
+          lines.push(`        </Tooltip>`);
         }
         lines.push(`      </div>`);
-      } else {
-        lines.push(`      {/* user row */}`);
       }
     } else {
       if (footerActions.length > 0) {
@@ -862,15 +1107,27 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
         }
         lines.push(`      </SidebarMenu>`);
       }
-      if (o.footerPrimary === "dropdown") lines.push(`      {/* user row */}`);
+      if (o.footerPrimary === "dropdown") {
+        lines.push(...userRowLines(false, `      `));
+      }
     }
     lines.push(`    </SidebarFooter>`);
   }
 
   lines.push(`  </Sidebar>`);
-  lines.push(`  <SidebarInset>`);
-  lines.push(`    <header>`);
-  lines.push(`      <SidebarTrigger />`);
+  // pt-2 aligns the inset with the floating rail's card edge.
+  lines.push(`  <SidebarInset${o.design === "floating" ? ` className="pt-2"` : ``}>`);
+  lines.push(`    <header className="flex h-12 shrink-0 items-center gap-2 px-1.5">`);
+  if (peek) {
+    lines.push(`      {/* hidden while the rail is peeked; after a pin it fades back in`);
+    lines.push(`          late, appearing at its settled spot instead of riding the`);
+    lines.push(`          inset's slide */}`);
+    lines.push(
+      `      <SidebarTrigger className={\`transition-opacity delay-200 duration-160 \${isPeeking ? "opacity-0" : "opacity-100"}\`} />`
+    );
+  } else {
+    lines.push(`      <SidebarTrigger />`);
+  }
   lines.push(`    </header>`);
   lines.push(`    {children}`);
   lines.push(`  </SidebarInset>`);
@@ -1357,7 +1614,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                                 alt=""
                                 width={20}
                                 height={20}
-                                className="-ml-0.5 size-5 shrink-0 rounded-full"
+                                className="-ml-0.5 -mr-0.5 size-5 shrink-0 rounded-full"
                               />
                               <span className="min-w-0 truncate text-[13px] text-foreground">
                                 Micka Touillaud
@@ -1373,7 +1630,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                           }
                         />
                         <DropdownContent
-                          className={`min-w-[240px] w-[var(--radix-dropdown-menu-trigger-width,var(--anchor-width))] ${SIDEBAR_MENU_GRID}`}
+                          className={SIDEBAR_MENU_POPUP}
                           side="top"
                           align="start"
                           sideOffset={6}

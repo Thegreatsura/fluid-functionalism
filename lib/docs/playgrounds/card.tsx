@@ -71,7 +71,7 @@ function buildPlaygroundCode(o: {
     o.media === "icon"
       ? "<CardMedia icon={Search} />"
       : o.media === "logo"
-        ? "<CardMedia logo={logo} />"
+        ? "<CardMedia logo={logo} size={32} />"
         : null;
   const imageLine = o.media === "image" ? "<CardImage src={image} />" : null;
   const btns: string[] = [];
@@ -108,7 +108,7 @@ function buildPlaygroundCode(o: {
       ];
 
   return `<CardGroup${attr}>
-  <Card${o.selected ? " selected onClick={() => setSelected(0)}" : ""}>
+  <Card${o.selected ? ' label="Find critical bugs" selected onClick={() => setSelected(0)}' : ""}>
 ${inner.filter(Boolean).join("\n")}
   </Card>
   {/* …three more */}

@@ -91,6 +91,9 @@ interface TooltipProps {
    *  ambient TooltipProvider's delayDuration when one is present. */
   delayDuration?: number;
   className?: string;
+  /** Extra classes for the portalled positioner element — pass a z utility
+   *  here to lift the whole tooltip above other fixed layers (default z-50). */
+  contentClassName?: string;
   /** When true, forces the tooltip open. When false, forces it closed. When undefined, uses default hover/focus behavior. */
   forceOpen?: boolean;
   /** Follow the cursor along one axis while hovering the trigger — for tall
@@ -129,6 +132,7 @@ function Tooltip({
   sideOffset = 8,
   delayDuration,
   className,
+  contentClassName,
   forceOpen,
   onOpenChange: onOpenChangeProp,
   followCursor,
@@ -178,7 +182,7 @@ function Tooltip({
         <TooltipPrimitive.Positioner
           side={side}
           sideOffset={sideOffset}
-          className="z-50"
+          className={cn("z-50", contentClassName)}
         >
           <TooltipPrimitive.Popup
             render={(props, state) => {

@@ -30,108 +30,121 @@ const basicCode = `import {
 } from "./components";
 
 // Borderless inline list: icon + a ghost action, divided by hairlines.
-<CardGroup orientation="inline">
-  <Card>
-    <CardMedia icon={Circle} />
-    <CardHeader>
-      <CardTitle>Fluid motion</CardTitle>
-      <CardDescription>Spring-tuned transitions across three tiers</CardDescription>
-    </CardHeader>
-    <CardFooter>
-      <CardButton>Connect</CardButton>
-    </CardFooter>
-  </Card>
-  {/* …three more */}
-</CardGroup>`;
+<div className="w-full max-w-[520px]">
+  <CardGroup orientation="inline">
+    <Card>
+      <CardMedia icon={Circle} />
+      <CardHeader>
+        <CardTitle>Fluid motion</CardTitle>
+        <CardDescription>Spring-tuned transitions across three tiers</CardDescription>
+      </CardHeader>
+      <CardFooter>
+        <CardButton>Connect</CardButton>
+      </CardFooter>
+    </Card>
+    {/* …three more */}
+  </CardGroup>
+</div>`;
 
 const gridCode = `// Two-column grid of image tiles — columns > 1 turns on 2-D
 // proximity: the highlight springs to the nearest card across rows AND columns.
-<CardGroup columns={2} border="outlined" separated>
-  <Card>
-    <CardImage src={banner} />
-    <CardHeader>
-      <CardTitle>Fluid motion</CardTitle>
-      <CardDescription>Spring-tuned transitions…</CardDescription>
-    </CardHeader>
-    <CardFooter>
-      <CardButton variant="primary">Get started</CardButton>
-      <CardButton variant="secondary">Learn more</CardButton>
-    </CardFooter>
-  </Card>
-  {/* …three more */}
-</CardGroup>`;
+<div className="w-full max-w-[560px]">
+  <CardGroup columns={2} border="outlined" separated>
+    <Card>
+      <CardImage src={banner} />
+      <CardHeader>
+        <CardTitle>Fluid motion</CardTitle>
+        <CardDescription>Spring-tuned transitions…</CardDescription>
+      </CardHeader>
+      <CardFooter>
+        <CardButton variant="primary">Get started</CardButton>
+        <CardButton variant="secondary">Learn more</CardButton>
+      </CardFooter>
+    </Card>
+    {/* …three more */}
+  </CardGroup>
+</div>`;
 
 const outlinedCode = `// One shared outlined frame, rows split by dividers: logo + primary.
-<CardGroup orientation="inline" border="outlined">
-  <Card>
-    <CardMedia logo={logo} />
-    <CardHeader>
-      <CardTitle>Fluid motion</CardTitle>
-      <CardDescription>Spring-tuned transitions across three tiers</CardDescription>
-    </CardHeader>
-    <CardFooter>
-      <CardButton variant="primary">Get started</CardButton>
-    </CardFooter>
-  </Card>
-  {/* CardMedia also accepts a [logoA, logoB] tuple for a connected pair */}
-</CardGroup>`;
+<div className="w-full max-w-[520px]">
+  <CardGroup orientation="inline" border="outlined">
+    <Card>
+      <CardMedia logo={logo} />
+      <CardHeader>
+        <CardTitle>Fluid motion</CardTitle>
+        <CardDescription>Spring-tuned transitions across three tiers</CardDescription>
+      </CardHeader>
+      <CardFooter>
+        <CardButton variant="primary">Get started</CardButton>
+      </CardFooter>
+    </Card>
+    {/* CardMedia also accepts a [logoA, logoB] tuple for a connected pair */}
+  </CardGroup>
+</div>`;
 
 const separatedCode = `// Separated inline tiles with a full-height image; the action
 // row drops below the text (primary, secondary, ghost).
-<CardGroup orientation="inline" separated>
-  <Card>
+<div className="w-full max-w-[560px]">
+  <CardGroup orientation="inline" separated>
+    <Card>
+      <CardImage src={banner} />
+      <CardHeader>
+        <CardTitle>Fluid motion</CardTitle>
+        <CardDescription>Spring-tuned transitions…</CardDescription>
+      </CardHeader>
+      <CardFooter>
+        <CardButton variant="primary">Get started</CardButton>
+        <CardButton variant="secondary">Learn more</CardButton>
+        <CardButton>Connect</CardButton>
+      </CardFooter>
+    </Card>
+    {/* …three more */}
+  </CardGroup>
+</div>`;
+
+const promoCode = `// The composition is tuned to a narrow 300px column.
+<div className="w-full max-w-[300px]">
+  <Card dismissible onDismiss={() => {}}
+    className="border border-border/60 overflow-hidden rounded-xl">
     <CardImage src={banner} />
     <CardHeader>
-      <CardTitle>Fluid motion</CardTitle>
-      <CardDescription>Spring-tuned transitions…</CardDescription>
+      <CardTitle>Meet the new Card component</CardTitle>
     </CardHeader>
+    <CardContent className="flex flex-col gap-3">
+      <CardFeature icon={Paintbrush} title="Always pixel-perfect"
+        description="Token-driven, crisp in light and dark at any radius" />
+      <CardFeature icon={SquareLibrary} title="Stacked, inline, or grid"
+        description="One compositional API, borderless by default" />
+    </CardContent>
     <CardFooter>
       <CardButton variant="primary">Get started</CardButton>
-      <CardButton variant="secondary">Learn more</CardButton>
-      <CardButton>Connect</CardButton>
+      <CardButton variant="ghost">Learn more</CardButton>
     </CardFooter>
   </Card>
-  {/* …three more */}
-</CardGroup>`;
-
-const promoCode = `<Card dismissible onDismiss={() => {}}
-  className="border border-border/60 overflow-hidden rounded-xl">
-  <CardImage src={banner} />
-  <CardHeader>
-    <CardTitle>Meet the new Card component</CardTitle>
-  </CardHeader>
-  <CardContent className="flex flex-col gap-3">
-    <CardFeature icon={Paintbrush} title="Always pixel-perfect"
-      description="Token-driven, crisp in light and dark at any radius" />
-    <CardFeature icon={SquareLibrary} title="Stacked, inline, or grid"
-      description="One compositional API, borderless by default" />
-  </CardContent>
-  <CardFooter>
-    <CardButton variant="primary">Get started</CardButton>
-    <CardButton variant="ghost">Learn more</CardButton>
-  </CardFooter>
-</Card>`;
+</div>`;
 
 const selectedCode = `// Clickable selection — one active card carries the fill, its
 // title bolds, and the group drops the dividers around it.
 const [selected, setSelected] = useState(1);
 
-<CardGroup orientation="inline">
-  {features.map((f, i) => (
-    <Card
-      key={f.title}
-      label={f.title}
-      selected={selected === i}
-      onClick={() => setSelected(i)}
-    >
-      <CardMedia icon={f.icon} />
-      <CardHeader>
-        <CardTitle>{f.title}</CardTitle>
-        <CardDescription>{f.description}</CardDescription>
-      </CardHeader>
-    </Card>
-  ))}
-</CardGroup>`;
+<div className="w-full max-w-[520px]">
+  <CardGroup orientation="inline">
+    {features.map((f, i) => (
+      <Card
+        key={f.title}
+        label={f.title}
+        selected={selected === i}
+        onClick={() => setSelected(i)}
+      >
+        <CardMedia icon={f.icon} />
+        <CardHeader>
+          <CardTitle>{f.title}</CardTitle>
+          <CardDescription>{f.description}</CardDescription>
+        </CardHeader>
+      </Card>
+    ))}
+  </CardGroup>
+</div>`;
 
 // ── Props ────────────────────────────────────────────────
 

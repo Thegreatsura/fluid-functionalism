@@ -73,9 +73,11 @@ export function PlaySelect({
 }
 
 export function PlaySection({ label }: { label: string }) {
+  // Full-contrast at the rows' own size, so the section titles read as
+  // headings of the list rather than a smaller muted caption.
   return (
     <div
-      className="px-1 pb-1 pt-1 text-caption text-muted-foreground"
+      className="px-1 pb-1 pt-1 text-body text-foreground"
       style={{ fontVariationSettings: fontWeights.semibold }}
     >
       {label}

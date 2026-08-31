@@ -1215,15 +1215,21 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
                 )}
                 style={{ fontVariationSettings: fontWeights.normal }}
               >
-                <span>{placeholderSuggestion}</span>{" "}
-                <kbd
-                  className={cn(
-                    "mx-0.5 inline-flex -translate-y-px items-center rounded-[5px] border border-border bg-background px-1 align-middle font-sans text-muted-foreground",
-                    compactStep ? "h-4 text-[10px]" : "h-[18px] text-[11px]"
-                  )}
-                >
-                  Tab
-                </kbd>
+                {/* One flex line: a suggestion longer than the field truncates
+                    with an ellipsis instead of wrapping into the clip (the
+                    overlay is inset-0 over a possibly single-row textarea),
+                    and the Tab chip never gets cut. */}
+                <span className="flex max-w-full items-center gap-1.5">
+                  <span className="min-w-0 truncate">{placeholderSuggestion}</span>
+                  <kbd
+                    className={cn(
+                      "inline-flex shrink-0 -translate-y-px items-center rounded-[5px] border border-border bg-background px-1 font-sans text-muted-foreground",
+                      compactStep ? "h-4 text-[10px]" : "h-[18px] text-[11px]"
+                    )}
+                  >
+                    Tab
+                  </kbd>
+                </span>
               </div>
             )}
             {showGhost && (

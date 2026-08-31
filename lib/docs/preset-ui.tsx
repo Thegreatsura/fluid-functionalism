@@ -6,7 +6,7 @@
 // playground supplies its own encode/apply; everything else is uniform.
 // ---------------------------------------------------------------------------
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useShape } from "@/lib/shape-context";
 import { useSizeVariant } from "@/lib/size-context";
 import { useBase } from "@/lib/base-context";
@@ -46,13 +46,31 @@ export function usePresetUrlSync(
   defaultCode: string,
   onLoad: (raw: string) => void
 ): void {
+  // A pasted ?preset= is the ONLY copy of the shared state, and the tracker
+  // effect below runs in the same commit as the mount-read — before the
+  // decoded state has landed. Writing then would replace the pasted code
+  // with the pre-hydration default, and any remount inside that window (a
+  // hydration failure, StrictMode, a flavor flip) would re-read the
+  // clobbered URL and lose the preset for good. So: while a pasted code is
+  // pending, the tracker only writes once `code` has moved off its initial
+  // value — proof the decode was applied. Until then the URL stays intact,
+  // and any remount simply re-reads and re-applies it.
+  const pendingRef = useRef<string | null>(null);
+  const initialCodeRef = useRef(code);
   useEffect(() => {
     const raw = new URLSearchParams(window.location.search).get("preset");
-    if (raw) onLoad(raw);
+    if (raw) {
+      pendingRef.current = raw;
+      onLoad(raw);
+    }
     // Mount-only by design: the param seeds state once; afterwards the rail
     // owns it and the effect below writes the URL.
   }, []);
   useEffect(() => {
+    if (pendingRef.current !== null) {
+      if (code === initialCodeRef.current) return; // decode not applied yet
+      pendingRef.current = null;
+    }
     const url = new URL(window.location.href);
     if (code === defaultCode) url.searchParams.delete("preset");
     else url.searchParams.set("preset", code);

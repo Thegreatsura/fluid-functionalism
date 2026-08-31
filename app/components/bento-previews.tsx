@@ -129,11 +129,6 @@ function InputMessagePreview() {
         onValueChange={setValue}
         onSend={() => setValue("")}
         placeholderSuggestion="Why is every other input box so stiff?"
-        suggestions={[
-          "What is Fluid Functionalism about?",
-          "How does Micka tune these springs?",
-          "Install InputMessage in my project",
-        ]}
       />
     </div>
   );
@@ -746,16 +741,8 @@ function SidebarPreview() {
           </SidebarFooter>
         </Sidebar>
 
-        {!narrow && (
-        <SidebarInset className="min-h-0">
-          <div className="flex flex-col gap-2 p-4">
-            <div className="h-3 w-2/3 rounded-md bg-hover" />
-            <div className="h-3 w-1/2 rounded-md bg-hover" />
-            <div className="h-16 rounded-lg bg-hover" />
-            <div className="h-3 w-3/5 rounded-md bg-hover" />
-          </div>
-        </SidebarInset>
-        )}
+        {/* Blank on purpose — skeleton furniture competed with the rail. */}
+        {!narrow && <SidebarInset className="min-h-0" />}
       </SidebarProvider>
     </div>
   );

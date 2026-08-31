@@ -93,13 +93,8 @@ export const DEFAULT_PRESET: SidebarPreset = {
   ...DEFAULT_GLOBALS,
 };
 
-export interface PresetField {
-  key: keyof SidebarPreset;
-  /** Append-only. Index 0 is the field's default. */
-  values: readonly (string | number | boolean)[];
-  /** Allocated width — headroom for appends, never shrink. */
-  bits: number;
-}
+import { type PresetField } from "./codec";
+export type { PresetField };
 
 // Value arrays are ordered DEFAULT-FIRST, which is why several differ from
 // their natural order (e.g. headerActions [1, 0, 2]).

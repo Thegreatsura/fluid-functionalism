@@ -17,11 +17,17 @@ lookup, decodable forever.
 
 | File | Role |
 |---|---|
-| `lib/preset/sidebar-options.ts` | PlayState + **codec field tables** + demo content (shared by playground, codec, both generators) |
-| `lib/preset/codec.ts` | generic bit-pack/base62 encode–decode |
-| `lib/preset/sidebar-install.ts` | state → compilable files (install-grade twin of the playground's teaching snippet) |
-| `app/r/preset/[code]/route.ts` | code → registry item, deps flavor-resolved |
+| `lib/preset/codec.ts` | generic engine: bit-pack/base62, component tag registry |
+| `lib/preset/components.ts` | imports every `*-options` module (side-effect registration) + typed wrappers — **import codes from here, not codec.ts** |
+| `lib/preset/<name>-options.ts` | per component: PlayState + **codec field tables** + `registerPresetComponent` + demo content |
+| `lib/preset/<name>-install.ts` | state → compilable files + a `PresetGenerator` (installable components only) |
+| `lib/preset/generators.ts` | tag → generator map, consumed by the route |
+| `lib/docs/preset-ui.tsx` | shared `GetCodeDialog`, `usePresetUrlSync`, `usePresetGlobals` |
+| `app/r/preset/[code]/route.ts` | code → registry item, deps flavor-resolved; share-only tags 400 with the docs link |
 | `lib/registry-urls.mjs` | bundler-safe twin of the postbuild's `depUrl` (parity-tested) |
+
+Registered tags: `s` sidebar (installable) · `c` card (installable) ·
+`m` input-message (installable) · `q` ask-user-questions (share-only).
 
 ## Rules that must never break
 
@@ -48,11 +54,23 @@ every shared link. Fix the table, don't update the snapshot.
    (real `ts.createProgram` over the project tsconfig), the parse fuzz,
    and dep-existence guards all must stay green.
 
-## Adding a new playground (card, input-message, …)
+## Adding a new playground
 
-New component tag in `codec.ts`, its own options/field-table module, an
-install generator, and reuse the same route pattern and test harnesses.
-The route's dependency URLs must go through `buildDepResolver` so flavor
+1. `lib/preset/<name>-options.ts`: state type, defaults, field table
+   (defaults at index 0, globals fields last for installable components),
+   `PresetComponentDef` with a fresh one-char tag, self-`register…` at
+   module scope, encode/decode wrappers, default code.
+2. Installable? `lib/preset/<name>-install.ts` with a `PresetGenerator`;
+   add one entry to `generators.ts` and one export line to
+   `components.ts`. Share-only? Set `installable: false` — the shared
+   dialog turns into "Share" and the route refuses politely.
+3. Wire the playground: `usePresetGlobals` + encode + `usePresetUrlSync`
+   + `<GetCodeDialog def code>` at the rail bottom.
+4. Tests: the generic codec guards in `tests/preset-codec.test.mjs` cover
+   every registered def automatically; installable components add a
+   `tests/preset-<name>.test.mjs` with the type-checked matrix + parse
+   fuzz (copy the ts.createProgram harness).
+The route's dependency URLs go through `buildDepResolver` so flavor
 resolution can never drift from the static payloads.
 
 ## Gotchas learned building it

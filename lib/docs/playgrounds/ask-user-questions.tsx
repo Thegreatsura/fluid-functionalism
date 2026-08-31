@@ -14,6 +14,13 @@ import {
   PlaySelect,
   PlaygroundPanel,
 } from "@/lib/docs/playground";
+import {
+  AUQ_PRESET_DEF,
+  encodeAuqPreset,
+  decodeAuqPreset,
+  AUQ_DEFAULT_CODE,
+} from "@/lib/preset/ask-user-questions-options";
+import { usePresetUrlSync, GetCodeDialog } from "@/lib/docs/preset-ui";
 import type { PlaygroundProps } from "./types";
 
 // ── AskUserQuestions playground ──────────────────────────
@@ -242,6 +249,26 @@ export function AskUserQuestionsPlayground({ children }: PlaygroundProps) {
     skippable,
   };
 
+  // Share-only preset code: ?preset= reopens this configuration; the
+  // address bar tracks the current one.
+  const presetCode = encodeAuqPreset({
+    ...config,
+    count: Number(count) as 1 | 2 | 3,
+  });
+  usePresetUrlSync(presetCode, AUQ_DEFAULT_CODE, (raw) => {
+    const res = decodeAuqPreset(raw);
+    if (!res.ok) return;
+    const p = res.preset;
+    setType(p.type);
+    setLayout(p.layout);
+    setChip(p.chip);
+    setMultiSelect(p.multiSelect);
+    setAllowOther(p.allowOther);
+    setMultiline(p.multiline);
+    setCount(String(p.count));
+    setSkippable(p.skippable);
+  });
+
   const questions = buildQuestions(config);
   const code = buildAskCode(config);
 
@@ -353,6 +380,10 @@ export function AskUserQuestionsPlayground({ children }: PlaygroundProps) {
           className={PLAY_SWITCH}
         />
       </div>
+      <PlayDivider />
+      {/* Share-only preset: the snippet is already copy-paste-complete, so
+          the code exists to reopen this exact configuration from a link. */}
+      <GetCodeDialog def={AUQ_PRESET_DEF} code={presetCode} />
     </PlaygroundPanel>
   );
 

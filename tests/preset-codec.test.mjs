@@ -6,8 +6,8 @@ import {
   encodeSidebarPreset,
   decodeSidebarPreset,
   SIDEBAR_DEFAULT_CODE,
-  totalBits,
-} from "../lib/preset/codec.ts";
+} from "../lib/preset/components.ts";
+import { totalBits } from "../lib/preset/codec.ts";
 import {
   SIDEBAR_PRESET_FIELDS,
   DEFAULT_PRESET,
@@ -101,4 +101,40 @@ describe("preset codec", () => {
     expect(code).toBe(code); // placeholder replaced below by snapshot
     expect(code).toMatchInlineSnapshot(`"sa1P6kiL98"`);
   });
+});
+
+// ── Generic guards: every registered component obeys the compat rules ──────
+import "../lib/preset/components.ts"; // side-effect registrations
+import {
+  getAllPresetComponents,
+  encodePreset,
+  decodePreset as decodeAny,
+  totalBits as bitsOf,
+} from "../lib/preset/codec.ts";
+
+describe("every registered preset component", () => {
+  for (const def of getAllPresetComponents()) {
+    describe(`"${def.label}" (tag ${def.tag})`, () => {
+      const fields = def.versions[def.currentVersion];
+      it("stays under 53 bits", () => {
+        expect(bitsOf(fields)).toBeLessThan(53);
+      });
+      it("defaults sit at index 0 and fit their bits", () => {
+        for (const f of fields) {
+          expect(f.values[0], `field "${f.key}"`).toEqual(def.defaults[f.key]);
+          expect(2 ** f.bits, `field "${f.key}"`).toBeGreaterThanOrEqual(f.values.length);
+        }
+      });
+      it("round-trips 200 random configs", () => {
+        const rand = rng(def.tag.charCodeAt(0) * 7919);
+        for (let i = 0; i < 200; i++) {
+          const cfg = {};
+          for (const f of fields) cfg[f.key] = f.values[Math.floor(rand() * f.values.length)];
+          const res = decodeAny(encodePreset(def, cfg));
+          expect(res.ok).toBe(true);
+          expect(res.preset, `iteration ${i}`).toEqual({ ...def.defaults, ...cfg });
+        }
+      });
+    });
+  }
 });

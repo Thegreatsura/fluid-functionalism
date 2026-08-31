@@ -30,22 +30,18 @@ import {
 } from "@/components/flavored/sidebar";
 import { useIcons, type IconName } from "@/lib/icon-context";
 import { useShape } from "@/lib/shape-context";
-import { useSize, useSizeVariant } from "@/lib/size-context";
-import { useBase } from "@/lib/base-context";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/registry/radix/dialog";
-import { InputCopy } from "@/registry/default/input-copy";
+import { useSize } from "@/lib/size-context";
 import {
   encodeSidebarPreset,
   decodeSidebarPreset,
   SIDEBAR_DEFAULT_CODE,
-} from "@/lib/preset/codec";
+  SIDEBAR_PRESET_DEF,
+} from "@/lib/preset/components";
+import {
+  usePresetGlobals,
+  usePresetUrlSync,
+  GetCodeDialog,
+} from "@/lib/docs/preset-ui";
 import { Switch } from "@/registry/radix/switch";
 import { Button } from "@/registry/radix/button";
 import { Tooltip } from "@/registry/radix/tooltip";
@@ -1070,34 +1066,16 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
   // ── Get code (presets) ─────────────────────────────────
   // The rail's configuration bit-packs into a stateless code (shadcn's
   // preset principle) that the /r/preset route turns into an installable
-  // registry item. Flavor/shape/size ride along so the install matches the
-  // site's current "Make them yours" settings.
-  const { base } = useBase();
-  const sizeVariant = useSizeVariant();
-  const presetCode = encodeSidebarPreset({
-    ...state,
-    flavor: base === "base" ? "base" : "radix",
-    shape: shape.bgRadius >= 20 ? "pill" : "rounded",
-    size: sizeVariant === "compact" ? "compact" : "default",
-  });
-  // Share-links: ?preset=<code> hydrates the rail once on mount…
-  useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get("preset");
-    if (!code) return;
-    const res = decodeSidebarPreset(code);
+  // registry item; the site's flavor/shape/size ride along.
+  const globals = usePresetGlobals();
+  const presetCode = encodeSidebarPreset({ ...state, ...globals });
+  usePresetUrlSync(presetCode, SIDEBAR_DEFAULT_CODE, (raw) => {
+    const res = decodeSidebarPreset(raw);
     if (res.ok) {
       const { flavor: _f, shape: _s, size: _z, ...play } = res.preset;
       setState(play);
     }
-  }, []);
-  // …and the address bar tracks the current variant, so it's always
-  // copyable. replaceState keeps Next's router out of the loop.
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    if (presetCode === SIDEBAR_DEFAULT_CODE) url.searchParams.delete("preset");
-    else url.searchParams.set("preset", presetCode);
-    window.history.replaceState(window.history.state, "", url);
-  }, [presetCode]);
+  });
 
   /** Tooltip content with the action's keystroke, on the same inverted
    *  surface treatment the sidebar trigger's tooltip uses. */
@@ -1703,29 +1681,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
       <PlayDivider />
       {/* shadcn's preset principle: the exact configuration above, as a
           stateless code the registry can turn into an installable block. */}
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="primary" size="sm" className="w-full">
-            Get code
-          </Button>
-        </DialogTrigger>
-        <DialogContent
-          className="max-w-[480px]"
-          // Don't auto-focus the copy field — its focus ring and tooltip
-          // firing on open read as noise, and ⌘C still works via the button.
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          <DialogHeader>
-            <DialogTitle>Install this component</DialogTitle>
-            <DialogDescription>
-              The exact Sidebar variant you personalized, as one block.
-            </DialogDescription>
-          </DialogHeader>
-          <InputCopy
-            value={`npx shadcn@latest add https://www.fluidfunctionalism.com/r/preset/${presetCode}.json`}
-          />
-        </DialogContent>
-      </Dialog>
+      <GetCodeDialog def={SIDEBAR_PRESET_DEF} code={presetCode} />
     </PlaygroundPanel>
   );
 

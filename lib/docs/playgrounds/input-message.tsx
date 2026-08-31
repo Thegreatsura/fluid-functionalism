@@ -23,6 +23,19 @@ import {
   collapsedStackHeight,
   useQueueCardHeight,
 } from "./queued-stack";
+import {
+  encodeInputMessagePreset,
+  decodeInputMessagePreset,
+  INPUT_MESSAGE_DEFAULT_CODE,
+  INPUT_MESSAGE_PRESET_DEF,
+  IM_SUGGESTIONS,
+  IM_PLACEHOLDER_PROMPT,
+} from "@/lib/preset/input-message-options";
+import {
+  usePresetGlobals,
+  usePresetUrlSync,
+  GetCodeDialog,
+} from "@/lib/docs/preset-ui";
 import type { PlaygroundProps } from "./types";
 
 // ── InputMessage playground ──────────────────────────────
@@ -30,14 +43,11 @@ import type { PlaygroundProps } from "./types";
 // small transcript on the doc page), with the matching code kept in sync in
 // the doc page's Code tab.
 
-export const SUGGESTIONS = [
-  "What is Fluid Functionalism about?",
-  "How does Micka tune the springs behind these animations?",
-  "Install the InputMessage component in my project",
-  "Draft a short thank-you note to Micka for the library",
-];
-
-export const PLACEHOLDER_PROMPT = "Why is every other input box so stiff?";
+// Demo content lives with the preset field tables (pure data, shared by the
+// snippet generator here and the install generator) — re-exported so the doc
+// page keeps importing it from the playground module.
+export const SUGGESTIONS = IM_SUGGESTIONS;
+export const PLACEHOLDER_PROMPT = IM_PLACEHOLDER_PROMPT;
 
 type PlayStatus = "off" | "idle" | "streaming";
 
@@ -313,6 +323,39 @@ export function InputMessagePlayground({ children }: PlaygroundProps) {
     status,
   });
 
+  // ── Get code (presets) ─────────────────────────────────
+  // The rail's configuration bit-packs into a stateless code (shadcn's
+  // preset principle) that the /r/preset route turns into an installable
+  // registry item; the site's flavor/shape/size ride along.
+  const globals = usePresetGlobals();
+  const presetCode = encodeInputMessagePreset({
+    suggestion,
+    suggestionsOn,
+    historyOn,
+    attachments,
+    minRows: Number(minRows),
+    disabled,
+    leftSlot: leftSlotOn,
+    rightSlot: rightSlotOn,
+    status,
+    ...globals,
+  });
+  usePresetUrlSync(presetCode, INPUT_MESSAGE_DEFAULT_CODE, (raw) => {
+    const res = decodeInputMessagePreset(raw);
+    if (res.ok) {
+      const p = res.preset;
+      setSuggestion(p.suggestion);
+      setSuggestionsOn(p.suggestionsOn);
+      setHistoryOn(p.historyOn);
+      setAttachments(p.attachments);
+      setMinRows(String(p.minRows));
+      setDisabled(p.disabled);
+      setLeftSlotOn(p.leftSlot);
+      setRightSlotOn(p.rightSlot);
+      setStatus(p.status);
+    }
+  });
+
   const randomize = () => {
     const pick = <T,>(arr: readonly T[]) =>
       arr[Math.floor(Math.random() * arr.length)];
@@ -408,6 +451,11 @@ export function InputMessagePlayground({ children }: PlaygroundProps) {
           />
         </PlayField>
       </div>
+
+      <PlayDivider />
+      {/* shadcn's preset principle: the exact configuration above, as a
+          stateless code the registry can turn into an installable block. */}
+      <GetCodeDialog def={INPUT_MESSAGE_PRESET_DEF} code={presetCode} />
     </PlaygroundPanel>
   );
 

@@ -26,8 +26,11 @@ lookup, decodable forever.
 | `app/r/preset/[code]/route.ts` | code → registry item, deps flavor-resolved; share-only tags 400 with the docs link |
 | `lib/registry-urls.mjs` | bundler-safe twin of the postbuild's `depUrl` (parity-tested) |
 
-Registered tags: `s` sidebar (installable) · `c` card (installable) ·
-`m` input-message (installable) · `q` ask-user-questions (share-only).
+Registered tags: `s` sidebar · `c` card · `m` input-message ·
+`q` ask-user-questions — all installable. (`q` began share-only; its
+globals fields were APPENDED when it became installable — the worked
+example of the append rule: pre-existing `q` codes still decode, with
+default globals.)
 
 ## Rules that must never break
 

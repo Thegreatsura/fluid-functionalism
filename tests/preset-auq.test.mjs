@@ -1,0 +1,120 @@
+// AskUserQuestions preset install guards — same shape as the other
+// per-component suites: type-checked matrix through a real ts.createProgram
+// over the project tsconfig, parse fuzz, payload purity. Codec-rule guards
+// come free from the generic block in preset-codec.test.mjs.
+import { describe, it, expect } from "vitest";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+import ts from "typescript";
+import {
+  generateAuqPresetFiles,
+  auqPresetRegistryDeps,
+} from "../lib/preset/ask-user-questions-install.ts";
+import {
+  DEFAULT_AUQ_PRESET,
+  AUQ_PRESET_FIELDS,
+} from "../lib/preset/ask-user-questions-options.ts";
+import { readFileSync } from "node:fs";
+
+const root = path.dirname(fileURLToPath(new URL("../package.json", import.meta.url)));
+
+function typecheckPreset(preset) {
+  const files = generateAuqPresetFiles(preset);
+  const virtual = new Map(
+    files.map((f) => [path.join(root, "__auq__", f.target), f.content])
+  );
+  const configFile = ts.readConfigFile(path.join(root, "tsconfig.json"), ts.sys.readFile);
+  const parsed = ts.parseJsonConfigFileContent(configFile.config, ts.sys, root);
+  const options = {
+    ...parsed.options,
+    noEmit: true,
+    skipLibCheck: true,
+    baseUrl: parsed.options.baseUrl ?? root,
+  };
+  const host = ts.createCompilerHost(options);
+  const origReadFile = host.readFile.bind(host);
+  const origFileExists = host.fileExists.bind(host);
+  const origDirExists = (host.directoryExists ?? ts.sys.directoryExists).bind(
+    host.directoryExists ? host : ts.sys
+  );
+  const virtualDirs = new Set(
+    [...virtual.keys()].flatMap((f) => {
+      const dirs = [];
+      let d = path.dirname(f);
+      while (d.startsWith(root) && d !== root) {
+        dirs.push(d);
+        d = path.dirname(d);
+      }
+      return dirs;
+    })
+  );
+  host.readFile = (f) => virtual.get(path.normalize(f)) ?? origReadFile(f);
+  host.fileExists = (f) => virtual.has(path.normalize(f)) || origFileExists(f);
+  host.directoryExists = (d) => virtualDirs.has(path.normalize(d)) || origDirExists(d);
+  const program = ts.createProgram([...virtual.keys()], options, host);
+  const diagnostics = [
+    ...program.getSyntacticDiagnostics(),
+    ...program.getSemanticDiagnostics(),
+  ].filter((d) => d.file && virtual.has(path.normalize(d.file.fileName)));
+  return diagnostics.map(
+    (d) =>
+      `${path.basename(d.file.fileName)}:${d.file.getLineAndCharacterOfPosition(d.start).line + 1} ${ts.flattenDiagnosticMessageText(d.messageText, " ")}`
+  );
+}
+
+const MATRIX = [
+  {},
+  { type: "freeText", multiline: false, count: 1 },
+  { type: "freeText", skippable: false },
+  { layout: "stacked", chip: "left", multiSelect: true, allowOther: true },
+  { count: 2, skippable: false, allowOther: true },
+  { flavor: "base", shape: "pill", size: "compact" },
+];
+
+describe("AUQ preset install generator", () => {
+  for (const [i, partial] of MATRIX.entries()) {
+    it(`matrix ${i} typechecks: ${JSON.stringify(partial)}`, () => {
+      const diags = typecheckPreset({ ...DEFAULT_AUQ_PRESET, ...partial });
+      expect(diags, diags.join("\n")).toEqual([]);
+    });
+  }
+
+  it("fuzz: 100 random presets parse cleanly and stay pure", () => {
+    let a = 99;
+    const rand = () => {
+      a |= 0;
+      a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    for (let i = 0; i < 100; i++) {
+      const p = { ...DEFAULT_AUQ_PRESET };
+      for (const f of AUQ_PRESET_FIELDS) {
+        p[f.key] = f.values[Math.floor(rand() * f.values.length)];
+      }
+      for (const file of generateAuqPresetFiles(p)) {
+        const sf = ts.createSourceFile(
+          file.target,
+          file.content,
+          ts.ScriptTarget.Latest,
+          true,
+          ts.ScriptKind.TSX
+        );
+        expect(sf.parseDiagnostics.length, `iteration ${i}`).toBe(0);
+        expect(file.content).not.toContain("@/lib/docs");
+        expect(file.content).not.toContain('from "@/registry/');
+      }
+    }
+  });
+
+  it("registry deps exist in the manifest", () => {
+    const manifest = JSON.parse(
+      readFileSync(new URL("../registry.json", import.meta.url), "utf-8")
+    );
+    const names = new Set(manifest.items.map((i) => i.name));
+    for (const dep of auqPresetRegistryDeps(DEFAULT_AUQ_PRESET)) {
+      expect(names.has(dep), `unknown dep "${dep}"`).toBe(true);
+    }
+  });
+});

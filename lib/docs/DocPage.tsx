@@ -11,17 +11,6 @@ import { docOrder } from "@/lib/docs/components";
 import { Tooltip } from "@/registry/radix/tooltip";
 import { useBase, installUrl, DUAL_FLAVOR_SLUGS } from "@/lib/base-context";
 
-// Single-source components whose implementation sits on Base UI primitives
-// (Select, Menu, Popover, Dialog, Field, Collapsible, …). They have no Radix
-// flavor and install the same file either way — but they DO add
-// @base-ui/react to the consumer's dependencies, so the installation note
-// says so under both flavors.
-const BASE_UI_BACKED_SLUGS = new Set([
-  "color-picker",
-  "ask-user-questions",
-  "input-group",
-]);
-
 interface DocPageProps {
   title: string;
   description: ReactNode;
@@ -128,14 +117,6 @@ export function DocPage({
                 ? "Installs the Base UI flavor. Switch in the right panel."
                 : "Installs the Radix flavor. Switch in the right panel."}
             </p>
-          ) : BASE_UI_BACKED_SLUGS.has(installSlug ?? slug) ? (
-            // Single-source component built on Base UI primitives. Shown under
-            // BOTH flavors: a Radix-flavored install still pulls
-            // @base-ui/react, which shouldn't be a surprise.
-            <p className="text-caption text-muted-foreground">
-              Single source built on Base UI primitives — used as-is under
-              either flavor.
-            </p>
           ) : base === "base" ? (
             // User has Base UI selected globally, but this component has no
             // Base flavour. Surface that so the toggle doesn't feel inert.
@@ -144,22 +125,6 @@ export function DocPage({
               flavors.
             </p>
           ) : null}
-          {/* Namespaced form, once `npx shadcn@latest registry add @fluid`
-              has been run (see the Introduction). Only for the flat/Radix
-              flavor — the base namespace isn't published. */}
-          {!(base === "base" && DUAL_FLAVOR_SLUGS.has(installSlug ?? slug)) && (
-            <p className="text-caption text-muted-foreground">
-              With the{" "}
-              <Link
-                href="/docs"
-                className="underline underline-offset-4 hover:text-foreground"
-              >
-                @fluid registry
-              </Link>{" "}
-              added, this is just{" "}
-              <code>npx shadcn@latest add @fluid/{installSlug ?? slug}</code>.
-            </p>
-          )}
         </div>
       )}
       {children}

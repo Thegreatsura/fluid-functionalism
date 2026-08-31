@@ -19,8 +19,16 @@ import {
   encodeAuqPreset,
   decodeAuqPreset,
   AUQ_DEFAULT_CODE,
+  AUQ_OPTION_QUESTIONS,
+  AUQ_FREE_TEXT_QUESTIONS,
+  AUQ_OTHER_PLACEHOLDER,
+  auqQuestionLines,
 } from "@/lib/preset/ask-user-questions-options";
-import { usePresetUrlSync, GetCodeDialog } from "@/lib/docs/preset-ui";
+import {
+  usePresetUrlSync,
+  usePresetGlobals,
+  GetCodeDialog,
+} from "@/lib/docs/preset-ui";
 import type { PlaygroundProps } from "./types";
 
 // ── AskUserQuestions playground ──────────────────────────
@@ -32,108 +40,10 @@ type PlayType = "options" | "freeText";
 type PlayLayout = "inline" | "stacked";
 type PlayChip = "right" | "left";
 
-// Each option carries a short description for the inline layout and a longer
-// one for stacked, where descriptions get their own line and room to breathe.
-const OPTION_QUESTIONS = [
-  {
-    id: "role",
-    title: "How do you plan to use Fluid Functionalism?",
-    options: [
-      {
-        id: "design",
-        title: "Designer",
-        short: "Prototyping flows and pages",
-        long: "Prototyping flows and pages fast, then handing the patterns to the team.",
-      },
-      {
-        id: "eng",
-        title: "Engineer",
-        short: "Shipping production UI",
-        long: "Shipping production UI with springs and tokens instead of hand-rolled CSS.",
-      },
-      {
-        id: "pm",
-        title: "PM",
-        short: "Aligning the team on patterns",
-        long: "Aligning the team on one set of interaction patterns everyone can point to.",
-      },
-      {
-        id: "founder",
-        title: "Founder",
-        short: "Bootstrapping a product",
-        long: "Bootstrapping a product that needs to look credible from day one.",
-      },
-    ],
-  },
-  {
-    id: "drew",
-    title: "What drew you to Fluid Functionalism?",
-    options: [
-      {
-        id: "motion",
-        title: "Motion",
-        short: "Springs that feel alive",
-        long: "Spring-driven motion that feels alive instead of scripted.",
-      },
-      {
-        id: "craft",
-        title: "Craft",
-        short: "Pixel-level polish",
-        long: "Pixel-level polish across typography, spacing, and focus states.",
-      },
-      {
-        id: "tokens",
-        title: "Tokens",
-        short: "Shape and elevation systems",
-        long: "Shape and elevation systems that compose beyond single components.",
-      },
-    ],
-  },
-  {
-    id: "recommend",
-    title: "Would you recommend Fluid Functionalism to a teammate?",
-    options: [
-      {
-        id: "yes",
-        title: "Yes",
-        short: "Already have",
-        long: "Already have — it sets the bar for polished React surfaces.",
-      },
-      {
-        id: "soon",
-        title: "Soon",
-        short: "Once it covers more ground",
-        long: "Once it covers more ground — a few primitives are still missing.",
-      },
-      {
-        id: "unsure",
-        title: "Not sure yet",
-        short: "Still evaluating",
-        long: "Still evaluating — one real flow will settle it.",
-      },
-    ],
-  },
-] as const;
-
-const FREE_TEXT_QUESTIONS = [
-  {
-    id: "name",
-    title: "What should we call your workspace?",
-    placeholder: "e.g. Acme Design",
-  },
-  {
-    id: "goal",
-    title: "Describe what you're hoping to build.",
-    placeholder: "A sentence or two is plenty…",
-  },
-  {
-    id: "feedback",
-    title: "Anything else you'd like us to know?",
-    placeholder: "Type your answer…",
-  },
-] as const;
-
-const OTHER_PLACEHOLDER = "Something else?";
+// Question data + the shared literal emitter live in the preset options
+// module, so the Code tab and the installable preset can never drift.
+const OPTION_QUESTIONS = AUQ_OPTION_QUESTIONS;
+const FREE_TEXT_QUESTIONS = AUQ_FREE_TEXT_QUESTIONS;
 
 interface PlayConfig {
   type: PlayType;
@@ -164,7 +74,7 @@ function buildQuestions(o: PlayConfig): AskUserQuestion[] {
     chipPosition: o.chip === "left" ? ("left" as const) : undefined,
     multiSelect: o.multiSelect || undefined,
     allowOther: o.allowOther || undefined,
-    otherPlaceholder: o.allowOther ? OTHER_PLACEHOLDER : undefined,
+    otherPlaceholder: o.allowOther ? AUQ_OTHER_PLACEHOLDER : undefined,
     skippable: o.skippable ? undefined : false,
     options: q.options.map((opt) => ({
       id: opt.id,
@@ -178,44 +88,9 @@ function buildAskCode(o: PlayConfig) {
   const l: string[] = [];
   l.push(`import { AskUserQuestions } from "./components";`);
   l.push(``);
-  l.push(`const questions = [`);
-  if (o.type === "freeText") {
-    for (const q of FREE_TEXT_QUESTIONS.slice(0, o.count)) {
-      l.push(`  {`);
-      l.push(`    id: ${JSON.stringify(q.id)},`);
-      l.push(`    title: ${JSON.stringify(q.title)},`);
-      l.push(`    freeText: true,`);
-      if (!o.multiline)
-        l.push(`    freeTextMultiline: false, // single-line; Enter submits`);
-      l.push(`    freeTextPlaceholder: ${JSON.stringify(q.placeholder)},`);
-      if (!o.skippable) l.push(`    skippable: false,`);
-      l.push(`  },`);
-    }
-  } else {
-    for (const q of OPTION_QUESTIONS.slice(0, o.count)) {
-      l.push(`  {`);
-      l.push(`    id: ${JSON.stringify(q.id)},`);
-      l.push(`    title: ${JSON.stringify(q.title)},`);
-      if (o.layout === "stacked") l.push(`    layout: "stacked",`);
-      if (o.chip === "left") l.push(`    chipPosition: "left",`);
-      if (o.multiSelect) l.push(`    multiSelect: true,`);
-      if (o.allowOther) {
-        l.push(`    allowOther: true,`);
-        l.push(`    otherPlaceholder: ${JSON.stringify(OTHER_PLACEHOLDER)},`);
-      }
-      if (!o.skippable) l.push(`    skippable: false,`);
-      l.push(`    options: [`);
-      for (const opt of q.options) {
-        const desc = o.layout === "stacked" ? opt.long : opt.short;
-        l.push(
-          `      { id: ${JSON.stringify(opt.id)}, title: ${JSON.stringify(opt.title)}, description: ${JSON.stringify(desc)} },`
-        );
-      }
-      l.push(`    ],`);
-      l.push(`  },`);
-    }
-  }
-  l.push(`];`);
+  // The questions literal comes from the same emitter the install preset
+  // uses — Code tab and installed file are identical by construction.
+  l.push(...auqQuestionLines({ ...o, count: o.count as 1 | 2 | 3 }));
   l.push(``);
   l.push(`<AskUserQuestions`);
   l.push(`  questions={questions}`);
@@ -249,11 +124,12 @@ export function AskUserQuestionsPlayground({ children }: PlaygroundProps) {
     skippable,
   };
 
-  // Share-only preset code: ?preset= reopens this configuration; the
-  // address bar tracks the current one.
+  // Preset code: ?preset= reopens this configuration; Get code installs it.
+  const globals = usePresetGlobals();
   const presetCode = encodeAuqPreset({
     ...config,
     count: Number(count) as 1 | 2 | 3,
+    ...globals,
   });
   usePresetUrlSync(presetCode, AUQ_DEFAULT_CODE, (raw) => {
     const res = decodeAuqPreset(raw);
@@ -381,8 +257,8 @@ export function AskUserQuestionsPlayground({ children }: PlaygroundProps) {
         />
       </div>
       <PlayDivider />
-      {/* Share-only preset: the snippet is already copy-paste-complete, so
-          the code exists to reopen this exact configuration from a link. */}
+      {/* shadcn's preset principle: the exact configuration above, as a
+          stateless code the registry can turn into an installable flow. */}
       <GetCodeDialog def={AUQ_PRESET_DEF} code={presetCode} />
     </PlaygroundPanel>
   );

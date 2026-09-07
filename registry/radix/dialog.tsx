@@ -8,6 +8,7 @@ import {
   useState,
   type ComponentPropsWithoutRef,
   type HTMLAttributes,
+  type ReactElement,
 } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { motion } from "framer-motion";
@@ -52,12 +53,52 @@ function Dialog({
   );
 }
 
-const DialogTrigger = DialogPrimitive.Trigger;
-const DialogClose = DialogPrimitive.Close;
+// Trigger and Close compose either way — `render={<Button/>}` (the
+// library's composition API, shared with DropdownTrigger) or Radix-style
+// `asChild` with a single child element — so one snippet works everywhere.
+interface DialogSlotProps
+  extends Omit<ComponentPropsWithoutRef<typeof DialogPrimitive.Trigger>, "asChild"> {
+  /** Element to render as the control, e.g. a Button. */
+  render?: ReactElement;
+  /** Compose onto the single child element instead. */
+  asChild?: boolean;
+}
+
+const DialogTrigger = forwardRef<HTMLButtonElement, DialogSlotProps>(
+  ({ render, asChild, children, ...props }, ref) =>
+    render ? (
+      <DialogPrimitive.Trigger ref={ref} asChild {...props}>
+        {render}
+      </DialogPrimitive.Trigger>
+    ) : (
+      <DialogPrimitive.Trigger ref={ref} asChild={asChild} {...props}>
+        {children}
+      </DialogPrimitive.Trigger>
+    )
+);
+DialogTrigger.displayName = "DialogTrigger";
+
+const DialogClose = forwardRef<HTMLButtonElement, DialogSlotProps>(
+  ({ render, asChild, children, ...props }, ref) =>
+    render ? (
+      <DialogPrimitive.Close ref={ref} asChild {...props}>
+        {render}
+      </DialogPrimitive.Close>
+    ) : (
+      <DialogPrimitive.Close ref={ref} asChild={asChild} {...props}>
+        {children}
+      </DialogPrimitive.Close>
+    )
+);
+DialogClose.displayName = "DialogClose";
 
 interface DialogContentProps
   extends ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
-  size?: "sm" | "lg";
+  /** Width: sm 400, lg 540, xl 880 (each one notch narrower in compact
+   *  regions). `xl` is the canvas for composed layouts — a sidebar beside
+   *  a panel — which usually pair it with `className="p-0"` and a fixed
+   *  height. */
+  size?: "sm" | "lg" | "xl";
   /** Portal target. When set, the overlay and panel render inside this element
    *  (positioned `absolute`) instead of covering the viewport (`fixed`). Pair
    *  with a `position: relative; overflow: hidden` container — and usually
@@ -121,6 +162,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
               "p-6 focus:outline-none",
               size === "sm" && (compact ? "max-w-[360px]" : "max-w-[400px]"),
               size === "lg" && (compact ? "max-w-[480px]" : "max-w-[540px]"),
+              size === "xl" && (compact ? "max-w-[800px]" : "max-w-[880px]"),
               shape.container,
               className
             )}
@@ -223,3 +265,4 @@ export {
   DialogDescription,
   DialogClose,
 };
+export type { DialogSlotProps as DialogTriggerProps, DialogSlotProps as DialogCloseProps };

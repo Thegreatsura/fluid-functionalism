@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "popup",
+  "title": "Popup chrome",
+  "description": "Shared popup chrome for the dropdown, select, and combobox popups: side-aware enter/exit motion classes driven by the positioner's resolved data-side, the ScrollArea sizing the list scrolls inside, and the navigation-key list.",
+  "files": [
+    {
+      "path": "registry/default/lib/popup.ts",
+      "content": "// ---------------------------------------------------------------------------\n// Shared popup chrome for the dropdown, select, and combobox popups: the\n// enter/exit choreography classes and the ScrollArea sizing the list scrolls\n// inside. One definition, so the three popups never drift apart.\n// ---------------------------------------------------------------------------\n\n/**\n * Enter/exit choreography follows the RESOLVED side — the one the positioner\n * lands on after collision flipping, not the requested one. The primitive\n * stamps `data-side` (on the positioner, or on the content itself); these\n * rules turn it into the transform origin and the 4px slide offset, so a\n * popup that flips above its anchor grows upward from its bottom edge.\n * framer-motion resolves the CSS variable when the tween starts, by which\n * time the position is settled.\n */\nexport const popupMotionClass =\n  \"origin-top [--popup-enter-y:-4px] \" +\n  \"data-[side=top]:origin-bottom data-[side=top]:[--popup-enter-y:4px] \" +\n  \"[[data-side=top]_&]:origin-bottom [[data-side=top]_&]:[--popup-enter-y:4px] \" +\n  \"data-[side=left]:origin-right data-[side=left]:[--popup-enter-y:0px] \" +\n  \"[[data-side=left]_&]:origin-right [[data-side=left]_&]:[--popup-enter-y:0px] \" +\n  \"data-[side=right]:origin-left data-[side=right]:[--popup-enter-y:0px] \" +\n  \"[[data-side=right]_&]:origin-left [[data-side=right]_&]:[--popup-enter-y:0px]\";\n\n/**\n * Popup lists scroll inside ScrollArea: the hover-revealed thumb instead of\n * the platform scrollbar, and a scroll-aware fade on the viewport. The popup\n * is only max-height constrained, so the viewport's percentage height can't\n * resolve — it inherits the max-height instead (the ScrollArea root inherits\n * it from the popup) and sizes to its rows up to that. The scroll primitive's\n * inline-styled sizer is forced back to a plain block so rows can shrink and\n * truncate; the `[style]` qualifier keeps that off the rows' own wrapper on\n * touch devices, where ScrollArea renders no sizer.\n */\nexport const popupScrollAreaClass = \"min-h-0 flex-1 max-h-[inherit]\";\nexport const popupViewportClass =\n  \"!h-auto max-h-[inherit] [&>div[style]]:!block [&>div[style]]:!min-w-0 [--scroll-fade-size:32px]\";\n\n/** Keys that count as keyboard navigation inside a popup (earn the ring). */\nexport const POPUP_NAV_KEYS = [\n  \"ArrowDown\",\n  \"ArrowUp\",\n  \"ArrowLeft\",\n  \"ArrowRight\",\n  \"Home\",\n  \"End\",\n  \"PageUp\",\n  \"PageDown\",\n  \"Tab\",\n];\n\n/**\n * Rows the proximity hover must skip: a disabled row is neither a target\n * nor a hover stop, whichever attribute the primitive marks it with.\n */\nexport function isDisabledRow(el: HTMLElement): boolean {\n  return el.getAttribute(\"aria-disabled\") === \"true\" || el.hasAttribute(\"data-disabled\");\n}\n",
+      "type": "registry:lib"
+    }
+  ],
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/motion.",
+  "categories": [
+    "lib"
+  ],
+  "type": "registry:lib"
+}

@@ -23,6 +23,8 @@ export { decodePreset, encodePreset } from "./codec";
 export * from "./ask-user-questions-options";
 export { CARD_PRESET_DEF, encodeCardPreset, decodeCardPreset, CARD_DEFAULT_CODE } from "./card-options";
 export * from "./input-message-options";
+export { DROPDOWN_PRESET_DEF, encodeDropdownPreset, decodeDropdownPreset, DROPDOWN_DEFAULT_CODE } from "./dropdown-options";
+export { COMBOBOX_PRESET_DEF, encodeComboboxPreset, decodeComboboxPreset, COMBOBOX_DEFAULT_CODE } from "./combobox-options";
 export type { PresetComponentDef, DecodeResult } from "./codec";
 
 // ── Sidebar (tag "s") ───────────────────────────────────────────────────────

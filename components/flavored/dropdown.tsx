@@ -47,6 +47,11 @@ export const DropdownContent = flavored(
   "Flavored(DropdownContent)"
 );
 
+// Primitive-free parts live in the shared file; both flavors re-export
+// the same implementation.
+export { DropdownSearch, DropdownEmpty } from "@/registry/default/dropdown-search";
+export type { DropdownSearchProps } from "@/registry/default/dropdown-search";
+
 // Both flavors provide the SAME context object (it lives in menu-item.tsx,
 // the shared file), so no flavor probing is needed — whichever flavor's
 // provider wraps the caller wins, which also keeps side-by-side renders

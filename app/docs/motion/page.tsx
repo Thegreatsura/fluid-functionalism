@@ -62,6 +62,7 @@ const REFERENCE_TIERS = [
       { label: "Input copy",          slug: "/docs/input-copy" },
       { label: "Slider",              slug: "/docs/slider" },
       { label: "Select",              slug: "/docs/select" },
+      { label: "Combobox",            slug: "/docs/combobox" },
       { label: "Color picker",        slug: "/docs/color-picker" },
       { label: "Accordion",           slug: "/docs/accordion" },
     ],

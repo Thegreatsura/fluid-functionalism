@@ -50,6 +50,7 @@ function DemoPageInner() {
   const [scaleEl, setScaleEl] = useState<HTMLDivElement | null>(null);
   const slideOrder = [
     "dropdown",
+    "combobox",
     "checkbox-group",
     "accordion",
     "tabs",

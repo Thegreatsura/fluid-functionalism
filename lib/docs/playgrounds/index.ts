@@ -2,6 +2,8 @@ import { AccordionPlayground } from "./accordion";
 import { AskUserQuestionsPlayground } from "./ask-user-questions";
 import { ButtonPlayground } from "./button";
 import { CardPlayground } from "./card";
+import { ComboboxPlayground } from "./combobox";
+import { DropdownPlayground } from "./dropdown";
 import { InputMessagePlayground } from "./input-message";
 import { SidebarPlayground } from "./sidebar";
 import type { PlaygroundComponent } from "./types";
@@ -24,6 +26,8 @@ export const playgroundMap: Record<string, PlaygroundComponent> = {
   "ask-user-questions": AskUserQuestionsPlayground,
   button: ButtonPlayground,
   card: CardPlayground,
+  combobox: ComboboxPlayground,
+  dropdown: DropdownPlayground,
   "input-message": InputMessagePlayground,
   sidebar: SidebarPlayground,
 };

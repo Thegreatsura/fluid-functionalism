@@ -39,6 +39,11 @@ const shape = shapeMap.rounded;
 export interface MenuItemRenderOptions {
   /** Radio-style option (boolean `checked` on MenuItem) vs plain action item. */
   radio: boolean;
+  /** Checkbox-style option: a boolean `checked` inside a multiple-selection
+   *  dropdown (`checkedIndices`). Takes precedence over `radio`. */
+  checkbox: boolean;
+  /** The item's checked state (radio and checkbox items). */
+  checked?: boolean;
   /** The item's index — doubles as the radio value. */
   value: number;
   disabled?: boolean;
@@ -52,6 +57,10 @@ export interface DropdownContextValue {
   registerItem: (index: number, element: HTMLElement | null) => void;
   activeIndex: number | null;
   checkedIndex?: number;
+  /** Multiple selection (`checkedIndices` on the dropdown): rows are
+   *  checkbox items and activating one keeps the menu open by default. */
+  multiple?: boolean;
+  checkedIndices?: number[];
   /** True when items render inside a Menu popup (DropdownContent), where the
    *  primitive's Item / RadioItem own roles, roving highlight, typeahead,
    *  and activation. MenuItem switches its rendering accordingly. */
@@ -110,8 +119,15 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
   ) => {
     const internalRef = useRef<HTMLDivElement>(null);
     const hasMounted = useRef(false);
-    const { registerItem, activeIndex, checkedIndex, renderMenuItem } =
-      useDropdown();
+    const {
+      registerItem,
+      activeIndex,
+      checkedIndex,
+      multiple,
+      checkedIndices,
+      renderMenuItem,
+    } = useDropdown();
+    const isCheckbox = !!multiple && typeof checked === "boolean";
 
     useEffect(() => {
       registerItem(index, internalRef.current);
@@ -238,11 +254,14 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
       // Functionalism visuals and the proximity-hover registration; MenuItem
       // itself imports no primitive.
       return renderMenuItem({
-        radio: typeof checked === "boolean",
+        radio: !isCheckbox && typeof checked === "boolean",
+        checkbox: isCheckbox,
+        checked,
         value: index,
         disabled,
         label,
-        closeOnClick: closeOnClick ?? true,
+        // Toggling one of several stays open; picking one of one closes.
+        closeOnClick: closeOnClick ?? !multiple,
         element: (
           <div
             ref={mergeRef}
@@ -262,8 +281,16 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
         ref={mergeRef}
         data-proximity-index={index}
         // Disabled items are never the roving tab stop.
-        tabIndex={!disabled && index === (checkedIndex ?? 0) ? 0 : -1}
-        role={typeof checked === "boolean" ? "menuitemradio" : "menuitem"}
+        tabIndex={
+          !disabled && index === (checkedIndex ?? checkedIndices?.[0] ?? 0) ? 0 : -1
+        }
+        role={
+          isCheckbox
+            ? "menuitemcheckbox"
+            : typeof checked === "boolean"
+              ? "menuitemradio"
+              : "menuitem"
+        }
         aria-checked={typeof checked === "boolean" ? checked : undefined}
         aria-disabled={disabled || undefined}
         aria-label={label}

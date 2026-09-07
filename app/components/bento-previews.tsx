@@ -29,6 +29,9 @@ import {
   TABS_DEFAULT,
   TABS_ITEMS,
   TOOLTIP_COPY,
+  COMBOBOX_PLACEHOLDER,
+  COMBOBOX_PEOPLE,
+  COMBOBOX_EMPTY,
 } from "@/app/components/demo-data";
 
 import {
@@ -89,6 +92,14 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/flavored/select";
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from "@/components/flavored/combobox";
 import { Slider } from "@/registry/radix/slider";
 import { Switch } from "@/registry/radix/switch";
 import {
@@ -327,6 +338,31 @@ function SelectPreview() {
           ))}
         </SelectContent>
       </Select>
+    </div>
+  );
+}
+
+function ComboboxPreview() {
+  const UserIcon = useIcon("user");
+  const [value, setValue] = useState("");
+  return (
+    <div className="w-full max-w-[280px]">
+      <Combobox items={COMBOBOX_PEOPLE} value={value} onValueChange={setValue}>
+        <ComboboxInput icon={UserIcon} placeholder={COMBOBOX_PLACEHOLDER} className="w-full" />
+        <ComboboxContent>
+          <ComboboxEmpty>{COMBOBOX_EMPTY}</ComboboxEmpty>
+          <ComboboxList>
+            {(item) => {
+              const person = item as (typeof COMBOBOX_PEOPLE)[number];
+              return (
+                <ComboboxItem key={person.value} value={person.value}>
+                  {person.label}
+                </ComboboxItem>
+              );
+            }}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
     </div>
   );
 }
@@ -759,6 +795,7 @@ export const previewMap: Record<string, React.FC> = {
   button: ButtonPreview,
   "checkbox-group": CheckboxPreview,
   "color-picker": ColorPickerPreview,
+  combobox: ComboboxPreview,
   dialog: DialogPreview,
   dropdown: DropdownPreview,
   "input-copy": InputCopyPreview,

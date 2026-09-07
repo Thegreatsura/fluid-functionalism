@@ -15,6 +15,8 @@ import type { SidebarPreset } from "./sidebar-options";
 import { CARD_PRESET_GENERATOR } from "./card-install";
 import { INPUT_MESSAGE_PRESET_GENERATOR } from "./input-message-install";
 import { AUQ_PRESET_GENERATOR } from "./ask-user-questions-install";
+import { DROPDOWN_PRESET_GENERATOR } from "./dropdown-install";
+import { COMBOBOX_PRESET_GENERATOR } from "./combobox-install";
 
 export interface PresetGenerator {
   title: string;
@@ -36,4 +38,6 @@ export const PRESET_GENERATORS: Record<string, PresetGenerator> = {
   c: CARD_PRESET_GENERATOR,
   m: INPUT_MESSAGE_PRESET_GENERATOR,
   q: AUQ_PRESET_GENERATOR,
+  d: DROPDOWN_PRESET_GENERATOR,
+  b: COMBOBOX_PRESET_GENERATOR,
 };

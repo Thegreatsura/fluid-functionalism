@@ -135,7 +135,17 @@ interface MenuScope {
   overlays: ReactNode;
 }
 
-function useMenuScope(containerRef: RefObject<HTMLElement | null>): MenuScope {
+interface MenuScopeOptions {
+  /** Draw the traveling keyboard focus ring. Off, keyboard focus moves the
+   *  hover background only — for menus whose rows are the whole surface,
+   *  like a settings dialog's section list. @default true */
+  focusRing?: boolean;
+}
+
+function useMenuScope(
+  containerRef: RefObject<HTMLElement | null>,
+  { focusRing = true }: MenuScopeOptions = {}
+): MenuScope {
   const {
     activeIndex,
     setActiveIndex,
@@ -403,7 +413,7 @@ function useMenuScope(containerRef: RefObject<HTMLElement | null>): MenuScope {
       });
   }
   const hoverRect = overlayRect(hoveredRowEl);
-  const focusRect = overlayRect(focusedRowEl);
+  const focusRect = focusRing ? overlayRect(focusedRowEl) : null;
   const hoverRowChanged = prevTargetsRef.current.hover !== hoveredRowEl;
   const focusRowChanged = prevTargetsRef.current.focus !== focusedRowEl;
 
@@ -527,12 +537,15 @@ export interface SidebarMenuProps extends HTMLAttributes<HTMLUListElement> {
   /** Pins the menu's rows to one step of the size ladder. Omitted, they
    *  follow the surrounding SizeProvider. */
   size?: SizeVariant;
+  /** Draw the traveling keyboard focus ring. Off, keyboard focus moves the
+   *  hover background only. @default true */
+  focusRing?: boolean;
 }
 
 const SidebarMenu = forwardRef<HTMLUListElement, SidebarMenuProps>(
-  ({ className, size, children, ...props }, ref) => {
+  ({ className, size, focusRing, children, ...props }, ref) => {
     const containerRef = useRef<HTMLUListElement>(null);
-    const { value, containerProps, overlays } = useMenuScope(containerRef);
+    const { value, containerProps, overlays } = useMenuScope(containerRef, { focusRing });
 
     const content = (
       <MenuScopeContext.Provider value={value}>

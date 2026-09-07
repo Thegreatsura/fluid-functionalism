@@ -118,6 +118,17 @@ export const SELECT_PLACEHOLDER = "Select role...";
 export const SELECT_ROLES = ["Owner", "Editor", "Viewer", "Guest"] as const;
 export const SELECT_DEFAULT = "Viewer";
 
+export const COMBOBOX_PLACEHOLDER = "Assign to…";
+export const COMBOBOX_PEOPLE = [
+  { value: "jane", label: "Jane Doe" },
+  { value: "sam", label: "Sam Park" },
+  { value: "ravi", label: "Ravi Patel" },
+  { value: "mia", label: "Mia Chen" },
+  { value: "leo", label: "Leo Martins" },
+  { value: "ana", label: "Ana Souza" },
+] as const;
+export const COMBOBOX_EMPTY = "No one matches.";
+
 export const SIDEBAR_GROUP_LABEL = "Platform";
 
 export const SIDEBAR_ITEMS: readonly {
@@ -168,6 +179,9 @@ export const TABLE_ROWS = [
   ["Bob", "Designer", "Away"],
   ["Carol", "PM", "Active"],
   ["Dan", "Engineer", "Offline"],
+  ["Erin", "Researcher", "Active"],
+  ["Farid", "Support", "Away"],
+  ["Gwen", "Designer", "Active"],
 ] as const;
 
 export const TABS_ITEMS = [

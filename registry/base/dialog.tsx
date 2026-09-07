@@ -2,6 +2,9 @@
 
 import {
   forwardRef,
+  isValidElement,
+  type ButtonHTMLAttributes,
+  type ReactElement,
   type ReactNode,
   type HTMLAttributes,
 } from "react";
@@ -47,11 +50,62 @@ function Dialog({
   );
 }
 
-const DialogTrigger = DialogPrimitive.Trigger;
-const DialogClose = DialogPrimitive.Close;
+// Trigger and Close compose either way — `render={<Button/>}` (the
+// library's composition API, shared with DropdownTrigger) or Radix-style
+// `asChild` with a single child element — so one snippet works everywhere.
+// Plain button attributes, which both the trigger and the close accept —
+// their state-typed render/className/style function forms stay off the
+// public surface.
+interface DialogSlotProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  /** Element to render as the control, e.g. a Button. */
+  render?: ReactElement;
+  /** Compose onto the single child element instead. */
+  asChild?: boolean;
+}
+
+function slotRender(
+  render: ReactElement | undefined,
+  asChild: boolean | undefined,
+  children: ReactNode
+) {
+  if (render) return render;
+  return asChild && isValidElement(children) ? (children as ReactElement) : undefined;
+}
+
+const DialogTrigger = forwardRef<HTMLButtonElement, DialogSlotProps>(
+  ({ render, asChild, children, ...props }, ref) => {
+    const el = slotRender(render, asChild, children);
+    return el ? (
+      <DialogPrimitive.Trigger ref={ref} render={el} {...props} />
+    ) : (
+      <DialogPrimitive.Trigger ref={ref} {...props}>
+        {children}
+      </DialogPrimitive.Trigger>
+    );
+  }
+);
+DialogTrigger.displayName = "DialogTrigger";
+
+const DialogClose = forwardRef<HTMLButtonElement, DialogSlotProps>(
+  ({ render, asChild, children, ...props }, ref) => {
+    const el = slotRender(render, asChild, children);
+    return el ? (
+      <DialogPrimitive.Close ref={ref} render={el} {...props} />
+    ) : (
+      <DialogPrimitive.Close ref={ref} {...props}>
+        {children}
+      </DialogPrimitive.Close>
+    );
+  }
+);
+DialogClose.displayName = "DialogClose";
 
 interface DialogContentProps extends HTMLAttributes<HTMLDivElement> {
-  size?: "sm" | "lg";
+  /** Width: sm 400, lg 540, xl 880 (each one notch narrower in compact
+   *  regions). `xl` is the canvas for composed layouts — a sidebar beside
+   *  a panel — which usually pair it with `className="p-0"` and a fixed
+   *  height. */
+  size?: "sm" | "lg" | "xl";
   /** Portal target. When set, the overlay and panel render inside this element
    *  (positioned `absolute`) instead of covering the viewport (`fixed`). Pair
    *  with a `position: relative; overflow: hidden` container — and usually
@@ -139,6 +193,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   "p-6 focus:outline-none",
                   size === "sm" && (compact ? "max-w-[360px]" : "max-w-[400px]"),
                   size === "lg" && (compact ? "max-w-[480px]" : "max-w-[540px]"),
+                  size === "xl" && (compact ? "max-w-[800px]" : "max-w-[880px]"),
                   shape.container,
                   className
                 )}
@@ -248,3 +303,4 @@ export {
   DialogDescription,
   DialogClose,
 };
+export type { DialogSlotProps as DialogTriggerProps, DialogSlotProps as DialogCloseProps };

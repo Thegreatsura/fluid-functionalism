@@ -52,8 +52,9 @@ The icon-library switcher on the docs site is a preview tool only — none of th
 | [Card](https://www.fluidfunctionalism.com/docs/card) | One prop-driven card — stacked, inline, or grid layouts, borderless dividers, media/logo/feature slots, and 2-D proximity hover |
 | [CheckboxGroup](https://www.fluidfunctionalism.com/docs/checkbox-group) | Merged backgrounds for contiguous selections |
 | [ColorPicker](https://www.fluidfunctionalism.com/docs/color-picker) | HEX, RGB, HSL, and OKLCH formats with alpha, swatches, and eyedropper; inline or popover |
-| [Dialog](https://www.fluidfunctionalism.com/docs/dialog) | Modal with smooth enter/exit animations and overlay |
-| [Dropdown](https://www.fluidfunctionalism.com/docs/dropdown) | Menu-style dropdown with proximity hover |
+| [Combobox](https://www.fluidfunctionalism.com/docs/combobox) | Type-to-filter field with keyboard highlight, proximity hover, and a spring-animated list |
+| [Dialog](https://www.fluidfunctionalism.com/docs/dialog) | Modal with smooth enter/exit animations and overlay — sm/lg/xl, the largest a canvas for a sidebar |
+| [Dropdown](https://www.fluidfunctionalism.com/docs/dropdown) | Menu-style dropdown with proximity hover and an optional search field in the popup |
 | [InputCopy](https://www.fluidfunctionalism.com/docs/input-copy) | Read-only input with copy-to-clipboard and animated feedback |
 | [InputGroup](https://www.fluidfunctionalism.com/docs/input-group) | Input fields with proximity hover and validation |
 | [InputMessage](https://www.fluidfunctionalism.com/docs/input-message) | Chat-style composer with auto-resizing textarea, action slots, and built-in send button |

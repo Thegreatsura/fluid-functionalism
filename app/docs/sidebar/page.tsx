@@ -50,6 +50,7 @@ import {
 } from "@/components/sidebar-app/workspace-header";
 import { SidebarSearchField } from "@/components/sidebar-app/search-field";
 import { SidebarInsetTopbar } from "@/components/sidebar-app/inset-topbar";
+import { SettingsDialog } from "@/components/dialog-sidebar/settings-dialog";
 import {
   Card,
   CardDescription,
@@ -268,6 +269,7 @@ const sectionProps: PropDef[] = [
 
 /** Content level 1 — the top-level rows and everything they carry. */
 const level1Props: PropDef[] = [
+  { name: "focusRing", type: "boolean", default: "true", description: "SidebarMenu: draw the traveling keyboard focus ring. Off, keyboard focus moves the hover background only — for menus whose rows are the whole surface, like a settings dialog's section list." },
   { name: "SidebarMenuButton isActive", type: "boolean", default: "false", description: "Marks the current row: aria-current, the traveling active background, and the semibold weight shift." },
   { name: "SidebarMenuButton icon", type: "IconComponent", description: "Leading icon — stroke width animates 1.5 → 2 with the row's state." },
   { name: "SidebarMenuButton status", type: '"active" | "unread" | "idle"', description: "Leads with a status dot instead of an icon: active/unread fill it, idle rings it. Stamps data-status, adds visually-hidden \"unread\" text, and active implies isActive." },
@@ -1782,6 +1784,54 @@ function SidebarPlaygroundSection() {
   );
 }
 
+// ── Inside a dialog ──────────────────────────────────────
+
+const settingsDialogCode = `import { Button } from "./components";
+import { SettingsDialog } from "./components/dialog-sidebar/settings-dialog";
+
+const [open, setOpen] = useState(false);
+
+<Button variant="secondary" onClick={() => setOpen(true)}>Open settings</Button>
+<SettingsDialog open={open} onOpenChange={setOpen} />
+
+// Inside the block — the same Sidebar, in a bounded frame:
+<DialogContent size="xl" className="flex h-[min(640px,calc(100dvh-4rem))] overflow-hidden p-0">
+  <SidebarProvider persist={false} shortcut={null} width="13rem" className="h-full min-h-0">
+    <Sidebar collapsible="none" className="hidden h-full sm:flex bg-[rgb(var(--overlay)/0.03)]">
+      <SidebarHeader className="px-4 pt-5 pb-2">
+        <DialogTitle>Settings</DialogTitle>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+          <SidebarMenu focusRing={false}>
+            {sections.map((s) => (
+              <SidebarMenuItem key={s.id}>
+                <SidebarMenuButton icon={s.icon} isActive={s.id === section} onClick={() => setSection(s.id)}>
+                  {s.label}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
+    <div className="flex min-w-0 flex-1 flex-col">{/* header + ScrollArea panel */}</div>
+  </SidebarProvider>
+</DialogContent>`;
+
+function SettingsDialogDemo() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="secondary" onClick={() => setOpen(true)}>
+        Open settings
+      </Button>
+      <SettingsDialog open={open} onOpenChange={setOpen} />
+    </>
+  );
+}
+
 // ── Page ─────────────────────────────────────────────────
 
 export default function SidebarDoc() {
@@ -1867,6 +1917,21 @@ export default function SidebarDoc() {
         </ComponentPreview>
         <ComponentPreview padding="none" hideHeader caption="On click">
           <CollapsePreview peek="click" defaultOpen={false} />
+        </ComponentPreview>
+      </DocSection>
+
+      <DocSection title="Inside a dialog">
+        <p className="text-body text-muted-foreground">
+          The sidebar is container-relative, so it works in any bounded
+          frame — including the <code>xl</code> Dialog. The{" "}
+          <code>dialog-sidebar</code> block is a settings dialog:{" "}
+          <code>collapsible=&quot;none&quot;</code> drops the rail and the
+          drawer, the provider skips the cookie and the shortcut, and{" "}
+          <code>h-full</code> pins both to the dialog&apos;s fixed height. Below{" "}
+          <code>sm</code> a Select in the panel header takes over navigation.
+        </p>
+        <ComponentPreview code={settingsDialogCode}>
+          <SettingsDialogDemo />
         </ComponentPreview>
       </DocSection>
 

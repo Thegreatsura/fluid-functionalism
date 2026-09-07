@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "use-keyboard-nav-gate",
+  "title": "useKeyboardNavGate",
+  "description": "Gates a popup's keyboard focus ring on keyboard use: seeded at open from the focused element's :focus-visible state, then earned by navigation keys inside the popup.",
+  "registryDependencies": [
+    "https://www.fluidfunctionalism.com/r/popup.json"
+  ],
+  "files": [
+    {
+      "path": "registry/default/hooks/use-keyboard-nav-gate.ts",
+      "content": "\"use client\";\n\nimport { useCallback, useEffect, useRef, type KeyboardEvent } from \"react\";\nimport { POPUP_NAV_KEYS } from \"@/lib/popup\";\n\n/**\n * Gates a popup's keyboard focus ring on keyboard use.\n *\n * Rows take focus as a popup opens (the primitive's own autofocus, or the\n * popup's first-row focus), and Chrome grants `:focus-visible` to any\n * script-driven focus — so without a gate every pointer-opened popup would\n * open with a ring on its first row. The flag is seeded at open from the\n * element that has focus then: a trigger reached by keyboard matches\n * `:focus-visible`, a clicked one doesn't. Navigation keys inside the popup\n * earn the ring afterwards. Attach `trackKeyboardNav` in the CAPTURE phase —\n * the primitive moves focus during its own keydown handling, so the flag\n * must be set before then.\n */\nexport function useKeyboardNavGate(open: boolean) {\n  const keyboardNavRef = useRef(false);\n\n  useEffect(() => {\n    if (!open) return;\n    // Script focus inherits :focus-visible from the previously focused\n    // element, so this reads the same whether the trigger still has focus\n    // or the primitive has already moved it into the popup.\n    const active = document.activeElement;\n    keyboardNavRef.current =\n      active instanceof HTMLElement && active.matches(\":focus-visible\");\n  }, [open]);\n\n  const trackKeyboardNav = useCallback((e: KeyboardEvent) => {\n    if (POPUP_NAV_KEYS.includes(e.key)) keyboardNavRef.current = true;\n  }, []);\n\n  return { keyboardNavRef, trackKeyboardNav };\n}\n",
+      "type": "registry:hook"
+    }
+  ],
+  "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
+  "categories": [
+    "hook"
+  ],
+  "type": "registry:hook"
+}

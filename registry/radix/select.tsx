@@ -22,6 +22,15 @@ import { useProximityHover } from "@/hooks/use-proximity-hover";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { Elevated } from "@/lib/elevated";
+import {
+  popupMotionClass,
+  popupScrollAreaClass,
+  popupViewportClass,
+  isDisabledRow,
+} from "@/lib/popup";
+import { useKeyboardNavGate } from "@/hooks/use-keyboard-nav-gate";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 
 // ---------------------------------------------------------------------------
 // Select context
@@ -345,9 +354,13 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
       handlers,
       registerItem,
       remeasure,
-    } = useProximityHover(containerRef);
+    } = useProximityHover(containerRef, { isItemDisabled: isDisabledRow });
 
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+
+    // Keyboard focus ring gate: seeded from the trigger's :focus-visible at
+    // open, earned by navigation keys inside the popup.
+    const { keyboardNavRef, trackKeyboardNav } = useKeyboardNavGate(open);
     const [checkedIndex, setCheckedIndex] = useState<number | undefined>(
       undefined
     );
@@ -449,14 +462,14 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
           className="z-50"
         >
           <motion.div
-            initial={{ opacity: 0, y: -4, scaleY: 0.96 }}
+            className={popupMotionClass}
+            initial={{ opacity: 0, y: "var(--popup-enter-y)", scaleY: 0.96 }}
             animate={
               open
                 ? { opacity: 1, y: 0, scaleY: 1 }
-                : { opacity: 0, y: -4, scaleY: 0.96 }
+                : { opacity: 0, y: "var(--popup-enter-y)", scaleY: 0.96 }
             }
             transition={open ? spring.fast : spring.fast.exit}
-            style={{ transformOrigin: "top center" }}
             // Radix unmounts the popup the moment its open state flips, so
             // that flip is held back (radixOpen in the root) until the exit
             // spring has finished.
@@ -472,16 +485,10 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
                 <Elevated
                   offset={2}
                   shadowLevel={3}
-                  ref={(node: HTMLDivElement | null) => {
-                    (
-                      containerRef as React.MutableRefObject<HTMLDivElement | null>
-                    ).current = node;
-                    if (typeof ref === "function") ref(node);
-                    else if (ref)
-                      (
-                        ref as React.MutableRefObject<HTMLDivElement | null>
-                      ).current = node;
-                  }}
+                  ref={ref}
+                  // Capture phase: the primitive moves focus during its own
+                  // keydown handling, so the nav flag must be set before then.
+                  onKeyDownCapture={trackKeyboardNav}
                   onMouseEnter={() => {
                     handlers.onMouseEnter();
                     setFocusedIndex(null);
@@ -496,14 +503,17 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
                       const idx = Number(indexAttr);
                       setActiveIndex(idx);
                       setFocusedIndex(
-                        (e.target as HTMLElement).matches(":focus-visible")
+                        keyboardNavRef.current &&
+                          (e.target as HTMLElement).matches(":focus-visible")
                           ? idx
                           : null
                       );
                     }
                   }}
                   onBlur={(e) => {
-                    if (containerRef.current?.contains(e.relatedTarget as Node))
+                    // The popup itself takes focus when the pointer leaves a row; only a
+                  // departure from the whole popup ends the hover session.
+                  if (e.currentTarget.contains(e.relatedTarget as Node))
                       return;
                     setFocusedIndex(null);
                     setActiveIndex(null);
@@ -511,13 +521,17 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
                   className={cn(
                     // min-w tracks the trigger via Radix's popper-provided
                     // vars.
-                    // ![scrollbar-width:thin] undoes Radix's injected
-                    // scrollbar-hiding stylesheet (see header comment) so
-                    // long lists keep a visible scrollbar.
-                    `relative flex flex-col gap-0.5 min-w-[var(--radix-select-trigger-width)] max-h-[min(300px,var(--radix-select-content-available-height))] overflow-y-auto ![scrollbar-width:thin] ${shape.container} p-1 select-none outline-none`,
+                    `flex flex-col min-w-[var(--radix-select-trigger-width)] max-h-[min(300px,var(--radix-select-content-available-height))] overflow-hidden ${shape.container} select-none outline-none`,
                     className
                   )}
                 >
+                  {/* The list scrolls inside a ScrollArea; this wrapper is the rows'
+                      offsetParent, so the overlays scroll with them. */}
+                  <ScrollArea className={popupScrollAreaClass} viewportClassName={cn(popupViewportClass, "scroll-fade")}>
+                    <div
+                      ref={containerRef}
+                      className="relative flex flex-col gap-0.5 p-1"
+                    >
                   {/* The three overlays are torn down as the close begins rather
                       than exit-animated, because an overlay still mounted when the
                       popup reopens is one AnimatePresence re-adopts under its old
@@ -609,6 +623,8 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
                   )}
 
                   {children}
+                    </div>
+                  </ScrollArea>
                 </Elevated>
               </SelectPrimitive.Viewport>
             </SelectContentContext.Provider>

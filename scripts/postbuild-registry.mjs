@@ -62,6 +62,8 @@ export const CUSTOM_ITEMS = new Set([
   "use-merge-split",
   "use-touch-primary",
   "elevated",
+  "popup",
+  "use-keyboard-nav-gate",
   // themes (cssVars/css-only items: the elevation surface ladder and the
   // shared interaction/focus tokens)
   "surfaces",
@@ -73,6 +75,7 @@ export const CUSTOM_ITEMS = new Set([
   "sidebar-user-footer",
   "sidebar-search-field",
   "sidebar-inset-topbar",
+  "dialog-sidebar",
   // primitive-agnostic UI components (single source under @fluid)
   "badge",
   "chat-message",

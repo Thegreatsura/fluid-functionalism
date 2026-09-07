@@ -563,7 +563,7 @@ const FieldInput = forwardRef<
       }}
       onKeyDown={handleKeyDown}
       className={cn(
-        "min-w-0 flex-1 bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-[inherit]",
+        "min-w-0 flex-1 rounded-none bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-[inherit]",
         sizeClasses.text,
         // The caret is as tall as the line box (Chrome, Safari); the
         // ladder's leading keeps it in proportion to the field.

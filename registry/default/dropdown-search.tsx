@@ -322,8 +322,11 @@ const DropdownSearch = forwardRef<HTMLInputElement, DropdownSearchProps>(
           onChange={(e) => onValueChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
+          // rounded-none: the site's base :focus-visible rule hands focused
+          // elements the shape radius, and a text input clips its caret to
+          // its own corners (pill mode nicks the caret at the left edge).
           className={cn(
-            "min-w-0 flex-1 bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-[inherit]",
+            "min-w-0 flex-1 rounded-none bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-[inherit]",
             sizeClasses.text,
             // The line box: Safari runs the caret its full height, so the
             // ladder's leading keeps it in proportion to the row. (Chrome

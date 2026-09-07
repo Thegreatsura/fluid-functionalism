@@ -438,7 +438,7 @@ const ComboboxInput = forwardRef<HTMLInputElement, ComboboxInputProps>(
             placeholder={placeholder}
             aria-invalid={!!error || undefined}
             className={cn(
-              "min-w-0 flex-1 bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-[inherit]",
+              "min-w-0 flex-1 rounded-none bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-[inherit]",
               sizeClasses.text,
               // The caret is as tall as the line box (Chrome, Safari); the
               // ladder's leading keeps it in proportion to the field.
@@ -569,7 +569,7 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
                       placeholder={selected?.length ? undefined : placeholder}
                       aria-invalid={!!error || undefined}
                       className={cn(
-                        "w-full min-w-0 bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-[inherit]",
+                        "w-full min-w-0 rounded-none bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-[inherit]",
                         // Line box = row height, so the caret spans the chip row.
                         compact ? "h-5 leading-5" : "h-6 leading-6",
                         sizeClasses.text

@@ -256,7 +256,7 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
             onBlur={handleBlur}
             placeholder={placeholder}
             className={cn(
-              "w-full bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-[inherit]",
+              "w-full rounded-none bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-[inherit]",
               sizeClasses.text
             )}
             style={{ fontVariationSettings: fontWeights.normal }}

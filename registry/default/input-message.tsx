@@ -1189,7 +1189,7 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
                   : undefined
               }
               className={cn(
-                "w-full resize-none bg-transparent outline-none",
+                "w-full resize-none rounded-none bg-transparent outline-none",
                 "text-foreground placeholder:text-muted-foreground",
                 compactStep
                   ? "text-[13px] leading-[18px] px-1.5 py-1.5"

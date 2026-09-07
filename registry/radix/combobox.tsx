@@ -776,10 +776,12 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
               />
             </span>
           )}
-          <div role="toolbar" aria-label="Selected" className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+          <div role="toolbar" aria-label="Selected" className="relative flex min-w-0 flex-1 flex-wrap items-center gap-1">
             {/* Chips pop in and out on the fast tier and slide into their
-                new slots; an exiting chip is inert while it fades. */}
-            <AnimatePresence initial={false}>
+                new slots; an exiting chip is inert while it fades. popLayout
+                lifts the exiting chip out of the flow at once, so the field
+                reflows immediately rather than after the fade. */}
+            <AnimatePresence initial={false} mode="popLayout">
               {values.map((v) => {
                 const item = itemsByValue.get(v);
                 const label = item ? itemLabel(item) : v;
@@ -812,8 +814,10 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
                 );
               })}
             </AnimatePresence>
-            {/* The field slides to its new slot as chips come and go. */}
-            <motion.span layout transition={spring.fast} className="flex min-w-[64px] flex-1">
+            {/* The field itself never animates: chips slide, the field snaps
+                to its slot. Animating it here read as the placeholder sliding
+                in from the right when the last chip went. */}
+            <span className="flex min-w-[64px] flex-1">
               <FieldInput
                 ref={ref}
                 placeholder={values.length ? undefined : placeholder}
@@ -821,7 +825,7 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
                 inputClassName={cn("w-full", compact ? "h-5 leading-5" : "h-6 leading-6")}
                 {...props}
               />
-            </motion.span>
+            </span>
           </div>
           <FieldControls clearable={clearable} compact={compact} iconSize={sizeClasses.icon} />
         </FieldFrame>

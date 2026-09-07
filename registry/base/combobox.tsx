@@ -521,14 +521,17 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
               />
             </span>
           )}
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+          <div className="relative flex min-w-0 flex-1 flex-wrap items-center gap-1">
             <ComboboxPrimitive.Value>
               {(selected: ComboboxItemData[] | null) => (
                 <>
                   {/* Chips pop in and out on the fast tier and slide into
                       their new slots; an exiting chip is inert while it
-                      fades, since the primitive has already dropped it. */}
-                  <AnimatePresence initial={false}>
+                      fades, since the primitive has already dropped it.
+                      popLayout lifts the exiting chip out of the flow at
+                      once, so the field reflows immediately rather than
+                      after the fade. */}
+                  <AnimatePresence initial={false} mode="popLayout">
                     {(selected ?? []).map((item) => {
                       const label = itemLabel(item);
                       return (
@@ -562,8 +565,11 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
                       );
                     })}
                   </AnimatePresence>
-                  {/* The field slides to its new slot as chips come and go. */}
-                  <motion.span layout transition={spring.fast} className="flex min-w-[64px] flex-1">
+                  {/* The field itself never animates: chips slide, the
+                      field snaps to its slot. Animating it here read as the
+                      placeholder sliding in from the right when the last
+                      chip went. */}
+                  <span className="flex min-w-[64px] flex-1">
                     <ComboboxPrimitive.Input
                       ref={ref}
                       placeholder={selected?.length ? undefined : placeholder}
@@ -576,7 +582,7 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
                       )}
                       {...props}
                     />
-                  </motion.span>
+                  </span>
                 </>
               )}
             </ComboboxPrimitive.Value>

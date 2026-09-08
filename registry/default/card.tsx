@@ -124,7 +124,9 @@ const CardGroup = forwardRef<HTMLDivElement, CardGroupProps>(
     // >1 column wraps into a grid, where nearest-item must be resolved in two
     // dimensions; a single column is a plain vertical list.
     const axis = columns > 1 ? "xy" : "y";
-    const hover = useFluidHover(containerRef, { axis });
+    // A card grid has generous whitespace, so a gap click only routes when it
+    // lands within a hand's width of the highlighted card.
+    const hover = useFluidHover(containerRef, { axis, gapClick: { maxDistance: 16 } });
     const {
       activeIndex,
       handlers,
@@ -288,7 +290,9 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
     // Depend on the stable registerItem callback, not the whole group context —
     // the context object's identity changes on every hover/selection frame,
     // which would otherwise re-register every card each frame.
-    const registerItem = group?.registerItem;
+    // Only a card that can be clicked joins the highlight: a highlight on an
+    // informational card would promise a click that has nowhere to land.
+    const registerItem = href || onClick ? group?.registerItem : undefined;
     useRegisterFluidHoverItem(registerItem, index, internalRef);
 
     // Divider geometry: draw a hairline toward the neighbour below / to the

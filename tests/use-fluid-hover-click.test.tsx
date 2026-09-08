@@ -66,14 +66,16 @@ function List({
   rows,
   boxed,
   disabled,
+  gapClick,
 }: {
   expose: (api: Api) => void;
   rows: Array<() => void>;
   boxed?: boolean;
   disabled?: (el: HTMLElement) => boolean;
+  gapClick?: boolean | { maxDistance?: number };
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const api = useFluidHover(ref, { isItemDisabled: disabled });
+  const api = useFluidHover(ref, { isItemDisabled: disabled, gapClick });
   expose(api);
   const RowKind = boxed ? BoxedRow : Row;
   return (
@@ -87,7 +89,9 @@ function List({
   );
 }
 
-function setup(opts: { boxed?: boolean; disabled?: boolean } = {}) {
+function setup(
+  opts: { boxed?: boolean; disabled?: boolean; gapClick?: boolean | { maxDistance?: number } } = {}
+) {
   const clicks = [vi.fn(), vi.fn(), vi.fn()];
   let api!: Api;
   const utils = render(
@@ -96,6 +100,7 @@ function setup(opts: { boxed?: boolean; disabled?: boolean } = {}) {
       rows={clicks}
       boxed={opts.boxed}
       disabled={opts.disabled ? (el) => el.dataset.testid === "row-1" : undefined}
+      gapClick={opts.gapClick}
     />
   );
   const highlight = (index: number | null) => act(() => api.setActiveIndex(index));
@@ -147,6 +152,24 @@ describe("useFluidHover: gap clicks land on the highlighted row", () => {
     for (const c of clicks) expect(c).not.toHaveBeenCalled();
   });
 
+  it("`gapClick: false` leaves empty space inert", () => {
+    const { getByTestId, clicks, highlight } = setup({ gapClick: false });
+    highlight(1);
+    fireEvent.click(getByTestId("gap"));
+    for (const c of clicks) expect(c).not.toHaveBeenCalled();
+  });
+
+  it("`maxDistance` routes only clicks near the highlighted row", () => {
+    const { getByTestId, clicks, highlight } = setup({ gapClick: { maxDistance: 10 } });
+    highlight(1);
+    // jsdom has no layout: every rect is 0x0 at (0,0), so a click at (5,5) is
+    // within 10px and a click at (100,100) is not.
+    fireEvent.click(getByTestId("gap"), { clientX: 100, clientY: 100 });
+    expect(clicks[1]).not.toHaveBeenCalled();
+    fireEvent.click(getByTestId("gap"), { clientX: 5, clientY: 5 });
+    expect(clicks[1]).toHaveBeenCalledTimes(1);
+  });
+
   it("lands on the control inside a boxed row, so a sidebar link still fires", () => {
     const { getByTestId, clicks, highlight } = setup({ boxed: true });
     highlight(0);
@@ -174,5 +197,22 @@ describe("useFluidHover: the hover state is in the DOM", () => {
     highlight(null);
     expect(getByTestId("row-2").hasAttribute(ACTIVE_ATTR)).toBe(false);
     expect(getByTestId("list").hasAttribute(ACTIVE_INDEX_ATTR)).toBe(false);
+  });
+});
+
+describe("useFluidHover: the highlighted row unregisters", () => {
+  it("clears the highlight so nothing stale stays lit or takes a routed click", () => {
+    const clicks = [vi.fn(), vi.fn(), vi.fn()];
+    let api!: Api;
+    const { getByTestId, rerender } = render(
+      <List expose={(a) => (api = a)} rows={clicks} />
+    );
+    act(() => api.setActiveIndex(2));
+    expect(getByTestId("list").getAttribute(ACTIVE_INDEX_ATTR)).toBe("2");
+    // Row 2 unmounts and unregisters.
+    rerender(<List expose={(a) => (api = a)} rows={clicks.slice(0, 2)} />);
+    expect(getByTestId("list").hasAttribute(ACTIVE_INDEX_ATTR)).toBe(false);
+    fireEvent.click(getByTestId("gap"));
+    for (const c of clicks) expect(c).not.toHaveBeenCalled();
   });
 });

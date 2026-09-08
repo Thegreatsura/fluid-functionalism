@@ -163,7 +163,7 @@ function CardPreview() {
     <div className="w-full max-w-[460px]">
       <CardGroup orientation="card" columns={2} fluidHover>
         {items.map((item) => (
-          <Card key={item.title} label={item.title}>
+          <Card key={item.title} label={item.title} onClick={() => {}}>
             <CardHeader>
               <CardMedia icon={item.icon} />
               <CardTitle>{item.title}</CardTitle>

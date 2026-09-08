@@ -71,11 +71,11 @@ export function DocPage({
           <div className="flex items-center gap-1 shrink-0">
             {prev ? (
               <Tooltip content={<span>{prev.name} &ensp;<kbd className="font-mono opacity-50">&larr;</kbd></span>}>
-                <Link href={`/docs/${prev.slug}`} aria-label={`Previous: ${prev.name}`} className="outline-none" tabIndex={-1}>
-                  <Button variant="ghost" size={iconSize}>
+                <Button asChild variant="ghost" size={iconSize}>
+                  <Link href={`/docs/${prev.slug}`} aria-label={`Previous: ${prev.name}`}>
                     <ArrowRight className="rotate-180" />
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </Tooltip>
             ) : (
               <Button variant="ghost" size={iconSize} disabled aria-label="No previous component">
@@ -84,11 +84,11 @@ export function DocPage({
             )}
             {next ? (
               <Tooltip content={<span>{next.name} &ensp;<kbd className="font-mono opacity-50">&rarr;</kbd></span>}>
-                <Link href={`/docs/${next.slug}`} aria-label={`Next: ${next.name}`} className="outline-none" tabIndex={-1}>
-                  <Button variant="ghost" size={iconSize}>
+                <Button asChild variant="ghost" size={iconSize}>
+                  <Link href={`/docs/${next.slug}`} aria-label={`Next: ${next.name}`}>
                     <ArrowRight />
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </Tooltip>
             ) : (
               <Button variant="ghost" size={iconSize} disabled aria-label="No next component">

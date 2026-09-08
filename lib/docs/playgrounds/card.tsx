@@ -362,7 +362,11 @@ export function CardPlayground({ children }: PlaygroundProps) {
           key={item.title}
           label={item.title}
           selected={selectedOn && i === activeSelected}
-          onClick={selectedOn ? () => setSelectedIndex(i) : undefined}
+          // Always a click target, so the fluid hover toggle has something to
+          // light; selection only listens when it is on.
+          onClick={() => {
+            if (selectedOn) setSelectedIndex(i);
+          }}
         >
           {isImage && <CardImage src={BANNER} />}
           {isSmall && isInline && renderSmall(item.icon)}

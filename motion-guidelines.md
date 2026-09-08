@@ -83,7 +83,10 @@ page (`app/docs/fluid-hover/page.tsx`, served at `/docs/fluid-hover`; demos in
    cursor to the winning center.
 3. **3 axes.** `y` (default) for lists, `x` for strips, `xy` for grids, on real
    components stacked vertically: Tabs, an inline Dropdown, and a 2-column CardGroup.
-4. **What it costs.** 200 rows in a scroll frame and a meter: `pickNearest`
+4. **When to split a list.** A sidebar with a parent and its children, a disabled
+   row, and a second group behind a divider: one `SidebarMenu` is one list
+   (children included, disabled skipped), the next group is another.
+5. **What it costs.** 200 rows in a scroll frame and a meter: `pickNearest`
    (the hook's own exported pure function) timed on every move with the real
    rects, the highlight element count, frames of travel, and layout writes
    while travelling (0, since the travel is a transform).
@@ -108,9 +111,18 @@ Rules the hook enforces, worth knowing when you consume it:
   rest, or attached beside `onMouseLeave`) routes a click that hits the
   container between items to the highlighted item's activator, so what is lit
   is what a click hits. It leaves clicks inside an item, on a control between
-  rows (a menu's search field), and on disabled items alone. Every list that
-  renders the highlight attaches it; tabs and the accordion (which registers
-  only the trigger) do not.
+  rows (a menu's search field), and on disabled items alone. The `gapClick`
+  option turns it off (`false`) or caps it (`{ maxDistance }`, which the card
+  grid uses at 16px). Every list that renders the highlight attaches it; tabs
+  and the accordion (which registers only the trigger) do not.
+- **One list per group of alternatives.** Children belong to the parent's
+  list (the sidebar's unified scope). A divider between different kinds of
+  rows means a new list: give it its own container and hook. A disabled row
+  stays in its list and is skipped (`isItemDisabled`; the sidebar reads the
+  button's `disabled`).
+- **Only click targets register.** A card without `href` or `onClick` does
+  not join the highlight: lighting it would promise a click with nowhere to
+  land. When the lit row unregisters, the highlight clears.
 - **Rows join with `useRegisterFluidHoverItem(registerItem, index, ref)`.**
   Both arguments may be undefined for a row rendered outside a list; then
   nothing registers. No hand-written registration effects.

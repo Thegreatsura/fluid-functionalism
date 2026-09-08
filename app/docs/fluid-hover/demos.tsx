@@ -1,6 +1,14 @@
 "use client";
 
-import { memo, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createElement,
+  memo,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import {
   animate,
   motion,
@@ -13,6 +21,7 @@ import {
 } from "framer-motion";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { fontWeights } from "@/registry/default/lib/font-weight";
+import { spring } from "@/registry/default/lib/springs";
 import { cn } from "@/registry/default/lib/utils";
 import { useShape } from "@/registry/default/lib/shape-context";
 import { useIcon } from "@/lib/icon-context";
@@ -25,6 +34,21 @@ import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 import { Switch } from "@/components/flavored/switch";
 import { Tabs, TabsList, TabItem } from "@/registry/radix/tabs";
 import { Dropdown } from "@/components/flavored/dropdown";
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarContent,
+  SidebarSeparator,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
+} from "@/components/flavored/sidebar";
+import { useIcons } from "@/lib/icon-context";
 import { MenuItem } from "@/registry/default/menu-item";
 import {
   Card,
@@ -62,17 +86,29 @@ function List({ rows }: { rows: string[] }) {
           in fresh on every entry instead of sliding over from its last spot. */}
       <FluidHoverHighlight hover={hover} className="rounded-lg" />
       {rows.map((label, i) => (
-        <Row key={label} index={i} registerItem={hover.registerItem}>{label}</Row>
+        <Row key={label} index={i} registerItem={hover.registerItem} onClick={() => open(label)}>
+          {label}
+        </Row>
       ))}
     </div>
   );
 }
 
-// Rows register their element; the hook measures them once per layout change.
-function Row({ index, registerItem, children }) {
-  const ref = useRef<HTMLDivElement>(null);
+// Rows are real buttons: focusable, activatable from the keyboard, announced
+// by their label. The hook only lights them; it never moves focus.
+function Row({ index, registerItem, onClick, children }) {
+  const ref = useRef<HTMLButtonElement>(null);
   useRegisterFluidHoverItem(registerItem, index, ref);
-  return <div ref={ref} className="relative z-10 flex h-9 items-center px-3">{children}</div>;
+  return (
+    <button
+      ref={ref}
+      type="button"
+      onClick={onClick}
+      className="relative z-10 flex h-9 w-full items-center px-3 text-left outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]"
+    >
+      {children}
+    </button>
+  );
 }`;
 
 const MATH_CODE = `// Per mouse move (coalesced to one animation frame), for every row:
@@ -103,7 +139,7 @@ useFluidHover(containerRef, { axis: "xy" });`;
 // ---------------------------------------------------------------------------
 
 const rowClass =
-  "relative z-10 flex h-9 shrink-0 items-center px-3 text-body text-foreground";
+  "relative z-10 flex h-9 w-full shrink-0 items-center px-3 text-left text-body text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]";
 
 function FluidRow({
   index,
@@ -114,12 +150,12 @@ function FluidRow({
   registerItem: (index: number, element: HTMLElement | null) => void;
   children: ReactNode;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLButtonElement>(null);
   useRegisterFluidHoverItem(registerItem, index, ref);
   return (
-    <div ref={ref} className={rowClass}>
+    <button ref={ref} type="button" className={rowClass}>
       {children}
-    </div>
+    </button>
   );
 }
 
@@ -214,8 +250,9 @@ function PlainHoverList({
   return (
     <div className="relative flex w-full flex-col gap-1 p-2">
       {ROWS.map((label, i) => (
-        <div
+        <button
           key={label}
+          type="button"
           className={cn(
             rowClass,
             "hover:bg-hover",
@@ -224,7 +261,7 @@ function PlainHoverList({
           )}
         >
           {label}
-        </div>
+        </button>
       ))}
       {cursor && <FakeCursor y={cursor} />}
     </div>
@@ -571,7 +608,8 @@ export function AxesDemo() {
         <AxisBlock axis="xy" hint="grids: card groups">
           <CardGroup columns={2} border="outlined" separated>
             {CARD_ITEMS.map((item) => (
-              <Card key={item.title}>
+              // A card only joins the highlight when it can be clicked.
+              <Card key={item.title} onClick={() => {}}>
                 <CardHeader>
                   <CardTitle>{item.title}</CardTitle>
                   <CardDescription>{item.description}</CardDescription>
@@ -629,17 +667,20 @@ const CostRow = memo(function CostRow({
   registerItem: (index: number, element: HTMLElement | null) => void;
   children: ReactNode;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLButtonElement>(null);
   useRegisterFluidHoverItem(registerItem, index, ref);
   return (
-    <div ref={ref} className={cn(rowClass, "w-full")}>
+    <button ref={ref} type="button" className={rowClass}>
       {children}
-    </div>
+    </button>
   );
 });
 
 interface CostMeter {
   moves: number;
+  /** The longest gap between two animation frames while the pointer was
+   *  inside, in ms. Everything counts here: React, the hook, framer, paint. */
+  longestFrameMs: number;
   /** Mean of the last `COST_WINDOW` picks. `performance.now()` is coarsened
    *  to 0.1ms in most browsers, so one reading is 0 or 0.1; the mean over a
    *  window is the honest number. */
@@ -654,6 +695,7 @@ const COST_WINDOW = 100;
 
 const EMPTY_METER: CostMeter = {
   moves: 0,
+  longestFrameMs: 0,
   avgMs: 0,
   maxMs: 0,
   layoutWrites: 0,
@@ -670,6 +712,7 @@ function CostList({ onMeter }: { onMeter: (m: CostMeter) => void }) {
   // The meter lives in a ref and is published once per frame, so measuring
   // never adds a render per move to what it measures.
   const meterRef = useRef<CostMeter>(EMPTY_METER);
+  const insideRef = useRef(false);
   const windowRef = useRef<number[]>([]);
   const publishRef = useRef<number | null>(null);
   const publish = () => {
@@ -716,10 +759,18 @@ function CostList({ onMeter }: { onMeter: (m: CostMeter) => void }) {
       transform: "",
       layout: "",
     };
+    let last = performance.now();
     const tick = () => {
       raf = requestAnimationFrame(tick);
+      const now = performance.now();
+      const frame = now - last;
+      last = now;
       const container = containerRef.current;
       if (!container) return;
+      if (insideRef.current && frame > meterRef.current.longestFrameMs) {
+        meterRef.current = { ...meterRef.current, longestFrameMs: frame };
+        publish();
+      }
       const els = container.querySelectorAll<HTMLElement>('[data-slot="fluid-hover-highlight"]');
       const el = els[els.length - 1] ?? null;
       const m = meterRef.current;
@@ -758,10 +809,17 @@ function CostList({ onMeter }: { onMeter: (m: CostMeter) => void }) {
     <div
       ref={containerRef}
       className="relative flex max-h-64 w-full flex-col gap-1 overflow-y-auto p-2"
-      onMouseEnter={handlers.onMouseEnter}
-      onMouseLeave={handlers.onMouseLeave}
+      onMouseEnter={() => {
+        insideRef.current = true;
+        handlers.onMouseEnter();
+      }}
+      onMouseLeave={() => {
+        insideRef.current = false;
+        handlers.onMouseLeave();
+      }}
       onClick={handlers.onClick}
       onMouseMove={(e) => {
+        insideRef.current = true;
         timePick(e);
         handlers.onMouseMove(e);
       }}
@@ -794,24 +852,412 @@ export function CostDemo() {
   const [meter, setMeter] = useState<CostMeter>(EMPTY_METER);
   return (
     <ComponentPreview code={COST_CODE}>
-      <div className="flex w-full max-w-sm flex-col items-center gap-4">
+      <div className="flex w-full max-w-md flex-col items-center gap-4">
         <div className={cn("w-full border border-border/60", shape.container)}>
           <CostList onMeter={setMeter} />
         </div>
         {/* Three numbers, one per claim in the copy: the loop, the element,
             the layout. Moves counts up so the reader sees the meter is live. */}
-        <div className="grid w-full grid-cols-3 gap-4">
+        <div className="grid w-full grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4">
           <Stat value={String(meter.moves)} label="moves" hint="counts as you hover" />
           <Stat
-            value={`${meter.avgMs.toFixed(3)} ms`}
-            label="per move"
-            hint={`${((meter.avgMs / FRAME_MS) * 100).toFixed(2)}% of a ${FRAME_MS.toFixed(1)} ms frame`}
+            value={`${(meter.avgMs ?? 0).toFixed(3)} ms`}
+            label="pick per move"
+            hint={`${(((meter.avgMs ?? 0) / FRAME_MS) * 100).toFixed(2)}% of a ${FRAME_MS.toFixed(1)} ms frame`}
+          />
+          <Stat
+            value={`${(meter.longestFrameMs ?? 0).toFixed(1)} ms`}
+            label="longest frame"
+            hint={`everything included, budget ${FRAME_MS.toFixed(1)} ms`}
           />
           <Stat
             value={String(meter.layoutWrites)}
             label="layout writes"
             hint="a top/left animation writes 1 every frame"
           />
+        </div>
+      </div>
+    </ComponentPreview>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Demo 5: when to split a list
+//
+// A sidebar with the three cases a real nav has: a parent with children, a
+// disabled row, and a second group behind a divider. One SidebarMenu is one
+// list: the highlight glides into the children and skips the disabled row.
+// The second group is its own list: the highlight stops at the divider and a
+// new one starts on the other side.
+// ---------------------------------------------------------------------------
+
+const LISTS_CODE = `<SidebarGroup>
+  <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+  <SidebarMenu>                     {/* list 1 */}
+    <SidebarMenuItem>
+      <SidebarMenuButton icon={MessageCircle} aria-expanded={open} onClick={toggle}>
+        Chat
+        <Chevron open={open} />           {/* turns 90° while open */}
+      </SidebarMenuButton>
+      <SidebarMenuSub open={open}>  {/* children stay in list 1 */}
+        <SidebarMenuSubItem><SidebarMenuSubButton href="#">Today</SidebarMenuSubButton></SidebarMenuSubItem>
+        <SidebarMenuSubItem><SidebarMenuSubButton href="#">Yesterday</SidebarMenuSubButton></SidebarMenuSubItem>
+      </SidebarMenuSub>
+    </SidebarMenuItem>
+    <SidebarMenuItem><SidebarMenuButton icon={Brain}>Agents</SidebarMenuButton></SidebarMenuItem>
+    <SidebarMenuItem>
+      <SidebarMenuButton icon={SquareLibrary} disabled>Knowledge</SidebarMenuButton>
+    </SidebarMenuItem>
+    <SidebarMenuItem><SidebarMenuButton icon={Play}>Runs</SidebarMenuButton></SidebarMenuItem>
+  </SidebarMenu>
+</SidebarGroup>
+
+<SidebarSeparator />                {/* a different kind of thing follows */}
+
+<SidebarGroup>
+  <SidebarGroupLabel>Account</SidebarGroupLabel>
+  <SidebarMenu>                     {/* list 2 */}
+    <SidebarMenuItem><SidebarMenuButton icon={User}>Profile</SidebarMenuButton></SidebarMenuItem>
+    <SidebarMenuItem><SidebarMenuButton icon={ArrowLeft}>Log out</SidebarMenuButton></SidebarMenuItem>
+  </SidebarMenu>
+</SidebarGroup>`;
+
+function ListsSidebar() {
+  const icons = useIcons();
+  const [open, setOpen] = useState(true);
+  const [current, setCurrent] = useState("Today");
+  const row = (label: string) => ({
+    isActive: current === label,
+    onClick: () => setCurrent(label),
+  });
+  return (
+    <SidebarProvider persist={false} shortcut={null} width="100%" className="h-full min-h-0">
+      <Sidebar collapsible="none" bordered={false} className="h-full">
+        <SidebarContent className="pt-1">
+          <SidebarGroup>
+            <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                {/* The parent only expands and collapses; the chevron rides
+                    the label's trailing edge and turns 90° while open. */}
+                <SidebarMenuButton
+                  className="group/parent-row"
+                  icon={icons["message-circle"]}
+                  aria-expanded={open}
+                  onClick={() => setOpen((v) => !v)}
+                  style={{ "--row-gutter": "var(--row-gutter-hover)" } as CSSProperties}
+                >
+                  Chat
+                  <span className="ml-auto -mr-0.5 flex size-6 shrink-0 items-center justify-center">
+                    <motion.span
+                      className="inline-flex"
+                      animate={{ rotate: open ? 90 : 0 }}
+                      transition={spring.fast}
+                    >
+                      {createElement(icons["chevron-right"], {
+                        size: 16,
+                        strokeWidth: 1.5,
+                        className: `text-muted-foreground transition-opacity duration-80 ${
+                          open
+                            ? "opacity-0 group-hover/parent-row:opacity-100 group-focus-within/parent-row:opacity-100"
+                            : "opacity-100"
+                        }`,
+                      })}
+                    </motion.span>
+                  </span>
+                </SidebarMenuButton>
+                <SidebarMenuSub open={open}>
+                  {["Today", "Yesterday"].map((label) => (
+                    <SidebarMenuSubItem key={label}>
+                      <SidebarMenuSubButton
+                        href="#"
+                        isActive={current === label}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setCurrent(label);
+                        }}
+                      >
+                        {label}
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  ))}
+                </SidebarMenuSub>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton icon={icons.brain} {...row("Agents")}>
+                  Agents
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton icon={icons["square-library"]} disabled>
+                  Knowledge
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton icon={icons.play} {...row("Runs")}>
+                  Runs
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
+          <SidebarSeparator />
+          <SidebarGroup>
+            <SidebarGroupLabel>Account</SidebarGroupLabel>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton icon={icons.user} {...row("Profile")}>
+                  Profile
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton icon={icons["arrow-left"]} {...row("Log out")}>
+                  Log out
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
+        </SidebarContent>
+      </Sidebar>
+    </SidebarProvider>
+  );
+}
+
+// Three callouts around the sidebar, one per case. The arrows are measured
+// against the real rows on mount and on resize, so they land where the rows
+// are rather than where a hand-tuned number says they should be.
+const CANVAS_W = 640;
+const CANVAS_H = 400;
+const SIDEBAR_LEFT = 200;
+const SIDEBAR_TOP = 16;
+const SIDEBAR_W = 260;
+const LABEL_W = 140;
+/** Arrows stop this far outside the sidebar frame, never inside it. */
+const ARROW_GAP = 6;
+const ANNOTATION_BLUE = "var(--focus-ring, #6B97FF)";
+
+type Callout = {
+  key: string;
+  title: string;
+  line: string;
+  color: string;
+  /** Which side of the sidebar the label sits on. Its vertical position
+   *  follows the target, so the arrow is short and level. */
+  side: "left" | "right";
+  /** Row labels the arrow points at: the arrow ends level with the mean of
+   *  their centers, just outside the frame. */
+  targets: string[];
+};
+
+const CALLOUTS: Callout[] = [
+  {
+    key: "one",
+    title: "1 list",
+    line: "Children ride with their parent.",
+    color: ANNOTATION_BLUE,
+    side: "left",
+    targets: ["Today", "Yesterday"],
+  },
+  {
+    key: "skip",
+    title: "Skipped",
+    line: "Disabled rows are passed over.",
+    color: ANNOTATION_BLUE,
+    side: "right",
+    targets: ["Knowledge"],
+  },
+  {
+    key: "two",
+    title: "New list",
+    line: "A divider means a different kind.",
+    color: ANNOTATION_BLUE,
+    side: "left",
+    targets: ["Profile", "Log out"],
+  },
+];
+
+const LABEL_LEFT = { left: 14, right: SIDEBAR_LEFT + SIDEBAR_W + 40 } as const;
+
+/** A quadratic curve from `s` to `e`, bowed by `curve` px off the chord. */
+function arrowPath(
+  s: { x: number; y: number },
+  e: { x: number; y: number },
+  curve: number
+) {
+  const dx = e.x - s.x;
+  const dy = e.y - s.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const cx = (s.x + e.x) / 2 + (-dy / len) * curve;
+  const cy = (s.y + e.y) / 2 + (dx / len) * curve;
+  const f = (n: number) => Math.round(n * 10) / 10;
+  return `M${f(s.x)},${f(s.y)} Q${f(cx)},${f(cy)} ${f(e.x)},${f(e.y)}`;
+}
+
+function rowLabel(el: Element) {
+  return el.textContent?.replace(/(.+)\1/, "$1").trim() ?? "";
+}
+
+function ListsCallouts({ canvasRef }: { canvasRef: React.RefObject<HTMLDivElement | null> }) {
+  // Per callout: the y the arrow points at and the label's near text edge,
+  // both in canvas space, so the arrow starts a few px past the text.
+  const [ends, setEnds] = useState<Record<string, { y: number; edge: number }>>({});
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const measure = () => {
+      const box = canvas.getBoundingClientRect();
+      const buttons = [...canvas.querySelectorAll<HTMLElement>('[data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]')];
+      const next: Record<string, { y: number; edge: number }> = {};
+      for (const c of CALLOUTS) {
+        const rects = c.targets
+          .map((label) => buttons.find((b) => rowLabel(b) === label))
+          .filter((b): b is HTMLElement => !!b)
+          .map((b) => b.getBoundingClientRect());
+        if (rects.length === 0) continue;
+        const y = rects.reduce((a, r) => a + r.top + r.height / 2, 0) / rects.length - box.top;
+        // The glyphs' own extent, not any box: a flex item stretches to the
+        // label's max width even when its balanced lines are shorter, so read
+        // the line boxes of the text itself through a Range.
+        const label = canvas.querySelector<HTMLElement>(`[data-callout="${c.key}"]`);
+        const lines: DOMRect[] = [];
+        for (const el of label ? [...label.children] : []) {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          lines.push(...range.getClientRects());
+        }
+        const edge =
+          lines.length > 0
+            ? (c.side === "left"
+                ? Math.max(...lines.map((r) => r.right))
+                : Math.min(...lines.map((r) => r.left))) - box.left
+            : c.side === "left"
+              ? LABEL_LEFT.left + LABEL_W
+              : LABEL_LEFT.right;
+        next[c.key] = { y, edge };
+      }
+      setEnds(next);
+    };
+    measure();
+    // The flavored Sidebar mounts its rows after hydration and the canvas
+    // itself never resizes, so watch the subtree for the rows arriving and
+    // the rows for size changes (the sub-tree collapsing, a size step flip).
+    const mo = new MutationObserver(measure);
+    mo.observe(canvas, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-state"] });
+    const ro = new ResizeObserver(measure);
+    ro.observe(canvas);
+    for (const el of canvas.querySelectorAll('[data-sidebar="menu"]')) ro.observe(el);
+    return () => {
+      mo.disconnect();
+      ro.disconnect();
+    };
+  }, [canvasRef]);
+
+  return (
+    <>
+      <svg
+        className="pointer-events-none absolute inset-0"
+        width={CANVAS_W}
+        height={CANVAS_H}
+        viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
+        fill="none"
+        aria-hidden
+      >
+        <defs>
+          <marker
+            id="ff-lists-arrow"
+            viewBox="0 0 12 12"
+            markerWidth="12"
+            markerHeight="12"
+            refX="8.5"
+            refY="6"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+          >
+            <path
+              d="M3,2.5 L8.5,6 L3,9.5"
+              fill="none"
+              stroke="context-stroke"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </marker>
+        </defs>
+        {CALLOUTS.map((c) => {
+          const end0 = ends[c.key];
+          if (!end0) return null;
+          const { y, edge } = end0;
+          // Level with the target: from just past the label's text to just
+          // outside the frame, with a small bow so it reads as drawn.
+          const start =
+            c.side === "left" ? { x: edge + 6, y } : { x: edge - 6, y };
+          const end =
+            c.side === "left"
+              ? { x: SIDEBAR_LEFT - ARROW_GAP, y }
+              : { x: SIDEBAR_LEFT + SIDEBAR_W + ARROW_GAP, y };
+          return (
+            <path
+              key={c.key}
+              d={arrowPath(start, end, c.side === "left" ? -6 : 6)}
+              stroke={c.color}
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              fill="none"
+              markerEnd="url(#ff-lists-arrow)"
+            />
+          );
+        })}
+      </svg>
+      {CALLOUTS.map((c) => (
+        <div
+          key={c.key}
+          data-callout={c.key}
+          className="pointer-events-none absolute flex flex-col items-start gap-0.5"
+          style={{
+            left: LABEL_LEFT[c.side],
+            // Sized to the text (up to LABEL_W), so the measured edge is the
+            // longest line, not an empty column.
+            width: "max-content",
+            maxWidth: LABEL_W,
+            // The title line sits on the arrow; the description hangs below.
+            top: (ends[c.key]?.y ?? 0) - 9,
+            visibility: ends[c.key] === undefined ? "hidden" : undefined,
+          }}
+        >
+          <span
+            className="text-caption leading-tight"
+            style={{ color: c.color, fontVariationSettings: fontWeights.semibold }}
+          >
+            {c.title}
+          </span>
+          <span className="text-balance text-[11px] leading-snug text-muted-foreground">{c.line}</span>
+        </div>
+      ))}
+    </>
+  );
+}
+
+export function ListsDemo() {
+  const shape = useShape();
+  const canvasRef = useRef<HTMLDivElement>(null);
+  return (
+    <ComponentPreview code={LISTS_CODE} padding="none" inspectRulers={false}>
+      <div className="w-full overflow-x-auto">
+        <div
+          ref={canvasRef}
+          className="relative mx-auto shrink-0"
+          style={{ width: CANVAS_W, height: CANVAS_H }}
+        >
+          <div
+            className={cn(
+              "absolute h-[368px] overflow-hidden border border-border/60 bg-background",
+              shape.container
+            )}
+            style={{ left: SIDEBAR_LEFT, top: SIDEBAR_TOP, width: SIDEBAR_W }}
+          >
+            <ListsSidebar />
+          </div>
+          <ListsCallouts canvasRef={canvasRef} />
         </div>
       </div>
     </ComponentPreview>

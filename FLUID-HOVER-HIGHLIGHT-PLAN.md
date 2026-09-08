@@ -250,3 +250,21 @@ and the input-message suggestions are hover-only. A split into a lean hover
 hook plus a rect-cache hook would give those four a smaller import and make
 the other 17 call two hooks. Left as is; revisit only if the selection
 overlays get their own rework.
+
+## Review follow-ups landed 2026-09-08 (from an external review)
+
+- `gapClick` option on the hook: `false` keeps empty space inert,
+  `{ maxDistance }` caps routing; CardGroup uses 16px.
+- Only click targets register: a Card without `href` or `onClick` never
+  lights. Demo cards that exist to show hover got an `onClick`.
+- The highlighted row clears when it unregisters.
+- Docs: install note names the full payload; "no dead zones" replaces "no hit
+  boxes"; the first sample's rows are buttons; a Reference section (hook
+  options, returns, highlight props, transform and focus notes) and a "Use it
+  when, skip it when" section; the meter adds "longest frame", the
+  end-to-end number the pick timing is not.
+- DocPage prev/next arrows are one link each (`Button asChild`), not a button
+  inside a link.
+- Declined: splitting `handlers` (the option covers it), dropping
+  `isMeasured` on item resize (deliberate, avoids flicker), a framer-free
+  variant (every component already depends on framer).

@@ -100,6 +100,26 @@ function rowHidden(el: HTMLElement) {
   return el.closest('[data-sidebar="menu-sub"][data-state="closed"]') !== null;
 }
 
+/** True for a disabled row: it stays in the list (and in the layout) but is
+ *  never lit, never takes a routed click, and is skipped by the keyboard.
+ *  The hook registers the row's button (falling back to the row itself), so
+ *  check the element first, then a button directly inside it. A sub-row's
+ *  anchor carries aria-disabled instead of `disabled`. */
+const DISABLED_CONTROL = ':disabled, [aria-disabled="true"]';
+function rowDisabled(el: HTMLElement) {
+  return (
+    el.matches(DISABLED_CONTROL) ||
+    el.querySelector(
+      `:scope > [data-sidebar="menu-button"]:is(${DISABLED_CONTROL}), :scope > [data-sidebar="menu-sub-button"]:is(${DISABLED_CONTROL})`
+    ) !== null
+  );
+}
+
+/** Hidden or disabled: what hover, highlights, and the keyboard skip. */
+function rowSkipped(el: HTMLElement) {
+  return rowHidden(el) || rowDisabled(el);
+}
+
 /** Stable keys for the per-level active overlays: one id per sub-menu <ul>
  *  (or the menu root), so the active background glides when the active row
  *  moves within its level instead of remounting. */
@@ -157,7 +177,7 @@ function useMenuScope(
     sessionRef,
     handlers,
     registerItem,
-  } = useFluidHover(containerRef, { isItemDisabled: rowHidden });
+  } = useFluidHover(containerRef, { isItemDisabled: rowSkipped });
 
   const rowsRef = useRef<Set<HTMLElement>>(new Set());
   const rowButtonsRef = useRef<Map<HTMLElement, HTMLElement>>(new Map());
@@ -171,7 +191,7 @@ function useMenuScope(
 
   const recomputeActive = useCallback(() => {
     const next = orderedRowsRef.current.filter(
-      (el) => activeMapRef.current.get(el) && !rowHidden(el)
+      (el) => activeMapRef.current.get(el) && !rowSkipped(el)
     );
     setActiveRows((prev) => (sameElements(prev, next) ? prev : next));
   }, []);
@@ -245,7 +265,7 @@ function useMenuScope(
     // A hover riding a row that just collapsed away has nothing under it.
     setActiveIndex((prev) => {
       const row = prev !== null ? orderedRowsRef.current[prev] : undefined;
-      return row && rowHidden(row) ? null : prev;
+      return row && rowSkipped(row) ? null : prev;
     });
   }, [recomputeActive, setActiveIndex]);
 
@@ -831,7 +851,10 @@ export const sidebarMenuButtonVariants = cva(
   // rowGutter): --row-gutter at rest, --row-gutter-hover once hover-revealed
   // actions are showing. One rule per state instead of a class per
   // count/badge/reveal combination.
-  "peer/menu-button relative z-10 flex w-full cursor-pointer select-none items-center gap-2 pl-2 text-left outline-none transition-[padding] duration-80 pr-[var(--row-gutter)] group-hover/menu-item:pr-[var(--row-gutter-hover)] group-focus-within/menu-item:pr-[var(--row-gutter-hover)] group-hover/menu-sub-item:pr-[var(--row-gutter-hover)] group-focus-within/menu-sub-item:pr-[var(--row-gutter-hover)] group-has-[[data-sidebar=menu-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-item:pr-[var(--row-gutter-hover)] group-has-[[data-sidebar=menu-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-sub-item:pr-[var(--row-gutter-hover)]",
+  // Disabled stays in the layout, and pointer events pass through it to the
+  // row, since a browser sends no mouse events to a disabled button: the
+  // container keeps seeing the moves, and fluid hover simply never lights it.
+  "peer/menu-button relative z-10 flex w-full cursor-pointer select-none items-center gap-2 pl-2 text-left outline-none disabled:opacity-50 disabled:pointer-events-none transition-[padding] duration-80 pr-[var(--row-gutter)] group-hover/menu-item:pr-[var(--row-gutter-hover)] group-focus-within/menu-item:pr-[var(--row-gutter-hover)] group-hover/menu-sub-item:pr-[var(--row-gutter-hover)] group-focus-within/menu-sub-item:pr-[var(--row-gutter-hover)] group-has-[[data-sidebar=menu-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-item:pr-[var(--row-gutter-hover)] group-has-[[data-sidebar=menu-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-sub-item:pr-[var(--row-gutter-hover)]",
   {
     variants: {
       variant: {

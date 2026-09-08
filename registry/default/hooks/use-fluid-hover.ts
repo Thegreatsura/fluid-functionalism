@@ -33,6 +33,16 @@ export interface UseFluidHoverOptions {
    * the set stable. Consulted per mouse move, so keep it cheap.
    */
   isItemDisabled?: (element: HTMLElement) => boolean;
+  /**
+   * Whether a click that lands between items (a gap, the padding, past the
+   * last row) is routed to the highlighted item, so what is lit is what a
+   * click hits. On by default: in a menu or a list the highlight is a
+   * promise about the click. Pass `false` where empty space should stay
+   * inert (rows with destructive actions, generous whitespace), or
+   * `{ maxDistance }` to route only clicks within that many pixels of the
+   * highlighted item's edge.
+   */
+  gapClick?: boolean | { maxDistance?: number };
 }
 
 export interface UseFluidHoverReturn {
@@ -205,7 +215,9 @@ export function useFluidHover<T extends HTMLElement>(
   containerRef: RefObject<T | null>,
   options: UseFluidHoverOptions = {}
 ): UseFluidHoverReturn {
-  const { axis = "y", isItemDisabled } = options;
+  const { axis = "y", isItemDisabled, gapClick = true } = options;
+  const gapClickMaxDistance =
+    typeof gapClick === "object" ? (gapClick.maxDistance ?? Infinity) : Infinity;
   const itemsRef = useRef(new Map<number, HTMLElement>());
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   // Mirrored for handlers that read it outside a render (the gap click).
@@ -364,6 +376,9 @@ export function useFluidHover<T extends HTMLElement>(
         const previous = itemsRef.current.get(index);
         if (previous) itemRoRef.current?.unobserve(previous);
         itemsRef.current.delete(index);
+        // The highlighted row is gone: nothing should stay lit or receive a
+        // routed click until the pointer picks again.
+        if (index === activeIndexRef.current) setActiveIndex(null);
       }
       // Coalesce rapid register/unregister calls (e.g. when an AnimatePresence
       // remounts a list of rows) into a single remeasure on the next frame,
@@ -435,15 +450,22 @@ export function useFluidHover<T extends HTMLElement>(
         "input, textarea, select, button, a, summary, [contenteditable], [role='textbox'], [role='searchbox'], [role='button']"
       );
       if (control) return;
+      if (gapClick === false) return;
       const index = activeIndexRef.current;
       if (index === null) return;
       const element = itemsRef.current.get(index);
       if (!element || isItemDisabled?.(element)) return;
+      if (gapClickMaxDistance !== Infinity) {
+        const r = element.getBoundingClientRect();
+        const dx = Math.max(r.left - e.clientX, 0, e.clientX - r.right);
+        const dy = Math.max(r.top - e.clientY, 0, e.clientY - r.bottom);
+        if (Math.hypot(dx, dy) > gapClickMaxDistance) return;
+      }
       // A real DOM click on the item, so its own handlers (and the primitive
       // wrapping it, if any) run exactly as if the pointer had been inside.
       resolveActivator(element).click();
     },
-    [isItemDisabled]
+    [isItemDisabled, gapClick, gapClickMaxDistance]
   );
 
   // Remeasure when the container resizes — a reflow moves items even though

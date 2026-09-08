@@ -32,7 +32,7 @@ const basicCode = `import {
 // Borderless inline list: icon + a ghost action, divided by hairlines.
 <div className="w-full max-w-[520px]">
   <CardGroup orientation="inline">
-    <Card>
+    <Card onClick={() => open(item)}>
       <CardMedia icon={Circle} />
       <CardHeader>
         <CardTitle>Fluid motion</CardTitle>
@@ -50,7 +50,7 @@ const gridCode = `// Two-column grid of image tiles — columns > 1 turns on 2-D
 // fluid hover: the highlight springs to the nearest card across rows AND columns.
 <div className="w-full max-w-[560px]">
   <CardGroup columns={2} border="outlined" separated>
-    <Card>
+    <Card onClick={() => open(item)}>
       <CardImage src={banner} />
       <CardHeader>
         <CardTitle>Fluid motion</CardTitle>
@@ -68,7 +68,7 @@ const gridCode = `// Two-column grid of image tiles — columns > 1 turns on 2-D
 const outlinedCode = `// One shared outlined frame, rows split by dividers: logo + primary.
 <div className="w-full max-w-[520px]">
   <CardGroup orientation="inline" border="outlined">
-    <Card>
+    <Card onClick={() => open(item)}>
       <CardMedia logo={logo} />
       <CardHeader>
         <CardTitle>Fluid motion</CardTitle>
@@ -86,7 +86,7 @@ const separatedCode = `// Separated inline tiles with a full-height image; the a
 // row drops below the text (primary, secondary, ghost).
 <div className="w-full max-w-[560px]">
   <CardGroup orientation="inline" separated>
-    <Card>
+    <Card onClick={() => open(item)}>
       <CardImage src={banner} />
       <CardHeader>
         <CardTitle>Fluid motion</CardTitle>
@@ -218,7 +218,7 @@ function BasicDemo() {
     <div className="w-full max-w-[520px]">
       <CardGroup orientation="inline">
         {features.map((f) => (
-          <Card key={f.title}>
+          <Card key={f.title} onClick={() => {}}>
             <CardMedia icon={f.icon} />
             <CardHeader>
               <CardTitle>{f.title}</CardTitle>
@@ -242,7 +242,7 @@ function GridDemo() {
     <div className="w-full max-w-[560px]">
       <CardGroup columns={2} border="outlined" separated>
         {features.map((f) => (
-          <Card key={f.title}>
+          <Card key={f.title} onClick={() => {}}>
             <CardImage src={BANNER} />
             <CardHeader>
               <CardTitle>{f.title}</CardTitle>
@@ -266,7 +266,7 @@ function OutlinedDemo() {
     <div className="w-full max-w-[520px]">
       <CardGroup orientation="inline" border="outlined">
         {features.map((f) => (
-          <Card key={f.title}>
+          <Card key={f.title} onClick={() => {}}>
             <CardMedia logo={THUMB} />
             <CardHeader>
               <CardTitle>{f.title}</CardTitle>
@@ -290,7 +290,7 @@ function SeparatedDemo() {
     <div className="w-full max-w-[560px]">
       <CardGroup orientation="inline" separated>
         {features.map((f) => (
-          <Card key={f.title}>
+          <Card key={f.title} onClick={() => {}}>
             <CardImage src={BANNER} />
             <CardHeader>
               <CardTitle>{f.title}</CardTitle>

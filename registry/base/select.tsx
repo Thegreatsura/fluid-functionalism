@@ -32,6 +32,7 @@ import {
 } from "@/lib/popup";
 import { useKeyboardNavGate } from "@/hooks/use-keyboard-nav-gate";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
 
 // ---------------------------------------------------------------------------
@@ -557,35 +558,11 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
                 )}
 
                 {/* Hover background */}
-                {open && (
-                  <AnimatePresence>
-                    {activeRect && (
-                      <motion.div
-                        key={sessionRef.current}
-                        className={`absolute ${shape.bg} bg-hover pointer-events-none`}
-                        initial={{
-                          opacity: 0,
-                          top: activeRect.top,
-                          left: activeRect.left,
-                          width: activeRect.width,
-                          height: activeRect.height,
-                        }}
-                        animate={{
-                          opacity: 1,
-                          top: activeRect.top,
-                          left: activeRect.left,
-                          width: activeRect.width,
-                          height: activeRect.height,
-                        }}
-                        exit={{ opacity: 0, transition: spring.fast.exit }}
-                        transition={{
-                          ...spring.fast,
-                          opacity: { duration: 0.08 },
-                        }}
-                      />
-                    )}
-                  </AnimatePresence>
-                )}
+                <FluidHoverHighlight
+                  rect={open ? activeRect : null}
+                  session={sessionRef.current}
+                  className={shape.bg}
+                />
 
                 {/* Focus ring */}
                 {open && (

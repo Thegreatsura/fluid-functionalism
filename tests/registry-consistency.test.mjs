@@ -281,22 +281,12 @@ describe("fluid hover highlight", () => {
   // FLUID-HOVER-HIGHLIGHT-PLAN.md. The list only shrinks: a new copy anywhere
   // else fails, and a stale entry fails once its file is migrated.
   const HAND_ROLLED_OVERLAYS = new Set([
-    "registry/base/accordion.tsx",
-    "registry/base/checkbox-group.tsx",
-    "registry/base/combobox.tsx",
     "registry/base/dropdown.tsx",
-    "registry/base/radio-group.tsx",
     "registry/base/select.tsx",
-    "registry/default/card.tsx",
     "registry/default/color-picker.tsx",
     "registry/default/nav-menu.tsx",
     "registry/default/sidebar-menu.tsx",
-    "registry/default/table.tsx",
-    "registry/radix/accordion.tsx",
-    "registry/radix/checkbox-group.tsx",
-    "registry/radix/combobox.tsx",
     "registry/radix/dropdown.tsx",
-    "registry/radix/radio-group.tsx",
     "registry/radix/select.tsx",
   ]);
   const MARKER = "key={sessionRef.current}";

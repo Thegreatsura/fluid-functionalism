@@ -15,14 +15,13 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { useIcon, type IconComponent } from "@/lib/icon-context";
 import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
 // ---------------------------------------------------------------------------
 // Card is shadcn/ui's compositional card — the same parts and `data-slot`
@@ -213,31 +212,11 @@ const CardGroup = forwardRef<HTMLDivElement, CardGroupProps>(
         >
           {/* Fluid hover highlight — a single magnetic layer that springs to the
               card nearest the cursor, previewing where a click will land. */}
-          <AnimatePresence>
-            {activeRect && (
-              <motion.div
-                key={sessionRef.current}
-                aria-hidden
-                className={cn("absolute bg-hover pointer-events-none z-0", shape.container)}
-                initial={{
-                  opacity: 0,
-                  top: activeRect.top,
-                  left: activeRect.left,
-                  width: activeRect.width,
-                  height: activeRect.height,
-                }}
-                animate={{
-                  opacity: 1,
-                  top: activeRect.top,
-                  left: activeRect.left,
-                  width: activeRect.width,
-                  height: activeRect.height,
-                }}
-                exit={{ opacity: 0, transition: spring.fast.exit }}
-                transition={{ ...spring.fast, opacity: { duration: 0.08 } }}
-              />
-            )}
-          </AnimatePresence>
+          <FluidHoverHighlight
+            rect={activeRect}
+            session={sessionRef.current}
+            className={cn("z-0", shape.container)}
+          />
 
           {indexed}
         </div>

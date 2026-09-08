@@ -20,6 +20,7 @@ import { fontWeights } from "@/lib/font-weight";
 import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
+import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
 interface RadioGroupContextValue {
   registerItem: (index: number, element: HTMLElement | null) => void;
@@ -171,33 +172,11 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
         )}
 
         {/* Hover background */}
-        <AnimatePresence>
-          {activeRect && (
-            <motion.div
-              key={sessionRef.current}
-              className={`absolute ${shape.bg} bg-hover pointer-events-none`}
-              initial={{
-                opacity: 0,
-                top: activeRect.top,
-                left: activeRect.left,
-                width: activeRect.width,
-                height: activeRect.height,
-              }}
-              animate={{
-                opacity: 1,
-                top: activeRect.top,
-                left: activeRect.left,
-                width: activeRect.width,
-                height: activeRect.height,
-              }}
-              exit={{ opacity: 0, transition: spring.fast.exit }}
-              transition={{
-                ...spring.fast,
-                opacity: { duration: 0.08 },
-              }}
-            />
-          )}
-        </AnimatePresence>
+        <FluidHoverHighlight
+          rect={activeRect}
+          session={sessionRef.current}
+          className={shape.bg}
+        />
 
         {/* Focus ring */}
         <AnimatePresence>

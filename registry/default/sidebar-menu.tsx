@@ -32,6 +32,7 @@ import { useSize, SizeProvider, type SizeVariant } from "@/lib/size-context";
 import { useFluidHover, type ItemRect } from "@/hooks/use-fluid-hover";
 import type { IconComponent } from "@/lib/icon-context";
 import { resolveSlotTemplate, slotElement } from "@/components/ui/sidebar-core";
+import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
 // SSR-safe layout effect (client components still server-render in Next).
 const useIsoLayoutEffect =
@@ -459,35 +460,15 @@ function useMenuScope(
         ))}
       </AnimatePresence>
 
-      {/* Hover background */}
-      <AnimatePresence>
-        {hoverRect && (
-          <motion.div
-            key={sessionRef.current}
-            className={`absolute ${shape.bg} bg-hover pointer-events-none`}
-            initial={{
-              opacity: 0,
-              top: hoverAnchorRect?.top ?? hoverRect.top,
-              left: hoverAnchorRect?.left ?? hoverRect.left,
-              width: hoverAnchorRect?.width ?? hoverRect.width,
-              height: hoverAnchorRect?.height ?? hoverRect.height,
-            }}
-            animate={{
-              opacity: 1,
-              top: hoverRect.top,
-              left: hoverRect.left,
-              width: hoverRect.width,
-              height: hoverRect.height,
-            }}
-            exit={{ opacity: 0, transition: spring.fast.exit }}
-            transition={
-              hoverRowChanged
-                ? { ...spring.fast, opacity: { duration: 0.08 } }
-                : { duration: 0 }
-            }
-          />
-        )}
-      </AnimatePresence>
+      {/* Hover background. Fades in from the level's active row; snaps (no
+          travel) when only a reflow moved the rows underneath. */}
+      <FluidHoverHighlight
+        rect={hoverRect}
+        session={sessionRef.current}
+        from={hoverAnchorRect}
+        className={shape.bg}
+        transition={hoverRowChanged ? undefined : false}
+      />
 
       {/* Focus ring */}
       <AnimatePresence>

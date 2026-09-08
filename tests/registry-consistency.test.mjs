@@ -276,18 +276,11 @@ describe("shipped CSS variables reach installers", () => {
 
 describe("fluid hover highlight", () => {
   // The hover overlay is one component, `FluidHoverHighlight`
-  // (registry/default/fluid-hover-highlight.tsx). Files still carrying the
-  // hand-rolled `motion.div` copy are listed here and migrated per
-  // FLUID-HOVER-HIGHLIGHT-PLAN.md. The list only shrinks: a new copy anywhere
-  // else fails, and a stale entry fails once its file is migrated.
+  // (registry/default/fluid-hover-highlight.tsx). The migration in
+  // FLUID-HOVER-HIGHLIGHT-PLAN.md emptied this list; it stays so a future
+  // hand-rolled copy has to be listed here on purpose, and a listed file
+  // that no longer carries one fails until it is removed.
   const HAND_ROLLED_OVERLAYS = new Set([
-    "registry/base/dropdown.tsx",
-    "registry/base/select.tsx",
-    "registry/default/color-picker.tsx",
-    "registry/default/nav-menu.tsx",
-    "registry/default/sidebar-menu.tsx",
-    "registry/radix/dropdown.tsx",
-    "registry/radix/select.tsx",
   ]);
   const MARKER = "key={sessionRef.current}";
 

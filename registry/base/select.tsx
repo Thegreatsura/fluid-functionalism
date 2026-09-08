@@ -20,7 +20,7 @@ import { Select as SelectPrimitive } from "@base-ui/react/select";
 import type { IconComponent } from "@/lib/icon-context";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
-import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { Elevated } from "@/lib/elevated";
@@ -340,16 +340,16 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
     const shape = useShape();
     const containerRef = useRef<HTMLDivElement>(null);
 
+    const hover = useFluidHover(containerRef, { isItemDisabled: isDisabledRow });
     const {
       activeIndex,
       setActiveIndex,
       itemRects,
       isMeasured,
-      sessionRef,
       handlers,
       registerItem,
       remeasure,
-    } = useFluidHover(containerRef, { isItemDisabled: isDisabledRow });
+    } = hover;
 
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
@@ -430,8 +430,6 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
     // Overlays read rects only once the hook reports the item set fully
     // measured. Positioning one from an incomplete pass mounts it at the wrong
     // row, and the correcting pass then springs it across the list.
-    const activeRect =
-      isMeasured && activeIndex !== null ? itemRects[activeIndex] : null;
     const checkedRect =
       isMeasured && checkedIndex != null ? itemRects[checkedIndex] : null;
     const focusRect =
@@ -484,6 +482,7 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
                 }}
                 onMouseMove={handlers.onMouseMove}
                 onMouseLeave={handlers.onMouseLeave}
+                onClick={handlers.onClick}
                 onFocus={(e) => {
                   const indexAttr = (e.target as HTMLElement)
                     .closest("[data-fluid-hover-index]")
@@ -559,8 +558,8 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
 
                 {/* Hover background */}
                 <FluidHoverHighlight
-                  rect={open ? activeRect : null}
-                  session={sessionRef.current}
+                  hover={hover}
+                  hidden={!open}
                   className={shape.bg}
                 />
 
@@ -643,11 +642,7 @@ const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
     // unregistering and re-registering every row and so keeping the hook's
     // measurement permanently unsettled while the pointer moved.
     const registerItem = contentCtx?.registerItem;
-    useEffect(() => {
-      if (!registerItem) return;
-      registerItem(index, internalRef.current);
-      return () => registerItem(index, null);
-    }, [index, registerItem]);
+    useRegisterFluidHoverItem(registerItem, index, internalRef);
 
     const isActive = contentCtx?.activeIndex === index;
     const isChecked = selectCtx.value === value;

@@ -17,6 +17,7 @@ vi.mock("framer-motion", async (importOriginal) => {
 import {
   FluidHoverHighlight,
   resolveHighlightTransition,
+  resolveHighlightSource,
 } from "@/registry/default/fluid-hover-highlight";
 import { spring } from "@/registry/default/lib/springs";
 
@@ -77,9 +78,12 @@ describe("FluidHoverHighlight", () => {
     expect(el.className).toContain("pointer-events-none");
     expect(el.className).toContain("rounded-lg");
     expect(el.className).toContain("z-0");
-    // framer writes `initial` as inline styles on first render.
+    // framer writes `initial` as inline styles on first render: position as
+    // a transform (compositor), size as layout.
     expect(el.style.opacity).toBe("0");
-    expect(el.style.top).toBe("8px");
+    expect(el.style.transform).toContain("translateY(8px)");
+    expect(el.style.transform).toContain("translateX(4px)");
+    expect(el.style.top).toBe("");
     expect(el.style.height).toBe("36px");
   });
 
@@ -87,7 +91,7 @@ describe("FluidHoverHighlight", () => {
     const { container } = render(
       <FluidHoverHighlight rect={rowA} from={rowB} session={1} />
     );
-    expect(highlight(container)!.style.top).toBe("48px");
+    expect(highlight(container)!.style.transform).toContain("translateY(48px)");
   });
 
   it("a new session remounts the node, so re-entry fades in fresh", () => {
@@ -100,7 +104,7 @@ describe("FluidHoverHighlight", () => {
     const latest = nodes[nodes.length - 1] as HTMLElement;
     expect(latest).not.toBe(first);
     expect(latest.style.opacity).toBe("0");
-    expect(latest.style.top).toBe("48px");
+    expect(latest.style.transform).toContain("translateY(48px)");
   });
 
   it("the same session keeps the node, so a hover change travels", () => {
@@ -119,5 +123,40 @@ describe("FluidHoverHighlight", () => {
     expect(highlight(container)).not.toBeNull();
     rerender(<FluidHoverHighlight rect={null} session={1} />);
     await waitFor(() => expect(highlight(container)).toBeNull(), { timeout: 2000 });
+  });
+});
+
+
+describe("FluidHoverHighlight, driven by the hook", () => {
+  const hook = (over: Partial<Parameters<typeof resolveHighlightSource>[0]["hover"] & object> = {}) => ({
+    activeIndex: 1,
+    itemRects: [rowA, rowB],
+    isMeasured: true,
+    sessionRef: { current: 7 },
+    ...over,
+  });
+
+  it("sits on itemRects[activeIndex] and re-keys on the session", () => {
+    expect(resolveHighlightSource({ hover: hook() })).toEqual({ rect: rowB, session: 7 });
+  });
+
+  it("shows nothing until the rects are measured", () => {
+    expect(resolveHighlightSource({ hover: hook({ isMeasured: false }) }).rect).toBeNull();
+  });
+
+  it("shows nothing with no highlighted index, or an unmeasured slot", () => {
+    expect(resolveHighlightSource({ hover: hook({ activeIndex: null }) }).rect).toBeNull();
+    expect(resolveHighlightSource({ hover: hook({ activeIndex: 5 }) }).rect).toBeNull();
+  });
+
+  it("`hidden` keeps the state but shows nothing (a closed popup)", () => {
+    expect(resolveHighlightSource({ hover: hook(), hidden: true }).rect).toBeNull();
+  });
+
+  it("renders from the hook the same as from a rect", () => {
+    const { container } = render(<FluidHoverHighlight hover={hook()} className="rounded-lg" />);
+    const el = highlight(container)!;
+    expect(el.style.transform).toContain("translateY(48px)");
+    expect(el.style.height).toBe("36px");
   });
 });

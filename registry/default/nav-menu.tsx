@@ -3,7 +3,6 @@
 import {
   useRef,
   useState,
-  useEffect,
   createContext,
   useContext,
   forwardRef,
@@ -44,19 +43,14 @@ const NavMenu = forwardRef<HTMLElement, NavMenuProps>(
   ({ children, activeSlug, className, ...props }, ref) => {
     const containerRef = useRef<HTMLElement>(null);
     const slugToIndexRef = useRef<Map<string, number>>(new Map());
+    const hover = useFluidHover(containerRef);
     const {
       activeIndex,
       setActiveIndex,
       itemRects,
-      sessionRef,
       handlers,
       registerItem,
-      measureItems,
-    } = useFluidHover(containerRef);
-
-    useEffect(() => {
-      measureItems();
-    }, [measureItems, children]);
+    } = hover;
 
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
@@ -81,7 +75,6 @@ const NavMenu = forwardRef<HTMLElement, NavMenuProps>(
     const activeRouteIndex =
       activeSlug !== null ? slugToIndexRef.current.get(activeSlug) ?? null : null;
 
-    const activeRect = activeIndex !== null ? itemRects[activeIndex] : null;
     const activeRouteRect =
       activeRouteIndex !== null ? itemRects[activeRouteIndex] : null;
     const focusRect = focusedIndex !== null ? itemRects[focusedIndex] : null;
@@ -103,6 +96,7 @@ const NavMenu = forwardRef<HTMLElement, NavMenuProps>(
           onMouseEnter={handlers.onMouseEnter}
           onMouseMove={handlers.onMouseMove}
           onMouseLeave={handlers.onMouseLeave}
+          onClick={handlers.onClick}
           onFocus={(e) => {
             const indexAttr = (e.target as HTMLElement)
               .closest("[data-nav-index]")
@@ -175,8 +169,7 @@ const NavMenu = forwardRef<HTMLElement, NavMenuProps>(
 
           {/* Hover background */}
           <FluidHoverHighlight
-            rect={activeRect}
-            session={sessionRef.current}
+            hover={hover}
             from={activeRouteRect}
             className={shape.bg}
           />

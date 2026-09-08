@@ -25,7 +25,7 @@ import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { useSurface, SurfaceProvider } from "@/lib/surface-context";
 import { surfaceClasses } from "@/lib/surface-classes";
 import { useIcon } from "@/lib/icon-context";
-import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { Elevated } from "@/lib/elevated";
 import { Slider } from "@/registry/radix/slider";
 import { Tooltip } from "@/registry/radix/tooltip";
@@ -698,10 +698,7 @@ function FormatItem({
   const sizeClasses = useSize();
   const compact = sizeClasses.variant === "compact";
 
-  useEffect(() => {
-    menuCtx?.registerItem(index, ref.current);
-    return () => menuCtx?.registerItem(index, null);
-  }, [index, menuCtx]);
+  useRegisterFluidHoverItem(menuCtx?.registerItem, index, ref);
 
   const isActive = menuCtx?.activeIndex === index;
 
@@ -770,15 +767,15 @@ function FormatDropdown({
   const containerRef = useRef<HTMLDivElement>(null);
   const ChevronDownIcon = useIcon("chevron-down");
 
+  const hover = useFluidHover(containerRef);
   const {
     activeIndex,
     setActiveIndex,
     itemRects,
-    sessionRef,
     handlers,
     registerItem,
-    measureItems,
-  } = useFluidHover(containerRef);
+    remeasure,
+  } = hover;
 
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
@@ -793,24 +790,14 @@ function FormatDropdown({
     return () => clearTimeout(id);
   }, [open]);
 
-  // Measure items once the popup has mounted.
+  // The popup keeps its rows registered between opens, so their rects
+  // were taken while it was hidden: re-measure once it is open and laid out.
   useEffect(() => {
     if (!open) return;
-    // Double rAF: first waits for React commit, second for layout
-    let inner: number;
-    const outer = requestAnimationFrame(() => {
-      inner = requestAnimationFrame(() => {
-        measureItems();
-      });
-    });
-    return () => {
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
-    };
-  }, [open, measureItems]);
+    remeasure();
+  }, [open, remeasure]);
 
   const checkedIndex = FORMATS.indexOf(value);
-  const activeRect = activeIndex !== null ? itemRects[activeIndex] : null;
   const checkedRect = checkedIndex !== -1 ? itemRects[checkedIndex] : null;
   const focusRect = focusedIndex !== null ? itemRects[focusedIndex] : null;
   const menuCtx = useMemo(
@@ -892,6 +879,7 @@ function FormatDropdown({
                 }}
                 onMouseMove={handlers.onMouseMove}
                 onMouseLeave={handlers.onMouseLeave}
+                onClick={handlers.onClick}
                 onFocus={(e) => {
                   const indexAttr = (e.target as HTMLElement)
                     .closest("[data-fluid-hover-index]")
@@ -940,8 +928,7 @@ function FormatDropdown({
 
                 {/* Hover background */}
                 <FluidHoverHighlight
-                  rect={activeRect}
-                  session={sessionRef.current}
+                  hover={hover}
                   from={checkedRect}
                   className={menuShape.bg}
                 />

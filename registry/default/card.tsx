@@ -7,7 +7,6 @@ import {
   forwardRef,
   isValidElement,
   useContext,
-  useEffect,
   useMemo,
   useRef,
   type HTMLAttributes,
@@ -20,7 +19,7 @@ import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { useIcon, type IconComponent } from "@/lib/icon-context";
-import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
 // ---------------------------------------------------------------------------
@@ -125,14 +124,12 @@ const CardGroup = forwardRef<HTMLDivElement, CardGroupProps>(
     // >1 column wraps into a grid, where nearest-item must be resolved in two
     // dimensions; a single column is a plain vertical list.
     const axis = columns > 1 ? "xy" : "y";
+    const hover = useFluidHover(containerRef, { axis });
     const {
       activeIndex,
-      itemRects,
-      sessionRef,
       handlers,
       registerItem,
-      measureItems,
-    } = useFluidHover(containerRef, { axis });
+    } = hover;
 
     // Assign each valid child a stable fluid hover index so callers never thread
     // one through by hand (Table asks for it; here the group owns it).
@@ -146,10 +143,6 @@ const CardGroup = forwardRef<HTMLDivElement, CardGroupProps>(
     const selectedIndex = childArray.findIndex(
       (child) => (child.props as { selected?: boolean }).selected
     );
-
-    useEffect(() => {
-      measureItems();
-    }, [measureItems, count, columns, orientation, separated, border]);
 
     const outlined = border === "outlined";
     const divided = !separated;
@@ -179,9 +172,6 @@ const CardGroup = forwardRef<HTMLDivElement, CardGroupProps>(
       ]
     );
 
-    const activeRect =
-      fluidHover && activeIndex !== null ? itemRects[activeIndex] : null;
-
     return (
       <CardGroupContext.Provider value={contextValue}>
         <div
@@ -209,12 +199,13 @@ const CardGroup = forwardRef<HTMLDivElement, CardGroupProps>(
           onMouseEnter={fluidHover ? handlers.onMouseEnter : undefined}
           onMouseMove={fluidHover ? handlers.onMouseMove : undefined}
           onMouseLeave={fluidHover ? handlers.onMouseLeave : undefined}
+          onClick={fluidHover ? handlers.onClick : undefined}
         >
           {/* Fluid hover highlight — a single magnetic layer that springs to the
               card nearest the cursor, previewing where a click will land. */}
           <FluidHoverHighlight
-            rect={activeRect}
-            session={sessionRef.current}
+            hover={hover}
+              hidden={!fluidHover}
             className={cn("z-0", shape.container)}
           />
 
@@ -298,11 +289,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
     // the context object's identity changes on every hover/selection frame,
     // which would otherwise re-register every card each frame.
     const registerItem = group?.registerItem;
-    useEffect(() => {
-      if (index === undefined || !registerItem) return;
-      registerItem(index, internalRef.current);
-      return () => registerItem(index, null);
-    }, [index, registerItem]);
+    useRegisterFluidHoverItem(registerItem, index, internalRef);
 
     // Divider geometry: draw a hairline toward the neighbour below / to the
     // right, but drop it next to the active OR selected card so the highlight

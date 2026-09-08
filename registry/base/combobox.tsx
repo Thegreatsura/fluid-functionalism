@@ -19,7 +19,7 @@ import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 import { useIcon, type IconComponent } from "@/lib/icon-context";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
-import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import {
   useMergeSplitBlocks,
   useSelectionRuns,
@@ -703,16 +703,16 @@ const ComboboxList = forwardRef<HTMLDivElement, ComboboxListProps>(
     const shape = popupShape;
     const containerRef = useRef<HTMLDivElement>(null);
 
+    const hover = useFluidHover(containerRef, { isItemDisabled: isDisabledRow });
     const {
       activeIndex,
       setActiveIndex,
       itemRects,
       isMeasured,
-      sessionRef,
       handlers,
       registerItem,
       remeasure,
-    } = useFluidHover(containerRef, { isItemDisabled: isDisabledRow });
+    } = hover;
 
     // Checked rows by index — one in single mode, any number in multiple.
     const [checkedIndices, setCheckedIndices] = useState<number[]>([]);
@@ -774,8 +774,6 @@ const ComboboxList = forwardRef<HTMLDivElement, ComboboxListProps>(
     // Overlays read rects only once the hook reports the row set fully
     // measured — positioning one from an incomplete pass mounts it at the
     // wrong row, and the correcting pass then springs it across the list.
-    const activeRect =
-      isMeasured && activeIndex !== null ? itemRects[activeIndex] : null;
     // Single mode glides ONE marker between rows (a value change springs it
     // to the picked row). Multiple mode paints one block per contiguous run
     // of checked rows — merging and splitting like CheckboxGroup as picks
@@ -810,6 +808,7 @@ const ComboboxList = forwardRef<HTMLDivElement, ComboboxListProps>(
           onMouseEnter={handlers.onMouseEnter}
           onMouseMove={handlers.onMouseMove}
           onMouseLeave={handlers.onMouseLeave}
+          onClick={handlers.onClick}
           className={cn(
             // The list is the overlays' offsetParent, so rows and overlays
             // scroll together inside the ScrollArea. Padding collapses when
@@ -852,8 +851,7 @@ const ComboboxList = forwardRef<HTMLDivElement, ComboboxListProps>(
           {/* Hover background */}
           {open && (
             <FluidHoverHighlight
-              rect={activeRect}
-              session={sessionRef.current}
+              hover={hover}
               className={shape.bg}
             />
           )}
@@ -907,11 +905,7 @@ const ComboboxItem = forwardRef<HTMLDivElement, ComboboxItemProps>(
     // rather than the content context, which is rebuilt on every activeIndex
     // change.
     const registerItem = contentCtx?.registerItem;
-    useEffect(() => {
-      if (!registerItem) return;
-      registerItem(index, internalRef.current);
-      return () => registerItem(index, null);
-    }, [index, registerItem]);
+    useRegisterFluidHoverItem(registerItem, index, internalRef);
 
     const isActive = contentCtx?.activeIndex === index;
     const isChecked = comboboxCtx.values.includes(value);

@@ -2,7 +2,6 @@
 
 import {
   useRef,
-  useEffect,
   useMemo,
   createContext,
   useContext,
@@ -15,7 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
-import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
 // ── Context ──────────────────────────────────────────────
@@ -42,20 +41,13 @@ const Table = forwardRef<HTMLTableElement, TableProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const sizeClasses = useSize(size);
 
+    const hover = useFluidHover(containerRef);
     const {
       activeIndex,
-      itemRects,
-      sessionRef,
       handlers,
       registerItem,
-      measureItems,
-    } = useFluidHover(containerRef);
+    } = hover;
 
-    useEffect(() => {
-      measureItems();
-    }, [measureItems, children]);
-
-    const activeRect = activeIndex !== null ? itemRects[activeIndex] : null;
 
     const contextValue = useMemo(
       () => ({ registerItem, activeIndex }),
@@ -70,9 +62,10 @@ const Table = forwardRef<HTMLTableElement, TableProps>(
           onMouseEnter={handlers.onMouseEnter}
           onMouseMove={handlers.onMouseMove}
           onMouseLeave={handlers.onMouseLeave}
+          onClick={handlers.onClick}
         >
           {/* Hover background */}
-          <FluidHoverHighlight rect={activeRect} session={sessionRef.current} />
+          <FluidHoverHighlight hover={hover} />
 
           <table
             ref={ref}
@@ -125,11 +118,7 @@ const TableRow = forwardRef<HTMLTableRowElement, TableRowProps>(
     const internalRef = useRef<HTMLTableRowElement>(null);
     const ctx = useContext(TableContext);
 
-    useEffect(() => {
-      if (index === undefined || !ctx) return;
-      ctx.registerItem(index, internalRef.current);
-      return () => ctx.registerItem(index, null);
-    }, [index, ctx]);
+    useRegisterFluidHoverItem(ctx?.registerItem, index, internalRef);
 
     const isBodyRow = index !== undefined;
     const activeIdx = ctx?.activeIndex ?? null;

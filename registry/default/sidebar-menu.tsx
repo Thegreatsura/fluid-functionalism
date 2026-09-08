@@ -128,6 +128,8 @@ interface MenuScope {
     onMouseEnter: () => void;
     onMouseMove: (e: React.MouseEvent) => void;
     onMouseLeave: () => void;
+    /** A click between rows lands on the highlighted row's button. */
+    onClick: (e: React.MouseEvent) => void;
     onFocus: (e: React.FocusEvent) => void;
     onBlur: (e: React.FocusEvent) => void;
     onPointerDown: () => void;
@@ -500,6 +502,7 @@ function useMenuScope(
       onMouseEnter: handlers.onMouseEnter,
       onMouseMove,
       onMouseLeave: handlers.onMouseLeave,
+      onClick: handlers.onClick,
       onFocus,
       onBlur,
       // Pointer interaction switches modality back to pointer. Clicking the

@@ -96,7 +96,11 @@ export function SettingsDialog({
             className="hidden h-full sm:flex bg-[rgb(var(--overlay)/0.03)]"
           >
             <SidebarHeader className="px-4 pt-5 pb-2">
-              <DialogTitle>Settings</DialogTitle>
+              {/* Headings here are labels, not a headline: the dialog's own
+                  title weight would out-shout the nav beneath it. */}
+              <DialogTitle style={{ fontVariationSettings: fontWeights.normal }}>
+                Settings
+              </DialogTitle>
               <DialogDescription className="sr-only">
                 Workspace and account settings.
               </DialogDescription>
@@ -132,7 +136,7 @@ export function SettingsDialog({
                     this is the visible heading for narrow screens. */}
                 <h2
                   className="mb-3 text-[16px] leading-tight text-foreground"
-                  style={{ fontVariationSettings: fontWeights.bold }}
+                  style={{ fontVariationSettings: fontWeights.normal }}
                 >
                   Settings
                 </h2>
@@ -149,7 +153,7 @@ export function SettingsDialog({
               </div>
               <h3
                 className="hidden text-[16px] leading-tight text-foreground sm:block"
-                style={{ fontVariationSettings: fontWeights.bold }}
+                style={{ fontVariationSettings: fontWeights.normal }}
               >
                 {current.label}
               </h3>

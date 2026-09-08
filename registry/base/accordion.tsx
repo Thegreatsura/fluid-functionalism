@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { useIcon } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
-import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
@@ -124,15 +124,15 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
     );
     const openItemRectsRef = useRef(openItemRects);
 
+    const hover = useFluidHover(containerRef);
     const {
       activeIndex,
       setActiveIndex,
       itemRects,
-      sessionRef,
       handlers,
       registerItem,
       measureItems,
-    } = useFluidHover(containerRef);
+    } = hover;
 
     const registerFullItem = useCallback(
       (index: number, element: HTMLElement | null) => {
@@ -253,7 +253,6 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
 
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
-    const activeRect = activeIndex !== null ? itemRects[activeIndex] : null;
     const focusRect = focusedIndex !== null ? itemRects[focusedIndex] : null;
     // An open item tints its trigger by default; "item" restores the older
     // block treatment that spans the panel too. The trigger rects are the
@@ -451,8 +450,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
 
                 {/* Hover background */}
                 <FluidHoverHighlight
-                  rect={activeRect}
-                  session={sessionRef.current}
+                  hover={hover}
                   className={shape.bg}
                 />
 
@@ -640,12 +638,11 @@ const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(
 
     const triggerRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-      if (groupCtx?.grouped && index !== undefined) {
-        groupCtx.registerItem(index, triggerRef.current);
-        return () => groupCtx.registerItem(index, null);
-      }
-    }, [index, groupCtx]);
+    useRegisterFluidHoverItem(
+      groupCtx?.grouped ? groupCtx.registerItem : undefined,
+      index,
+      triggerRef
+    );
 
     useEffect(() => {
       if (groupCtx?.grouped && index !== undefined) {

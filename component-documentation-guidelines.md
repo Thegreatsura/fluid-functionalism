@@ -15,7 +15,7 @@ Checklist and conventions for documenting every new component in this project. F
 - [ ] Named exports for the component, sub-components, variant helper, and props type
 - [ ] Any text that changes weight on state (selected/checked/active/open) uses the **ghost-span pattern** (see below) — never animate weight on text without reserving its width
 - [ ] Any animation uses a tier from `@/lib/springs` — `spring.<tier>` to enter, `spring.<tier>.exit` to leave (see [motion-guidelines.md](motion-guidelines.md))
-- [ ] A list, menu, strip, or grid with hover uses `useFluidHover` **and renders `FluidHoverHighlight`** from `@/components/ui/fluid-hover-highlight` — never a hand-rolled `motion.div` fill (`tests/registry-consistency.test.mjs` fails on one)
+- [ ] A list, menu, strip, or grid with hover uses `useFluidHover` **and renders `<FluidHoverHighlight hover={hover} />`** from `@/components/ui/fluid-hover-highlight` — never a hand-rolled `motion.div` fill (`tests/registry-consistency.test.mjs` fails on one). Rows join with `useRegisterFluidHoverItem`, and nothing re-measures on `children` changes (see [motion-guidelines.md](motion-guidelines.md#fluid-hover-registrydefaulthooksuse-fluid-hoverts))
 - [ ] Uses `@/` path aliases for all internal imports:
   ```ts
   import { cn } from "@/lib/utils";

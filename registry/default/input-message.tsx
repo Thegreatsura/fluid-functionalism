@@ -25,7 +25,7 @@ import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { useIcon } from "@/lib/icon-context";
 import { surfaceClasses } from "@/lib/surface-classes";
 import { SurfaceProvider } from "@/lib/surface-context";
-import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { FileThumbnail } from "@/registry/default/file-thumbnail";
 import { Button } from "@/registry/radix/button";
 import { Tooltip } from "@/registry/radix/tooltip";
@@ -391,10 +391,7 @@ function SuggestionRow({
   const compactStep = useSize().variant === "compact";
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    registerItem(index, ref.current);
-    return () => registerItem(index, null);
-  }, [index, registerItem]);
+  useRegisterFluidHoverItem(registerItem, index, ref);
 
   return (
     <div
@@ -532,23 +529,20 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
     const [filesRegionRef, filesRegionHeight] = useRegionHeight();
     const [queueRegionRef, queueRegionHeight] = useRegionHeight();
     const [suggestionsRegionRef, suggestionsRegionHeight] = useRegionHeight();
+    const suggestionHover = useFluidHover(suggestionListRef);
     const {
       activeIndex: activeSuggestion,
       setActiveIndex: setActiveSuggestion,
-      itemRects: suggestionRects,
-      sessionRef: suggestionSession,
       handlers: suggestionHandlers,
       registerItem: registerSuggestion,
-      measureItems,
-    } = useFluidHover(suggestionListRef);
+      remeasure,
+    } = suggestionHover;
 
-    // Publish row rects as soon as the list is (re)opened or its content
-    // changes — same as Dropdown. Row registration alone schedules the
-    // measurement on a rAF, which is not guaranteed to have run before the
-    // first highlight renders.
+    // Rows stay registered while the list is closed, so their rects are from
+    // a hidden layout: re-measure on open. The highlight waits for it.
     useEffect(() => {
-      if (suggestionsOpen) measureItems();
-    }, [suggestionsOpen, suggestionsArr, measureItems]);
+      if (suggestionsOpen) remeasure();
+    }, [suggestionsOpen, remeasure]);
     const suggestionListId = useId();
     const ghostHintId = useId();
     const showGhost =
@@ -1340,17 +1334,13 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
                     onMouseEnter={suggestionHandlers.onMouseEnter}
                     onMouseMove={suggestionHandlers.onMouseMove}
                     onMouseLeave={suggestionHandlers.onMouseLeave}
+                    onClick={suggestionHandlers.onClick}
                     className="relative mt-2 flex flex-col border-t border-border/60 px-1.5 pt-1.5"
                   >
                     {/* Hover / keyboard highlight: one overlay sliding
                         between rows instead of per-row backgrounds. */}
                     <FluidHoverHighlight
-                      rect={
-                        activeSuggestion != null
-                          ? (suggestionRects[activeSuggestion] ?? null)
-                          : null
-                      }
-                      session={suggestionSession.current}
+                      hover={suggestionHover}
                       className={shape.bg}
                     />
                     {suggestionsArr.map((s, i) => (

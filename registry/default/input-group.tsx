@@ -3,7 +3,6 @@
 import {
   useRef,
   useState,
-  useEffect,
   useMemo,
   createContext,
   useContext,
@@ -18,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
-import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 
 interface InputGroupContextValue {
   registerItem: (index: number, element: HTMLElement | null) => void;
@@ -46,12 +45,8 @@ const InputGroup = forwardRef<HTMLDivElement, InputGroupProps>(
   ({ children, size, className, ...props }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const { activeIndex, handlers, registerItem, measureItems } =
+    const { activeIndex, handlers, registerItem } =
       useFluidHover(containerRef);
-
-    useEffect(() => {
-      measureItems();
-    }, [measureItems, children]);
 
     const contextValue = useMemo(
       () => ({ registerItem, activeIndex }),
@@ -129,10 +124,7 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
     const sizeClasses = useSize();
     const compact = sizeClasses.variant === "compact";
 
-    useEffect(() => {
-      registerItem(index, internalRef.current);
-      return () => registerItem(index, null);
-    }, [index, registerItem]);
+    useRegisterFluidHoverItem(registerItem, index, internalRef);
 
     const isActive = activeIndex === index;
     const labelActive = isActive || isFocused;

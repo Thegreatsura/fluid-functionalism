@@ -17,7 +17,7 @@ export interface ItemRect {
   width: number;
 }
 
-interface UseFluidHoverOptions {
+export interface UseFluidHoverOptions {
   /**
    * Which direction to resolve the nearest item along.
    *   "y"  — vertical lists (default): closest by top/height
@@ -35,7 +35,7 @@ interface UseFluidHoverOptions {
   isItemDisabled?: (element: HTMLElement) => boolean;
 }
 
-interface UseFluidHoverReturn {
+export interface UseFluidHoverReturn {
   activeIndex: number | null;
   setActiveIndex: Dispatch<SetStateAction<number | null>>;
   itemRects: ItemRect[];
@@ -52,17 +52,145 @@ interface UseFluidHoverReturn {
     onMouseMove: (e: React.MouseEvent) => void;
     onMouseEnter: () => void;
     onMouseLeave: () => void;
+    /**
+     * Routes a click that lands between items (a gap, the padding, past the
+     * last row) to the highlighted item, so the highlight and the click agree:
+     * what is lit is what a click hits. A click inside an item is left to the
+     * item. Disabled items (`isItemDisabled`) are never activated.
+     */
+    onClick: (e: React.MouseEvent) => void;
   };
   registerItem: (index: number, element: HTMLElement | null) => void;
   /**
    * Invalidates the published rects and runs the hook's coalesced measurement
    * pass again, holding `isMeasured` false until it settles. Reach for it when
-   * something other than item registration invalidates layout — a popup that
-   * stays mounted between opens keeps its items registered, so nothing else
-   * would notice that its rects were taken while it was hidden.
+   * the rects may be wrong and showing an overlay against them would misplace
+   * it: a popup that stays mounted between opens keeps its items registered,
+   * so nothing else would notice that its rects were taken while it was
+   * hidden. Registration, item resize, and container resize already trigger
+   * a pass; do not call this on `children` changes.
    */
   remeasure: () => void;
+  /**
+   * Re-reads the rects synchronously, keeping `isMeasured` as it is. Only for
+   * layout that moves the rows under a visible overlay frame by frame (the
+   * accordion re-measures inside its height animation). Everything else
+   * wants `remeasure`, or nothing.
+   */
   measureItems: () => void;
+}
+
+export interface PickNearestInput {
+  axis: "x" | "y" | "xy";
+  /** The pointer, in viewport coordinates. */
+  point: { x: number; y: number };
+  /** Item rects in the container's layout space (sparse: unregistered slots
+   *  are undefined). */
+  rects: readonly (ItemRect | undefined)[];
+  /** The container's bounding rect and live scroll / border offsets, which
+   *  map layout rects into the pointer's viewport space. */
+  containerRect: { left: number; top: number; width: number; height: number };
+  scroll: { x: number; y: number };
+  border: { x: number; y: number };
+  /** Layout size of the container, so a cumulative ancestor `transform:
+   *  scale` (a popup mid scale-in) can be factored out per axis. */
+  layoutSize: { width: number; height: number };
+  /** Skips an item without unregistering it. */
+  isDisabled?: (index: number) => boolean;
+}
+
+/**
+ * The rule, as one pure function: an item the pointer is inside wins;
+ * otherwise the item whose center is nearest does, so a pointer in a gap, in
+ * the padding, or past the last row still lands. `y` and `x` measure one
+ * coordinate; `xy` measures the straight line to each center. Ties keep the
+ * first item. The hook calls this once per animation frame; the docs page
+ * times it.
+ */
+export function pickNearest({
+  axis,
+  point,
+  rects,
+  containerRect,
+  scroll,
+  border,
+  layoutSize,
+  isDisabled,
+}: PickNearestInput): number | null {
+  const scaleX = layoutSize.width > 0 ? containerRect.width / layoutSize.width : 1;
+  const scaleY = layoutSize.height > 0 ? containerRect.height / layoutSize.height : 1;
+  let closestIndex: number | null = null;
+  let closestDistance = Infinity;
+  let containingIndex: number | null = null;
+
+  for (let index = 0; index < rects.length; index++) {
+    const r = rects[index];
+    if (!r) continue;
+    if (isDisabled?.(index)) continue;
+
+    if (axis === "xy") {
+      const left = containerRect.left + (border.x + r.left - scroll.x) * scaleX;
+      const top = containerRect.top + (border.y + r.top - scroll.y) * scaleY;
+      const width = r.width * scaleX;
+      const height = r.height * scaleY;
+      if (
+        point.x >= left &&
+        point.x <= left + width &&
+        point.y >= top &&
+        point.y <= top + height
+      ) {
+        containingIndex = index;
+      }
+      const distance = Math.hypot(point.x - (left + width / 2), point.y - (top + height / 2));
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+      continue;
+    }
+
+    const horizontal = axis === "x";
+    const mousePos = horizontal ? point.x : point.y;
+    const scale = horizontal ? scaleX : scaleY;
+    const itemStart =
+      (horizontal ? containerRect.left : containerRect.top) +
+      ((horizontal ? border.x : border.y) +
+        (horizontal ? r.left : r.top) -
+        (horizontal ? scroll.x : scroll.y)) *
+        scale;
+    const itemSize = (horizontal ? r.width : r.height) * scale;
+    if (mousePos >= itemStart && mousePos <= itemStart + itemSize) {
+      containingIndex = index;
+    }
+    const distance = Math.abs(mousePos - (itemStart + itemSize / 2));
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closestIndex = index;
+    }
+  }
+
+  return containingIndex ?? closestIndex;
+}
+
+/** Set on the highlighted item (boolean attribute). */
+export const ACTIVE_ATTR = "data-fluid-hover-active";
+/** Set on the container: the highlighted index, or absent. */
+export const ACTIVE_INDEX_ATTR = "data-fluid-hover-active-index";
+
+const ACTIVATOR_SELECTOR =
+  "a[href], button, [role='menuitem'], [role='menuitemradio'], [role='menuitemcheckbox'], [role='option'], [role='radio'], [role='checkbox'], [role='tab'], [role='link'], [role='button']";
+
+/**
+ * The element a routed click should land on. A registered item is usually
+ * the interactive row itself; when it is only a box around one (a sidebar
+ * row around its button, a card around its link), the first control inside
+ * is what a real click on the row would have reached.
+ */
+function resolveActivator(element: HTMLElement): HTMLElement {
+  if (element.matches(ACTIVATOR_SELECTOR) || element.hasAttribute("tabindex")) {
+    return element;
+  }
+  return element.querySelector<HTMLElement>(ACTIVATOR_SELECTOR) ?? element;
 }
 
 /**
@@ -80,6 +208,22 @@ export function useFluidHover<T extends HTMLElement>(
   const { axis = "y", isItemDisabled } = options;
   const itemsRef = useRef(new Map<number, HTMLElement>());
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  // Mirrored for handlers that read it outside a render (the gap click).
+  const activeIndexRef = useRef<number | null>(null);
+  activeIndexRef.current = activeIndex;
+
+  // The state, in the DOM: `data-fluid-hover-active` on the highlighted item
+  // and `data-fluid-hover-active-index` on the container. Devtools shows it
+  // and a test asserts on it without waiting for a frame. React does not
+  // manage these attributes, so it never clobbers them.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (activeIndex === null) container?.removeAttribute(ACTIVE_INDEX_ATTR);
+    else container?.setAttribute(ACTIVE_INDEX_ATTR, String(activeIndex));
+    const active = activeIndex === null ? undefined : itemsRef.current.get(activeIndex);
+    active?.setAttribute(ACTIVE_ATTR, "");
+    return () => active?.removeAttribute(ACTIVE_ATTR);
+  }, [activeIndex, containerRef]);
   const [itemRects, setItemRects] = useState<ItemRect[]>([]);
   const [isMeasured, setIsMeasured] = useState(false);
   const itemRectsRef = useRef<ItemRect[]>([]);
@@ -215,6 +359,7 @@ export function useFluidHover<T extends HTMLElement>(
       if (element) {
         itemsRef.current.set(index, element);
         getItemRo()?.observe(element);
+        if (index === activeIndexRef.current) element.setAttribute(ACTIVE_ATTR, "");
       } else {
         const previous = itemsRef.current.get(index);
         if (previous) itemRoRef.current?.unobserve(previous);
@@ -242,114 +387,23 @@ export function useFluidHover<T extends HTMLElement>(
         rafIdRef.current = null;
         const container = containerRef.current;
         if (!container) return;
-
-        const containerRect = container.getBoundingClientRect();
-
-        // ── 2-D grid path ──────────────────────────────────────────
-        // When items wrap into rows and columns, a single-axis nearest
-        // pick can't tell which card the cursor is closest to. Resolve
-        // by Euclidean distance to each item's center, and prefer any
-        // item the cursor is actually inside (point-in-rect).
-        if (axis === "xy") {
-          let closestIndex: number | null = null;
-          let closestDistance = Infinity;
-          let containingIndex: number | null = null;
-
-          const rects = itemRectsRef.current;
-          const scrollX = container.scrollLeft;
-          const scrollY = container.scrollTop;
-          const borderX = container.clientLeft;
-          const borderY = container.clientTop;
-          // Map layout coords into visual/viewport space, accounting for any
-          // cumulative ancestor transform: scale (see the single-axis note
-          // below). X and Y scale independently.
-          const scaleX =
-            container.offsetWidth > 0
-              ? containerRect.width / container.offsetWidth
-              : 1;
-          const scaleY =
-            container.offsetHeight > 0
-              ? containerRect.height / container.offsetHeight
-              : 1;
-
-          for (let index = 0; index < rects.length; index++) {
-            const r = rects[index];
-            if (!r) continue;
-            const el = itemsRef.current.get(index);
-            if (el && isItemDisabled?.(el)) continue;
-
-            const left = containerRect.left + (borderX + r.left - scrollX) * scaleX;
-            const top = containerRect.top + (borderY + r.top - scrollY) * scaleY;
-            const width = r.width * scaleX;
-            const height = r.height * scaleY;
-
-            if (
-              mouseX >= left &&
-              mouseX <= left + width &&
-              mouseY >= top &&
-              mouseY <= top + height
-            ) {
-              containingIndex = index;
-            }
-
-            const dx = mouseX - (left + width / 2);
-            const dy = mouseY - (top + height / 2);
-            const distance = Math.hypot(dx, dy);
-
-            if (distance < closestDistance) {
-              closestDistance = distance;
-              closestIndex = index;
-            }
-          }
-
-          setActiveIndex(containingIndex ?? closestIndex);
-          return;
-        }
-
-        const mousePos = axis === "x" ? mouseX : mouseY;
-
-        let closestIndex: number | null = null;
-        let closestDistance = Infinity;
-        let containingIndex: number | null = null;
-
-        const rects = itemRectsRef.current;
-        // Convert content-relative rects to viewport coords using live scroll
-        const scrollOffset = axis === "x" ? container.scrollLeft : container.scrollTop;
-        const borderOffset = axis === "x" ? container.clientLeft : container.clientTop;
-        const containerEdge = axis === "x" ? containerRect.left : containerRect.top;
-        // Item rects are layout values (offset*); the container's bounding rect
-        // reflects any cumulative ancestor transform: scale. Compute the scale
-        // factor so we can map layout coords into the same visual viewport
-        // space the mouse cursor lives in.
-        const layoutSize = axis === "x" ? container.offsetWidth : container.offsetHeight;
-        const visualSize = axis === "x" ? containerRect.width : containerRect.height;
-        const scale = layoutSize > 0 ? visualSize / layoutSize : 1;
-
-        for (let index = 0; index < rects.length; index++) {
-          const r = rects[index];
-          if (!r) continue;
-          const el = itemsRef.current.get(index);
-          if (el && isItemDisabled?.(el)) continue;
-
-          const contentPos = axis === "x" ? r.left : r.top;
-          const itemStart = containerEdge + (borderOffset + contentPos - scrollOffset) * scale;
-          const itemSize = (axis === "x" ? r.width : r.height) * scale;
-          const itemEnd = itemStart + itemSize;
-
-          if (mousePos >= itemStart && mousePos <= itemEnd) {
-            containingIndex = index;
-          }
-
-          const itemCenter = itemStart + itemSize / 2;
-          const distance = Math.abs(mousePos - itemCenter);
-
-          if (distance < closestDistance) {
-            closestDistance = distance;
-            closestIndex = index;
-          }
-        }
-
-        setActiveIndex(containingIndex ?? closestIndex);
+        setActiveIndex(
+          pickNearest({
+            axis,
+            point: { x: mouseX, y: mouseY },
+            rects: itemRectsRef.current,
+            containerRect: container.getBoundingClientRect(),
+            scroll: { x: container.scrollLeft, y: container.scrollTop },
+            border: { x: container.clientLeft, y: container.clientTop },
+            layoutSize: { width: container.offsetWidth, height: container.offsetHeight },
+            isDisabled: isItemDisabled
+              ? (index) => {
+                  const el = itemsRef.current.get(index);
+                  return !!el && isItemDisabled(el);
+                }
+              : undefined,
+          })
+        );
       });
     },
     [axis, containerRef, isItemDisabled]
@@ -366,6 +420,31 @@ export function useFluidHover<T extends HTMLElement>(
     }
     setActiveIndex(null);
   }, []);
+
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      // Inside an item: the item owns the click.
+      for (const element of itemsRef.current.values()) {
+        if (element.contains(target)) return;
+      }
+      // A control that sits between the rows (a search field at the top of
+      // a menu, a footer button) keeps its own click too.
+      const control = (target as Element).closest?.(
+        "input, textarea, select, button, a, summary, [contenteditable], [role='textbox'], [role='searchbox'], [role='button']"
+      );
+      if (control) return;
+      const index = activeIndexRef.current;
+      if (index === null) return;
+      const element = itemsRef.current.get(index);
+      if (!element || isItemDisabled?.(element)) return;
+      // A real DOM click on the item, so its own handlers (and the primitive
+      // wrapping it, if any) run exactly as if the pointer had been inside.
+      resolveActivator(element).click();
+    },
+    [isItemDisabled]
+  );
 
   // Remeasure when the container resizes — a reflow moves items even though
   // the registered set is unchanged, which would otherwise leave itemRects
@@ -404,6 +483,7 @@ export function useFluidHover<T extends HTMLElement>(
       onMouseMove: handleMouseMove,
       onMouseEnter: handleMouseEnter,
       onMouseLeave: handleMouseLeave,
+      onClick: handleClick,
     },
     registerItem,
     remeasure,
@@ -412,15 +492,19 @@ export function useFluidHover<T extends HTMLElement>(
 }
 
 /**
- * Hook for child items to register themselves with the fluid hover system.
- * Call in useEffect with the item's ref and index.
+ * Registers an item's element with its list for as long as it is mounted.
+ * The one way rows join a list: pass the hook's `registerItem` (or the copy
+ * a context hands down), the row's index, and its ref. Either may be
+ * missing for a row rendered outside a list (a standalone card, an accordion
+ * item that is not grouped); then nothing is registered.
  */
 export function useRegisterFluidHoverItem(
-  registerItem: (index: number, element: HTMLElement | null) => void,
-  index: number,
+  registerItem: ((index: number, element: HTMLElement | null) => void) | undefined,
+  index: number | undefined,
   ref: RefObject<HTMLElement | null>
 ) {
   useEffect(() => {
+    if (!registerItem || index === undefined) return;
     registerItem(index, ref.current);
     return () => registerItem(index, null);
   }, [index, registerItem, ref]);

@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
 import { shapeMap } from "@/lib/shape-context";
 import { useSize } from "@/lib/size-context";
+import { useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 
 // MenuItem is only used inside Dropdown, which opts out of the global pill
 // shape — see dropdown.tsx for the rationale.
@@ -129,10 +130,7 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
     } = useDropdown();
     const isCheckbox = !!multiple && typeof checked === "boolean";
 
-    useEffect(() => {
-      registerItem(index, internalRef.current);
-      return () => registerItem(index, null);
-    }, [index, registerItem]);
+    useRegisterFluidHoverItem(registerItem, index, internalRef);
 
     useEffect(() => {
       hasMounted.current = true;

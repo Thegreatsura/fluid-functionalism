@@ -23,7 +23,7 @@ import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { useIcon } from "@/lib/icon-context";
-import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { useMergeSplitBlocks, SelectionBackgrounds } from "@/hooks/use-merge-split";
 import { Button } from "@/components/ui/button";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
@@ -285,20 +285,14 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     // Stable IDs for contiguous-selection runs (see selectedGroups below).
     const groupIdCounterRef = useRef(0);
     const prevGroupMapRef = useRef(new Map<number, number>());
+    const hover = useFluidHover(rowsContainerRef);
     const {
       activeIndex,
       setActiveIndex,
       itemRects,
-      sessionRef,
       handlers,
       registerItem,
-      measureItems,
-    } = useFluidHover(rowsContainerRef);
-
-    // Remeasure on row count change, question change, shape change
-    useEffect(() => {
-      measureItems();
-    }, [measureItems, qId, rowCount, shape]);
+    } = hover;
 
     // ── Other-row textarea auto-resize ──────────────────────────
     // The Other field is a textarea so users can write a multi-line answer.
@@ -336,8 +330,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
       const lineHeight =
         parseFloat(window.getComputedStyle(el).lineHeight) || 18;
       setIsOtherMultiline(el.scrollHeight > lineHeight * 1.5);
-      measureItems();
-    }, [otherText, measureItems, qId]);
+    }, [otherText, qId]);
 
     // ── freeText auto-focus ─────────────────────────────────────
     // A freeText question is a single open-ended field, so drop the caret
@@ -752,8 +745,6 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     }
 
     // ── Layout calculations for hover/focus indicators ───────────
-    const activeRect =
-      activeIndex !== null ? itemRects[activeIndex] : null;
     // focusedIndex comes from the rows container's onFocus (see rowsContent),
     // set only when the focused row matches :focus-visible — so the blue
     // morphing ring tracks keyboard focus across option rows. It is
@@ -858,6 +849,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
         onMouseEnter={handlers.onMouseEnter}
         onMouseMove={handlers.onMouseMove}
         onMouseLeave={handlers.onMouseLeave}
+        onClick={handlers.onClick}
         onFocus={(e) => {
           // Track focus at the container (React's onFocus is focusin, so row
           // and Other-textarea focus both bubble here). activeIndex mirrors
@@ -937,8 +929,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
         {/* Single morphing hover indicator (rendered below selected bg
             so a hovered+selected row still reads as clearly selected) */}
         <FluidHoverHighlight
-          rect={activeRect}
-          session={sessionRef.current}
+          hover={hover}
           className={shape.bg}
         />
 
@@ -1688,10 +1679,7 @@ function Row({
   const sizeClasses = useSize();
   const compact = sizeClasses.variant === "compact";
 
-  useEffect(() => {
-    registerItem(index, rowRef.current);
-    return () => registerItem(index, null);
-  }, [index, registerItem]);
+  useRegisterFluidHoverItem(registerItem, index, rowRef);
 
   // The arrow keeps the same animation regardless of which slot it lands
   // in — pull it out so the chip-on-right (overlay) and chip-on-left

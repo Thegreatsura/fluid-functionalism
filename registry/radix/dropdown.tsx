@@ -95,24 +95,18 @@ interface DropdownProps extends HTMLAttributes<HTMLDivElement> {
 const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
   ({ children, checkedIndex, checkedIndices, size, className, ...props }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    const hover = useFluidHover(containerRef, { isItemDisabled: isDisabledRow });
     const {
       activeIndex,
       setActiveIndex,
       itemRects,
-      sessionRef,
       handlers,
       registerItem,
-      measureItems,
-    } = useFluidHover(containerRef, { isItemDisabled: isDisabledRow });
-
-    useEffect(() => {
-      measureItems();
-    }, [measureItems, children]);
+    } = hover;
 
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
     const multiple = checkedIndices != null;
-    const activeRect = activeIndex !== null ? itemRects[activeIndex] : null;
     const checkedRect =
       !multiple && checkedIndex != null ? itemRects[checkedIndex] : null;
     const focusRect = focusedIndex !== null ? itemRects[focusedIndex] : null;
@@ -136,6 +130,7 @@ const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
           onMouseEnter={handlers.onMouseEnter}
           onMouseMove={handlers.onMouseMove}
           onMouseLeave={handlers.onMouseLeave}
+          onClick={handlers.onClick}
           onFocus={(e) => {
             const indexAttr = (e.target as HTMLElement)
               .closest("[data-fluid-hover-index]")
@@ -210,8 +205,7 @@ const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
 
           {/* Hover background */}
           <FluidHoverHighlight
-            rect={activeRect}
-            session={sessionRef.current}
+            hover={hover}
             from={checkedRect}
             className={shape.bg}
           />
@@ -427,15 +421,15 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
     const { open } = useDropdownMenuContext();
     const containerRef = useRef<HTMLDivElement>(null);
 
+    const hover = useFluidHover(containerRef, { isItemDisabled: isDisabledRow });
     const {
       activeIndex,
       setActiveIndex,
       itemRects,
-      sessionRef,
       handlers,
       registerItem,
-      measureItems,
-    } = useFluidHover(containerRef, { isItemDisabled: isDisabledRow });
+      remeasure,
+    } = hover;
 
     // An optional DropdownSearch child: typing on a focused row is
     // redirected into the field. (The field takes focus itself, a frame
@@ -491,24 +485,14 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
       return () => clearTimeout(id);
     }, [open]);
 
-    // Measure items once the popup has mounted.
+    // The popup keeps its rows registered between opens, so their rects
+    // were taken while it was hidden: re-measure once it is open and laid out.
     useEffect(() => {
       if (!open || !mounted) return;
-      // Double rAF: first waits for React commit, second for layout
-      let inner: number;
-      const outer = requestAnimationFrame(() => {
-        inner = requestAnimationFrame(() => {
-          measureItems();
-        });
-      });
-      return () => {
-        cancelAnimationFrame(outer);
-        cancelAnimationFrame(inner);
-      };
-    }, [open, mounted, measureItems]);
+      remeasure();
+    }, [open, mounted, remeasure]);
 
     const multiple = checkedIndices != null;
-    const activeRect = activeIndex !== null ? itemRects[activeIndex] : null;
     const checkedRect =
       !multiple && checkedIndex != null ? itemRects[checkedIndex] : null;
     // Multiple: one merged block per contiguous run of checked rows.
@@ -612,6 +596,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                 onKeyDownCapture={redirectTypingToSearch}
                 onMouseEnter={handlers.onMouseEnter}
                 onMouseMove={handlers.onMouseMove}
+                onClick={handlers.onClick}
                 onMouseLeave={() => {
                   handlers.onMouseLeave();
                   // The pointer's session is over; a focused search field
@@ -685,8 +670,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
 
                 {/* Hover background */}
                 <FluidHoverHighlight
-                  rect={activeRect}
-                  session={sessionRef.current}
+                  hover={hover}
                   from={checkedRect}
                   className={shape.bg}
                 />

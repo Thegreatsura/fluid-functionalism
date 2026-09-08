@@ -1922,13 +1922,11 @@ export default function SidebarDoc() {
 
       <DocSection title="Inside a dialog">
         <p className="text-body text-muted-foreground">
-          The sidebar is container-relative, so it works in any bounded
-          frame — including the <code>xl</code> Dialog. The{" "}
-          <code>dialog-sidebar</code> block is a settings dialog:{" "}
+          A settings dialog with the sidebar inside. 3 props make it fit:{" "}
           <code>collapsible=&quot;none&quot;</code> drops the rail and the
-          drawer, the provider skips the cookie and the shortcut, and{" "}
-          <code>h-full</code> pins both to the dialog&apos;s fixed height. Below{" "}
-          <code>sm</code> a Select in the panel header takes over navigation.
+          drawer, <code>persist={"{false}"}</code> skips the cookie, and{" "}
+          <code>h-full</code> pins it to the dialog&apos;s height. Below{" "}
+          <code>sm</code> a Select takes over.
         </p>
         <ComponentPreview code={settingsDialogCode}>
           <SettingsDialogDemo />

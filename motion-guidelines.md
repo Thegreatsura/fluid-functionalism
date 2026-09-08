@@ -75,7 +75,7 @@ library hovers this way, so the mechanism is documented once, on its own system
 page (`app/docs/fluid-hover/page.tsx`, served at `/docs/fluid-hover`; demos in
 `demos.tsx` beside it), with three demos:
 
-1. **Nearest, not hovered.** Plain `:hover` next to fluid hover on the same 5
+1. **Blink or glide.** Plain `:hover` next to fluid hover on the same 5
    rows with 4px gaps. Plain `:hover` lights nothing between rows; fluid hover
    lights the nearest row and travels to it instead of blinking.
 2. **Show the math.** A switch reveals each row's center, the midpoint between
@@ -83,30 +83,57 @@ page (`app/docs/fluid-hover/page.tsx`, served at `/docs/fluid-hover`; demos in
    cursor to the winning center.
 3. **3 axes.** `y` (default) for lists, `x` for strips, `xy` for grids, on real
    components stacked vertically: Tabs, an inline Dropdown, and a 2-column CardGroup.
+4. **What it costs.** 200 rows in a scroll frame and a meter: `pickNearest`
+   (the hook's own exported pure function) timed on every move with the real
+   rects, the highlight element count, frames of travel, and layout writes
+   while travelling (0, since the travel is a transform).
 
 Rules the hook enforces, worth knowing when you consume it:
 
 - **A containing item always wins; otherwise the nearest center does.** The
   cursor in a gap, in the container padding, or past the last row still lands.
 - **One overlay, and it is one component.** Render
-  `FluidHoverHighlight` (`registry/default/fluid-hover-highlight.tsx`, shipped
-  with the hook) instead of a `motion.div`: `rect`, `session`
-  (`sessionRef.current`, which increments on `onMouseEnter` so the highlight
-  fades in at the nearest row instead of sliding over from where it was last),
-  an optional `from` rect for where a fresh entry starts (dropdowns pass the
-  checked row, the sidebar its level's active row), `className` for radius and
-  z-index, and `transition={false}` to snap when only a reflow moved the rows.
+  `<FluidHoverHighlight hover={hover} />` (`registry/default/fluid-hover-highlight.tsx`,
+  shipped with the hook) instead of a `motion.div`. It reads the highlighted
+  index, the measured rects, readiness, and the pointer session off the hook
+  (the session increments on `onMouseEnter`, so the highlight fades in at the
+  nearest row instead of sliding over from where it was last). `hidden` keeps
+  the list's state but shows nothing (a closed popup). Optional `from` is where
+  a fresh entry starts (dropdowns pass the checked row, the sidebar its level's
+  active row), `className` carries radius and z-index, and `transition={false}`
+  snaps when only a reflow moved the rows. A list that resolves its own rect
+  (the sidebar's unified scope) passes `rect` and `session` instead.
   `tests/registry-consistency.test.mjs` fails on any new hand-rolled copy.
+- **A gap click lands on the lit row.** `handlers.onClick` (spread with the
+  rest, or attached beside `onMouseLeave`) routes a click that hits the
+  container between items to the highlighted item's activator, so what is lit
+  is what a click hits. It leaves clicks inside an item, on a control between
+  rows (a menu's search field), and on disabled items alone. Every list that
+  renders the highlight attaches it; tabs and the accordion (which registers
+  only the trigger) do not.
+- **Rows join with `useRegisterFluidHoverItem(registerItem, index, ref)`.**
+  Both arguments may be undefined for a row rendered outside a list; then
+  nothing registers. No hand-written registration effects.
+- **Measurement runs itself.** Registration, an item resizing, and the
+  container resizing each trigger a coalesced pass, so never call anything on
+  `children` changes. `remeasure()` is for rects that may be wrong and would
+  misplace an overlay (a popup that kept its rows registered while hidden:
+  call it on open). `measureItems()` re-reads synchronously without hiding
+  anything, and only the accordion needs that, inside its height animation.
 - **Gate the overlay on `isMeasured`.** Rects are measured with `offset*`
   (transform-proof) one frame after registration; an overlay mounted against a
-  rect a later pass corrects animates from the wrong place.
+  rect a later pass corrects animates from the wrong place. `FluidHoverHighlight`
+  does this itself when given `hover`.
 - **`isItemDisabled` skips a row without unregistering it**, for rows that stay
   mounted while clipped away (a collapsed sidebar sub-tree).
 
-The highlight animates `top` / `left` / `width` / `height` so the rect stays
-in layout coordinates, which `MotionConfig` does not reduce. The component
-reads `useReducedMotion()` itself and drops the travel while keeping the fade
-(see [Reduced motion](#reduced-motion)).
+The highlight is pinned to the container's padding corner and travels on a
+`transform` (framer `x` / `y`), so the per-frame work is on the compositor;
+`width` / `height` are layout values but only change when the target rect's
+size does. Reduced motion is covered twice: `MotionConfig` reduces the
+transform, and the component reads `useReducedMotion()` itself so an installed
+copy drops the travel and keeps the fade without any wrapper (see
+[Reduced motion](#reduced-motion)).
 
 Deliberately not on the component: `tabs` / `tabs-subtle` (the hover pill
 fades in from, and on leave back to, the selected pill at 0.4 opacity on
@@ -185,8 +212,8 @@ auto-reduced): the hover pill in `tabs` / `tabs-subtle`, the selected
 backgrounds (`bg-active`, the merged selection blocks), and the travelling
 focus rings. Re-expressing those as `transform` (or gating them on
 `useReducedMotion()`) is the remaining work. The hover highlight is done:
-`FluidHoverHighlight` reads `useReducedMotion()` and snaps its position while
-keeping the fade. `input-message` and the `height` collapse in `accordion` read
+`FluidHoverHighlight` travels on a transform and reads `useReducedMotion()`
+itself, snapping its position while keeping the fade. `input-message` and the `height` collapse in `accordion` read
 it directly too, as a reference for the manual approach — worth copying for
 anything that animates a positional value, since an installed component can't
 count on the consumer having wrapped their app in `MotionConfig`.

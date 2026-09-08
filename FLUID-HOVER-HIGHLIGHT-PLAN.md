@@ -107,7 +107,7 @@ in the same commit (both flavours are required and must stay in sync).
    two dependencies), run `npm run registry:build`, run the
    registry-consistency and postbuild tests.
 3. Replace `HoverOverlay` in `app/docs/fluid-hover/demos.tsx` with it, and make
-   the "Nearest, not hovered" Code tab show it. This is the first consumer:
+   the "Blink or glide" Code tab show it. This is the first consumer:
    zero risk, and the page is where the reader meets the API.
 
 ### Phase 2: the plain sites (9 sites, one commit per component pair)
@@ -170,3 +170,83 @@ with the selected indicator.
 ## Size
 
 About 19 × 25 lines removed, one ~60-line component and one test added.
+
+## Follow-ups landed 2026-09-08
+
+- **Gap clicks route to the lit row.** `handlers.onClick` in the hook; every
+  highlight consumer attaches it (tabs and the accordion do not).
+- **The travel is a transform.** `FluidHoverHighlight` is pinned to the
+  container's padding corner and animates framer `x` / `y`; `width` /
+  `height` stay layout values and only change with the target's size.
+- **The state is in the DOM.** `data-fluid-hover-active` on the highlighted
+  item, `data-fluid-hover-active-index` on the container (`ACTIVE_ATTR`,
+  `ACTIVE_INDEX_ATTR` exported from the hook).
+
+## CSS anchor positioning spike (2026-09-08)
+
+Question: could the highlight be placed by CSS anchor positioning, so the
+browser owns the geometry and JS only picks the index?
+
+Setup: five rows with `anchor-name: --row-N`, a highlight with
+`position-anchor` and `top/left/width/height` from `anchor()` /
+`anchor-size()`, `transition` on the four insets, 300ms linear. Sampled the
+highlight's bounding rect every frame after each change.
+
+Results in the Browser pane's Chromium (Chrome 152):
+
+| Change | Frames between start and end | Verdict |
+|---|---|---|
+| Plain pixel insets (baseline) | 35 | interpolated |
+| Switch `position-anchor` to another row | 34 | interpolated |
+| Switch the anchor name held in a custom property inside `anchor()` | 34 | interpolated |
+| The anchor row itself moves (a row above grows) | 33 | interpolated |
+
+So in Chromium the highlight travels between anchors with a plain CSS
+transition, and follows a reflow underneath it for free, which is the
+sidebar's snap case solved without code.
+
+What it would take:
+
+- The hook keeps the nearest-index pick (it still needs row rects for that,
+  read on the move or measured as today) and writes `position-anchor` to the
+  highlight. `itemRects` would no longer feed the overlay at all.
+- `spring.fast` is critically damped at 0.08s; `transition-timing-function:
+  linear(...)` reproduces it.
+- Session re-keying, the `from` rect (start on another anchor, then switch),
+  and `transition: none` for the snap case all map directly.
+- Anchor names must be unique per list (`anchor-scope` on the container, or a
+  per-instance prefix), and nested menus (the sidebar's sub-trees) need care.
+
+Not verified: Safari and Firefox. Their interpolation of `anchor()`-valued
+insets across an anchor switch is the open question, and the reason not to
+ship this yet. Keep framer's transform path as the default and revisit when
+the spike passes in all three engines.
+
+## Simplifications landed 2026-09-08
+
+- **The highlight takes the hook.** `<FluidHoverHighlight hover={hover} />`
+  resolves `itemRects[activeIndex]`, `isMeasured`, and the session itself;
+  `hidden` keeps a list's state while showing nothing. `rect` + `session`
+  remain for lists that resolve their own rect (the sidebar). 21 call sites
+  moved; every consumer lost its `activeRect` line and its `sessionRef` read.
+- **One registration path.** Every row uses `useRegisterFluidHoverItem`,
+  which now accepts an undefined registrar or index. 17 hand-written effects
+  gone; nav-item keeps its own because it registers a slug too.
+- **No measuring on `children`.** 10 redundant `measureItems()` effects
+  deleted (registration and the observers already cover them). The four
+  "on open" callers (dropdown popups, color-picker, input-message) use
+  `remeasure()`, replacing three double-rAF blocks. `measureItems` stays for
+  the accordion's per-frame sync inside its height animation, and the two
+  entry points are documented apart.
+
+## Not done: splitting hover from the rect cache
+
+The plan's step 1 assumed the measured-rect cache mostly served hover. It
+does not. Of 21 consumers, 17 read `itemRects` for something else: focus
+rings (every list), the checked or selected row (dropdown, select, combobox,
+radio, color-picker, nav-menu), and the merged selection blocks (checkbox
+group, dropdown, combobox, ask-user-questions). Only card, table, input-group
+and the input-message suggestions are hover-only. A split into a lean hover
+hook plus a rect-cache hook would give those four a smaller import and make
+the other 17 call two hooks. Left as is; revisit only if the selection
+overlays get their own rework.

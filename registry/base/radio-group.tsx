@@ -18,7 +18,7 @@ import { Radio as RadioPrimitive } from "@base-ui/react/radio";
 import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
-import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
@@ -60,19 +60,14 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
     const childValues = Children.toArray(children)
       .filter(isValidElement)
       .map((child) => (child.props as { value?: string }).value);
+    const hover = useFluidHover(containerRef);
     const {
       activeIndex,
       setActiveIndex,
       itemRects,
-      sessionRef,
       handlers,
       registerItem,
-      measureItems,
-    } = useFluidHover(containerRef);
-
-    useEffect(() => {
-      measureItems();
-    }, [measureItems, children]);
+    } = hover;
 
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
     const resolvedSelectedIndex =
@@ -86,7 +81,6 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
         .filter(isValidElement)
         .some((child) => (child.props as { selected?: boolean }).selected === true);
 
-    const activeRect = activeIndex !== null ? itemRects[activeIndex] : null;
     const focusRect = focusedIndex !== null ? itemRects[focusedIndex] : null;
     const selectedRect =
       resolvedSelectedIndex >= 0 ? itemRects[resolvedSelectedIndex] : null;
@@ -102,6 +96,7 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
         onMouseEnter={handlers.onMouseEnter}
         onMouseMove={handlers.onMouseMove}
         onMouseLeave={handlers.onMouseLeave}
+        onClick={handlers.onClick}
         onFocus={(e) => {
           const indexAttr = (e.target as HTMLElement)
             .closest("[data-fluid-hover-index]")
@@ -184,8 +179,7 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
 
         {/* Hover background */}
         <FluidHoverHighlight
-          rect={activeRect}
-          session={sessionRef.current}
+          hover={hover}
           className={shape.bg}
         />
 
@@ -283,10 +277,7 @@ const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(
       hasSelection,
     } = useRadioGroupContext();
 
-    useEffect(() => {
-      registerItem(index, internalRef.current);
-      return () => registerItem(index, null);
-    }, [index, registerItem]);
+    useRegisterFluidHoverItem(registerItem, index, internalRef);
 
     useEffect(() => {
       hasMounted.current = true;

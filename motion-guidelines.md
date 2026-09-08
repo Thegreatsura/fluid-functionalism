@@ -88,18 +88,29 @@ Rules the hook enforces, worth knowing when you consume it:
 
 - **A containing item always wins; otherwise the nearest center does.** The
   cursor in a gap, in the container padding, or past the last row still lands.
-- **One overlay, re-keyed per entry.** Consumers key the overlay on
-  `sessionRef.current`, which increments on `onMouseEnter`, so the highlight
-  fades in at the nearest row instead of sliding over from where it was last.
-  Dropdowns seed the entry rect from the checked row instead.
+- **One overlay, and it is one component.** Render
+  `FluidHoverHighlight` (`registry/default/fluid-hover-highlight.tsx`, shipped
+  with the hook) instead of a `motion.div`: `rect`, `session`
+  (`sessionRef.current`, which increments on `onMouseEnter` so the highlight
+  fades in at the nearest row instead of sliding over from where it was last),
+  an optional `from` rect for where a fresh entry starts (dropdowns pass the
+  checked row, the sidebar its level's active row), `className` for radius and
+  z-index, and `transition={false}` to snap when only a reflow moved the rows.
+  `tests/registry-consistency.test.mjs` fails on any new hand-rolled copy.
 - **Gate the overlay on `isMeasured`.** Rects are measured with `offset*`
   (transform-proof) one frame after registration; an overlay mounted against a
   rect a later pass corrects animates from the wrong place.
 - **`isItemDisabled` skips a row without unregistering it**, for rows that stay
   mounted while clipped away (a collapsed sidebar sub-tree).
 
-The overlay still animates `top` / `left` / `width` / `height`, so it is not
-auto-reduced by `MotionConfig` (see [Reduced motion](#reduced-motion)).
+The highlight animates `top` / `left` / `width` / `height` so the rect stays
+in layout coordinates, which `MotionConfig` does not reduce. The component
+reads `useReducedMotion()` itself and drops the travel while keeping the fade
+(see [Reduced motion](#reduced-motion)).
+
+Deliberately not on the component: `tabs` / `tabs-subtle` (the hover pill
+fades in from, and on leave back to, the selected pill at 0.4 opacity on
+`spring.moderate`) and `thinking-steps` (a single trigger with an inset fade).
 
 ## Where each speed shows up
 
@@ -170,13 +181,15 @@ fix:
 > the compositor.
 
 Known stragglers that still animate layout properties (so they aren't yet
-auto-reduced): the magnetic highlight slides in `dropdown` / `nav-menu` /
-`select` / `tabs-subtle`. Re-expressing those as `transform` (or gating them on
-`useReducedMotion()`) is the remaining work. `input-message` and the `height`
-collapse in `accordion` already read `useReducedMotion()` directly, as a
-reference for the manual approach — worth copying for anything that animates a
-positional value, since an installed component can't count on the consumer
-having wrapped their app in `MotionConfig`.
+auto-reduced): the hover pill in `tabs` / `tabs-subtle`, the selected
+backgrounds (`bg-active`, the merged selection blocks), and the travelling
+focus rings. Re-expressing those as `transform` (or gating them on
+`useReducedMotion()`) is the remaining work. The hover highlight is done:
+`FluidHoverHighlight` reads `useReducedMotion()` and snaps its position while
+keeping the fade. `input-message` and the `height` collapse in `accordion` read
+it directly too, as a reference for the manual approach — worth copying for
+anything that animates a positional value, since an installed component can't
+count on the consumer having wrapped their app in `MotionConfig`.
 
 ---
 

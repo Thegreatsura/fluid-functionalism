@@ -1,6 +1,12 @@
 # Fluid hover highlight: one component, 19 copies retired
 
-Status: planned 2026-09-07, not started.
+Status: done 2026-09-07. Phases 0 to 5 landed in one session; see the
+`refactor(fluid-hover)` commits. Phase 4 outcome: ask-user-questions and the
+input-message suggestions migrated (same overlay, differently named key);
+tabs, tabs-subtle, and thinking-steps stay as they are on purpose. The
+guardrail is a regex over any session-keyed `bg-hover` fill, allowlist empty.
+Not verified live: nav-menu (nothing on the site renders it) and the reduced
+motion path (covered by the unit test only).
 
 ## Why
 

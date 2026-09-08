@@ -241,52 +241,52 @@ const LANGUAGES = [
 ];
 
 const dropdownProps: PropDef[] = [
-  { name: "checkedIndex", type: "number", description: "Index of the currently checked item." },
-  { name: "checkedIndices", type: "number[]", description: "Multiple selection: the checked rows. Rows become checkbox items and contiguous checked rows share one merged background that merges and splits as the selection changes." },
+  { name: "checkedIndex", type: "number", description: "The checked row." },
+  { name: "checkedIndices", type: "number[]", description: "Checked rows. Rows become checkboxes and touching picks share one background." },
   { name: "children", type: "ReactNode", description: "MenuItem children." },
-  { name: "aria-label", type: "string", description: "Accessible name for the inline panel. The always-visible panel renders as a plain role=\"group\" — popup menu semantics (role=\"menu\") belong to the triggered DropdownContent." },
+  { name: "aria-label", type: "string", description: "Name for the inline panel. It renders as a group; menu semantics belong to DropdownContent." },
 ];
 
 const dropdownMenuProps: PropDef[] = [
   { name: "children", type: "ReactNode", description: "DropdownTrigger and DropdownContent." },
   { name: "open", type: "boolean", description: "Controlled open state." },
-  { name: "defaultOpen", type: "boolean", default: "false", description: "Initial open state (uncontrolled)." },
+  { name: "defaultOpen", type: "boolean", default: "false", description: "Initial open state." },
   { name: "onOpenChange", type: "(open: boolean) => void", description: "Called when the menu opens or closes." },
-  { name: "disabled", type: "boolean", default: "false", description: "Disables opening the menu." },
+  { name: "disabled", type: "boolean", default: "false", description: "Disables the menu." },
 ];
 
 const dropdownTriggerProps: PropDef[] = [
-  { name: "render", type: "ReactElement", description: "Element to render as the trigger (Base UI composition), e.g. a Button." },
-  { name: "children", type: "ReactNode", description: "Trigger content when no render element is given." },
+  { name: "render", type: "ReactElement", description: "The element that becomes the trigger, e.g. a Button." },
+  { name: "children", type: "ReactNode", description: "Trigger content when there is no render element." },
   { name: "disabled", type: "boolean", default: "false", description: "Disables the trigger." },
 ];
 
 const dropdownContentProps: PropDef[] = [
-  { name: "children", type: "ReactNode", description: "MenuItem, DropdownLabel, and DropdownSeparator children." },
-  { name: "checkedIndex", type: "number", description: "Index of the checked item — drives the animated selected background and the radio-group value." },
-  { name: "checkedIndices", type: "number[]", description: "Multiple selection: the checked rows. Rows become checkbox items that keep the menu open when toggled, and contiguous checked rows share one merged background." },
-  { name: "side", type: "\"top\" | \"bottom\" | \"left\" | \"right\"", default: "\"bottom\"", description: "Preferred side of the trigger to place the popup." },
+  { name: "children", type: "ReactNode", description: "MenuItem, DropdownLabel, DropdownSeparator." },
+  { name: "checkedIndex", type: "number", description: "The checked row: drives the selected background and the radio value." },
+  { name: "checkedIndices", type: "number[]", description: "Checked rows. Rows become checkboxes that keep the menu open; touching picks share one background." },
+  { name: "side", type: "\"top\" | \"bottom\" | \"left\" | \"right\"", default: "\"bottom\"", description: "Side of the trigger the popup prefers." },
   { name: "align", type: "\"start\" | \"center\" | \"end\"", default: "\"start\"", description: "Alignment against the trigger." },
-  { name: "sideOffset", type: "number", default: "6", description: "Gap between trigger and popup, in pixels." },
+  { name: "sideOffset", type: "number", default: "6", description: "Gap to the trigger, in px." },
 ];
 
 const searchProps: PropDef[] = [
-  { name: "value", type: "string", description: "The query. Filter the MenuItems you render against it — the popup re-indexes from 0." },
-  { name: "onValueChange", type: "(value: string) => void", description: "Called on every keystroke, and with \"\" when the popup closes (see clearOnClose)." },
+  { name: "value", type: "string", description: "The query. Filter the rows you render against it; indices restart at 0." },
+  { name: "onValueChange", type: "(value: string) => void", description: "Called on every keystroke, and with \"\" on close (see clearOnClose)." },
   { name: "placeholder", type: "string", default: "\"Search…\"", description: "Placeholder text." },
-  { name: "clearOnClose", type: "boolean", default: "true", description: "Reset the query when the popup closes, so the menu reopens unfiltered." },
-  { name: "autoFocus", type: "boolean", default: "true", description: "Take focus when the popup opens. Typing on a focused row always jumps back into the field." },
+  { name: "clearOnClose", type: "boolean", default: "true", description: "Reset the query on close so the menu reopens unfiltered." },
+  { name: "autoFocus", type: "boolean", default: "true", description: "Focus the field on open. Typing on a row jumps back into it either way." },
 ];
 
 const emptyProps: PropDef[] = [
-  { name: "children", type: "ReactNode", description: "The message shown in place of rows — a polite live region." },
+  { name: "children", type: "ReactNode", description: "Shown in place of rows. A polite live region." },
 ];
 
 const labelProps: PropDef[] = [
   {
     name: "children",
     type: "ReactNode",
-    description: "Label text content.",
+    description: "Label text.",
   },
 ];
 
@@ -294,18 +294,18 @@ const separatorProps: PropDef[] = [
   {
     name: "className",
     type: "string",
-    description: "Additional CSS classes.",
+    description: "Extra classes.",
   },
 ];
 
 const menuItemProps: PropDef[] = [
-  { name: "icon", type: "IconComponent", description: "Icon displayed in the menu item." },
-  { name: "label", type: "string", description: "Text label for the menu item." },
-  { name: "index", type: "number", description: "Position index within the dropdown." },
-  { name: "checked", type: "boolean", default: "false", description: "Whether this item is checked. When set (even false), the item is a radio-style option — or a checkbox item inside a dropdown with checkedIndices; when undefined it is a plain action item." },
-  { name: "onSelect", type: "() => void", description: "Called when this item is selected." },
-  { name: "disabled", type: "boolean", default: "false", description: "Disables the item." },
-  { name: "closeOnClick", type: "boolean", default: "true", description: "Popup-only: whether selecting the item closes the menu (defaults to false inside a multiple-selection dropdown). Ignored in the inline panel." },
+  { name: "icon", type: "IconComponent", description: "Leading icon." },
+  { name: "label", type: "string", description: "Row text." },
+  { name: "index", type: "number", description: "Position in the list." },
+  { name: "checked", type: "boolean", default: "false", description: "Set it, even to false, for a radio row, or a checkbox row under checkedIndices. Leave it undefined for a plain action." },
+  { name: "onSelect", type: "() => void", description: "Called on select." },
+  { name: "disabled", type: "boolean", default: "false", description: "Disables the row." },
+  { name: "closeOnClick", type: "boolean", default: "true", description: "Popup only: close on select. Defaults to false under checkedIndices." },
 ];
 
 // ── Playground ───────────────────────────────────────────
@@ -372,7 +372,7 @@ export default function DropdownDoc() {
     <DocPage
       title="Dropdown"
       slug="dropdown"
-      description="Menus with proximity hover and animated selection, as an inline panel or a triggered popup."
+      description="2 forms: an inline panel, or a popup on any trigger."
     >
       <DocSection title="Playground">
         <DropdownPlaygroundSection />
@@ -413,12 +413,8 @@ export default function DropdownDoc() {
 
       <DocSection title="Triggered menu">
         <p className="text-subtitle text-muted-foreground">
-          The inline panels above are always visible and render as a plain
-          group. For a real popup menu — trigger button, positioning,
-          dismissal, typeahead, and close-on-select, built on Base UI&apos;s
-          Menu — compose <code>DropdownMenu</code>,{" "}
-          <code>DropdownTrigger</code>, and <code>DropdownContent</code>. Any
-          element can be the trigger via the <code>render</code> prop.
+          3 parts: <code>DropdownMenu</code>, <code>DropdownTrigger</code>,{" "}
+          <code>DropdownContent</code>. Any element goes in <code>render</code>.
         </p>
         <ComponentPreview code={triggeredCode}>
           <DropdownMenu>
@@ -443,11 +439,8 @@ export default function DropdownDoc() {
 
       <DocSection title="Multiple selection">
         <p className="text-subtitle text-muted-foreground">
-          Pass <code>checkedIndices</code> instead of <code>checkedIndex</code>{" "}
-          and the rows become checkbox items: toggling one keeps the menu
-          open, and contiguous checked rows share one background that merges
-          and splits as the selection changes — the CheckboxGroup treatment,
-          inside a menu.
+          Pass <code>checkedIndices</code>: rows become checkboxes, the menu
+          stays open, and touching picks share one background.
         </p>
         <ComponentPreview code={multipleCode} minHeightClass="min-h-[160px]">
           <DropdownMenu>
@@ -471,11 +464,8 @@ export default function DropdownDoc() {
 
       <DocSection title="Searchable menu">
         <p className="text-subtitle text-muted-foreground">
-          Drop a <code>DropdownSearch</code> at the top of the popup and
-          filter the rows you render against its value. The field takes
-          focus when the menu opens; typing on a focused row jumps back into
-          it, arrow keys leave it for the list, and Enter picks the first
-          match. <code>DropdownEmpty</code> stands in when nothing matches.
+          Put a <code>DropdownSearch</code> first and filter the rows you
+          render. Type to filter, press Enter to pick the first match.
         </p>
         <ComponentPreview code={searchableCode} minHeightClass="min-h-[160px]">
           <DropdownMenu>
@@ -511,9 +501,8 @@ export default function DropdownDoc() {
 
       <DocSection title="Searchable multiple selection">
         <p className="text-subtitle text-muted-foreground">
-          The two compose: filter the rows and pass <code>checkedIndices</code>{" "}
-          computed against the filtered list. Enter in the field toggles the
-          first match and the menu stays open for the next one.
+          Both at once. Compute <code>checkedIndices</code> against the
+          filtered rows; Enter toggles the first match and the menu stays open.
         </p>
         <ComponentPreview code={searchableMultipleCode} minHeightClass="min-h-[160px]">
           <DropdownMenu>

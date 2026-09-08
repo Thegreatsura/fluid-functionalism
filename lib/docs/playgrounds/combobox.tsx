@@ -29,6 +29,7 @@ import {
   encodeComboboxPreset,
   decodeComboboxPreset,
   type ComboboxFieldVariant,
+  COMBOBOX_DEFAULT_VALUES,
 } from "@/lib/preset/combobox-options";
 import {
   usePresetGlobals,
@@ -64,7 +65,7 @@ function buildPlaygroundCode(o: {
     ...(o.error ? [`error="${COMBOBOX_COPY.error}"`] : []),
   ];
   const state = o.multiple
-    ? "const [values, setValues] = useState<string[]>([]);"
+    ? `const [values, setValues] = useState<string[]>(${JSON.stringify(COMBOBOX_DEFAULT_VALUES)});`
     : 'const [value, setValue] = useState("");';
   return `${state}
 
@@ -90,7 +91,7 @@ export function ComboboxPlayground({ children }: PlaygroundProps) {
   const [disabled, setDisabled] = useState(false);
 
   const [value, setValue] = useState("");
-  const [values, setValues] = useState<string[]>([]);
+  const [values, setValues] = useState<string[]>(COMBOBOX_DEFAULT_VALUES);
 
   const code = buildPlaygroundCode({ multiple, variant, icon, clearable, error, disabled });
 

@@ -12,6 +12,7 @@ import {
   type ComboboxPreset,
   COMBOBOX_COMPONENTS,
   COMBOBOX_COPY,
+  COMBOBOX_DEFAULT_VALUES,
 } from "./combobox-options";
 
 function comboboxDemoFile(p: ComboboxPreset): string {
@@ -46,7 +47,7 @@ function comboboxDemoFile(p: ComboboxPreset): string {
   // ── Component ──
   l.push(`export function ComboboxDemo() {`);
   if (p.icon) l.push(`  const SearchIcon = useIcon("search");`);
-  if (p.multiple) l.push(`  const [values, setValues] = useState<string[]>([]);`);
+  if (p.multiple) l.push(`  const [values, setValues] = useState<string[]>(${JSON.stringify(COMBOBOX_DEFAULT_VALUES)});`);
   else l.push(`  const [value, setValue] = useState("");`);
   l.push(`  return (`);
 

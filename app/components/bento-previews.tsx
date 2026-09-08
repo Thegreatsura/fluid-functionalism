@@ -29,9 +29,6 @@ import {
   TABS_DEFAULT,
   TABS_ITEMS,
   TOOLTIP_COPY,
-  COMBOBOX_PLACEHOLDER,
-  COMBOBOX_PEOPLE,
-  COMBOBOX_EMPTY,
 } from "@/app/components/demo-data";
 
 import {
@@ -94,12 +91,18 @@ import {
 } from "@/components/flavored/select";
 import {
   Combobox,
-  ComboboxInput,
+  ComboboxChips,
   ComboboxContent,
   ComboboxList,
   ComboboxItem,
   ComboboxEmpty,
+  type ComboboxItemData,
 } from "@/components/flavored/combobox";
+import {
+  COMBOBOX_COMPONENTS,
+  COMBOBOX_COPY,
+  COMBOBOX_DEFAULT_VALUES,
+} from "@/lib/preset/combobox-options";
 import { Slider } from "@/registry/radix/slider";
 import { Switch } from "@/registry/radix/switch";
 import {
@@ -342,21 +345,24 @@ function SelectPreview() {
   );
 }
 
+// Mirrors the Combobox playground's default (multiple, chips field,
+// bordered, no icon) with two chips already in.
 function ComboboxPreview() {
-  const UserIcon = useIcon("user");
-  const [value, setValue] = useState("");
+  const [values, setValues] = useState<string[]>(COMBOBOX_DEFAULT_VALUES);
+  const items: readonly ComboboxItemData[] = COMBOBOX_COMPONENTS;
   return (
     <div className="w-full max-w-[280px]">
-      <Combobox items={COMBOBOX_PEOPLE} value={value} onValueChange={setValue}>
-        <ComboboxInput icon={UserIcon} placeholder={COMBOBOX_PLACEHOLDER} className="w-full" />
+      <Combobox multiple items={items} value={values} onValueChange={setValues}>
+        <ComboboxChips placeholder={COMBOBOX_COPY.placeholderMultiple} className="w-full" />
         <ComboboxContent>
-          <ComboboxEmpty>{COMBOBOX_EMPTY}</ComboboxEmpty>
+          <ComboboxEmpty>{COMBOBOX_COPY.empty}</ComboboxEmpty>
           <ComboboxList>
             {(item) => {
-              const person = item as (typeof COMBOBOX_PEOPLE)[number];
+              const v = typeof item === "string" ? item : item.value;
+              const label = typeof item === "string" ? item : item.label;
               return (
-                <ComboboxItem key={person.value} value={person.value}>
-                  {person.label}
+                <ComboboxItem key={v} value={v}>
+                  {label}
                 </ComboboxItem>
               );
             }}

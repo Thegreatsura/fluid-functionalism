@@ -124,6 +124,10 @@ export const COMBOBOX_COMPONENTS = [
   { value: "tabs", label: "Tabs" },
 ] as const;
 
+/** The two chips a multiple combobox starts with: the home bento tile, the
+ *  docs playground, and the /demo pen all open on these. */
+export const COMBOBOX_DEFAULT_VALUES = ["button", "combobox"];
+
 export const COMBOBOX_COPY = {
   placeholder: "Pick a component…",
   placeholderMultiple: "Add components…",

@@ -59,7 +59,7 @@ function buildPlaygroundCode(o: {
   cols: number;
   border: PlayBorder;
   separated: boolean;
-  proximity: boolean;
+  fluidHover: boolean;
   media: PlayMedia;
   description: boolean;
   primaryBtn: boolean;
@@ -72,7 +72,7 @@ function buildPlaygroundCode(o: {
   if (o.cols !== 1) groupProps.push(`columns={${o.cols}}`);
   if (o.border !== "none") groupProps.push(`border="${o.border}"`);
   if (o.separated) groupProps.push("separated");
-  if (!o.proximity) groupProps.push("proximityHover={false}");
+  if (!o.fluidHover) groupProps.push("fluidHover={false}");
   const attr = groupProps.length ? " " + groupProps.join(" ") : "";
   const isInline = o.orientation === "inline";
 
@@ -131,7 +131,7 @@ export function CardPlayground({ children }: PlaygroundProps) {
   const [columns, setColumns] = useState("2");
   const [border, setBorder] = useState<PlayBorder>("none");
   const [separated, setSeparated] = useState(false);
-  const [proximity, setProximity] = useState(true);
+  const [fluidHover, setFluidHover] = useState(true);
   const [media, setMedia] = useState<PlayMedia>("icon");
   const [primaryBtn, setPrimaryBtn] = useState(false);
   const [secondaryBtn, setSecondaryBtn] = useState(false);
@@ -159,7 +159,7 @@ export function CardPlayground({ children }: PlaygroundProps) {
   // so it only reads right on separated tiles — force (and lock) Separated on.
   const effectiveSeparated = isImage || separated;
 
-  const code = buildPlaygroundCode({ orientation, cols, border, separated: effectiveSeparated, proximity, media, description, primaryBtn, secondaryBtn, ghostBtn, selected: selectedOn });
+  const code = buildPlaygroundCode({ orientation, cols, border, separated: effectiveSeparated, fluidHover, media, description, primaryBtn, secondaryBtn, ghostBtn, selected: selectedOn });
 
   // ── Get code (presets) ─────────────────────────────────
   // The rail's configuration bit-packs into a stateless code (shadcn's
@@ -178,7 +178,7 @@ export function CardPlayground({ children }: PlaygroundProps) {
     columns: Number(columns) as CardPreset["columns"],
     border,
     separated,
-    proximity,
+    fluidHover,
     selected: selectedOn,
     ...globals,
   });
@@ -195,7 +195,7 @@ export function CardPlayground({ children }: PlaygroundProps) {
       setColumns(String(p.columns));
       setBorder(p.border);
       setSeparated(p.separated);
-      setProximity(p.proximity);
+      setFluidHover(p.fluidHover);
       setSelectedOn(p.selected);
     }
   });
@@ -239,7 +239,7 @@ export function CardPlayground({ children }: PlaygroundProps) {
     setColumns(pick(["1", "2", "3"] as const));
     setBorder(pick(["none", "outlined"] as const));
     setSeparated(Math.random() > 0.5);
-    setProximity(Math.random() > 0.2);
+    setFluidHover(Math.random() > 0.2);
   };
 
   const controls = (
@@ -330,8 +330,8 @@ export function CardPlayground({ children }: PlaygroundProps) {
         />
         <Switch
           label="Fluid hover"
-          checked={proximity}
-          onToggle={() => setProximity((v) => !v)}
+          checked={fluidHover}
+          onToggle={() => setFluidHover((v) => !v)}
           className={PLAY_SWITCH}
         />
         <Switch
@@ -355,7 +355,7 @@ export function CardPlayground({ children }: PlaygroundProps) {
       columns={cols}
       border={border}
       separated={effectiveSeparated}
-      proximityHover={proximity}
+      fluidHover={fluidHover}
     >
       {items.map((item, i) => (
         <Card

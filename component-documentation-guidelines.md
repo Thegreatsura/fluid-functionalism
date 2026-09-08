@@ -23,7 +23,7 @@ Checklist and conventions for documenting every new component in this project. F
   import { useShape } from "@/lib/shape-context";
   import { useIcon } from "@/lib/icon-context";
   import type { IconComponent } from "@/lib/icon-context";
-  import { useProximityHover } from "@/hooks/use-proximity-hover";
+  import { useFluidHover } from "@/hooks/use-fluid-hover";
   ```
 
 ### 2. Registry Entry (`registry.json`)
@@ -47,7 +47,7 @@ Add an item to the `items` array:
 
 **Field rules:**
 - `dependencies` = external npm packages (framer-motion, @radix-ui/*, lucide-react, class-variance-authority)
-- `registryDependencies` = other items in this registry (utils, springs, font-weight, shape-context, icon-context, use-proximity-hover, or other components like button)
+- `registryDependencies` = other items in this registry (utils, springs, font-weight, shape-context, icon-context, use-fluid-hover, or other components like button)
 - Components that render icons depend on `icon-context` only — never add icon packages beyond `lucide-react` as `dependencies` (consumers bring their own via IconProvider)
 - Multi-file components list all files in the `files` array
 
@@ -295,7 +295,7 @@ registry/default/
   lib/font-weight.ts          ← font weight tokens
   lib/shape-context.tsx        ← shape provider (no key shortcut — that's docs-only)
   lib/icon-context.tsx         ← icon slots, Lucide defaults, IconProvider override
-  hooks/use-proximity-hover.ts ← proximity hook
+  hooks/use-fluid-hover.ts ← fluid hover hook
 
 lib/docs/
   ComponentPreview.tsx         ← preview + code tabs

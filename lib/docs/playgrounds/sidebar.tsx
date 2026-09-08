@@ -167,7 +167,7 @@ function FooterCallout({
 
   // Inline orientation (leading media, text beside it) comes from the group.
   return variant === "inline" ? (
-    <CardGroup orientation="inline" proximityHover={false}>
+    <CardGroup orientation="inline" fluidHover={false}>
       {card}
     </CardGroup>
   ) : (
@@ -361,7 +361,7 @@ export function FooterCalloutStack({
               style={{ transformOrigin: "bottom center", zIndex: 100 - i }}
             >
               {variant === "inline" ? (
-                <CardGroup orientation="inline" proximityHover={false}>
+                <CardGroup orientation="inline" fluidHover={false}>
                   {card}
                 </CardGroup>
               ) : (
@@ -864,7 +864,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
       lines.push(`              transition={spring.moderate}>`);
       if (o.footerCallout === "inline") {
         lines.push(`              {/* inline orientation puts the icon beside the text */}`);
-        lines.push(`              <CardGroup orientation="inline" proximityHover={false}>`);
+        lines.push(`              <CardGroup orientation="inline" fluidHover={false}>`);
       }
       const stackCardIndent = o.footerCallout === "inline" ? `                ` : `              `;
       lines.push(`${stackCardIndent}{/* one surface step above the rail, rising another under the`);
@@ -907,7 +907,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
       lines.push(`          its hairline inside the box */}`);
       if (o.footerCallout === "inline") {
         lines.push(`      {/* inline orientation puts the icon beside the text */}`);
-        lines.push(`      <CardGroup orientation="inline" proximityHover={false}>`);
+        lines.push(`      <CardGroup orientation="inline" fluidHover={false}>`);
       }
       const calloutIndent = o.footerCallout === "inline" ? `        ` : `      `;
       lines.push(`${calloutIndent}<Card size="compact" dismissible onDismiss={hide} href="/docs/sidebar"`);

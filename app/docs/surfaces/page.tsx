@@ -884,7 +884,7 @@ function RoleItem({
   return (
     <div
       ref={ref}
-      data-proximity-index={index}
+      data-fluid-hover-index={index}
       role="menuitemradio"
       aria-checked={checked}
       aria-label={label}

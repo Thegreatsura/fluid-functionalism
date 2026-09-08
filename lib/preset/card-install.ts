@@ -101,7 +101,7 @@ function cardSectionFile(p: CardPreset): string {
   if (d.cols !== 1) groupProps.push(`columns={${d.cols}}`);
   if (p.border !== "none") groupProps.push(`border="${p.border}"`);
   if (d.separated) groupProps.push(`separated`);
-  if (!p.proximity) groupProps.push(`proximityHover={false}`);
+  if (!p.fluidHover) groupProps.push(`fluidHover={false}`);
   l.push(`      <CardGroup${groupProps.length ? " " + groupProps.join(" ") : ""}>`);
 
   l.push(`        {ITEMS.map((item${p.selected ? ", i" : ""}) => (`);

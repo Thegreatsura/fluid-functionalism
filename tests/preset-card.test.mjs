@@ -171,13 +171,13 @@ function typecheckPreset(preset) {
 
 // Curated matrix: every structural branch flips at least once — each media
 // kind, both orientations (with and without the inline button reversal),
-// every column count, selection mode, borders/separated/proximity, and the
+// every column count, selection mode, borders/separated/fluid hover, and the
 // no-description / no-button extremes.
 const MATRIX = [
   {}, // all defaults: icon media, description, 2 columns, stacked
   { media: "logo", description: false },
   { media: "image", columns: 3, selected: true },
-  { media: "none", border: "outlined", separated: true, proximity: false },
+  { media: "none", border: "outlined", separated: true, fluidHover: false },
   { orientation: "inline", primaryBtn: true, ghostBtn: true }, // reversed footer
   { orientation: "inline", media: "image", secondaryBtn: true }, // natural order
   { orientation: "inline", media: "none", description: false, selected: true },

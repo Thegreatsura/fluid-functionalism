@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { spring } from "@/lib/springs";
-import type { ItemRect } from "@/hooks/use-proximity-hover";
+import type { ItemRect } from "@/hooks/use-fluid-hover";
 
 // Run the layout effect on the client (where it must fire before paint, so a
 // merge/split shows on the first frame) and a no-op-safe useEffect on the server.

@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 import {
   useMergeSplitBlocks,
   useSelectionRuns,
@@ -102,7 +102,7 @@ const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
       handlers,
       registerItem,
       measureItems,
-    } = useProximityHover(containerRef, { isItemDisabled: isDisabledRow });
+    } = useFluidHover(containerRef, { isItemDisabled: isDisabledRow });
 
     useEffect(() => {
       measureItems();
@@ -137,8 +137,8 @@ const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
           onMouseLeave={handlers.onMouseLeave}
           onFocus={(e) => {
             const indexAttr = (e.target as HTMLElement)
-              .closest("[data-proximity-index]")
-              ?.getAttribute("data-proximity-index");
+              .closest("[data-fluid-hover-index]")
+              ?.getAttribute("data-fluid-hover-index");
             if (indexAttr != null) {
               const idx = Number(indexAttr);
               setActiveIndex(idx);
@@ -275,7 +275,7 @@ Dropdown.displayName = "Dropdown";
 // Built on Radix's DropdownMenu primitive, which owns the trigger wiring,
 // positioning (collision flipping, anchor tracking), dismissal (outside
 // press, focus-out, Escape), roving highlight, typeahead, and close-on-select.
-// This layer keeps the proximity-hover overlays and the
+// This layer keeps the fluid-hover overlays and the
 // spring open/close animation. Radix has no actionsRef-style deferred unmount,
 // so the portal lifetime is managed with local `mounted` state (the same
 // pattern the Dialog and MobileDrawer components use).
@@ -406,7 +406,7 @@ DropdownTrigger.displayName = "DropdownTrigger";
 // DropdownContent (popup panel)
 //
 // Portal > Content carrying the exact inline-panel visuals: Elevated surface,
-// proximity-hover overlays, animated selected background, and animated focus
+// fluid-hover overlays, animated selected background, and animated focus
 // ring. Children are wrapped in a RadioGroup so radio-style MenuItems
 // (boolean `checked`) get correct aria-checked from `checkedIndex` (Radix
 // radio values are strings, so the index maps through String()).
@@ -455,7 +455,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
       handlers,
       registerItem,
       measureItems,
-    } = useProximityHover(containerRef, { isItemDisabled: isDisabledRow });
+    } = useFluidHover(containerRef, { isItemDisabled: isDisabledRow });
 
     // An optional DropdownSearch child: typing on a focused row is
     // redirected into the field. (The field takes focus itself, a frame
@@ -640,8 +640,8 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                 }}
                 onFocus={(e) => {
                   const indexAttr = (e.target as HTMLElement)
-                    .closest("[data-proximity-index]")
-                    ?.getAttribute("data-proximity-index");
+                    .closest("[data-fluid-hover-index]")
+                    ?.getAttribute("data-fluid-hover-index");
                   // Keyboard navigation moves the hover background only — no
                   // ring: in a menu the highlighted row is the focus indicator.
                   if (indexAttr != null) {
@@ -733,7 +733,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                 </AnimatePresence>
 
                 {/* display: contents keeps items direct flex children of the
-                    wrapper so proximity measurement and gap layout still work,
+                    wrapper so fluid hover measurement and gap layout still work,
                     while the group provides the radio value context. */}
                 <DropdownMenuPrimitive.RadioGroup
                   value={checkedIndex != null ? String(checkedIndex) : undefined}

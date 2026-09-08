@@ -23,7 +23,7 @@ import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { useIcon } from "@/lib/icon-context";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { useMergeSplitBlocks, SelectionBackgrounds } from "@/hooks/use-merge-split";
 import { Button } from "@/components/ui/button";
 
@@ -264,7 +264,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     const otherIndex = allowOther ? options.length : -1;
     const rowCount = options.length + (allowOther ? 1 : 0);
 
-    // ── Refs & proximity hover ───────────────────────────────────
+    // ── Refs & fluid hover ───────────────────────────────────
     const rootRef = useRef<HTMLDivElement>(null);
     const hasQuestion = !!question;
     useEffect(() => {
@@ -292,7 +292,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
       handlers,
       registerItem,
       measureItems,
-    } = useProximityHover(rowsContainerRef);
+    } = useFluidHover(rowsContainerRef);
 
     // Remeasure on row count change, question change, shape change
     useEffect(() => {
@@ -303,7 +303,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     // The Other field is a textarea so users can write a multi-line answer.
     // Browsers don't auto-fit textarea height to content, so we set it
     // manually: reset to 0 (so the field can shrink when lines are deleted),
-    // then expand to scrollHeight. Remeasure the proximity rows after — the
+    // then expand to scrollHeight. Remeasure the fluid hover rows after — the
     // hover, selected and focus indicators absolutely-position against
     // itemRects, so they need fresh rects when the row's height changes.
     //
@@ -411,7 +411,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
       if (!restoreFocusRef.current) return;
       restoreFocusRef.current = false;
       const firstRow = rowsContainerRef.current?.querySelector(
-        '[data-proximity-index="0"]'
+        '[data-fluid-hover-index="0"]'
       ) as HTMLElement | null;
       firstRow?.focus();
     }, [safeIndex]);
@@ -622,7 +622,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     // (not "radiogroup") and so isn't auto-skipped by that handler.
     const focusRow = (idx: number) => {
       const el = rowsContainerRef.current?.querySelector(
-        `[data-proximity-index="${idx}"]`
+        `[data-fluid-hover-index="${idx}"]`
       ) as HTMLElement | null;
       el?.focus();
     };
@@ -842,10 +842,10 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     // The rows container is handed to a Base UI group primitive via `render`
     // (Radio.Group for single-select, Checkbox.Group for multi-select — see
     // the JSX below), so group semantics and selection plumbing come from
-    // Base UI while the rows keep their custom proximity-hover treatment.
+    // Base UI while the rows keep their custom fluid-hover treatment.
     // Each option Row hosts a hidden sr-only Radio/Checkbox primitive; the
     // visible wrapper carries role/aria-checked. CAUTION: every keyboard-nav
-    // query in here is scoped to [data-proximity-index] — a bare
+    // query in here is scoped to [data-fluid-hover-index] — a bare
     // [role="radio"] / [role="checkbox"] selector would ALSO match the hidden
     // primitive inside each row (two hits per row) and land arrow-key focus
     // on invisible controls.
@@ -864,8 +864,8 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
           // morphing blue ring, gated to keyboard focus via :focus-visible —
           // mouse clicks focus rows without drawing the ring.
           const indexAttr = (e.target as HTMLElement)
-            .closest("[data-proximity-index]")
-            ?.getAttribute("data-proximity-index");
+            .closest("[data-fluid-hover-index]")
+            ?.getAttribute("data-fluid-hover-index");
           if (indexAttr != null) {
             const idx = Number(indexAttr);
             setActiveIndex(idx);
@@ -1829,7 +1829,7 @@ function Row({
   return (
     <div
       ref={rowRef}
-      data-proximity-index={index}
+      data-fluid-hover-index={index}
       data-state={isSelected ? "checked" : "unchecked"}
       role={role ?? undefined}
       aria-checked={role === "radio" || role === "checkbox" ? !!aria["aria-checked"] : undefined}

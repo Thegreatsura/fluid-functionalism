@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 
 interface InputGroupContextValue {
   registerItem: (index: number, element: HTMLElement | null) => void;
@@ -47,7 +47,7 @@ const InputGroup = forwardRef<HTMLDivElement, InputGroupProps>(
     const containerRef = useRef<HTMLDivElement>(null);
 
     const { activeIndex, handlers, registerItem, measureItems } =
-      useProximityHover(containerRef);
+      useFluidHover(containerRef);
 
     useEffect(() => {
       measureItems();
@@ -69,10 +69,10 @@ const InputGroup = forwardRef<HTMLDivElement, InputGroupProps>(
           onMouseEnter={handlers.onMouseEnter}
           onMouseMove={handlers.onMouseMove}
           onMouseLeave={handlers.onMouseLeave}
-          // `relative` makes this div the fields' offsetParent — the proximity
+          // `relative` makes this div the fields' offsetParent — the fluid hover
           // hook measures items via offsetTop and compares against
           // container-relative mouse coords, so the two coordinate spaces must
-          // share this origin (same as every other proximity consumer).
+          // share this origin (same as every other fluid hover consumer).
           className={cn("relative flex flex-col gap-3 w-72 max-w-full", className)}
           {...props}
         >

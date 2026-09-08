@@ -1663,7 +1663,7 @@ function DemoCallout({ variant }: { variant: "banner" | "inline" }) {
   );
 
   return variant === "inline" ? (
-    <CardGroup orientation="inline" proximityHover={false}>
+    <CardGroup orientation="inline" fluidHover={false}>
       {card}
     </CardGroup>
   ) : (

@@ -19,7 +19,7 @@ import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 
 interface TabsSubtleContextValue {
   registerTab: (index: number, element: HTMLElement | null) => void;
@@ -63,7 +63,7 @@ const TabsSubtle = forwardRef<HTMLDivElement, TabsSubtleProps>(
       handlers,
       registerItem,
       measureItems: measureTabs,
-    } = useProximityHover(containerRef, { axis: "x" });
+    } = useFluidHover(containerRef, { axis: "x" });
 
     // Track tab elements locally so we can observe their individual resizes
     const tabElementsRef = useRef(new Map<number, HTMLElement>());
@@ -142,8 +142,8 @@ const TabsSubtle = forwardRef<HTMLDivElement, TabsSubtleProps>(
             onMouseLeave={handleMouseLeave}
             onFocus={(e: React.FocusEvent<HTMLDivElement>) => {
               const indexAttr = (e.target as HTMLElement)
-                .closest("[data-proximity-index]")
-                ?.getAttribute("data-proximity-index");
+                .closest("[data-fluid-hover-index]")
+                ?.getAttribute("data-fluid-hover-index");
               if (indexAttr != null) {
                 const idx = Number(indexAttr);
                 setHoveredIndex(idx);
@@ -345,7 +345,7 @@ const TabsSubtleItem = forwardRef<HTMLButtonElement, TabsSubtleItemProps>(
           else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = node;
         }}
         value={String(index)}
-        data-proximity-index={index}
+        data-fluid-hover-index={index}
         id={idPrefix ? `${idPrefix}-tab-${index}` : undefined}
         aria-controls={idPrefix ? `${idPrefix}-panel-${index}` : undefined}
         aria-label={collapseLabel && !showLabel ? label : undefined}

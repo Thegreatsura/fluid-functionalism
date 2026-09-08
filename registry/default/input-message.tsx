@@ -25,7 +25,7 @@ import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { useIcon } from "@/lib/icon-context";
 import { surfaceClasses } from "@/lib/surface-classes";
 import { SurfaceProvider } from "@/lib/surface-context";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { FileThumbnail } from "@/registry/default/file-thumbnail";
 import { Button } from "@/registry/radix/button";
 import { Tooltip } from "@/registry/radix/tooltip";
@@ -360,7 +360,7 @@ function QueuedRow({
 
 // ─── Suggestion row ───────────────────────────────────────────────────────
 // A suggested prompt in the listbox under the action bar. Registers itself
-// with the proximity-hover system in an effect (MenuItem's pattern — an
+// with the fluid-hover system in an effect (MenuItem's pattern — an
 // inline ref callback would re-register every render and keep the hook's
 // measurement pass from ever settling). The highlight itself is the parent's
 // sliding overlay, so the row only recolors its text when active.
@@ -521,7 +521,7 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
     // Suggested prompts. The list only shows while the draft is empty, and
     // `activeSuggestion` is the highlighted row — focus never leaves the
     // textarea (aria-activedescendant points at the highlighted option).
-    // Highlight state lives in the proximity-hover system so pointer and
+    // Highlight state lives in the fluid-hover system so pointer and
     // keyboard drive the same sliding bg-hover overlay (Dropdown's pattern):
     // mouse movement resolves the nearest row, ↓/↑ set the index directly.
     const suggestionsArr = useMemo(() => suggestions ?? [], [suggestions]);
@@ -539,7 +539,7 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
       handlers: suggestionHandlers,
       registerItem: registerSuggestion,
       measureItems,
-    } = useProximityHover(suggestionListRef);
+    } = useFluidHover(suggestionListRef);
 
     // Publish row rects as soon as the list is (re)opened or its content
     // changes — same as Dropdown. Row registration alone schedules the
@@ -1308,7 +1308,7 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
               height once typing hides the list; -mx-2 cancels the container
               padding so the divider runs the composer's full width. Pointer
               and keyboard share one bg-hover overlay that springs between
-              row rects (proximity-hover, same as Dropdown). */}
+              row rects (fluid-hover, same as Dropdown). */}
           {suggestionsArr.length > 0 && (
             <AnimatePresence initial={false}>
               {suggestionsOpen && (

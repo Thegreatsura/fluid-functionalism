@@ -20,7 +20,7 @@ import { Select as SelectPrimitive } from "@base-ui/react/select";
 import type { IconComponent } from "@/lib/icon-context";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { Elevated } from "@/lib/elevated";
@@ -41,7 +41,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 // flipping, anchor tracking), dismissal (outside press, focus-out, Escape
 // nesting inside dialogs), list keyboard navigation + typeahead, combobox
 // ARIA, and the hidden form input. This layer keeps the
-// proximity-hover overlays, the spring open/close animation (via actionsRef
+// fluid-hover overlays, the spring open/close animation (via actionsRef
 // deferred unmount), and the animated checkmark.
 // ---------------------------------------------------------------------------
 
@@ -65,7 +65,7 @@ function useSelectContext() {
   return ctx;
 }
 
-// Content context for proximity hover
+// Content context for fluid hover
 interface SelectContentContextValue {
   registerItem: (index: number, element: HTMLElement | null) => void;
   activeIndex: number | null;
@@ -348,7 +348,7 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
       handlers,
       registerItem,
       remeasure,
-    } = useProximityHover(containerRef, { isItemDisabled: isDisabledRow });
+    } = useFluidHover(containerRef, { isItemDisabled: isDisabledRow });
 
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
@@ -398,7 +398,7 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
           const container = containerRef.current;
           if (container) {
             const items = Array.from(
-              container.querySelectorAll("[data-proximity-index]")
+              container.querySelectorAll("[data-fluid-hover-index]")
             ) as HTMLElement[];
             const idx = items.findIndex(
               (el) => el.getAttribute("data-value") === value
@@ -485,8 +485,8 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
                 onMouseLeave={handlers.onMouseLeave}
                 onFocus={(e) => {
                   const indexAttr = (e.target as HTMLElement)
-                    .closest("[data-proximity-index]")
-                    ?.getAttribute("data-proximity-index");
+                    .closest("[data-fluid-hover-index]")
+                    ?.getAttribute("data-fluid-hover-index");
                   if (indexAttr != null) {
                     const idx = Number(indexAttr);
                     setActiveIndex(idx);
@@ -660,7 +660,7 @@ const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
       hasMounted.current = true;
     }, []);
 
-    // Register with proximity hover. Depends on the (stable) registerItem
+    // Register with fluid hover. Depends on the (stable) registerItem
     // rather than the content context, which is rebuilt on every activeIndex
     // change: keying the effect to the whole context re-ran it per mousemove,
     // unregistering and re-registering every row and so keeping the hook's
@@ -692,7 +692,7 @@ const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
                 (ref as React.MutableRefObject<HTMLDivElement | null>).current =
                   node;
             }}
-            data-proximity-index={index}
+            data-fluid-hover-index={index}
             data-value={value}
             className={cn(
               // Fixed height (was py-2 around a 19.5px line box ≈ 35.5px) so

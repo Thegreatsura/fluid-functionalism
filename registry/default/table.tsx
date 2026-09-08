@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 
 // ── Context ──────────────────────────────────────────────
 
@@ -50,7 +50,7 @@ const Table = forwardRef<HTMLTableElement, TableProps>(
       handlers,
       registerItem,
       measureItems,
-    } = useProximityHover(containerRef);
+    } = useFluidHover(containerRef);
 
     useEffect(() => {
       measureItems();
@@ -172,7 +172,7 @@ const TableRow = forwardRef<HTMLTableRowElement, TableRowProps>(
           if (typeof ref === "function") ref(node);
           else if (ref) (ref as React.MutableRefObject<HTMLTableRowElement | null>).current = node;
         }}
-        data-proximity-index={index}
+        data-fluid-hover-index={index}
         className={cn(
           "group/row relative z-10 border-b transition-[border-color] duration-80",
           hideBorder ? "border-transparent" : "border-accent/40",

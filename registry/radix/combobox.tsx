@@ -21,7 +21,7 @@ import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { useIcon, type IconComponent } from "@/lib/icon-context";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 import {
   useMergeSplitBlocks,
   useSelectionRuns,
@@ -46,7 +46,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 // outside-press and focus-out dismissal) with its own listbox: the input
 // keeps DOM focus while ArrowUp/ArrowDown move an aria-activedescendant
 // highlight through the rows, Enter picks the highlighted row, Escape
-// closes. Filtering runs over the `items` prop. The proximity-hover
+// closes. Filtering runs over the `items` prop. The fluid-hover
 // overlays, spring open/close animation, and animated checkmark are the
 // same visuals as Select.
 //
@@ -122,7 +122,7 @@ function useComboboxContext() {
   return ctx;
 }
 
-// Content context for proximity hover
+// Content context for fluid hover
 interface ComboboxContentContextValue {
   registerItem: (index: number, element: HTMLElement | null) => void;
   activeIndex: number | null;
@@ -957,7 +957,7 @@ const ComboboxContent = forwardRef<HTMLDivElement, ComboboxContentProps>(
 ComboboxContent.displayName = "ComboboxContent";
 
 // ---------------------------------------------------------------------------
-// ComboboxList — renders a row per matching item, carrying the proximity
+// ComboboxList — renders a row per matching item, carrying the fluid hover
 // hover overlays and the animated selected background / focus ring.
 // ---------------------------------------------------------------------------
 
@@ -984,7 +984,7 @@ const ComboboxList = forwardRef<HTMLDivElement, ComboboxListProps>(
       handlers,
       registerItem,
       remeasure,
-    } = useProximityHover(containerRef, { isItemDisabled: isDisabledRow });
+    } = useFluidHover(containerRef, { isItemDisabled: isDisabledRow });
 
     // Fresh rects once per open — the popup keeps its rows registered while
     // it sits mounted through the exit tween, so registration alone never
@@ -1017,7 +1017,7 @@ const ComboboxList = forwardRef<HTMLDivElement, ComboboxListProps>(
       if (!highlight.keyboard) return;
       setActiveIndex(highlight.index);
       const row = containerRef.current?.querySelector<HTMLElement>(
-        `[data-proximity-index="${highlight.index}"]`
+        `[data-fluid-hover-index="${highlight.index}"]`
       );
       row?.scrollIntoView({ block: "nearest" });
     }, [highlight, setActiveIndex]);
@@ -1193,7 +1193,7 @@ const ComboboxItem = forwardRef<HTMLDivElement, ComboboxItemProps>(
       hasMounted.current = true;
     }, []);
 
-    // Register with proximity hover. Depends on the (stable) registerItem
+    // Register with fluid hover. Depends on the (stable) registerItem
     // rather than the content context, which is rebuilt on every activeIndex
     // change.
     const registerItem = contentCtx?.registerItem;
@@ -1221,7 +1221,7 @@ const ComboboxItem = forwardRef<HTMLDivElement, ComboboxItemProps>(
         role="option"
         aria-selected={isChecked}
         aria-disabled={disabled || undefined}
-        data-proximity-index={index}
+        data-fluid-hover-index={index}
         data-value={value}
         // Keep DOM focus in the input: a press on a row must not blur it.
         onPointerDown={(e) => e.preventDefault()}

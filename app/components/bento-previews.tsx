@@ -158,7 +158,7 @@ function CardPreview() {
   ];
   return (
     <div className="w-full max-w-[460px]">
-      <CardGroup orientation="card" columns={2} proximityHover>
+      <CardGroup orientation="card" columns={2} fluidHover>
         {items.map((item) => (
           <Card key={item.title} label={item.title}>
             <CardHeader>

@@ -29,7 +29,7 @@ import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 import { useSize, SizeProvider, type SizeVariant } from "@/lib/size-context";
-import { useProximityHover, type ItemRect } from "@/hooks/use-proximity-hover";
+import { useFluidHover, type ItemRect } from "@/hooks/use-fluid-hover";
 import type { IconComponent } from "@/lib/icon-context";
 import { resolveSlotTemplate, slotElement } from "@/components/ui/sidebar-core";
 
@@ -39,12 +39,12 @@ const useIsoLayoutEffect =
 
 // ─── Menu scope ──────────────────────────────────────────────────────────────
 //
-// One scope per SidebarMenu tree: a single proximity-hover system plus the
+// One scope per SidebarMenu tree: a single fluid-hover system plus the
 // traveling overlays — hover background, active background(s), focus ring —
 // that glide between every visible row, sub-menu rows included, so the hover
 // moves from a parent into its children as one continuous piece. Sub rows
 // live inside positioned ancestors, so their rects are accumulated into the
-// menu's own coordinate space by the proximity hook. The active background
+// menu's own coordinate space by the fluid hover hook. The active background
 // stays one per level (the root rows, and each sub-menu) so a current section
 // and the current page inside it can both be lit, exactly as before.
 
@@ -94,7 +94,7 @@ const MenuActionsClusterContext = createContext(false);
 /** True while the element sits inside a collapsed sub-tree — clipped away,
  *  so it must be invisible to hover, highlights, and keyboard order. Rows
  *  stay registered either way: unregistering on every toggle would churn the
- *  proximity measurements and blink the overlays. */
+ *  fluid hover measurements and blink the overlays. */
 function rowHidden(el: HTMLElement) {
   return el.closest('[data-sidebar="menu-sub"][data-state="closed"]') !== null;
 }
@@ -154,7 +154,7 @@ function useMenuScope(
     sessionRef,
     handlers,
     registerItem,
-  } = useProximityHover(containerRef, { isItemDisabled: rowHidden });
+  } = useFluidHover(containerRef, { isItemDisabled: rowHidden });
 
   const rowsRef = useRef<Set<HTMLElement>>(new Set());
   const rowButtonsRef = useRef<Map<HTMLElement, HTMLElement>>(new Map());
@@ -183,7 +183,7 @@ function useMenuScope(
   );
 
   // Rows register by element; indexes are derived from DOM order so consumers
-  // never pass an index prop and conditional rows just work. The proximity
+  // never pass an index prop and conditional rows just work. The fluid hover
   // system measures the row's BUTTON, not the <li>: a row hosting an expanded
   // sub-tree is a tall <li>, and hit-testing against that whole box would hand
   // the sub-tree's gaps and gutter to the parent — the button strip is the
@@ -223,7 +223,7 @@ function useMenuScope(
       if (button) rowButtonsRef.current.set(row, button);
       else rowButtonsRef.current.delete(row);
       // The button is the row's measured element, so a button arriving after
-      // its row registered must re-sync what the proximity system observes.
+      // its row registered must re-sync what the fluid hover system observes.
       syncRows();
     },
     [syncRows]

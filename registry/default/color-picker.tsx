@@ -25,7 +25,7 @@ import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { useSurface, SurfaceProvider } from "@/lib/surface-context";
 import { surfaceClasses } from "@/lib/surface-classes";
 import { useIcon } from "@/lib/icon-context";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { Elevated } from "@/lib/elevated";
 import { Slider } from "@/registry/radix/slider";
 import { Tooltip } from "@/registry/radix/tooltip";
@@ -654,7 +654,7 @@ function AlphaSlider({
 // (anchor tracking + collision flipping — the old hand-rolled version computed
 // coordinates once on open and detached from the trigger on scroll),
 // dismissal, roving highlight, and typeahead. Menu.RadioGroup/RadioItem carry
-// the radio semantics. This layer keeps the proximity-hover
+// the radio semantics. This layer keeps the fluid-hover
 // overlays and the spring open/close animation (actionsRef deferred unmount —
 // the same verified pattern as select.tsx / dropdown.tsx).
 // ---------------------------------------------------------------------------
@@ -712,7 +712,7 @@ function FormatItem({
       render={
         <div
           ref={ref}
-          data-proximity-index={index}
+          data-fluid-hover-index={index}
           className={cn(
             "relative z-10 flex items-center cursor-pointer outline-none",
             compact ? "px-2.5 py-1.5" : "px-3 py-2",
@@ -777,7 +777,7 @@ function FormatDropdown({
     handlers,
     registerItem,
     measureItems,
-  } = useProximityHover(containerRef);
+  } = useFluidHover(containerRef);
 
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
@@ -893,8 +893,8 @@ function FormatDropdown({
                 onMouseLeave={handlers.onMouseLeave}
                 onFocus={(e) => {
                   const indexAttr = (e.target as HTMLElement)
-                    .closest("[data-proximity-index]")
-                    ?.getAttribute("data-proximity-index");
+                    .closest("[data-fluid-hover-index]")
+                    ?.getAttribute("data-fluid-hover-index");
                   if (indexAttr != null) {
                     const idx = Number(indexAttr);
                     setActiveIndex(idx);
@@ -988,7 +988,7 @@ function FormatDropdown({
                 </AnimatePresence>
 
                 {/* display: contents keeps items direct flex children of the
-                    popup so proximity measurement and gap layout still work,
+                    popup so fluid hover measurement and gap layout still work,
                     while the group provides the radio value context. */}
                 <Menu.RadioGroup
                   value={value}

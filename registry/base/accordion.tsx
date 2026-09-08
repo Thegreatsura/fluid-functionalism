@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { useIcon } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 
@@ -131,7 +131,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
       handlers,
       registerItem,
       measureItems,
-    } = useProximityHover(containerRef);
+    } = useFluidHover(containerRef);
 
     const registerFullItem = useCallback(
       (index: number, element: HTMLElement | null) => {
@@ -155,7 +155,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
           height: el.offsetHeight,
         });
       });
-      // Skip the state update when nothing moved (mirrors the proximity
+      // Skip the state update when nothing moved (mirrors the fluid hover
       // hook's measureItems guard) — this runs per animation frame via
       // onUpdate, and an unconditional set would invalidate the group
       // context and re-render every item even on no-op remeasures.
@@ -256,7 +256,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
     const focusRect = focusedIndex !== null ? itemRects[focusedIndex] : null;
     // An open item tints its trigger by default; "item" restores the older
     // block treatment that spans the panel too. The trigger rects are the
-    // ones proximity already tracks, so this is a choice of source.
+    // ones fluid hover already tracks, so this is a choice of source.
     // "trigger" tints the open row only while you're on it: the panel below
     // already says the item is open, so the fill goes back to being a hover
     // affordance rather than a persistent state.
@@ -306,7 +306,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
       measureFullItems();
     }, [measureItems, measureFullItems]);
 
-    // Memoized: the group re-renders on every proximity-hover mousemove; a
+    // Memoized: the group re-renders on every fluid-hover mousemove; a
     // fresh context object each time would re-render every item with it.
     const groupContextValue = useMemo<AccordionGroupContextValue>(
       () => ({
@@ -384,8 +384,8 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
                 onMouseLeave={handlers.onMouseLeave}
                 onFocus={(e) => {
                   const indexAttr = (e.target as HTMLElement)
-                    .closest("[data-proximity-index]")
-                    ?.getAttribute("data-proximity-index");
+                    .closest("[data-fluid-hover-index]")
+                    ?.getAttribute("data-fluid-hover-index");
                   if (indexAttr != null) {
                     const idx = Number(indexAttr);
                     setActiveIndex(idx);
@@ -699,7 +699,7 @@ const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(
                       ref as React.MutableRefObject<HTMLDivElement | null>
                     ).current = node;
                 }}
-                data-proximity-index={index}
+                data-fluid-hover-index={index}
                 className={cn(!groupCtx?.grouped && "relative", className)}
                 {...props}
               >

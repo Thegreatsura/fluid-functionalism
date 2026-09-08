@@ -58,7 +58,7 @@ export const CUSTOM_ITEMS = new Set([
   "icon-context",
   "springs",
   "sidebar-menu-grid",
-  "use-proximity-hover",
+  "use-fluid-hover",
   "use-merge-split",
   "use-touch-primary",
   "elevated",

@@ -19,7 +19,7 @@ import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 import { useIcon, type IconComponent } from "@/lib/icon-context";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 import {
   useMergeSplitBlocks,
   useSelectionRuns,
@@ -43,7 +43,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 // primitive, which owns the filtering, the combobox/listbox ARIA wiring
 // (aria-activedescendant — the input keeps focus while arrows move a
 // highlight through the rows), positioning, dismissal, and the hidden form
-// input. This layer keeps the proximity-hover overlays, the spring open/
+// input. This layer keeps the fluid-hover overlays, the spring open/
 // close animation (via actionsRef deferred unmount), and the animated
 // checkmark — the same visuals as Select.
 //
@@ -83,7 +83,7 @@ const ComboboxContext = createContext<ComboboxContextValue | null>(null);
 
 /** Highlighted row (the primitive's active index over the rendered rows)
  *  and whether a keyboard/auto highlight put it there — pointer highlights
- *  are left to proximity hover. Its own context so a per-pointer highlight
+ *  are left to fluid hover. Its own context so a per-pointer highlight
  *  re-renders the list, not the field and every row. */
 interface Highlight {
   index: number;
@@ -98,7 +98,7 @@ function useComboboxContext() {
   return ctx;
 }
 
-// Content context for proximity hover
+// Content context for fluid hover
 interface ComboboxContentContextValue {
   registerItem: (index: number, element: HTMLElement | null) => void;
   activeIndex: number | null;
@@ -685,7 +685,7 @@ const ComboboxContent = forwardRef<HTMLDivElement, ComboboxContentProps>(
 ComboboxContent.displayName = "ComboboxContent";
 
 // ---------------------------------------------------------------------------
-// ComboboxList — renders a row per matching item, carrying the proximity
+// ComboboxList — renders a row per matching item, carrying the fluid hover
 // hover overlays and the animated selected background / focus ring.
 // ---------------------------------------------------------------------------
 
@@ -711,7 +711,7 @@ const ComboboxList = forwardRef<HTMLDivElement, ComboboxListProps>(
       handlers,
       registerItem,
       remeasure,
-    } = useProximityHover(containerRef, { isItemDisabled: isDisabledRow });
+    } = useFluidHover(containerRef, { isItemDisabled: isDisabledRow });
 
     // Checked rows by index — one in single mode, any number in multiple.
     const [checkedIndices, setCheckedIndices] = useState<number[]>([]);
@@ -736,7 +736,7 @@ const ComboboxList = forwardRef<HTMLDivElement, ComboboxListProps>(
           const container = containerRef.current;
           if (container) {
             const rows = Array.from(
-              container.querySelectorAll("[data-proximity-index]")
+              container.querySelectorAll("[data-fluid-hover-index]")
             ) as HTMLElement[];
             const next: number[] = [];
             rows.forEach((el, i) => {
@@ -925,7 +925,7 @@ const ComboboxItem = forwardRef<HTMLDivElement, ComboboxItemProps>(
       hasMounted.current = true;
     }, []);
 
-    // Register with proximity hover. Depends on the (stable) registerItem
+    // Register with fluid hover. Depends on the (stable) registerItem
     // rather than the content context, which is rebuilt on every activeIndex
     // change.
     const registerItem = contentCtx?.registerItem;
@@ -956,7 +956,7 @@ const ComboboxItem = forwardRef<HTMLDivElement, ComboboxItemProps>(
               else if (ref)
                 (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
             }}
-            data-proximity-index={index}
+            data-fluid-hover-index={index}
             data-value={value}
             className={cn(
               // Fixed height so the text-box trim on the label doesn't

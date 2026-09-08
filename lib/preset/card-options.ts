@@ -37,7 +37,7 @@ export interface CardPlayState {
   columns: CardColumns;
   border: CardBorder;
   separated: boolean;
-  proximity: boolean;
+  fluidHover: boolean;
   /** Selection mode: every card becomes clickable and one stays selected. */
   selected: boolean;
 }
@@ -54,7 +54,7 @@ export const DEFAULT_CARD_STATE: CardPlayState = {
   columns: 2,
   border: "none",
   separated: false,
-  proximity: true,
+  fluidHover: true,
   selected: false,
 };
 
@@ -76,7 +76,7 @@ export const CARD_PRESET_FIELDS: readonly PresetField[] = [
   { key: "columns", values: [2, 1, 3], bits: 3 },
   { key: "border", values: ["none", "outlined"], bits: 2 },
   { key: "separated", values: [false, true], bits: 1 },
-  { key: "proximity", values: [true, false], bits: 1 },
+  { key: "fluidHover", values: [true, false], bits: 1 },
   { key: "selected", values: [false, true], bits: 1 },
   { key: "flavor", values: ["radix", "base"], bits: 3 },
   { key: "shape", values: ["rounded", "pill"], bits: 2 },
@@ -130,7 +130,7 @@ export const CARD_ITEMS = [
   { icon: "shield", title: "Accessible by default", description: "Focus-visible rings and ARIA roles in every part" },
   { icon: "palette", title: "Yours to theme", description: "Swap radius, icons, and primitive at runtime" },
   { icon: "moon", title: "Dark mode ready", description: "Tokens adapt to light and dark automatically" },
-  { icon: "search", title: "Proximity hover", description: "A magnetic highlight previews where a click lands" },
+  { icon: "search", title: "Fluid hover", description: "A magnetic highlight previews where a click lands" },
   { icon: "lightbulb", title: "Drop-in registry", description: "Install any component with one shadcn command" },
 ] as const;
 

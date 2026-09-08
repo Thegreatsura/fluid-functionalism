@@ -18,8 +18,8 @@ export interface SystemEntry {
 }
 
 export const systemList: SystemEntry[] = [
+  { slug: "fluid-hover", name: "Fluid Hover", description: "Hover that never blinks and always follows your cursor to the nearest item.", isNew: true },
   { slug: "motion", name: "Motion", description: "Spring tokens, faster exits, fluid hover, and reflow-free weight animation — the motion rules shared by every component." },
-  { slug: "fluid-hover", name: "Fluid Hover", description: "1 highlight per list, springing to the item nearest the cursor. Plain :hover next to fluid hover, the math behind it, and the 3 axes.", isNew: true },
   { slug: "scrollbars", name: "Scrollbars", description: "A scrollbar that stays out of the way but never disappears, over shadcn's scroll-fade baseline — restyled to the shape system, native scroll on touch." },
   { slug: "sizes", name: "Sizes", description: "A two-step size ladder — a 36px default and a 28px compact — shared by buttons, inputs, selects, tabs, and rows." },
   { slug: "surfaces", name: "Surfaces", description: "Eight-level surface and shadow ladder for elevation in light and dark mode." },

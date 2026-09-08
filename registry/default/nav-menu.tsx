@@ -14,7 +14,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { useShape } from "@/lib/shape-context";
 
 interface NavMenuContextValue {
@@ -51,7 +51,7 @@ const NavMenu = forwardRef<HTMLElement, NavMenuProps>(
       handlers,
       registerItem,
       measureItems,
-    } = useProximityHover(containerRef);
+    } = useFluidHover(containerRef);
 
     useEffect(() => {
       measureItems();

@@ -33,7 +33,7 @@ const shape = shapeMap.rounded;
 // ---------------------------------------------------------------------------
 
 /** What MenuItem hands to the popup's primitive wrapper. `element` is the
- *  styled row div (visuals + proximity registration, no children); `children`
+ *  styled row div (visuals + fluid hover registration, no children); `children`
  *  is the row content (icon, label, check). The dropdown wraps them in its
  *  own Item / RadioItem primitive, so MenuItem itself stays primitive-free. */
 export interface MenuItemRenderOptions {
@@ -251,7 +251,7 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
       // aria-checked, tabIndex, roving highlight, typeahead, and Enter/Space/
       // click activation (activation synthesizes a click, so handleActivate
       // also fires for keyboard). The styled div carries the Fluid
-      // Functionalism visuals and the proximity-hover registration; MenuItem
+      // Functionalism visuals and the fluid-hover registration; MenuItem
       // itself imports no primitive.
       return renderMenuItem({
         radio: !isCheckbox && typeof checked === "boolean",
@@ -265,7 +265,7 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
         element: (
           <div
             ref={mergeRef}
-            data-proximity-index={index}
+            data-fluid-hover-index={index}
             aria-label={label}
             onClick={handleActivate}
             className={itemClassName}
@@ -279,7 +279,7 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
     return (
       <div
         ref={mergeRef}
-        data-proximity-index={index}
+        data-fluid-hover-index={index}
         // Disabled items are never the roving tab stop.
         tabIndex={
           !disabled && index === (checkedIndex ?? checkedIndices?.[0] ?? 0) ? 0 : -1

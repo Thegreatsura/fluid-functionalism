@@ -47,7 +47,7 @@ describe("neutralizeComponentImports", () => {
   it("leaves lib and hook imports for the CLI's own alias mapping", () => {
     for (const src of [
       'import { spring } from "@/registry/default/lib/springs";',
-      'import { useProximityHover } from "@/registry/default/hooks/use-proximity-hover";',
+      'import { useFluidHover } from "@/registry/default/hooks/use-fluid-hover";',
     ]) {
       expect(neutralizeComponentImports(src)).toBe(src);
     }

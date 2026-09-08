@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { useIcon } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 
@@ -131,7 +131,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
       handlers,
       registerItem,
       measureItems,
-    } = useProximityHover(containerRef);
+    } = useFluidHover(containerRef);
 
     const registerFullItem = useCallback(
       (index: number, element: HTMLElement | null) => {
@@ -147,7 +147,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
     const measureFullItems = useCallback(() => {
       if (!containerRef.current) return;
       const next = new Map<number, ItemRect>();
-      // Use offset* (layout coords) to match the proximity hook's items.
+      // Use offset* (layout coords) to match the fluid hover hook's items.
       // getBoundingClientRect would return visual coords already scaled by
       // any ancestor transform; once applied as CSS inside the same scaled
       // container, the overlay would scale a second time.
@@ -159,7 +159,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
           height: el.offsetHeight,
         });
       });
-      // Skip the state update when nothing moved (mirrors the proximity
+      // Skip the state update when nothing moved (mirrors the fluid hover
       // hook's measureItems guard) — this runs per animation frame via
       // onUpdate, and an unconditional set would invalidate the group
       // context and re-render every item even on no-op remeasures.
@@ -264,7 +264,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
     // Dimming: reduce expanded BG opacity when hovering a non-expanded trigger
     // An open item tints its trigger by default; "item" restores the older
     // block treatment that spans the panel too. The trigger rects are the
-    // ones proximity already tracks, so this is a choice of source.
+    // ones fluid hover already tracks, so this is a choice of source.
     // "trigger" tints the open row only while you're on it: the panel below
     // already says the item is open, so the fill goes back to being a hover
     // affordance rather than a persistent state.
@@ -316,7 +316,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
       measureFullItems();
     }, [measureItems, measureFullItems]);
 
-    // Memoized: the group re-renders on every proximity-hover mousemove; a
+    // Memoized: the group re-renders on every fluid-hover mousemove; a
     // fresh context object each time would re-render every item with it.
     const groupContextValue = useMemo<AccordionGroupContextValue>(
       () => ({
@@ -354,7 +354,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
             }}
             onMouseEnter={handlers.onMouseEnter}
             onMouseMove={(e) => {
-              // Suppress proximity hover when cursor is over an expanded
+              // Suppress fluid hover when cursor is over an expanded
               // content area (below the item's trigger). This keeps trigger
               // hover scoped to the trigger row only.
               const container = containerRef.current;
@@ -381,8 +381,8 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
             onMouseLeave={handlers.onMouseLeave}
             onFocus={(e) => {
               const indexAttr = (e.target as HTMLElement)
-                .closest("[data-proximity-index]")
-                ?.getAttribute("data-proximity-index");
+                .closest("[data-fluid-hover-index]")
+                ?.getAttribute("data-fluid-hover-index");
               if (indexAttr != null) {
                 const idx = Number(indexAttr);
                 setActiveIndex(idx);
@@ -651,7 +651,7 @@ const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(
 
     const triggerRef = useRef<HTMLDivElement>(null);
 
-    // Register trigger element (not full item) for proximity hover
+    // Register trigger element (not full item) for fluid hover
     useEffect(() => {
       if (groupCtx?.grouped && index !== undefined) {
         groupCtx.registerItem(index, triggerRef.current);
@@ -686,7 +686,7 @@ const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(
           }}
           value={value}
           disabled={disabled}
-          data-proximity-index={index}
+          data-fluid-hover-index={index}
           className={cn(!groupCtx?.grouped && "relative", className)}
           {...props}
         >
@@ -795,7 +795,7 @@ const AccordionTrigger = forwardRef<HTMLButtonElement, AccordionTriggerProps>(
       </AccordionPrimitive.Header>
     );
 
-    // In grouped mode, wrap in a div for proximity hover registration
+    // In grouped mode, wrap in a div for fluid hover registration
     if (groupCtx?.grouped) {
       return <div ref={triggerRef}>{triggerContent}</div>;
     }

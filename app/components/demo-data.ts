@@ -61,7 +61,7 @@ export const BUTTON_ITEMS = [
 
 export const CHECKBOX_ITEMS = [
   { id: "spring", label: "Spring physics" },
-  { id: "proximity", label: "Fluid hover" },
+  { id: "fluid-hover", label: "Fluid hover" },
   { id: "weight", label: "Font weight transitions" },
   { id: "kbd", label: "Keyboard navigation" },
   { id: "dark", label: "Dark mode support" },
@@ -81,7 +81,7 @@ export const DROPDOWN_ITEMS: readonly {
   label: string;
 }[] = [
   { value: "spring", icon: "circle", label: "Spring animations" },
-  { value: "proximity", icon: "star", label: "Fluid hover" },
+  { value: "fluid-hover", icon: "star", label: "Fluid hover" },
   { value: "weight", icon: "plus", label: "Font weight shifts" },
   { value: "a11y", icon: "heart", label: "Accessible by default" },
   { value: "primitives", icon: "check", label: "Radix or Base UI" },

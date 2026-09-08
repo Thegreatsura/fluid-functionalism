@@ -24,7 +24,7 @@ import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { useSurface } from "@/lib/surface-context";
 import { surfaceClasses } from "@/lib/surface-classes";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 
 /* ─────────────────────── Contexts ─────────────────────── */
 
@@ -192,7 +192,7 @@ const TabsList = forwardRef<HTMLDivElement, TabsListProps>(
       setValueOrder?.(values);
     }, [setValueOrder, valueOrderKey]);
 
-    // Proximity hover
+    // Fluid hover
     const {
       activeIndex: hoveredIndex,
       setActiveIndex: setHoveredIndex,
@@ -200,7 +200,7 @@ const TabsList = forwardRef<HTMLDivElement, TabsListProps>(
       handlers,
       registerItem,
       measureItems,
-    } = useProximityHover(containerRef, { axis: "x" });
+    } = useFluidHover(containerRef, { axis: "x" });
 
     // Register items: bridge from (index, value, el) → registerItem(index, el)
     const registerTab = useCallback(
@@ -210,7 +210,7 @@ const TabsList = forwardRef<HTMLDivElement, TabsListProps>(
       [registerItem]
     );
 
-    // Measure on children change (resizes are covered by useProximityHover's
+    // Measure on children change (resizes are covered by useFluidHover's
     // own container ResizeObserver)
     useEffect(() => {
       measureItems();
@@ -283,7 +283,7 @@ const TabsList = forwardRef<HTMLDivElement, TabsListProps>(
           onFocus={(e) => {
             const trigger = (e.target as HTMLElement).closest('[role="tab"]');
             if (!trigger) return;
-            const indexAttr = trigger.getAttribute("data-proximity-index");
+            const indexAttr = trigger.getAttribute("data-fluid-hover-index");
             if (indexAttr != null) {
               const idx = Number(indexAttr);
               setHoveredIndex(idx);
@@ -457,7 +457,7 @@ const TabItem = forwardRef<HTMLButtonElement, TabItemProps>(
             ).current = node;
         }}
         value={value}
-        data-proximity-index={_index}
+        data-fluid-hover-index={_index}
         className={cn(
           // Fixed height (not py) so the text-box trim below doesn't shrink
           // the tab — browsers without text-box support render identically.

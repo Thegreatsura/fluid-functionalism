@@ -18,9 +18,9 @@ export default function FluidHoverDoc() {
     <DocPage
       title="Fluid Hover"
       slug="fluid-hover"
-      installSlug="use-proximity-hover"
-      installNote="Installs the useProximityHover hook. Every list, menu, strip, and grid in the library hovers with it."
-      description="1 highlight per list. It springs to the item nearest the cursor, so every menu, table, strip, and grid hovers the same way."
+      installSlug="use-fluid-hover"
+      installNote="Installs the useFluidHover hook. Every list, menu, strip, and grid in the library hovers with it."
+      description="Hover that never blinks and always follows your cursor to the nearest item."
     >
       <DocSection title="Nearest, not hovered">
         <p className="text-body leading-relaxed text-muted-foreground">

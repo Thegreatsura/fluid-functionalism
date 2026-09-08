@@ -15,7 +15,7 @@ import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { useMergeSplitBlocks, SelectionBackgrounds } from "@/hooks/use-merge-split";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
@@ -59,7 +59,7 @@ const CheckboxGroup = forwardRef<HTMLDivElement, CheckboxGroupProps>(
       handlers,
       registerItem,
       measureItems,
-    } = useProximityHover(containerRef);
+    } = useFluidHover(containerRef);
 
     useEffect(() => {
       measureItems();
@@ -121,8 +121,8 @@ const CheckboxGroup = forwardRef<HTMLDivElement, CheckboxGroupProps>(
           onMouseLeave={handlers.onMouseLeave}
           onFocus={(e) => {
             const indexAttr = (e.target as HTMLElement)
-              .closest("[data-proximity-index]")
-              ?.getAttribute("data-proximity-index");
+              .closest("[data-fluid-hover-index]")
+              ?.getAttribute("data-fluid-hover-index");
             if (indexAttr != null) {
               const idx = Number(indexAttr);
               setActiveIndex(idx);
@@ -142,7 +142,7 @@ const CheckboxGroup = forwardRef<HTMLDivElement, CheckboxGroupProps>(
             // carries role="checkbox", so a bare [role="checkbox"] selector
             // matches twice per row and arrows skip onto the hidden control.
             const items = Array.from(
-              containerRef.current?.querySelectorAll("[data-proximity-index]") ?? []
+              containerRef.current?.querySelectorAll("[data-fluid-hover-index]") ?? []
             ) as HTMLElement[];
             const currentIdx = items.indexOf(e.target as HTMLElement);
             if (currentIdx === -1) return;
@@ -270,7 +270,7 @@ const CheckboxItem = forwardRef<HTMLDivElement, CheckboxItemProps>(
           if (typeof ref === "function") ref(node);
           else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
         }}
-        data-proximity-index={index}
+        data-fluid-hover-index={index}
         tabIndex={0}
         role="checkbox"
         aria-checked={checked}

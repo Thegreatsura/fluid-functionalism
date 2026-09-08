@@ -169,7 +169,7 @@ function typecheckPreset(preset) {
 
 // Curated matrix: every structural branch flips at least once — each media
 // kind, both orientations (with and without the inline button reversal),
-// every column count, selection mode, borders/separated/proximity, and the
+// every column count, selection mode, borders/separated/fluid hover, and the
 // no-description / no-button extremes.
 // Curated matrix: every structural branch flips at least once — both modes,
 // each selection model, search (with the groups/search exclusion), icons

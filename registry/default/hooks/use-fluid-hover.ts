@@ -17,7 +17,7 @@ export interface ItemRect {
   width: number;
 }
 
-interface UseProximityHoverOptions {
+interface UseFluidHoverOptions {
   /**
    * Which direction to resolve the nearest item along.
    *   "y"  — vertical lists (default): closest by top/height
@@ -35,7 +35,7 @@ interface UseProximityHoverOptions {
   isItemDisabled?: (element: HTMLElement) => boolean;
 }
 
-interface UseProximityHoverReturn {
+interface UseFluidHoverReturn {
   activeIndex: number | null;
   setActiveIndex: Dispatch<SetStateAction<number | null>>;
   itemRects: ItemRect[];
@@ -73,10 +73,10 @@ interface UseProximityHoverReturn {
  */
 const measurementAttempts = 3;
 
-export function useProximityHover<T extends HTMLElement>(
+export function useFluidHover<T extends HTMLElement>(
   containerRef: RefObject<T | null>,
-  options: UseProximityHoverOptions = {}
-): UseProximityHoverReturn {
+  options: UseFluidHoverOptions = {}
+): UseFluidHoverReturn {
   const { axis = "y", isItemDisabled } = options;
   const itemsRef = useRef(new Map<number, HTMLElement>());
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -412,10 +412,10 @@ export function useProximityHover<T extends HTMLElement>(
 }
 
 /**
- * Hook for child items to register themselves with the proximity hover system.
+ * Hook for child items to register themselves with the fluid hover system.
  * Call in useEffect with the item's ref and index.
  */
-export function useRegisterProximityItem(
+export function useRegisterFluidHoverItem(
   registerItem: (index: number, element: HTMLElement | null) => void,
   index: number,
   ref: RefObject<HTMLElement | null>

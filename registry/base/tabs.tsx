@@ -24,7 +24,7 @@ import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { useSurface } from "@/lib/surface-context";
 import { surfaceClasses } from "@/lib/surface-classes";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 
 /* ─────────────────────── Contexts ─────────────────────── */
 
@@ -190,7 +190,7 @@ const TabsList = forwardRef<HTMLDivElement, TabsListProps>(
       handlers,
       registerItem,
       measureItems,
-    } = useProximityHover(containerRef, { axis: "x" });
+    } = useFluidHover(containerRef, { axis: "x" });
 
     const registerTab = useCallback(
       (index: number, _value: string, el: HTMLElement | null) => {
@@ -269,7 +269,7 @@ const TabsList = forwardRef<HTMLDivElement, TabsListProps>(
           onFocus={(e) => {
             const trigger = (e.target as HTMLElement).closest('[role="tab"]');
             if (!trigger) return;
-            const indexAttr = trigger.getAttribute("data-proximity-index");
+            const indexAttr = trigger.getAttribute("data-fluid-hover-index");
             if (indexAttr != null) {
               const idx = Number(indexAttr);
               setHoveredIndex(idx);
@@ -440,7 +440,7 @@ const TabItem = forwardRef<HTMLButtonElement, TabItemProps>(
             ).current = node as HTMLButtonElement | null;
         }}
         value={value}
-        data-proximity-index={_index}
+        data-fluid-hover-index={_index}
         className={cn(
           // Fixed height (not py) so the text-box trim below doesn't shrink
           // the tab — browsers without text-box support render identically.

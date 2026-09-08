@@ -66,9 +66,9 @@ pairs a tighter optical size with the heavier weight so the advance width barely
 changes. The full pattern and rules live in
 [`component-documentation-guidelines.md`](component-documentation-guidelines.md#animated-font-weight--the-ghost-span-pattern).
 
-## Fluid hover (`registry/default/hooks/use-proximity-hover.ts`)
+## Fluid hover (`registry/default/hooks/use-fluid-hover.ts`)
 
-One highlight per list. `useProximityHover` picks the item whose center is
+One highlight per list. `useFluidHover` picks the item whose center is
 nearest the cursor, and a single absolutely positioned `bg-hover` overlay springs
 to that item's rect on `spring.fast`. Every menu, table, strip, and grid in the
 library hovers this way, so the mechanism is documented once, on its own system

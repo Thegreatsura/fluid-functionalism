@@ -106,7 +106,7 @@ That's verbose but mechanical. The spike answers this in one component before we
 
 ### 3.5 What is *not* a problem
 
-70%+ of every FF component is the proximity-hover container, focus-ring overlay, animated indicators, font-weight transitions, and surface/shape context. None of that touches Radix. Both flavours can keep that scaffolding identical, **subject to the §3.3 data-attribute audit**.
+70%+ of every FF component is the fluid-hover container, focus-ring overlay, animated indicators, font-weight transitions, and surface/shape context. None of that touches Radix. Both flavours can keep that scaffolding identical, **subject to the §3.3 data-attribute audit**.
 
 ---
 
@@ -118,7 +118,7 @@ That's verbose but mechanical. The spike answers this in one component before we
 registry/
   default/
     lib/                     ← unchanged: utils, springs, font-weight, surface-*, shape, icon
-    hooks/                   ← unchanged: use-proximity-hover
+    hooks/                   ← unchanged: use-fluid-hover
     badge.tsx
     color-picker.tsx         ← stays single-source; Slider dep namespace-rewritten at build time
     dropdown.tsx             ← custom, no Base flavour (out of scope)
@@ -194,7 +194,7 @@ For each of the 9 primitive-touching components:
    - Replace any `asChild` with `render={…}` (form chosen in step 0).
    - Adapt prop signatures (Switch's `onCheckedChange` second arg, Accordion's array-only value).
    - Audit any `data-state` references per §3.3 and rename to the matching Base attribute.
-   - Keep all FF scaffolding (proximity hover, focus rings, indicators, font-weight, surface context) identical.
+   - Keep all FF scaffolding (fluid hover, focus rings, indicators, font-weight, surface context) identical.
 
 ---
 
@@ -342,7 +342,7 @@ New page mirroring `/compare`. Renders all 9 primitive-touching components twice
 
 - `npx shadcn@latest add https://www.fluidfunctionalism.com/r/dialog.json` in a fresh project produces a byte-identical `dialog.tsx` to what it produces today.
 - `npx shadcn@latest add @fluid-base/dialog` in a fresh project (with `@fluid-base` declared in `components.json`) installs the Base UI flavour, pulls in `@fluid-base/button` automatically, and runs without warnings.
-- `/compare-bases` renders all 9 primitive-touching components side by side with no visual diff between flavours under the proximity-hover and focus-ring scaffolding.
+- `/compare-bases` renders all 9 primitive-touching components side by side with no visual diff between flavours under the fluid-hover and focus-ring scaffolding.
 - Every primitive-touching doc page has a working Radix/Base toggle that swaps the install command, code preview, and live demo.
 - `npm run build` and `npm run registry:build` both pass.
 - Docs bundle size delta recorded in the PR description.

@@ -50,7 +50,7 @@ export const POPUP_NAV_KEYS = [
 ];
 
 /**
- * Rows the proximity hover must skip: a disabled row is neither a target
+ * Rows the fluid hover must skip: a disabled row is neither a target
  * nor a hover stop, whichever attribute the primitive marks it with.
  */
 export function isDisabledRow(el: HTMLElement): boolean {

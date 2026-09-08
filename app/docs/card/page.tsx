@@ -153,7 +153,7 @@ const groupProps: PropDef[] = [
   { name: "columns", type: "number", default: "1", description: "Grid columns. Greater than 1 enables 2-D fluid hover across rows and columns." },
   { name: "border", type: '"none" | "outlined"', default: '"none"', description: "Borderless (dividers only) or a drawn border." },
   { name: "separated", type: "boolean", default: "false", description: "Split into individually-shaped tiles with a gap instead of one divided block." },
-  { name: "proximityHover", type: "boolean", default: "true", description: "Enable the fluid hover highlight." },
+  { name: "fluidHover", type: "boolean", default: "true", description: "Enable the fluid hover highlight." },
   { name: "children", type: "ReactNode", description: "Card children. Each is auto-assigned its fluid hover index." },
 ];
 

@@ -25,7 +25,7 @@ import { SURFACE_BG } from "@/lib/surface-classes";
 //
 // DropdownSearch is a text field pinned to the top of a DropdownContent popup.
 // It is controlled: the consumer filters the MenuItems it renders against
-// `value`, so the list can be re-indexed freely (proximity hover keys on the
+// `value`, so the list can be re-indexed freely (fluid hover keys on the
 // indices of whatever is currently mounted). Two things make a field inside a
 // menu behave:
 //
@@ -73,7 +73,7 @@ function menuRows(from: HTMLElement | null): HTMLElement[] {
 interface DropdownSearchHostOptions {
   /** The rows' container: where the first enabled row is looked up. */
   containerRef: RefObject<HTMLElement | null>;
-  /** The popup's proximity-hover setter, for the first-row highlight. */
+  /** The popup's fluid-hover setter, for the first-row highlight. */
   setActiveIndex: (index: number | null) => void;
 }
 
@@ -110,7 +110,7 @@ export function useDropdownSearchHost(
   // in the DOM each time rather than remembered.
   const highlightFirst = useCallback(() => {
     const first = containerRef.current?.querySelector<HTMLElement>(ROW_SELECTOR);
-    const index = first?.getAttribute("data-proximity-index");
+    const index = first?.getAttribute("data-fluid-hover-index");
     setActiveIndex(index != null ? Number(index) : null);
   }, [containerRef, setActiveIndex]);
 

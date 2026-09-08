@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/menu-item";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
-import { useProximityHover } from "@/hooks/use-proximity-hover";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 import {
   useMergeSplitBlocks,
   useSelectionRuns,
@@ -101,7 +101,7 @@ const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
       handlers,
       registerItem,
       measureItems,
-    } = useProximityHover(containerRef, { isItemDisabled: isDisabledRow });
+    } = useFluidHover(containerRef, { isItemDisabled: isDisabledRow });
 
     useEffect(() => {
       measureItems();
@@ -136,8 +136,8 @@ const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
           onMouseLeave={handlers.onMouseLeave}
           onFocus={(e) => {
             const indexAttr = (e.target as HTMLElement)
-              .closest("[data-proximity-index]")
-              ?.getAttribute("data-proximity-index");
+              .closest("[data-fluid-hover-index]")
+              ?.getAttribute("data-fluid-hover-index");
             if (indexAttr != null) {
               const idx = Number(indexAttr);
               setActiveIndex(idx);
@@ -274,7 +274,7 @@ Dropdown.displayName = "Dropdown";
 // Built on Base UI's Menu primitive, which owns the trigger wiring,
 // positioning (collision flipping, anchor tracking), dismissal (outside
 // press, focus-out, Escape), roving highlight, typeahead, and close-on-select.
-// This layer keeps the proximity-hover overlays and the
+// This layer keeps the fluid-hover overlays and the
 // spring open/close animation (via actionsRef deferred unmount) — the same
 // verified pattern as select.tsx.
 // ---------------------------------------------------------------------------
@@ -374,7 +374,7 @@ const DropdownTrigger = Menu.Trigger;
 // DropdownContent (popup panel)
 //
 // Portal > Positioner > Popup carrying the exact inline-panel visuals:
-// Elevated surface, proximity-hover overlays, animated selected background,
+// Elevated surface, fluid-hover overlays, animated selected background,
 // and animated focus ring. Children are wrapped in a Menu.RadioGroup so
 // radio-style MenuItems (boolean `checked`) get correct aria-checked from
 // `checkedIndex`.
@@ -421,7 +421,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
       handlers,
       registerItem,
       measureItems,
-    } = useProximityHover(containerRef, { isItemDisabled: isDisabledRow });
+    } = useFluidHover(containerRef, { isItemDisabled: isDisabledRow });
 
     // An optional DropdownSearch child: typing on a focused row is
     // redirected into the field. (The field takes focus itself, a frame
@@ -499,7 +499,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
     // aria-checked, tabIndex, roving highlight, typeahead, and Enter/Space/
     // click activation (activation synthesizes a click, so the row div's
     // onClick also fires for keyboard). The render div carries the Fluid
-    // Functionalism visuals and the proximity-hover registration.
+    // Functionalism visuals and the fluid-hover registration.
     const renderMenuItem = useCallback(
       ({
         radio,
@@ -604,8 +604,8 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                 }}
                 onFocus={(e) => {
                   const indexAttr = (e.target as HTMLElement)
-                    .closest("[data-proximity-index]")
-                    ?.getAttribute("data-proximity-index");
+                    .closest("[data-fluid-hover-index]")
+                    ?.getAttribute("data-fluid-hover-index");
                   // Keyboard navigation moves the hover background only — no
                   // ring: in a menu the highlighted row is the focus indicator.
                   if (indexAttr != null) {
@@ -697,7 +697,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                 </AnimatePresence>
 
                 {/* display: contents keeps items direct flex children of the
-                    wrapper so proximity measurement and gap layout still work,
+                    wrapper so fluid hover measurement and gap layout still work,
                     while the group provides the radio value context. */}
                 <Menu.RadioGroup
                   value={checkedIndex ?? null}

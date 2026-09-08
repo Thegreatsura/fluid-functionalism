@@ -35,7 +35,7 @@ const basicCode = `import {
           "Read accordion.tsx",
           "Read icon-context.tsx",
           "Read badge.tsx",
-          "Read use-proximity-hover.ts",
+          "Read use-fluid-hover.ts",
           "Read components.ts",
           "Read postbuild-registry.mjs",
         ]}
@@ -754,7 +754,7 @@ export default function ThinkingStepsDoc() {
                     "Read accordion.tsx",
                     "Read icon-context.tsx",
                     "Read badge.tsx",
-                    "Read use-proximity-hover.ts",
+                    "Read use-fluid-hover.ts",
                     "Read components.ts",
                     "Read postbuild-registry.mjs",
                   ]}

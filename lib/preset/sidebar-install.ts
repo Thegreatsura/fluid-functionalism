@@ -601,7 +601,7 @@ function calloutLines(p: SidebarPreset): string[] {
   if (!p.footerCalloutStacked) {
     l.push(`        {callouts.length > 0 && (`);
     if (inline) {
-      l.push(`          <CardGroup orientation="inline" proximityHover={false}>`);
+      l.push(`          <CardGroup orientation="inline" fluidHover={false}>`);
     }
     const ind = inline ? `          ` : `        `;
     l.push(`${ind}  <Card size="compact" dismissible onDismiss={() => dismiss(1)}`);
@@ -641,7 +641,7 @@ function calloutLines(p: SidebarPreset): string[] {
   l.push(`                transition={spring.moderate}`);
   l.push(`                ref={i === 0 ? (el) => { if (el) setCardH(el.offsetHeight); } : undefined}`);
   l.push(`              >`);
-  if (inline) l.push(`                <CardGroup orientation="inline" proximityHover={false}>`);
+  if (inline) l.push(`                <CardGroup orientation="inline" fluidHover={false}>`);
   const ind = inline ? `                ` : `              `;
   l.push(`${ind}  <Card size="compact" dismissible onDismiss={() => dismiss(c.id)}`);
   l.push(...cardClass(ind));

@@ -8,10 +8,10 @@ import { fontWeights } from "@/registry/default/lib/font-weight";
 import { cn } from "@/registry/default/lib/utils";
 import { useShape } from "@/registry/default/lib/shape-context";
 import {
-  useProximityHover,
-  useRegisterProximityItem,
+  useFluidHover,
+  useRegisterFluidHoverItem,
   type ItemRect,
-} from "@/registry/default/hooks/use-proximity-hover";
+} from "@/registry/default/hooks/use-fluid-hover";
 import { Switch } from "@/components/flavored/switch";
 import { Tabs, TabsList, TabItem } from "@/registry/radix/tabs";
 import { Dropdown } from "@/components/flavored/dropdown";
@@ -38,7 +38,7 @@ const ROWS = ["Inbox", "Drafts", "Sent", "Archive", "Trash"];
 
 const FLUID_HOVER_CODE = `import { useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useProximityHover, useRegisterProximityItem } from "@/hooks/use-proximity-hover";
+import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { spring } from "@/lib/springs";
 
 // One list, one highlight. The hook picks the row whose center is nearest
@@ -46,7 +46,7 @@ import { spring } from "@/lib/springs";
 function List({ rows }: { rows: string[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { activeIndex, itemRects, isMeasured, sessionRef, handlers, registerItem } =
-    useProximityHover(containerRef);
+    useFluidHover(containerRef);
   const rect = isMeasured && activeIndex !== null ? itemRects[activeIndex] : null;
 
   return (
@@ -75,7 +75,7 @@ function List({ rows }: { rows: string[] }) {
 // Rows register their element; the hook measures them once per layout change.
 function Row({ index, registerItem, children }) {
   const ref = useRef<HTMLDivElement>(null);
-  useRegisterProximityItem(registerItem, index, ref);
+  useRegisterFluidHoverItem(registerItem, index, ref);
   return <div ref={ref} className="relative z-10 flex h-9 items-center px-3">{children}</div>;
 }`;
 
@@ -91,16 +91,16 @@ if (distance < closestDistance) {
 // so the cursor in a gap, in the padding, or past the last row still lands.
 setActiveIndex(containing ?? nearest);`;
 
-const AXES_CODE = `import { useProximityHover } from "@/hooks/use-proximity-hover";
+const AXES_CODE = `import { useFluidHover } from "@/hooks/use-fluid-hover";
 
 // "y" (default): lists. Nearest by the vertical center, top + height / 2.
-useProximityHover(containerRef);
+useFluidHover(containerRef);
 
 // "x": strips. Nearest by the horizontal center, left + width / 2.
-useProximityHover(containerRef, { axis: "x" });
+useFluidHover(containerRef, { axis: "x" });
 
 // "xy": grids. Nearest center by straight-line distance across rows and columns.
-useProximityHover(containerRef, { axis: "xy" });`;
+useFluidHover(containerRef, { axis: "xy" });`;
 
 // ---------------------------------------------------------------------------
 // Shared bare-row pieces
@@ -119,7 +119,7 @@ function FluidRow({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  useRegisterProximityItem(registerItem, index, ref);
+  useRegisterFluidHoverItem(registerItem, index, ref);
   return (
     <div ref={ref} className={rowClass}>
       {children}
@@ -175,7 +175,7 @@ function FluidHoverList() {
   const containerRef = useRef<HTMLDivElement>(null);
   const shape = useShape();
   const { activeIndex, itemRects, isMeasured, sessionRef, handlers, registerItem } =
-    useProximityHover(containerRef);
+    useFluidHover(containerRef);
   const rect =
     isMeasured && activeIndex !== null ? (itemRects[activeIndex] ?? null) : null;
   return (
@@ -236,7 +236,7 @@ function MathList({ showMath }: { showMath: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const shape = useShape();
   const { activeIndex, itemRects, isMeasured, sessionRef, handlers, registerItem } =
-    useProximityHover(containerRef);
+    useFluidHover(containerRef);
   const [cursorY, setCursorY] = useState<number | null>(null);
 
   const rect =

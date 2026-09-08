@@ -40,7 +40,7 @@ export type ComboboxPreset = ComboboxPlayState & PresetGlobals;
 export const DEFAULT_COMBOBOX_STATE: ComboboxPlayState = {
   multiple: true,
   variant: "bordered",
-  icon: true,
+  icon: false,
   clearable: false,
   error: false,
   disabled: false,
@@ -56,7 +56,7 @@ export const DEFAULT_COMBOBOX_PRESET: ComboboxPreset = {
 export const COMBOBOX_PRESET_FIELDS: readonly PresetField[] = [
   { key: "multiple", values: [true, false], bits: 1 },
   { key: "variant", values: ["bordered", "borderless"], bits: 2 },
-  { key: "icon", values: [true, false], bits: 1 },
+  { key: "icon", values: [false, true], bits: 1 },
   { key: "clearable", values: [false, true], bits: 1 },
   { key: "error", values: [false, true], bits: 1 },
   { key: "disabled", values: [false, true], bits: 1 },

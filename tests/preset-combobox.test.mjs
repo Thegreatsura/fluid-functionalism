@@ -106,7 +106,7 @@ describe("combobox preset codec", () => {
     const code = encodeComboboxPreset({
       multiple: false,
       variant: "borderless",
-      icon: false,
+      icon: true,
       error: true,
       flavor: "base",
     });
@@ -174,13 +174,13 @@ function typecheckPreset(preset) {
 // Curated matrix: every structural branch flips at least once — single and
 // multiple, each field option, and the disabled/error states.
 const MATRIX = [
-  {}, // all defaults: multiple, bordered, leading icon
+  {}, // all defaults: multiple, bordered, no icon
   { multiple: false },
-  { multiple: false, icon: false },
-  { clearable: true },
+  { multiple: false, icon: true },
+  { icon: true, clearable: true },
   { variant: "borderless", error: true },
   { disabled: true },
-  { icon: false, clearable: true, error: true },
+  { clearable: true, error: true },
   { shape: "pill", size: "compact", flavor: "base", variant: "borderless" },
 ];
 

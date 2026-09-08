@@ -84,7 +84,7 @@ export function ComboboxPlayground({ children }: PlaygroundProps) {
 
   const [multiple, setMultiple] = useState(true);
   const [variant, setVariant] = useState<ComboboxFieldVariant>("bordered");
-  const [icon, setIcon] = useState(true);
+  const [icon, setIcon] = useState(false);
   const [clearable, setClearable] = useState(false);
   const [error, setError] = useState(false);
   const [disabled, setDisabled] = useState(false);

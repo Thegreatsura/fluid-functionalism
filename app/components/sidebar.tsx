@@ -29,10 +29,7 @@ interface NavEntry {
 function StatusDot({ entry }: { entry: NavEntry }) {
   // Rendered as a flex sibling of the weight-animated label (the row's gap
   // provides the spacing), matching the old NavItem dot's visual position.
-  if (entry.isUpdated) {
-    return <span className="inline-block size-1.5 shrink-0 rounded-full bg-blue-500" />;
-  }
-  if (entry.isNew) {
+  if (entry.isUpdated || entry.isNew) {
     return (
       <span
         className={`inline-block size-1.5 shrink-0 rounded-full ${entry.dotColor ?? "bg-blue-500"}`}

@@ -4,7 +4,7 @@ export interface ComponentEntry {
   description: string;
   isNew?: boolean;
   isUpdated?: boolean;
-  /** Tailwind bg class overriding the default blue `isNew` dot in the sidebar. */
+  /** Tailwind bg class overriding the default blue `isNew` / `isUpdated` dot in the sidebar. */
   dotColor?: string;
   gridSize?: "large" | "medium" | "small";
 }
@@ -33,9 +33,9 @@ export const componentList: ComponentEntry[] = [
   { slug: "chat-message", name: "ChatMessage", description: "Chat transcript bubble with baked-in motion, user/assistant alignment, and file attachments.", gridSize: "small" },
   { slug: "checkbox-group", name: "CheckboxGroup", description: "Checkbox group with merged backgrounds for contiguous selections.", gridSize: "small" },
   { slug: "color-picker", name: "ColorPicker", description: "Color picker with HEX/RGB/HSL/OKLCH formats, alpha, swatches, and popover trigger.", gridSize: "large" },
-  { slug: "combobox", name: "Combobox", description: "Type-to-filter field with keyboard highlight, proximity hover, and a spring-animated list — items are data, rows are yours.", isNew: true, gridSize: "small" },
+  { slug: "combobox", name: "Combobox", description: "Type-to-filter field with keyboard highlight, proximity hover, and a spring-animated list — items are data, rows are yours.", isNew: true, dotColor: "bg-yellow-400", gridSize: "small" },
   { slug: "dialog", name: "Dialog", description: "Modal dialog with smooth enter/exit animations and overlay — three widths, the largest a canvas for a sidebar.", isUpdated: true, gridSize: "small" },
-  { slug: "dropdown", name: "Dropdown", description: "Menu-style dropdown with proximity hover, animated backgrounds, and an optional search field inside the popup.", isUpdated: true, gridSize: "small" },
+  { slug: "dropdown", name: "Dropdown", description: "Menu-style dropdown with proximity hover, animated backgrounds, and an optional search field inside the popup.", isUpdated: true, dotColor: "bg-yellow-400", gridSize: "small" },
   { slug: "input-copy", name: "InputCopy", description: "Read-only input with copy-to-clipboard button and animated feedback.", gridSize: "small" },
   { slug: "input-group", name: "InputGroup", description: "Input field group with proximity hover and validation.", gridSize: "small" },
   { slug: "input-message", name: "InputMessage", description: "Chat-style message composer with auto-resizing textarea and configurable action slots.", gridSize: "medium" },

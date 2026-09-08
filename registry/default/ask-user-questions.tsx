@@ -26,6 +26,7 @@ import { useIcon } from "@/lib/icon-context";
 import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { useMergeSplitBlocks, SelectionBackgrounds } from "@/hooks/use-merge-split";
 import { Button } from "@/components/ui/button";
+import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
 export interface AskUserOption {
   id?: string;
@@ -935,37 +936,11 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
 
         {/* Single morphing hover indicator (rendered below selected bg
             so a hovered+selected row still reads as clearly selected) */}
-        <AnimatePresence>
-          {activeRect && (
-            <motion.div
-              key={`hover-${sessionRef.current}`}
-              aria-hidden
-              className={cn(
-                "absolute pointer-events-none bg-hover",
-                shape.bg
-              )}
-              initial={{
-                opacity: 0,
-                top: activeRect.top,
-                left: activeRect.left,
-                width: activeRect.width,
-                height: activeRect.height,
-              }}
-              animate={{
-                opacity: 1,
-                top: activeRect.top,
-                left: activeRect.left,
-                width: activeRect.width,
-                height: activeRect.height,
-              }}
-              exit={{ opacity: 0, transition: spring.fast.exit }}
-              transition={{
-                ...spring.fast,
-                opacity: { duration: 0.08 },
-              }}
-            />
-          )}
-        </AnimatePresence>
+        <FluidHoverHighlight
+          rect={activeRect}
+          session={sessionRef.current}
+          className={shape.bg}
+        />
 
         {/* Selected-row backgrounds (merged for contiguous selections).
             A run is normally one block; mid merge/split it is drawn as two

@@ -29,6 +29,7 @@ import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { FileThumbnail } from "@/registry/default/file-thumbnail";
 import { Button } from "@/registry/radix/button";
 import { Tooltip } from "@/registry/radix/tooltip";
+import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -1341,44 +1342,17 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
                     onMouseLeave={suggestionHandlers.onMouseLeave}
                     className="relative mt-2 flex flex-col border-t border-border/60 px-1.5 pt-1.5"
                   >
-                    {/* Hover / keyboard highlight — one overlay sliding
-                        between rows instead of per-row backgrounds. Keyed by
-                        the pointer session so re-entering fades in at the
-                        current row rather than sliding from the last one. */}
-                    <AnimatePresence>
-                      {activeSuggestion != null &&
-                        suggestionRects[activeSuggestion] && (
-                          <motion.div
-                            key={suggestionSession.current}
-                            className={cn(
-                              "pointer-events-none absolute bg-hover",
-                              shape.bg
-                            )}
-                            initial={{
-                              opacity: 0,
-                              top: suggestionRects[activeSuggestion].top,
-                              left: suggestionRects[activeSuggestion].left,
-                              width: suggestionRects[activeSuggestion].width,
-                              height: suggestionRects[activeSuggestion].height,
-                            }}
-                            animate={{
-                              opacity: 1,
-                              top: suggestionRects[activeSuggestion].top,
-                              left: suggestionRects[activeSuggestion].left,
-                              width: suggestionRects[activeSuggestion].width,
-                              height: suggestionRects[activeSuggestion].height,
-                            }}
-                            exit={{
-                              opacity: 0,
-                              transition: spring.fast.exit,
-                            }}
-                            transition={{
-                              ...spring.fast,
-                              opacity: { duration: 0.08 },
-                            }}
-                          />
-                        )}
-                    </AnimatePresence>
+                    {/* Hover / keyboard highlight: one overlay sliding
+                        between rows instead of per-row backgrounds. */}
+                    <FluidHoverHighlight
+                      rect={
+                        activeSuggestion != null
+                          ? (suggestionRects[activeSuggestion] ?? null)
+                          : null
+                      }
+                      session={suggestionSession.current}
+                      className={shape.bg}
+                    />
                     {suggestionsArr.map((s, i) => (
                       <SuggestionRow
                         key={`${s}-${i}`}

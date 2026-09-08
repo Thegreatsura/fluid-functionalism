@@ -282,7 +282,9 @@ describe("fluid hover highlight", () => {
   // that no longer carries one fails until it is removed.
   const HAND_ROLLED_OVERLAYS = new Set([
   ]);
-  const MARKER = "key={sessionRef.current}";
+  // Any session-keyed hover fill, whatever the session ref is called
+  // (`sessionRef`, `suggestionSession`, a template key around either).
+  const MARKER = /key=\{[^}]*[sS]ession[^}]*\}[\s\S]{0,400}?bg-hover/;
 
   function* registrySources(dir) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -294,7 +296,9 @@ describe("fluid hover highlight", () => {
 
   it("no registry file hand-rolls the hover overlay outside the migration list", () => {
     for (const rel of registrySources(join(ROOT, "registry"))) {
-      const hasCopy = readFileSync(join(ROOT, rel), "utf-8").includes(MARKER);
+      // The component is the one place the keyed fill is allowed to live.
+      if (rel === "registry/default/fluid-hover-highlight.tsx") continue;
+      const hasCopy = MARKER.test(readFileSync(join(ROOT, rel), "utf-8"));
       if (hasCopy) {
         expect(
           HAND_ROLLED_OVERLAYS.has(rel),
@@ -307,7 +311,7 @@ describe("fluid hover highlight", () => {
   it("every listed file still carries the copy (drop entries as you migrate)", () => {
     for (const rel of HAND_ROLLED_OVERLAYS) {
       expect(
-        readFileSync(join(ROOT, rel), "utf-8").includes(MARKER),
+        MARKER.test(readFileSync(join(ROOT, rel), "utf-8")),
         `${rel} is migrated; remove it from HAND_ROLLED_OVERLAYS`
       ).toBe(true);
     }

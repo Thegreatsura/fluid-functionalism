@@ -462,8 +462,10 @@ const FieldInput = forwardRef<
   Omit<ComboboxFieldProps, "variant" | "icon" | "error" | "clearable" | "size"> & {
     invalid?: boolean;
     inputClassName?: string;
+    /** The input's `size` attribute: its intrinsic width in characters. */
+    inputSize?: number;
   }
->(({ placeholder, invalid, inputClassName, onKeyDown, onClick, className: _className, ...props }, ref) => {
+>(({ placeholder, invalid, inputClassName, inputSize, onKeyDown, onClick, className: _className, ...props }, ref) => {
   const sizeClasses = useSize();
   const {
     values,
@@ -547,6 +549,7 @@ const FieldInput = forwardRef<
       }}
       type="text"
       role="combobox"
+      size={inputSize}
       aria-expanded={open}
       aria-controls={open ? listId : undefined}
       aria-autocomplete="list"
@@ -749,7 +752,7 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
     const shape = useShape();
     const sizeClasses = useSize(size);
     const compact = sizeClasses.variant === "compact";
-    const { values, itemsByValue, disabled, remove } = useComboboxContext();
+    const { values, itemsByValue, disabled, remove, inputValue } = useComboboxContext();
 
     return (
       <div className="flex flex-col gap-1">
@@ -818,12 +821,16 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
                 );
               })}
             </AnimatePresence>
-            {/* The field itself never animates: chips slide, the field snaps
-                to its slot. Animating it here read as the placeholder sliding
-                in from the right when the last chip went. */}
-            <span className="flex min-w-[64px] flex-1">
+            {/* The field sizes to what is typed (`size` is the intrinsic
+                width; flex-auto grows it across the rest of its row) so it
+                stays beside the chips while it fits and wraps only once the
+                text no longer does. It never animates: chips slide, the
+                field snaps. Animating it read as the placeholder sliding in
+                from the right when the last chip went. */}
+            <span className="flex min-w-6 flex-auto">
               <FieldInput
                 ref={ref}
+                inputSize={Math.max(1, inputValue.length + 1)}
                 placeholder={values.length ? undefined : placeholder}
                 invalid={!!error}
                 inputClassName={cn("w-full", compact ? "h-5 leading-5" : "h-6 leading-6")}

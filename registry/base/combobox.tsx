@@ -487,7 +487,7 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
     const shape = useShape();
     const sizeClasses = useSize(size);
     const compact = sizeClasses.variant === "compact";
-    const { anchorRef, open, disabled } = useComboboxContext();
+    const { anchorRef, open, disabled, inputValue } = useComboboxContext();
 
     return (
       <div className="flex flex-col gap-1">
@@ -567,13 +567,17 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
                       );
                     })}
                   </AnimatePresence>
-                  {/* The field itself never animates: chips slide, the
-                      field snaps to its slot. Animating it here read as the
-                      placeholder sliding in from the right when the last
-                      chip went. */}
-                  <span className="flex min-w-[64px] flex-1">
+                  {/* The field sizes to what is typed (`size` is the
+                      intrinsic width; flex-auto grows it across the rest
+                      of its row) so it stays beside the chips while it
+                      fits and wraps only once the text no longer does.
+                      It never animates: chips slide, the field snaps.
+                      Animating it read as the placeholder sliding in from
+                      the right when the last chip went. */}
+                  <span className="flex min-w-6 flex-auto">
                     <ComboboxPrimitive.Input
                       ref={ref}
+                      size={Math.max(1, inputValue.length + 1)}
                       placeholder={selected?.length ? undefined : placeholder}
                       aria-invalid={!!error || undefined}
                       className={cn(

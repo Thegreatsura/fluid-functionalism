@@ -41,7 +41,7 @@ const basicCode = `import {
 
 const sizesCode = `import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, Button } from "./components";
 
-{/* sm 400 · lg 540 · xl 880 — each one notch narrower in compact regions */}
+{/* sm 400 · lg 540 · xl 880; 1 notch narrower in compact regions */}
 <Dialog>
   <DialogTrigger render={<Button variant="secondary">Small</Button>} />
   <DialogContent size="sm">…</DialogContent>
@@ -65,9 +65,8 @@ const [open, setOpen] = useState(false);
 <Button variant="secondary" onClick={() => setOpen(true)}>Open settings</Button>
 <SettingsDialog open={open} onOpenChange={setOpen} />
 
-// Inside the block: the xl dialog drops its padding and takes a fixed
-// height, so a non-collapsing Sidebar can run its full left edge while
-// the panel scrolls beside it.
+// The xl dialog drops its padding and takes a fixed height; the Sidebar
+// runs the full left edge and the panel scrolls beside it.
 <DialogContent size="xl" className="flex h-[min(640px,calc(100dvh-4rem))] overflow-hidden p-0">
   <SidebarProvider persist={false} shortcut={null} width="13rem" className="h-full min-h-0">
     <Sidebar collapsible="none" className="hidden h-full sm:flex bg-[rgb(var(--overlay)/0.03)]">
@@ -89,21 +88,21 @@ const [open, setOpen] = useState(false);
 
 const dialogProps: PropDef[] = [
   { name: "open", type: "boolean", description: "Controlled open state." },
-  { name: "defaultOpen", type: "boolean", default: "false", description: "Initial open state (uncontrolled)." },
+  { name: "defaultOpen", type: "boolean", default: "false", description: "Initial open state." },
   { name: "onOpenChange", type: "(open: boolean) => void", description: "Called when the dialog opens or closes." },
-  { name: "modal", type: "boolean", default: "true", description: "Trap focus and lock page scroll while open." },
+  { name: "modal", type: "boolean", default: "true", description: "Traps focus and locks page scroll while open." },
 ];
 
 const dialogSlotProps: PropDef[] = [
-  { name: "render", type: "ReactElement", description: "Element to render as the control (the composition API shared with DropdownTrigger), e.g. a Button." },
-  { name: "asChild", type: "boolean", default: "false", description: "Compose onto the single child element instead — the Radix spelling. Both spellings work on both primitive flavors." },
-  { name: "children", type: "ReactNode", description: "Control content when no element is given." },
+  { name: "render", type: "ReactElement", description: "The element that becomes the control, e.g. a Button." },
+  { name: "asChild", type: "boolean", default: "false", description: "Compose onto the single child instead. Both spellings work in both flavors." },
+  { name: "children", type: "ReactNode", description: "Control content when there is no render element." },
 ];
 
 const dialogContentProps: PropDef[] = [
-  { name: "size", type: '"sm" | "lg" | "xl"', default: '"sm"', description: "Width of the dialog: 400, 540, or 880. In compact regions each width narrows one notch (360 / 480 / 800) — padding is unchanged (see /docs/sizes). xl is the canvas for composed layouts; pair it with className=\"p-0\" and a fixed height." },
-  { name: "container", type: "HTMLElement | null", description: "Portal target. Scopes the overlay and panel to a positioned container instead of the viewport." },
-  { name: "children", type: "ReactNode", description: "Content inside the dialog." },
+  { name: "size", type: '"sm" | "lg" | "xl"', default: '"sm"', description: "Width: 400, 540, or 880. Compact regions narrow each by 1 notch: 360, 480, 800. xl is the canvas for layouts; add className=\"p-0\" and a fixed height." },
+  { name: "container", type: "HTMLElement | null", description: "Portal target. Scopes overlay and panel to a positioned container." },
+  { name: "children", type: "ReactNode", description: "Dialog content." },
 ];
 
 function SizeDemo({ size, label }: { size: "sm" | "lg" | "xl"; label: string }) {
@@ -115,10 +114,10 @@ function SizeDemo({ size, label }: { size: "sm" | "lg" | "xl"; label: string }) 
           <DialogTitle>{label} dialog</DialogTitle>
           <DialogDescription>
             {size === "xl"
-              ? "880px wide — room for two columns, a table, or a sidebar beside a panel."
+              ? "880px: 2 columns, a table, or a sidebar beside a panel."
               : size === "lg"
-                ? "540px wide — a form with a few fields, or a longer confirmation."
-                : "400px wide — a confirmation, a single field, a short message."}
+                ? "540px: a short form, or a longer confirmation."
+                : "400px: a confirmation, 1 field, a short message."}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -146,7 +145,7 @@ export default function DialogDoc() {
     <DocPage
       title="Dialog"
       slug="dialog"
-      description="Modal dialog with spring enter and exit, in three widths."
+      description="3 widths, spring in and out."
     >
       <DocSection title="Basic">
         <ComponentPreview code={basicCode}>
@@ -170,9 +169,8 @@ export default function DialogDoc() {
 
       <DocSection title="Sizes">
         <p className="text-subtitle text-muted-foreground">
-          Three widths. <code>sm</code> for a confirmation or a single field,{" "}
-          <code>lg</code> for a short form, <code>xl</code> when the dialog
-          hosts a layout of its own.
+          3 widths: <code>sm</code> for a confirmation, <code>lg</code> for a
+          short form, <code>xl</code> for a layout of its own.
         </p>
         <ComponentPreview code={sizesCode}>
           <div className="flex flex-wrap items-center gap-2">
@@ -185,11 +183,9 @@ export default function DialogDoc() {
 
       <DocSection title="With a sidebar">
         <p className="text-subtitle text-muted-foreground">
-          The <code>dialog-sidebar</code> block: an <code>xl</code> dialog with
-          its padding dropped and a fixed height, a non-collapsing Sidebar of
-          sections down the left edge, and a scrolling panel of settings
-          beside it. Below <code>sm</code> the column hides and a Select takes
-          over navigation.
+          The <code>dialog-sidebar</code> block: an <code>xl</code> dialog, a
+          Sidebar of sections, a scrolling panel. Below <code>sm</code> a
+          Select takes over.
         </p>
         <ComponentPreview code={sidebarCode}>
           <SettingsDialogDemo />

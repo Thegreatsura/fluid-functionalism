@@ -151,7 +151,7 @@ const variantsCode = `import { Combobox, ComboboxInput, ComboboxContent, Combobo
   …
 </Combobox>
 
-{/* Borderless: invisible at rest — the input-field ladder */}
+{/* Borderless: invisible at rest */}
 <Combobox items={frameworks}>
   <ComboboxInput variant="borderless" placeholder="Borderless" />
   …
@@ -194,25 +194,25 @@ const statesCode = `import { Combobox, ComboboxInput, ComboboxContent, ComboboxL
 // ---------------------------------------------------------------------------
 
 const comboboxProps: PropDef[] = [
-  { name: "items", type: "readonly (string | { value: string; label: string })[]", description: "The options. Strings are their own value and label; objects carry value, label, and anything else your rows need." },
-  { name: "multiple", type: "boolean", default: "false", description: "Select any number of items. Values become string[]; pair with ComboboxChips for the field. The list stays open between picks." },
-  { name: "value", type: "string | string[]", description: "Selected value (controlled) — \"\" means none; an array when multiple." },
-  { name: "defaultValue", type: "string | string[]", description: "Initial selection (uncontrolled)." },
-  { name: "onValueChange", type: "(value: string | string[]) => void", description: "Called with the picked value (\"\" when cleared), or the full array when multiple." },
-  { name: "filter", type: "(item, query: string) => boolean", description: "Match an item against the typed query. Defaults to a case-insensitive \"contains\" on the label." },
+  { name: "items", type: "readonly (string | { value: string; label: string })[]", description: "The options. A string is its own value and label; an object carries value, label, and whatever your rows need." },
+  { name: "multiple", type: "boolean", default: "false", description: "Any number of picks. Values become string[]; use ComboboxChips for the field." },
+  { name: "value", type: "string | string[]", description: "Selected value. \"\" means none; an array when multiple." },
+  { name: "defaultValue", type: "string | string[]", description: "Initial selection." },
+  { name: "onValueChange", type: "(value: string | string[]) => void", description: "Called with the pick, \"\" when cleared, or the array when multiple." },
+  { name: "filter", type: "(item, query: string) => boolean", description: "Match an item against the query. Default: case-insensitive contains on the label." },
   { name: "disabled", type: "boolean", default: "false", description: "Disables the field and the popup." },
-  { name: "name", type: "string", description: "Form field name — a hidden input carries the selected value." },
+  { name: "name", type: "string", description: "Form field name; a hidden input carries the value." },
   { name: "required", type: "boolean", description: "Marks the hidden form input required." },
-  { name: "size", type: '"default" | "compact"', description: "Pins field and popup to one step of the size ladder. Omitted, both follow the surrounding SizeProvider." },
+  { name: "size", type: '"default" | "compact"', description: "Pins field and popup to one size step. Omitted, both follow the SizeProvider." },
 ];
 
 const inputProps: PropDef[] = [
-  { name: "variant", type: '"bordered" | "borderless"', default: '"bordered"', description: "Framed at rest, or invisible until hovered/focused (the InputGroup field ladder)." },
+  { name: "variant", type: '"bordered" | "borderless"', default: '"bordered"', description: "Framed at rest, or invisible until hovered or focused." },
   { name: "icon", type: "IconComponent", description: "Leading icon inside the field." },
-  { name: "placeholder", type: "string", default: '"Search…"', description: "Placeholder while nothing is typed or selected." },
+  { name: "placeholder", type: "string", default: '"Search…"', description: "Shown while nothing is typed or selected." },
   { name: "error", type: "string", description: "Error message under the field; tints the ring and sets aria-invalid." },
-  { name: "clearable", type: "boolean", default: "false", description: "Render a ✕ that clears the selection and query. Its slot is always reserved, so the field never changes width." },
-  { name: "size", type: '"default" | "compact"', description: "Size override for the field alone. Prefer size on <Combobox> so the popup matches." },
+  { name: "clearable", type: "boolean", default: "false", description: "A ✕ that clears the pick and the query. Its slot is always reserved, so the width never changes." },
+  { name: "size", type: '"default" | "compact"', description: "Size for the field alone. Prefer size on Combobox so the popup matches." },
 ];
 
 const chipsProps: PropDef[] = [
@@ -220,23 +220,23 @@ const chipsProps: PropDef[] = [
   { name: "icon", type: "IconComponent", description: "Leading icon inside the field." },
   { name: "placeholder", type: "string", default: '"Search…"', description: "Shown while nothing is selected or typed." },
   { name: "error", type: "string", description: "Error message under the field; tints the ring and sets aria-invalid." },
-  { name: "clearable", type: "boolean", default: "false", description: "Render a ✕ that clears every chip and the query. Its slot is always reserved." },
-  { name: "size", type: '"default" | "compact"', description: "Size override for the field alone — the chips and the input step down together." },
+  { name: "clearable", type: "boolean", default: "false", description: "A ✕ that clears every chip and the query. Its slot is always reserved." },
+  { name: "size", type: '"default" | "compact"', description: "Size for the field alone. Chips and input step down together." },
 ];
 
 const contentProps: PropDef[] = [
   { name: "children", type: "ReactNode", description: "ComboboxEmpty and ComboboxList." },
-  { name: "side", type: '"top" | "bottom" | "left" | "right"', default: '"bottom"', description: "Preferred side of the field to place the popup." },
+  { name: "side", type: '"top" | "bottom" | "left" | "right"', default: '"bottom"', description: "Side of the field the popup prefers." },
   { name: "align", type: '"start" | "center" | "end"', default: '"start"', description: "Alignment against the field." },
-  { name: "sideOffset", type: "number", default: "6", description: "Gap between field and popup, in pixels." },
+  { name: "sideOffset", type: "number", default: "6", description: "Gap to the field, in px." },
 ];
 
 const listProps: PropDef[] = [
-  { name: "children", type: "(item, index: number) => ReactNode", description: "Render one row per matching item — return a ComboboxItem. Rows learn their index from the list; you never number them." },
+  { name: "children", type: "(item, index: number) => ReactNode", description: "Return a ComboboxItem per match. Rows get their index from the list." },
 ];
 
 const itemProps: PropDef[] = [
-  { name: "value", type: "string", description: "The item's value — a string item itself, or an object item's value." },
+  { name: "value", type: "string", description: "The item's value: the string itself, or the object's value." },
   { name: "icon", type: "IconComponent", description: "Leading icon in the row." },
   { name: "disabled", type: "boolean", default: "false", description: "Disables the row." },
   { name: "children", type: "ReactNode", description: "The row label." },
@@ -306,7 +306,7 @@ export default function ComboboxDoc() {
     <DocPage
       title="Combobox"
       slug="combobox"
-      description="A text field that filters a list as you type, for a single pick or chips."
+      description="Type to filter a list. 1 pick, or chips."
     >
       <DocSection title="Playground">
         <ComboboxPlaygroundSection />
@@ -314,9 +314,8 @@ export default function ComboboxDoc() {
 
       <DocSection title="Basic">
         <p className="text-subtitle text-muted-foreground">
-          Items are data on the root; <code>ComboboxList</code> takes a render
-          function and calls it for every match, so rows stay yours to shape.
-          Typing highlights the first match — Enter picks it.
+          Items are data on the root, <code>ComboboxList</code> renders a row
+          per match. Type, then press Enter to pick the highlighted row.
         </p>
         <ComponentPreview code={basicCode}>
           <Combobox items={FRAMEWORKS} value={framework} onValueChange={setFramework}>
@@ -352,12 +351,9 @@ export default function ComboboxDoc() {
 
       <DocSection title="Multiple selection">
         <p className="text-subtitle text-muted-foreground">
-          <code>multiple</code> turns the value into an array and{" "}
-          <code>ComboboxChips</code> replaces the field: one chip per pick
-          ahead of the input, wrapping as they accumulate. Rows toggle, and
-          contiguous picks share one merged background that merges and
-          splits as the selection changes. Backspace in an empty field
-          removes the last chip.
+          <code>multiple</code> plus <code>ComboboxChips</code>: 1 chip per
+          pick, touching picks share one background. Press Backspace in an
+          empty field to drop the last chip.
         </p>
         <ComponentPreview code={multipleCode} minHeightClass="min-h-[160px]">
           <Combobox multiple items={FRAMEWORKS} value={stack} onValueChange={setStack}>
@@ -394,7 +390,7 @@ export default function ComboboxDoc() {
       <DocSection title="Long list">
         <p className="text-subtitle text-muted-foreground">
           String items are their own value and label. The list scrolls past
-          300px and a keyboard highlight scrolls its row into view.
+          300px.
         </p>
         <ComponentPreview code={longListCode} minHeightClass="min-h-[160px]">
           <Combobox items={TIMEZONES} value={timezone} onValueChange={setTimezone}>

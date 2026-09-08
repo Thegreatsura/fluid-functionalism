@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
 import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { useShape } from "@/lib/shape-context";
+import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
 interface NavMenuContextValue {
   registerItem: (index: number, element: HTMLElement | null) => void;
@@ -173,33 +174,12 @@ const NavMenu = forwardRef<HTMLElement, NavMenuProps>(
           </AnimatePresence>
 
           {/* Hover background */}
-          <AnimatePresence>
-            {activeRect && (
-              <motion.div
-                key={sessionRef.current}
-                className={`absolute ${shape.bg} bg-hover pointer-events-none`}
-                initial={{
-                  opacity: 0,
-                  top: activeRouteRect?.top ?? activeRect.top,
-                  left: activeRouteRect?.left ?? activeRect.left,
-                  width: activeRouteRect?.width ?? activeRect.width,
-                  height: activeRouteRect?.height ?? activeRect.height,
-                }}
-                animate={{
-                  opacity: 1,
-                  top: activeRect.top,
-                  left: activeRect.left,
-                  width: activeRect.width,
-                  height: activeRect.height,
-                }}
-                exit={{ opacity: 0, transition: spring.fast.exit }}
-                transition={{
-                  ...spring.fast,
-                  opacity: { duration: 0.08 },
-                }}
-              />
-            )}
-          </AnimatePresence>
+          <FluidHoverHighlight
+            rect={activeRect}
+            session={sessionRef.current}
+            from={activeRouteRect}
+            className={shape.bg}
+          />
 
           {/* Focus ring */}
           <AnimatePresence>

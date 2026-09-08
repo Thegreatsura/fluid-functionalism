@@ -29,6 +29,7 @@ import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { Elevated } from "@/lib/elevated";
 import { Slider } from "@/registry/radix/slider";
 import { Tooltip } from "@/registry/radix/tooltip";
+import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -938,33 +939,12 @@ function FormatDropdown({
                 </AnimatePresence>
 
                 {/* Hover background */}
-                <AnimatePresence>
-                  {activeRect && (
-                    <motion.div
-                      key={sessionRef.current}
-                      className={`absolute ${menuShape.bg} bg-hover pointer-events-none`}
-                      initial={{
-                        opacity: 0,
-                        top: checkedRect?.top ?? activeRect.top,
-                        left: checkedRect?.left ?? activeRect.left,
-                        width: checkedRect?.width ?? activeRect.width,
-                        height: checkedRect?.height ?? activeRect.height,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        top: activeRect.top,
-                        left: activeRect.left,
-                        width: activeRect.width,
-                        height: activeRect.height,
-                      }}
-                      exit={{ opacity: 0, transition: spring.fast.exit }}
-                      transition={{
-                        ...spring.fast,
-                        opacity: { duration: 0.08 },
-                      }}
-                    />
-                  )}
-                </AnimatePresence>
+                <FluidHoverHighlight
+                  rect={activeRect}
+                  session={sessionRef.current}
+                  from={checkedRect}
+                  className={menuShape.bg}
+                />
 
                 {/* Focus ring */}
                 <AnimatePresence>

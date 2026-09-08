@@ -17,6 +17,7 @@ import {
   DROPDOWN_DISABLED_LABEL,
   DROPDOWN_DEFAULT_SELECTED,
   DROPDOWN_DEFAULT_PICKED,
+  DROPDOWN_CREATED_ICON,
 } from "./dropdown-options";
 
 function dropdownDemoFile(p: DropdownPreset): string {
@@ -86,10 +87,18 @@ function dropdownDemoFile(p: DropdownPreset): string {
   }
   if (d.search) {
     l.push(`  const [query, setQuery] = useState("");`);
+    // Creatable: the list is state, so a created row can join it.
+    if (d.creatable) l.push(`  const [items, setItems] = useState(ITEMS);`);
     l.push(`  // Filter the rows you render; the popup re-indexes from 0 each time.`);
-    l.push(`  const rows = ITEMS.filter((item) =>`);
+    l.push(`  const rows = ${d.creatable ? "items" : "ITEMS"}.filter((item) =>`);
     l.push(`    item.label.toLowerCase().includes(query.toLowerCase())`);
     l.push(`  );`);
+    if (d.creatable) {
+      l.push(`  // A create row while the query matches no label exactly.`);
+      l.push(`  const q = query.trim();`);
+      l.push(`  const canCreate =`);
+      l.push(`    q !== "" && !items.some((item) => item.label.toLowerCase() === q.toLowerCase());`);
+    }
   } else {
     l.push(`  const rows = ITEMS;`);
   }
@@ -139,8 +148,29 @@ function dropdownDemoFile(p: DropdownPreset): string {
   } else {
     l.push(`      {rows.map(renderRow)}`);
   }
+  if (d.creatable) {
+    // Last, so Enter in the field picks a real match while one exists.
+    const created = [
+      ...(p.icons ? [`icon: ${JSON.stringify(DROPDOWN_CREATED_ICON)}`] : []),
+      "label: q",
+    ].join(", ");
+    l.push(`      {canCreate && (`);
+    l.push(`        <MenuItem`);
+    l.push(`          index={rows.length}`);
+    if (p.icons) l.push(`          icon={icons.plus}`);
+    l.push(`          label={\`Create “\${q}”\`}`);
+    if (p.selection === "multiple") l.push(`          closeOnClick={false}`);
+    l.push(`          onSelect={() => {`);
+    l.push(`            setItems((c) => [...c, { ${created} }]);`);
+    if (p.selection === "single") l.push(`            setSelected(q);`);
+    else if (p.selection === "multiple") l.push(`            toggle(q);`);
+    l.push(`            setQuery("");`);
+    l.push(`          }}`);
+    l.push(`        />`);
+    l.push(`      )}`);
+  }
   if (d.search) {
-    l.push(`      {rows.length === 0 && <DropdownEmpty>No results</DropdownEmpty>}`);
+    l.push(`      {rows.length === 0${d.creatable ? " && !canCreate" : ""} && <DropdownEmpty>No results</DropdownEmpty>}`);
   }
   l.push(`    </>`);
   l.push(`  );`);

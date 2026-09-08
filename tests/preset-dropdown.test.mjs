@@ -115,7 +115,23 @@ describe("dropdown preset codec", () => {
     expect(back.preset.selection).toBe("multiple");
     expect(back.preset.flavor).toBe("base");
     // Pin the literal string — update ONLY on a deliberate version bump.
-    expect(code).toMatchInlineSnapshot(`"da7J"`);
+    expect(code).toMatchInlineSnapshot(`"dbBR"`);
+  });
+
+  // Version "a" codes were published before creatable joined the table;
+  // they must keep decoding, with the new field at its default.
+  it("a version-a code still decodes", () => {
+    const back = decodeDropdownPreset("da7J");
+    expect(back.ok).toBe(true);
+    expect(back.version).toBe("a");
+    expect(back.preset).toEqual({
+      ...DEFAULT_DROPDOWN_PRESET,
+      mode: "inline",
+      selection: "multiple",
+      groups: true,
+      disabledRow: true,
+      flavor: "base",
+    });
   });
 });
 
@@ -185,6 +201,11 @@ const MATRIX = [
   { mode: "inline", search: true }, // search ignored inline
   { selection: "multiple", icons: false, search: true, disabledRow: true },
   { shape: "pill", size: "compact", flavor: "base", groups: true },
+  { search: true, creatable: true },
+  { selection: "multiple", search: true, creatable: true, icons: false },
+  { selection: "none", search: true, creatable: true, disabledRow: true },
+  { creatable: true }, // derived off: no search
+  { mode: "inline", search: true, creatable: true }, // derived off: inline
 ];
 
 describe("dropdown preset install generator", () => {

@@ -444,6 +444,10 @@ export function useFluidHover<T extends HTMLElement>(
       for (const element of itemsRef.current.values()) {
         if (element.contains(target)) return;
       }
+      // A row that unmounted while its own click was still bubbling (a pick
+      // whose primitive re-renders the list synchronously, like a "create"
+      // row that becomes a real item) already landed; it is not a gap.
+      if (!target.isConnected) return;
       // A control that sits between the rows (a search field at the top of
       // a menu, a footer button) keeps its own click too.
       const control = (target as Element).closest?.(

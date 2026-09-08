@@ -53,4 +53,5 @@ export type {
   ComboboxContentProps,
   ComboboxListProps,
   ComboboxItemProps,
+  ComboboxEmptyProps,
 } from "@/registry/base/combobox";

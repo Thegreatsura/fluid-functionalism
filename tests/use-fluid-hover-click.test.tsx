@@ -7,7 +7,8 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
-import { useRef, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
+import { flushSync } from "react-dom";
 import {
   useFluidHover,
   useRegisterFluidHoverItem,
@@ -128,6 +129,40 @@ describe("useFluidHover: gap clicks land on the highlighted row", () => {
     highlight(null);
     fireEvent.click(getByTestId("gap"));
     for (const c of clicks) expect(c).not.toHaveBeenCalled();
+  });
+
+  it("a row that unmounted during its own click is not a gap", () => {
+    // A "create" row becomes a real item inside its click (the primitive
+    // flushes the pick synchronously), so the click reaches the list from a
+    // detached target. It already landed; routing it again would activate
+    // the highlighted row on top.
+    const clicks = [vi.fn(), vi.fn()];
+    let api!: Api;
+    function Vanishing() {
+      const ref = useRef<HTMLDivElement>(null);
+      const [gone, setGone] = useState(false);
+      api = useFluidHover(ref, {});
+      return (
+        <div ref={ref} data-testid="list" {...api.handlers}>
+          <Row index={0} registerItem={api.registerItem} onClick={clicks[0]} />
+          {!gone && (
+            <Row
+              index={1}
+              registerItem={api.registerItem}
+              onClick={() => {
+                clicks[1]();
+                flushSync(() => setGone(true));
+              }}
+            />
+          )}
+        </div>
+      );
+    }
+    const { getByTestId } = render(<Vanishing />);
+    act(() => api.setActiveIndex(0));
+    fireEvent.click(getByTestId("row-1"));
+    expect(clicks[1]).toHaveBeenCalledTimes(1);
+    expect(clicks[0]).not.toHaveBeenCalled();
   });
 
   it("a click inside a row is the row's own, not routed", () => {

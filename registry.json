@@ -2144,7 +2144,7 @@
       "name": "combobox",
       "type": "registry:ui",
       "title": "Combobox",
-      "description": "Type-to-filter combobox with single or multiple (chips, merged selection backgrounds) selection: a text field that filters a list as you type, with keyboard highlight, fluid hover, spring-animated popover, animated checkmark, and clear/chevron controls. Radix flavor (Popover + hand-rolled listbox).",
+      "description": "Type-to-filter combobox with single or multiple (chips, merged selection backgrounds) selection: a text field that filters a list as you type, with keyboard highlight, fluid hover, spring-animated popover, animated checkmark, and clear/chevron controls. Optional create-from-query row (onCreate) and hideSelected for chips fields. Radix flavor (Popover + hand-rolled listbox).",
       "dependencies": [
         "@radix-ui/react-popover",
         "framer-motion",
@@ -2183,7 +2183,7 @@
       "name": "combobox-base",
       "type": "registry:ui",
       "title": "Combobox",
-      "description": "Type-to-filter combobox with single or multiple (chips, merged selection backgrounds) selection: a text field that filters a list as you type, with keyboard highlight, fluid hover, spring-animated popover, animated checkmark, and clear/chevron controls. Base UI flavor.",
+      "description": "Type-to-filter combobox with single or multiple (chips, merged selection backgrounds) selection: a text field that filters a list as you type, with keyboard highlight, fluid hover, spring-animated popover, animated checkmark, and clear/chevron controls. Optional create-from-query row (onCreate) and hideSelected for chips fields. Base UI flavor.",
       "dependencies": [
         "@base-ui/react",
         "framer-motion",

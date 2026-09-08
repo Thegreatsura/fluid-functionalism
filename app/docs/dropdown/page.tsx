@@ -188,6 +188,70 @@ const toggle = (l: string) =>
   </DropdownContent>
 </DropdownMenu>`;
 
+const creatableCode = `import {
+  DropdownMenu, DropdownTrigger, DropdownContent,
+  DropdownSearch, DropdownEmpty, MenuItem, Button,
+} from "./components";
+import { Plus } from "lucide-react";
+import { useState } from "react";
+
+// The library's own components; a created row joins them.
+const [components, setComponents] = useState(["Accordion", "Badge", "Button", /* … */]);
+const [used, setUsed] = useState<string[]>(["Button", "Combobox"]);
+const [query, setQuery] = useState("");
+const matches = components.filter((c) => c.toLowerCase().includes(query.toLowerCase()));
+const toggle = (c: string) =>
+  setUsed((u) => (u.includes(c) ? u.filter((x) => x !== c) : [...u, c]));
+
+// A create row while the query matches no label exactly. Last, so Enter
+// (which picks the first row) takes a real match while one exists.
+const q = query.trim();
+const canCreate = q !== "" && !components.some((c) => c.toLowerCase() === q.toLowerCase());
+
+<DropdownMenu>
+  <DropdownTrigger render={<Button variant="ghost">Components · {used.length}</Button>} />
+  <DropdownContent checkedIndices={matches.flatMap((c, i) => (used.includes(c) ? [i] : []))}>
+    <DropdownSearch value={query} onValueChange={setQuery} placeholder="Search components" />
+    {matches.map((c, i) => (
+      <MenuItem key={c} index={i} label={c} checked={used.includes(c)} onSelect={() => toggle(c)} />
+    ))}
+    {canCreate && (
+      <MenuItem
+        index={matches.length}
+        icon={Plus}
+        label={\`Create “\${q}”\`}
+        closeOnClick={false}
+        onSelect={() => {
+          setComponents((c) => [...c, q]);
+          toggle(q);
+          setQuery("");
+        }}
+      />
+    )}
+    {matches.length === 0 && !canCreate && <DropdownEmpty>No components found</DropdownEmpty>}
+  </DropdownContent>
+</DropdownMenu>`;
+
+const COMPONENTS = [
+  "Accordion",
+  "Badge",
+  "Button",
+  "Card",
+  "CheckboxGroup",
+  "ColorPicker",
+  "Combobox",
+  "Dialog",
+  "Dropdown",
+  "InputGroup",
+  "RadioGroup",
+  "Select",
+  "Sidebar",
+  "Slider",
+  "Switch",
+  "Table",
+  "Tabs",
+];
+
 const LABELS = [
   "Bug",
   "Feature",
@@ -342,6 +406,7 @@ export default function DropdownDoc() {
   const Palette = useIcon("palette");
   const Monitor = useIcon("monitor");
   const ChevronDown = useIcon("chevron-down");
+  const Plus = useIcon("plus");
 
   const items = [
     { icon: SquareLibrary, label: "Teamspaces" },
@@ -363,6 +428,18 @@ export default function DropdownDoc() {
     setLabels((c) => (c.includes(l) ? c.filter((x) => x !== l) : [...c, l]));
   const toggleStatus = (i: number) =>
     setStatuses((c) => (c.includes(i) ? c.filter((x) => x !== i) : [...c, i]));
+  const [components, setComponents] = useState<string[]>(COMPONENTS);
+  const [used, setUsed] = useState<string[]>(["Button", "Combobox"]);
+  const [componentQuery, setComponentQuery] = useState("");
+  const componentMatches = components.filter((c) =>
+    c.toLowerCase().includes(componentQuery.toLowerCase())
+  );
+  const toggleUsed = (c: string) =>
+    setUsed((u) => (u.includes(c) ? u.filter((x) => x !== c) : [...u, c]));
+  const componentQ = componentQuery.trim();
+  const canCreateComponent =
+    componentQ !== "" &&
+    !components.some((c) => c.toLowerCase() === componentQ.toLowerCase());
   const [query, setQuery] = useState("");
   const matches = LANGUAGES.filter((l) =>
     l.toLowerCase().includes(query.toLowerCase())
@@ -532,6 +609,58 @@ export default function DropdownDoc() {
               ))}
               {labelMatches.length === 0 && (
                 <DropdownEmpty>No labels found</DropdownEmpty>
+              )}
+            </DropdownContent>
+          </DropdownMenu>
+        </ComponentPreview>
+      </DocSection>
+
+      <DocSection title="Create from the query">
+        <p className="text-subtitle text-muted-foreground">
+          1 extra row when nothing matches. Type a component that is not
+          there, then press Enter.
+        </p>
+        <ComponentPreview code={creatableCode} minHeightClass="min-h-[160px]">
+          <DropdownMenu>
+            <DropdownTrigger
+              render={
+                <Button variant="ghost">Components · {used.length}</Button>
+              }
+            />
+            <DropdownContent
+              checkedIndices={componentMatches.flatMap((c, i) =>
+                used.includes(c) ? [i] : []
+              )}
+            >
+              <DropdownSearch
+                value={componentQuery}
+                onValueChange={setComponentQuery}
+                placeholder="Search components"
+              />
+              {componentMatches.map((c, i) => (
+                <MenuItem
+                  key={c}
+                  index={i}
+                  label={c}
+                  checked={used.includes(c)}
+                  onSelect={() => toggleUsed(c)}
+                />
+              ))}
+              {canCreateComponent && (
+                <MenuItem
+                  index={componentMatches.length}
+                  icon={Plus}
+                  label={`Create “${componentQ}”`}
+                  closeOnClick={false}
+                  onSelect={() => {
+                    setComponents((c) => [...c, componentQ]);
+                    toggleUsed(componentQ);
+                    setComponentQuery("");
+                  }}
+                />
+              )}
+              {componentMatches.length === 0 && !canCreateComponent && (
+                <DropdownEmpty>No components found</DropdownEmpty>
               )}
             </DropdownContent>
           </DropdownMenu>

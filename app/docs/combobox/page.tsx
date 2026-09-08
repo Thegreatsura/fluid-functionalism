@@ -16,6 +16,11 @@ import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
 import { PlaygroundLayout } from "@/lib/docs/playground";
 import { ComboboxPlayground } from "@/lib/docs/playgrounds/combobox";
+import {
+  COMBOBOX_COMPONENTS,
+  COMBOBOX_DEFAULT_VALUES,
+  comboboxItemFromQuery,
+} from "@/lib/preset/combobox-options";
 
 // ---------------------------------------------------------------------------
 // Demo data
@@ -143,6 +148,67 @@ const [values, setValues] = useState<string[]>(["next", "astro"]);
   </ComboboxContent>
 </Combobox>`;
 
+const creatableCode = `import {
+  Combobox, ComboboxChips, ComboboxContent,
+  ComboboxList, ComboboxItem, ComboboxEmpty,
+} from "./components";
+import { useState } from "react";
+
+// The library's own components; a created row joins them.
+const [components, setComponents] = useState([
+  { value: "accordion", label: "Accordion" },
+  { value: "badge", label: "Badge" },
+  { value: "button", label: "Button" },
+  /* … */
+]);
+const [picked, setPicked] = useState<string[]>(["button", "combobox"]);
+
+{/* onCreate: the last row creates the query when no label matches it
+    exactly. Add the item to \`items\` and return it to select it. */}
+<Combobox
+  multiple
+  items={components}
+  value={picked}
+  onValueChange={setPicked}
+  onCreate={(query) => {
+    const item = { value: query.toLowerCase().replace(/\\s+/g, "-"), label: query };
+    setComponents((prev) => [...prev, item]);
+    return item;
+  }}
+>
+  <ComboboxChips placeholder="Add components…" />
+  <ComboboxContent>
+    <ComboboxEmpty>No component found.</ComboboxEmpty>
+    <ComboboxList>
+      {(item) => (
+        <ComboboxItem key={item.value} value={item.value}>
+          {item.label}
+        </ComboboxItem>
+      )}
+    </ComboboxList>
+  </ComboboxContent>
+</Combobox>`;
+
+const hideSelectedCode = `import {
+  Combobox, ComboboxChips, ComboboxContent,
+  ComboboxList, ComboboxItem, ComboboxEmpty,
+} from "./components";
+
+{/* hideSelected: a pick leaves the list; the chip is the way back */}
+<Combobox multiple hideSelected items={components} value={values} onValueChange={setValues}>
+  <ComboboxChips placeholder="Add components…" />
+  <ComboboxContent>
+    <ComboboxEmpty allSelected="Every component is added.">No component found.</ComboboxEmpty>
+    <ComboboxList>
+      {(item) => (
+        <ComboboxItem key={item.value} value={item.value}>
+          {item.label}
+        </ComboboxItem>
+      )}
+    </ComboboxList>
+  </ComboboxContent>
+</Combobox>`;
+
 const variantsCode = `import { Combobox, ComboboxInput, ComboboxContent, ComboboxList, ComboboxItem } from "./components";
 
 {/* Bordered (default): framed at rest */}
@@ -200,6 +266,9 @@ const comboboxProps: PropDef[] = [
   { name: "defaultValue", type: "string | string[]", description: "Initial selection." },
   { name: "onValueChange", type: "(value: string | string[]) => void", description: "Called with the pick, \"\" when cleared, or the array when multiple." },
   { name: "filter", type: "(item, query: string) => boolean", description: "Match an item against the query. Default: case-insensitive contains on the label." },
+  { name: "onCreate", type: "(query: string) => item | void", description: "Adds a last row that creates the trimmed query whenever no label matches it exactly. Add the item to items and return it to select it." },
+  { name: "createLabel", type: "(query: string) => ReactNode", default: 'Create “query”', description: "The create row's label." },
+  { name: "hideSelected", type: "boolean", default: "false", description: "Multiple only. Picked items leave the list, so it reads as what is left to add. Deselect from the chips." },
   { name: "disabled", type: "boolean", default: "false", description: "Disables the field and the popup." },
   { name: "name", type: "string", description: "Form field name; a hidden input carries the value." },
   { name: "required", type: "boolean", description: "Marks the hidden form input required." },
@@ -233,6 +302,11 @@ const contentProps: PropDef[] = [
 
 const listProps: PropDef[] = [
   { name: "children", type: "(item, index: number) => ReactNode", description: "Return a ComboboxItem per match. Rows get their index from the list." },
+];
+
+const emptyProps: PropDef[] = [
+  { name: "children", type: "ReactNode", description: "Shown when nothing matches the query." },
+  { name: "allSelected", type: "ReactNode", description: "Shown instead when hideSelected has emptied the list with nothing typed." },
 ];
 
 const itemProps: PropDef[] = [
@@ -291,6 +365,11 @@ export default function ComboboxDoc() {
   const [timezone, setTimezone] = useState("");
   const [errored, setErrored] = useState("");
   const [stack, setStack] = useState<string[]>(["next", "astro"]);
+  const [components, setComponents] = useState<readonly { value: string; label: string }[]>(
+    COMBOBOX_COMPONENTS
+  );
+  const [picked, setPicked] = useState<string[]>(COMBOBOX_DEFAULT_VALUES);
+  const [remaining, setRemaining] = useState<string[]>(COMBOBOX_DEFAULT_VALUES);
 
   const frameworkRows = (item: { value: string; label: string } | string) => {
     const value = typeof item === "string" ? item : item.value;
@@ -360,6 +439,48 @@ export default function ComboboxDoc() {
             <ComboboxChips placeholder="Add frameworks…" className="w-[360px] max-w-full" />
             <ComboboxContent>
               <ComboboxEmpty>No framework found.</ComboboxEmpty>
+              <ComboboxList>{frameworkRows}</ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+        </ComponentPreview>
+      </DocSection>
+
+      <DocSection title="Create from the query">
+        <p className="text-subtitle text-muted-foreground">
+          <code>onCreate</code> adds a last row whenever the query matches no
+          label exactly. Type a component that is not there, then press Enter.
+        </p>
+        <ComponentPreview code={creatableCode} minHeightClass="min-h-[160px]">
+          <Combobox
+            multiple
+            items={components}
+            value={picked}
+            onValueChange={setPicked}
+            onCreate={(query) => {
+              const item = comboboxItemFromQuery(query);
+              setComponents((prev) => [...prev, item]);
+              return item;
+            }}
+          >
+            <ComboboxChips placeholder="Add components…" className="w-[360px] max-w-full" />
+            <ComboboxContent>
+              <ComboboxEmpty>No component found.</ComboboxEmpty>
+              <ComboboxList>{frameworkRows}</ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+        </ComponentPreview>
+      </DocSection>
+
+      <DocSection title="Hide picked rows">
+        <p className="text-subtitle text-muted-foreground">
+          <code>hideSelected</code> takes a pick out of the list, so it reads
+          as what is left to add. Remove a chip to bring its row back.
+        </p>
+        <ComponentPreview code={hideSelectedCode} minHeightClass="min-h-[160px]">
+          <Combobox multiple hideSelected items={COMBOBOX_COMPONENTS} value={remaining} onValueChange={setRemaining}>
+            <ComboboxChips placeholder="Add components…" className="w-[360px] max-w-full" />
+            <ComboboxContent>
+              <ComboboxEmpty allSelected="Every component is added.">No component found.</ComboboxEmpty>
               <ComboboxList>{frameworkRows}</ComboboxList>
             </ComboboxContent>
           </Combobox>
@@ -445,6 +566,10 @@ export default function ComboboxDoc() {
 
       <DocSection title="API Reference — ComboboxItem">
         <PropsTable props={itemProps} />
+      </DocSection>
+
+      <DocSection title="API Reference — ComboboxEmpty">
+        <PropsTable props={emptyProps} />
       </DocSection>
     </DocPage>
   );

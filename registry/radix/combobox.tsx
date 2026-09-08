@@ -72,6 +72,19 @@ function defaultFilter(item: ComboboxItemData, query: string) {
     .includes(query.toLocaleLowerCase());
 }
 
+// The create row is one more row in the filtered list, so Enter and the
+// arrows reach it like any row. Its value can't collide with a consumer's;
+// its label is the query it would create.
+const CREATE_VALUE = "\u0000create";
+
+function isCreateItem(item: ComboboxItemData): boolean {
+  return itemValue(item) === CREATE_VALUE;
+}
+
+function defaultCreateLabel(query: string): ReactNode {
+  return `Create “${query}”`;
+}
+
 interface Highlight {
   index: number;
   /** A keyboard/auto highlight also draws the focus ring; a pointer
@@ -93,6 +106,12 @@ interface ComboboxContextValue {
   listId: string;
   filteredItems: readonly ComboboxItemData[];
   itemsByValue: Map<string, ComboboxItemData>;
+  /** The create row's label for the current query; null while no row is
+   *  offered. */
+  createRow: ReactNode | null;
+  /** `hideSelected` has emptied the list with nothing typed: every item is
+   *  a chip already. */
+  allSelected: boolean;
   /** Latest highlight without subscribing to it — rows read this on pointer
    *  move; the value itself lives in ComboboxHighlightContext. */
   highlightRef: React.RefObject<Highlight | null>;
@@ -157,6 +176,16 @@ interface ComboboxProps<
   /** Match an item against the typed query. Defaults to a case-insensitive
    *  "contains" on the label. */
   filter?: (item: T, query: string) => boolean;
+  /** Offer a last row that creates what was typed, whenever the query
+   *  matches no item's label exactly. Called with the trimmed query. Add the
+   *  new item to `items` and return it to select it. */
+  onCreate?: (query: string) => T | void;
+  /** The create row's label. @default (query) => `Create “${query}”` */
+  createLabel?: (query: string) => ReactNode;
+  /** Multiple only: selected items leave the list, so it reads as what is
+   *  left to add. The chips are then the only way to deselect.
+   *  @default false */
+  hideSelected?: boolean;
   disabled?: boolean;
   name?: string;
   required?: boolean;
@@ -183,6 +212,9 @@ function Combobox<
   defaultValue,
   onValueChange,
   filter,
+  onCreate,
+  createLabel = defaultCreateLabel,
+  hideSelected = false,
   disabled = false,
   name,
   required,
@@ -229,11 +261,27 @@ function Combobox<
     setInputValueState(selectedLabel);
   }, [selectedLabel]);
 
+  // The create row appears once the trimmed query matches no label exactly.
+  const trimmedQuery = query.trim();
+  const createItem = useMemo<ComboboxItemData | null>(() => {
+    if (!onCreate || trimmedQuery === "") return null;
+    const lower = trimmedQuery.toLocaleLowerCase();
+    const exists = items.some((item) => itemLabel(item).toLocaleLowerCase() === lower);
+    return exists ? null : { value: CREATE_VALUE, label: trimmedQuery };
+  }, [onCreate, trimmedQuery, items]);
+
+  // What the list shows: the matches less the chips when `hideSelected`,
+  // plus the create row last, so Enter picks a real match while one exists
+  // and only creates once nothing matches.
+  const hideChecked = hideSelected && isMultiple;
   const filteredItems = useMemo(() => {
-    if (query === "") return items;
     const match = filter ?? defaultFilter;
-    return items.filter((item) => match(item, query));
-  }, [items, query, filter]);
+    let visible = query === "" ? items : items.filter((item) => match(item, query));
+    if (hideChecked) visible = visible.filter((item) => !values.includes(itemValue(item)));
+    return createItem ? [...visible, createItem] : visible;
+  }, [items, query, filter, hideChecked, values, createItem]);
+  const allSelected =
+    hideChecked && trimmedQuery === "" && items.length > 0 && filteredItems.length === 0;
 
   // A highlight past the rendered rows (a query that matches nothing, or a
   // list that just shrank) would point aria-activedescendant at no element.
@@ -264,8 +312,27 @@ function Combobox<
     [selectedLabel]
   );
 
+  const onCreateRef = useRef(onCreate);
+  onCreateRef.current = onCreate;
+
   const select = useCallback(
     (item: ComboboxItemData) => {
+      // A pick on the create row is not a selection: it asks the consumer
+      // for the item, selects whatever comes back, and closes like any pick
+      // made while filtering.
+      if (isCreateItem(item)) {
+        const made = onCreateRef.current?.(itemLabel(item));
+        if (made != null) {
+          commitValues(isMultiple ? [...values, itemValue(made)] : [itemValue(made)]);
+          setInputValueState(isMultiple ? "" : itemLabel(made));
+        } else {
+          setInputValueState(isMultiple ? "" : selectedLabel);
+        }
+        setQuery("");
+        setHighlight(null);
+        setOpenState(false);
+        return;
+      }
       const v = itemValue(item);
       if (isMultiple) {
         // Toggle. A pick from an unfiltered list keeps the popup open for
@@ -286,7 +353,7 @@ function Combobox<
       setHighlight(null);
       setOpenState(false);
     },
-    [commitValues, isMultiple, values, query]
+    [commitValues, isMultiple, values, query, selectedLabel]
   );
 
   const remove = useCallback(
@@ -323,6 +390,7 @@ function Combobox<
     if (open) setHighlight((h) => h ?? { index: 0, keyboard: true });
   }, [open]);
 
+  const createRow = createItem ? createLabel(trimmedQuery) : null;
   const ctx = useMemo<ComboboxContextValue>(
     () => ({
       values,
@@ -333,6 +401,8 @@ function Combobox<
       listId,
       filteredItems,
       itemsByValue,
+      createRow,
+      allSelected,
       highlightRef,
       setHighlight,
       setOpen,
@@ -352,6 +422,8 @@ function Combobox<
       listId,
       filteredItems,
       itemsByValue,
+      createRow,
+      allSelected,
       setOpen,
       select,
       remove,
@@ -970,9 +1042,10 @@ interface ComboboxListProps {
 
 const ComboboxList = forwardRef<HTMLDivElement, ComboboxListProps>(
   ({ className, children }, ref) => {
-    const { open, values, multiple, listId, filteredItems, setHighlight } =
+    const { open, values, multiple, listId, filteredItems, setHighlight, createRow } =
       useComboboxContext();
     const highlight = useContext(ComboboxHighlightContext);
+    const PlusIcon = useIcon("plus");
     const shape = popupShape;
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -1128,7 +1201,15 @@ const ComboboxList = forwardRef<HTMLDivElement, ComboboxListProps>(
 
           {filteredItems.map((item, index) => (
             <ComboboxItemIndexContext.Provider key={itemValue(item)} value={index}>
-              {children(item, index)}
+              {/* The create row is the list's, not the consumer's: it reads
+                  the label from the root and picks like any row. */}
+              {isCreateItem(item) ? (
+                <ComboboxItem value={CREATE_VALUE} icon={PlusIcon}>
+                  {createRow}
+                </ComboboxItem>
+              ) : (
+                children(item, index)
+              )}
             </ComboboxItemIndexContext.Provider>
           ))}
         </div>
@@ -1283,9 +1364,15 @@ ComboboxItem.displayName = "ComboboxItem";
 // ComboboxEmpty — shown in place of the list when nothing matches.
 // ---------------------------------------------------------------------------
 
-const ComboboxEmpty = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  ({ className, children, ...props }, ref) => {
-    const { filteredItems } = useComboboxContext();
+interface ComboboxEmptyProps extends HTMLAttributes<HTMLDivElement> {
+  /** Shown instead of the children when `hideSelected` has emptied the
+   *  list with nothing typed: every item is a chip already. */
+  allSelected?: ReactNode;
+}
+
+const ComboboxEmpty = forwardRef<HTMLDivElement, ComboboxEmptyProps>(
+  ({ className, children, allSelected, ...props }, ref) => {
+    const { filteredItems, allSelected: exhausted } = useComboboxContext();
     const sizeClasses = useSize();
     return (
       // Always mounted as a live region; the message only renders while the
@@ -1301,7 +1388,11 @@ const ComboboxEmpty = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>
         )}
         {...props}
       >
-        {filteredItems.length === 0 ? children : null}
+        {filteredItems.length === 0
+          ? exhausted && allSelected !== undefined
+            ? allSelected
+            : children
+          : null}
       </div>
     );
   }
@@ -1333,4 +1424,5 @@ export type {
   ComboboxContentProps,
   ComboboxListProps,
   ComboboxItemProps,
+  ComboboxEmptyProps,
 };

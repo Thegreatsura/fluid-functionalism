@@ -33,6 +33,10 @@ export interface ComboboxPlayState {
   /** Error message under the field. */
   error: boolean;
   disabled: boolean;
+  /** A last row that creates what was typed. */
+  creatable: boolean;
+  /** Multiple only: picked items leave the list. */
+  hideSelected: boolean;
 }
 
 export type ComboboxPreset = ComboboxPlayState & PresetGlobals;
@@ -44,6 +48,8 @@ export const DEFAULT_COMBOBOX_STATE: ComboboxPlayState = {
   clearable: false,
   error: false,
   disabled: false,
+  creatable: false,
+  hideSelected: false,
 };
 
 export const DEFAULT_COMBOBOX_PRESET: ComboboxPreset = {
@@ -53,6 +59,26 @@ export const DEFAULT_COMBOBOX_PRESET: ComboboxPreset = {
 
 // Value arrays are ordered DEFAULT-FIRST. The three site-global fields stay
 // LAST, mirroring SIDEBAR_PRESET_FIELDS exactly.
+const GLOBAL_FIELDS: readonly PresetField[] = [
+  { key: "flavor", values: ["radix", "base"], bits: 3 },
+  { key: "shape", values: ["rounded", "pill"], bits: 2 },
+  { key: "size", values: ["default", "compact"], bits: 2 },
+];
+
+/** Version "a": the table the first published codes used. Kept so those
+ *  codes still decode (the new fields take their defaults). */
+const COMBOBOX_PRESET_FIELDS_A: readonly PresetField[] = [
+  { key: "multiple", values: [true, false], bits: 1 },
+  { key: "variant", values: ["bordered", "borderless"], bits: 2 },
+  { key: "icon", values: [false, true], bits: 1 },
+  { key: "clearable", values: [false, true], bits: 1 },
+  { key: "error", values: [false, true], bits: 1 },
+  { key: "disabled", values: [false, true], bits: 1 },
+  ...GLOBAL_FIELDS,
+];
+
+/** Version "b" (2026-09-08): creatable + hideSelected, ahead of the globals
+ *  so the tail keeps the sidebar's layout. A layout change, hence the bump. */
 export const COMBOBOX_PRESET_FIELDS: readonly PresetField[] = [
   { key: "multiple", values: [true, false], bits: 1 },
   { key: "variant", values: ["bordered", "borderless"], bits: 2 },
@@ -60,9 +86,9 @@ export const COMBOBOX_PRESET_FIELDS: readonly PresetField[] = [
   { key: "clearable", values: [false, true], bits: 1 },
   { key: "error", values: [false, true], bits: 1 },
   { key: "disabled", values: [false, true], bits: 1 },
-  { key: "flavor", values: ["radix", "base"], bits: 3 },
-  { key: "shape", values: ["rounded", "pill"], bits: 2 },
-  { key: "size", values: ["default", "compact"], bits: 2 },
+  { key: "creatable", values: [false, true], bits: 1 },
+  { key: "hideSelected", values: [false, true], bits: 1 },
+  ...GLOBAL_FIELDS,
 ];
 
 // ── Registration (tag "b") ──────────────────────────────────────────────────
@@ -71,8 +97,8 @@ export const COMBOBOX_PRESET_DEF: PresetComponentDef = {
   tag: "b",
   label: "Combobox",
   docsPath: "/docs/combobox",
-  versions: { a: COMBOBOX_PRESET_FIELDS },
-  currentVersion: "a",
+  versions: { a: COMBOBOX_PRESET_FIELDS_A, b: COMBOBOX_PRESET_FIELDS },
+  currentVersion: "b",
   defaults: DEFAULT_COMBOBOX_PRESET as unknown as PresetComponentDef["defaults"],
   installable: true,
 };
@@ -100,6 +126,18 @@ export function decodeComboboxPreset(code: string): ComboboxDecodeResult {
 }
 
 export const COMBOBOX_DEFAULT_CODE = encodeComboboxPreset({});
+
+/** The playground's derived facts, shared by the preview and the generator:
+ *  hiding picked rows needs chips to deselect from, so it only applies in
+ *  multiple mode. */
+export function deriveCombobox(p: ComboboxPlayState) {
+  return { hideSelected: p.multiple && p.hideSelected };
+}
+
+/** How a created row becomes an item: the typed label, slugged as its value. */
+export function comboboxItemFromQuery(query: string) {
+  return { value: query.toLowerCase().replace(/\s+/g, "-"), label: query };
+}
 
 // ── Demo content, shared by the playground preview and the generator ────────
 
@@ -132,5 +170,6 @@ export const COMBOBOX_COPY = {
   placeholder: "Pick a component…",
   placeholderMultiple: "Add components…",
   empty: "No component found.",
+  allSelected: "Every component is added.",
   error: "Pick one to continue.",
 } as const;

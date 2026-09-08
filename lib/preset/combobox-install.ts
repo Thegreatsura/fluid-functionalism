@@ -13,10 +13,12 @@ import {
   COMBOBOX_COMPONENTS,
   COMBOBOX_COPY,
   COMBOBOX_DEFAULT_VALUES,
+  deriveCombobox,
 } from "./combobox-options";
 
 function comboboxDemoFile(p: ComboboxPreset): string {
   const l: string[] = [];
+  const d = deriveCombobox(p);
 
   l.push(`"use client";`);
   l.push(``);
@@ -47,15 +49,30 @@ function comboboxDemoFile(p: ComboboxPreset): string {
   // ── Component ──
   l.push(`export function ComboboxDemo() {`);
   if (p.icon) l.push(`  const SearchIcon = useIcon("search");`);
+  // Creatable: the list is state, so a created row can join it.
+  if (p.creatable) l.push(`  const [items, setItems] = useState(ITEMS);`);
   if (p.multiple) l.push(`  const [values, setValues] = useState<string[]>(${JSON.stringify(COMBOBOX_DEFAULT_VALUES)});`);
   else l.push(`  const [value, setValue] = useState("");`);
   l.push(`  return (`);
 
-  const rootProps: string[] = ["items={ITEMS}"];
+  const rootProps: string[] = [p.creatable ? "items={items}" : "items={ITEMS}"];
   if (p.multiple) rootProps.push("multiple", "value={values}", "onValueChange={setValues}");
   else rootProps.push("value={value}", "onValueChange={setValue}");
+  if (d.hideSelected) rootProps.push("hideSelected");
   if (p.disabled) rootProps.push("disabled");
-  l.push(`    <Combobox ${rootProps.join(" ")}>`);
+  if (p.creatable) {
+    l.push(`    <Combobox`);
+    for (const rp of rootProps) l.push(`      ${rp}`);
+    l.push(`      // The typed label becomes the item; returning it selects it.`);
+    l.push(`      onCreate={(query) => {`);
+    l.push(`        const item = { value: query.toLowerCase().replace(/\\s+/g, "-"), label: query };`);
+    l.push(`        setItems((prev) => [...prev, item]);`);
+    l.push(`        return item;`);
+    l.push(`      }}`);
+    l.push(`    >`);
+  } else {
+    l.push(`    <Combobox ${rootProps.join(" ")}>`);
+  }
 
   const Field = p.multiple ? "ComboboxChips" : "ComboboxInput";
   const fieldProps: string[] = [
@@ -71,7 +88,11 @@ function comboboxDemoFile(p: ComboboxPreset): string {
   l.push(`      />`);
 
   l.push(`      <ComboboxContent>`);
-  l.push(`        <ComboboxEmpty>${COMBOBOX_COPY.empty}</ComboboxEmpty>`);
+  if (d.hideSelected) {
+    l.push(`        <ComboboxEmpty allSelected=${JSON.stringify(COMBOBOX_COPY.allSelected)}>${COMBOBOX_COPY.empty}</ComboboxEmpty>`);
+  } else {
+    l.push(`        <ComboboxEmpty>${COMBOBOX_COPY.empty}</ComboboxEmpty>`);
+  }
   l.push(`        <ComboboxList>`);
   l.push(`          {(item) => {`);
   l.push(`            const { value, label } = item as (typeof ITEMS)[number];`);

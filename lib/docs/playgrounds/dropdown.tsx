@@ -14,7 +14,7 @@ import {
 import { MenuItem } from "@/registry/default/menu-item";
 import { Button } from "@/registry/radix/button";
 import { Switch } from "@/registry/radix/switch";
-import { useIcons } from "@/lib/icon-context";
+import { useIcons, type IconName } from "@/lib/icon-context";
 import {
   PLAY_SWITCH,
   PlayField,
@@ -31,6 +31,7 @@ import {
   DROPDOWN_DISABLED_LABEL,
   DROPDOWN_DEFAULT_SELECTED,
   DROPDOWN_DEFAULT_PICKED,
+  DROPDOWN_CREATED_ICON,
   deriveDropdown,
   encodeDropdownPreset,
   decodeDropdownPreset,
@@ -44,6 +45,9 @@ import {
 } from "@/lib/docs/preset-ui";
 import type { PlaygroundProps } from "./types";
 
+/** One seed row, widened from the tuple so created rows fit the same type. */
+type DropdownRow = { icon: IconName; label: string; group: string };
+
 // ── Dropdown playground ──────────────────────────────────
 // A live sandbox: the controls drive a real dropdown — popup or inline panel,
 // radio / checkbox / action rows, an optional search field, groups — with the
@@ -56,6 +60,7 @@ function buildPlaygroundCode(o: {
   icons: boolean;
   groups: boolean;
   disabledRow: boolean;
+  creatable: boolean;
 }) {
   const isMenu = o.mode === "menu";
   const row = (label: string, i: number, icon?: string) => {
@@ -98,12 +103,38 @@ function buildPlaygroundCode(o: {
         ? `const [picked, setPicked] = useState(["Email", "Notifications"]);\nconst checkedIndices = rows.flatMap((r, i) => (picked.includes(r.label) ? [i] : []));\n\n`
         : "";
   // `rows` is what the JSX reads; without a search it is simply the seed list.
+  // Creatable: the list is state, so a created row can join it.
   const search = o.search
-    ? `const [query, setQuery] = useState("");\nconst rows = ITEMS.filter((r) => r.label.toLowerCase().includes(query.toLowerCase()));\n`
+    ? `const [query, setQuery] = useState("");\n${o.creatable ? "const [items, setItems] = useState(ITEMS);\n" : ""}const rows = ${o.creatable ? "items" : "ITEMS"}.filter((r) => r.label.toLowerCase().includes(query.toLowerCase()));\n${
+        o.creatable
+          ? 'const q = query.trim();\nconst canCreate = q !== "" && !items.some((r) => r.label.toLowerCase() === q.toLowerCase());\n'
+          : ""
+      }`
     : o.selection === "none"
       ? ""
       : "const rows = ITEMS;\n";
   const indent = (s: string, n: number) => " ".repeat(n) + s;
+  // The create row is last, so Enter picks a real match while one exists.
+  const createRow = o.creatable
+    ? [
+        "{canCreate && (",
+        "  <MenuItem",
+        "    index={rows.length}",
+        ...(o.icons ? ["    icon={Plus}"] : []),
+        "    label={`Create “${q}”`}",
+        ...(o.selection === "multiple" ? ["    closeOnClick={false}"] : []),
+        "    onSelect={() => {",
+        `      setItems((c) => [...c, { ${o.icons ? 'icon: "plus", ' : ""}label: q }]);`,
+        ...(o.selection === "single" ? ["      setSelected(q);"] : o.selection === "multiple" ? ["      toggle(q);"] : []),
+        '      setQuery("");',
+        "    }}",
+        "  />",
+        ")}",
+      ]
+    : [];
+  const empty = o.search
+    ? [`{rows.length === 0${o.creatable ? " && !canCreate" : ""} && <DropdownEmpty>No results</DropdownEmpty>}`]
+    : [];
   if (!isMenu) {
     return `${search}${state}<Dropdown${container} aria-label="Settings">\n${rows.map((r) => indent(r, 2)).join("\n")}\n</Dropdown>`;
   }
@@ -116,7 +147,7 @@ function buildPlaygroundCode(o: {
   return `${search}${state}<DropdownMenu>
   <DropdownTrigger render={<Button variant="ghost" trailingIcon={ChevronDown}>${trigger}</Button>} />
   <DropdownContent${container}>
-${o.search ? indent('<DropdownSearch value={query} onValueChange={setQuery} placeholder="Search…" />', 4) + "\n" : ""}${rows.map((r) => indent(r, 4)).join("\n")}${o.search ? "\n" + indent("{rows.length === 0 && <DropdownEmpty>No results</DropdownEmpty>}", 4) : ""}
+${o.search ? indent('<DropdownSearch value={query} onValueChange={setQuery} placeholder="Search…" />', 4) + "\n" : ""}${[...rows, ...createRow, ...empty].map((r) => indent(r, 4)).join("\n")}
   </DropdownContent>
 </DropdownMenu>`;
 }
@@ -130,13 +161,16 @@ export function DropdownPlayground({ children }: PlaygroundProps) {
   const [showIcons, setShowIcons] = useState(true);
   const [groups, setGroups] = useState(false);
   const [disabledRow, setDisabledRow] = useState(false);
+  const [creatable, setCreatable] = useState(false);
 
   // Live selection state, by label so it survives filtering.
   const [selected, setSelected] = useState<string | null>(DROPDOWN_DEFAULT_SELECTED);
   const [picked, setPicked] = useState<string[]>([...DROPDOWN_DEFAULT_PICKED]);
   const [query, setQuery] = useState("");
+  // The rows are state so a created row can join them.
+  const [items, setItems] = useState<readonly DropdownRow[]>(DROPDOWN_ITEMS);
 
-  const d = deriveDropdown({ mode, selection, search, icons: showIcons, groups, disabledRow });
+  const d = deriveDropdown({ mode, selection, search, icons: showIcons, groups, disabledRow, creatable });
 
   const code = buildPlaygroundCode({
     mode,
@@ -145,6 +179,7 @@ export function DropdownPlayground({ children }: PlaygroundProps) {
     icons: showIcons,
     groups: d.groups,
     disabledRow,
+    creatable: d.creatable,
   });
 
   // ── Get code (presets) ─────────────────────────────────
@@ -159,6 +194,7 @@ export function DropdownPlayground({ children }: PlaygroundProps) {
     icons: showIcons,
     groups,
     disabledRow,
+    creatable,
     ...globals,
   });
   usePresetUrlSync(presetCode, DROPDOWN_DEFAULT_CODE, (raw) => {
@@ -171,6 +207,7 @@ export function DropdownPlayground({ children }: PlaygroundProps) {
       setShowIcons(p.icons);
       setGroups(p.groups);
       setDisabledRow(p.disabledRow);
+      setCreatable(p.creatable);
     }
   });
 
@@ -183,21 +220,43 @@ export function DropdownPlayground({ children }: PlaygroundProps) {
     setShowIcons(Math.random() > 0.3);
     setGroups(Math.random() > 0.6);
     setDisabledRow(Math.random() > 0.7);
+    setCreatable(Math.random() > 0.6);
     setQuery("");
+    setItems(DROPDOWN_ITEMS);
   };
 
   const toggle = (label: string) =>
     setPicked((c) => (c.includes(label) ? c.filter((x) => x !== label) : [...c, label]));
 
   const rows = d.search
-    ? DROPDOWN_ITEMS.filter((item) =>
+    ? items.filter((item) =>
         item.label.toLowerCase().includes(query.toLowerCase())
       )
-    : DROPDOWN_ITEMS;
+    : items;
   const checkedIndex = rows.findIndex((item) => item.label === selected);
   const checkedIndices = rows.flatMap((item, i) => (picked.includes(item.label) ? [i] : []));
 
-  const renderRow = (item: (typeof DROPDOWN_ITEMS)[number], index: number) => (
+  // A create row while the query matches no label exactly. Last, so Enter
+  // in the field picks a real match while one exists.
+  const q = query.trim();
+  const canCreate =
+    d.creatable && q !== "" && !items.some((item) => item.label.toLowerCase() === q.toLowerCase());
+  const createRow = canCreate && (
+    <MenuItem
+      index={rows.length}
+      icon={showIcons ? icons[DROPDOWN_CREATED_ICON] : undefined}
+      label={`Create “${q}”`}
+      closeOnClick={selection === "multiple" ? false : undefined}
+      onSelect={() => {
+        setItems((c) => [...c, { icon: DROPDOWN_CREATED_ICON, label: q, group: DROPDOWN_GROUPS[1] }]);
+        if (selection === "single") setSelected(q);
+        else if (selection === "multiple") toggle(q);
+        setQuery("");
+      }}
+    />
+  );
+
+  const renderRow = (item: DropdownRow, index: number) => (
     <MenuItem
       key={item.label}
       index={index}
@@ -234,7 +293,8 @@ export function DropdownPlayground({ children }: PlaygroundProps) {
             );
           })
         : rows.map(renderRow)}
-      {d.search && rows.length === 0 && <DropdownEmpty>No results</DropdownEmpty>}
+      {createRow}
+      {d.search && rows.length === 0 && !canCreate && <DropdownEmpty>No results</DropdownEmpty>}
     </>
   );
 
@@ -305,6 +365,13 @@ export function DropdownPlayground({ children }: PlaygroundProps) {
           checked={d.search}
           onToggle={() => setSearch((v) => !v)}
           disabled={mode !== "menu"}
+          className={PLAY_SWITCH}
+        />
+        <Switch
+          label="Create from query"
+          checked={d.creatable}
+          onToggle={() => setCreatable((v) => !v)}
+          disabled={!d.search}
           className={PLAY_SWITCH}
         />
       </div>

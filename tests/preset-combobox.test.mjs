@@ -115,7 +115,23 @@ describe("combobox preset codec", () => {
     expect(back.preset.multiple).toBe(false);
     expect(back.preset.flavor).toBe("base");
     // Pin the literal string — update ONLY on a deliberate version bump.
-    expect(code).toMatchInlineSnapshot(`"ba2l"`);
+    expect(code).toMatchInlineSnapshot(`"bb8x"`);
+  });
+
+  // Version "a" codes were published before creatable/hideSelected joined the
+  // table; they must keep decoding, with the new fields at their defaults.
+  it("a version-a code still decodes", () => {
+    const back = decodeComboboxPreset("ba2l");
+    expect(back.ok).toBe(true);
+    expect(back.version).toBe("a");
+    expect(back.preset).toEqual({
+      ...DEFAULT_COMBOBOX_PRESET,
+      multiple: false,
+      variant: "borderless",
+      icon: true,
+      error: true,
+      flavor: "base",
+    });
   });
 });
 
@@ -182,6 +198,11 @@ const MATRIX = [
   { disabled: true },
   { clearable: true, error: true },
   { shape: "pill", size: "compact", flavor: "base", variant: "borderless" },
+  { creatable: true },
+  { multiple: false, creatable: true, icon: true },
+  { hideSelected: true },
+  { creatable: true, hideSelected: true, clearable: true },
+  { multiple: false, hideSelected: true }, // derived off: single mode
 ];
 
 describe("combobox preset install generator", () => {

@@ -37,6 +37,8 @@ export interface DropdownPlayState {
   groups: boolean;
   /** One row rendered disabled. */
   disabledRow: boolean;
+  /** A last row that creates what was typed (needs search). */
+  creatable: boolean;
 }
 
 export type DropdownPreset = DropdownPlayState & PresetGlobals;
@@ -48,6 +50,7 @@ export const DEFAULT_DROPDOWN_STATE: DropdownPlayState = {
   icons: true,
   groups: false,
   disabledRow: false,
+  creatable: false,
 };
 
 export const DEFAULT_DROPDOWN_PRESET: DropdownPreset = {
@@ -57,6 +60,26 @@ export const DEFAULT_DROPDOWN_PRESET: DropdownPreset = {
 
 // Value arrays are ordered DEFAULT-FIRST. The three site-global fields stay
 // LAST, mirroring SIDEBAR_PRESET_FIELDS exactly.
+const GLOBAL_FIELDS: readonly PresetField[] = [
+  { key: "flavor", values: ["radix", "base"], bits: 3 },
+  { key: "shape", values: ["rounded", "pill"], bits: 2 },
+  { key: "size", values: ["default", "compact"], bits: 2 },
+];
+
+/** Version "a": the table the first published codes used. Kept so those
+ *  codes still decode (the new field takes its default). */
+const DROPDOWN_PRESET_FIELDS_A: readonly PresetField[] = [
+  { key: "mode", values: ["menu", "inline"], bits: 2 },
+  { key: "selection", values: ["single", "multiple", "none"], bits: 2 },
+  { key: "search", values: [false, true], bits: 1 },
+  { key: "icons", values: [true, false], bits: 1 },
+  { key: "groups", values: [false, true], bits: 1 },
+  { key: "disabledRow", values: [false, true], bits: 1 },
+  ...GLOBAL_FIELDS,
+];
+
+/** Version "b" (2026-09-08): creatable, ahead of the globals so the tail
+ *  keeps the sidebar's layout. A layout change, hence the bump. */
 export const DROPDOWN_PRESET_FIELDS: readonly PresetField[] = [
   { key: "mode", values: ["menu", "inline"], bits: 2 },
   { key: "selection", values: ["single", "multiple", "none"], bits: 2 },
@@ -64,9 +87,8 @@ export const DROPDOWN_PRESET_FIELDS: readonly PresetField[] = [
   { key: "icons", values: [true, false], bits: 1 },
   { key: "groups", values: [false, true], bits: 1 },
   { key: "disabledRow", values: [false, true], bits: 1 },
-  { key: "flavor", values: ["radix", "base"], bits: 3 },
-  { key: "shape", values: ["rounded", "pill"], bits: 2 },
-  { key: "size", values: ["default", "compact"], bits: 2 },
+  { key: "creatable", values: [false, true], bits: 1 },
+  ...GLOBAL_FIELDS,
 ];
 
 // ── Registration (tag "d") ──────────────────────────────────────────────────
@@ -75,8 +97,8 @@ export const DROPDOWN_PRESET_DEF: PresetComponentDef = {
   tag: "d",
   label: "Dropdown",
   docsPath: "/docs/dropdown",
-  versions: { a: DROPDOWN_PRESET_FIELDS },
-  currentVersion: "a",
+  versions: { a: DROPDOWN_PRESET_FIELDS_A, b: DROPDOWN_PRESET_FIELDS },
+  currentVersion: "b",
   defaults: DEFAULT_DROPDOWN_PRESET as unknown as PresetComponentDef["defaults"],
   installable: true,
 };
@@ -107,12 +129,19 @@ export const DROPDOWN_DEFAULT_CODE = encodeDropdownPreset({});
 
 /** The playground's derived facts, shared by the preview and the generator:
  *  a search field only lives in the popup, and it replaces the groups (a
- *  filtered list re-indexes from 0, which labelled sections can't follow). */
+ *  filtered list re-indexes from 0, which labelled sections can't follow).
+ *  The create row reads the query, so it needs the search. */
 export function deriveDropdown(p: DropdownPlayState) {
   const search = p.mode === "menu" && p.search;
   const groups = !search && p.groups;
-  return { search, groups };
+  const creatable = search && p.creatable;
+  return { search, groups, creatable };
 }
+
+/** A row the create row makes from the query: the plus icon marks it as
+ *  user-made; the group only matters while groups are on, which search
+ *  turns off. */
+export const DROPDOWN_CREATED_ICON = "plus" as const;
 
 // ── Demo content, shared by the playground preview and the generator ────────
 

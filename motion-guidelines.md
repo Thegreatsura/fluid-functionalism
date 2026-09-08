@@ -66,6 +66,41 @@ pairs a tighter optical size with the heavier weight so the advance width barely
 changes. The full pattern and rules live in
 [`component-documentation-guidelines.md`](component-documentation-guidelines.md#animated-font-weight--the-ghost-span-pattern).
 
+## Fluid hover (`registry/default/hooks/use-proximity-hover.ts`)
+
+One highlight per list. `useProximityHover` picks the item whose center is
+nearest the cursor, and a single absolutely positioned `bg-hover` overlay springs
+to that item's rect on `spring.fast`. Every menu, table, strip, and grid in the
+library hovers this way, so the mechanism is documented once, on its own system
+page (`app/docs/fluid-hover/page.tsx`, served at `/docs/fluid-hover`; demos in
+`demos.tsx` beside it), with three demos:
+
+1. **Nearest, not hovered.** Plain `:hover` next to fluid hover on the same 5
+   rows with 4px gaps. Plain `:hover` lights nothing between rows; fluid hover
+   lights the nearest row and travels to it instead of blinking.
+2. **Show the math.** A switch reveals each row's center, the midpoint between
+   neighbouring centers (where the highlight flips), and the distance from the
+   cursor to the winning center.
+3. **3 axes.** `y` (default) for lists, `x` for strips, `xy` for grids, on real
+   components stacked vertically: Tabs, an inline Dropdown, and a 2-column CardGroup.
+
+Rules the hook enforces, worth knowing when you consume it:
+
+- **A containing item always wins; otherwise the nearest center does.** The
+  cursor in a gap, in the container padding, or past the last row still lands.
+- **One overlay, re-keyed per entry.** Consumers key the overlay on
+  `sessionRef.current`, which increments on `onMouseEnter`, so the highlight
+  fades in at the nearest row instead of sliding over from where it was last.
+  Dropdowns seed the entry rect from the checked row instead.
+- **Gate the overlay on `isMeasured`.** Rects are measured with `offset*`
+  (transform-proof) one frame after registration; an overlay mounted against a
+  rect a later pass corrects animates from the wrong place.
+- **`isItemDisabled` skips a row without unregistering it**, for rows that stay
+  mounted while clipped away (a collapsed sidebar sub-tree).
+
+The overlay still animates `top` / `left` / `width` / `height`, so it is not
+auto-reduced by `MotionConfig` (see [Reduced motion](#reduced-motion)).
+
 ## Where each speed shows up
 
 The Motion page renders a high-level map of which component *leads* with which
@@ -74,7 +109,7 @@ Keep this table and that array identical.
 
 | fast (0.08s) | moderate (0.16s, no bounce) | slow (0.24s) |
 |---|---|---|
-| Hover & focus rings, Checkbox, Radio, Table rows, Card proximity, Tooltip, Input copy, Slider, Select / Combobox / Color picker open, Accordion | Dropdown / Select highlight, Tabs indicator, Switch thumb, Chat & message bubbles, Mobile drawer, Sidebar, Selection merge / split | Dialog, Ask-user questions, Thinking steps |
+| Fluid hover, Focus rings, Checkbox, Radio, Table rows, Card grid, Tooltip, Input copy, Slider, Select / Combobox / Color picker open, Accordion | Dropdown / Select highlight, Tabs indicator, Switch thumb, Chat & message bubbles, Mobile drawer, Sidebar, Selection merge / split | Dialog, Ask-user questions, Thinking steps |
 
 Most components *also* use `fast` for their hover and focus states on top of
 their headline tier — the table lists each component once, by its headline

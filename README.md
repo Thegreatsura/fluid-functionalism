@@ -45,26 +45,26 @@ The icon-library switcher on the docs site is a preview tool only — none of th
 
 | Component | Description |
 |---|---|
-| [Accordion](https://www.fluidfunctionalism.com/docs/accordion) | Collapsible sections with animated expand/collapse and proximity hover |
+| [Accordion](https://www.fluidfunctionalism.com/docs/accordion) | Collapsible sections with animated expand/collapse and fluid hover |
 | [AskUserQuestions](https://www.fluidfunctionalism.com/docs/ask-user-questions) | Stepped question flow with single/multi-select, inline "other" input, and multi-question navigation |
 | [Badge](https://www.fluidfunctionalism.com/docs/badge) | Compact label with solid and dot variants, Tailwind color palette |
 | [Button](https://www.fluidfunctionalism.com/docs/button) | Variants, sizes, loading state, and icon support |
-| [Card](https://www.fluidfunctionalism.com/docs/card) | One prop-driven card — stacked, inline, or grid layouts, borderless dividers, media/logo/feature slots, and 2-D proximity hover |
+| [Card](https://www.fluidfunctionalism.com/docs/card) | One prop-driven card — stacked, inline, or grid layouts, borderless dividers, media/logo/feature slots, and 2-D fluid hover |
 | [CheckboxGroup](https://www.fluidfunctionalism.com/docs/checkbox-group) | Merged backgrounds for contiguous selections |
 | [ColorPicker](https://www.fluidfunctionalism.com/docs/color-picker) | HEX, RGB, HSL, and OKLCH formats with alpha, swatches, and eyedropper; inline or popover |
-| [Combobox](https://www.fluidfunctionalism.com/docs/combobox) | Type-to-filter field with keyboard highlight, proximity hover, and a spring-animated list |
+| [Combobox](https://www.fluidfunctionalism.com/docs/combobox) | Type-to-filter field with keyboard highlight, fluid hover, and a spring-animated list |
 | [Dialog](https://www.fluidfunctionalism.com/docs/dialog) | Modal with smooth enter/exit animations and overlay — sm/lg/xl, the largest a canvas for a sidebar |
-| [Dropdown](https://www.fluidfunctionalism.com/docs/dropdown) | Menu-style dropdown with proximity hover and an optional search field in the popup |
+| [Dropdown](https://www.fluidfunctionalism.com/docs/dropdown) | Menu-style dropdown with fluid hover and an optional search field in the popup |
 | [InputCopy](https://www.fluidfunctionalism.com/docs/input-copy) | Read-only input with copy-to-clipboard and animated feedback |
-| [InputGroup](https://www.fluidfunctionalism.com/docs/input-group) | Input fields with proximity hover and validation |
+| [InputGroup](https://www.fluidfunctionalism.com/docs/input-group) | Input fields with fluid hover and validation |
 | [InputMessage](https://www.fluidfunctionalism.com/docs/input-message) | Chat-style composer with auto-resizing textarea, action slots, and built-in send button |
-| [RadioGroup](https://www.fluidfunctionalism.com/docs/radio-group) | Radio buttons with proximity hover and animated selection |
+| [RadioGroup](https://www.fluidfunctionalism.com/docs/radio-group) | Radio buttons with fluid hover and animated selection |
 | [Select](https://www.fluidfunctionalism.com/docs/select) | Animated select with bordered/borderless variants |
 | [Slider](https://www.fluidfunctionalism.com/docs/slider) | Range slider with step snapping, range mode, animated thumb |
 | [Surfaces](https://www.fluidfunctionalism.com/docs/surfaces) | Eight nesting elevation levels so popovers, dropdowns, and dialogs stay visible at any depth |
 | [Switch](https://www.fluidfunctionalism.com/docs/switch) | Toggle with animated thumb and label |
 | [Table](https://www.fluidfunctionalism.com/docs/table) | Data table with row hover effects |
-| [Tabs](https://www.fluidfunctionalism.com/docs/tabs) | Segmented control with sliding indicator and proximity hover |
+| [Tabs](https://www.fluidfunctionalism.com/docs/tabs) | Segmented control with sliding indicator and fluid hover |
 | [TabsSubtle](https://www.fluidfunctionalism.com/docs/tabs-subtle) | Tab navigation with smooth pill animations |
 | [ThinkingIndicator](https://www.fluidfunctionalism.com/docs/thinking-indicator) | Animated status indicator with morphing SVG |
 | [ThinkingSteps](https://www.fluidfunctionalism.com/docs/thinking-steps) | Chain-of-thought display with sequential animation |
@@ -73,7 +73,7 @@ The icon-library switcher on the docs site is a preview tool only — none of th
 ## What makes these different
 
 - **Motion as information** — transitions make state changes legible, nothing moves for decoration
-- **Hover as preview** — proximity highlights show where your action will land before you click
+- **Hover as preview** — the fluid hover highlight shows where your action will land before you click
 - **Spring physics** — springs replace fixed durations, adapting naturally to interruption
 - **Drop-in compatible** — your existing shadcn theme and tokens apply automatically
 

@@ -154,7 +154,7 @@ function CardPreview() {
     { icon: Circle, title: "Fluid motion", description: "Spring-tuned transitions across three tiers" },
     { icon: Shield, title: "Accessible", description: "Focus rings and ARIA roles in every part" },
     { icon: Palette, title: "Yours to theme", description: "Swap radius, icons, and primitive at runtime" },
-    { icon: Search, title: "Proximity hover", description: "A magnetic highlight previews the click" },
+    { icon: Search, title: "Fluid hover", description: "A magnetic highlight previews the click" },
   ];
   return (
     <div className="w-full max-w-[460px]">

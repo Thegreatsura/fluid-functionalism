@@ -97,7 +97,7 @@ export default function TabsDoc() {
     <DocPage
       title="Tabs"
       slug="tabs"
-      description="Segmented control tabs with sliding active indicator, proximity hover, and spring animations."
+      description="Segmented control tabs with sliding active indicator, fluid hover, and spring animations."
     >
       <DocSection title="Basic">
         <ComponentPreview code={basicCode}>

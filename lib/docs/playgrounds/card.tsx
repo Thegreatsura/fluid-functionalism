@@ -329,7 +329,7 @@ export function CardPlayground({ children }: PlaygroundProps) {
           className={PLAY_SWITCH}
         />
         <Switch
-          label="Proximity hover"
+          label="Fluid hover"
           checked={proximity}
           onToggle={() => setProximity((v) => !v)}
           className={PLAY_SWITCH}

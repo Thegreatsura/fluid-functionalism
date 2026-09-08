@@ -217,7 +217,7 @@ const itemProps: PropDef[] = [
   {
     name: "index",
     type: "number",
-    description: "Position index within the content for proximity hover.",
+    description: "Position index within the content for fluid hover.",
   },
   {
     name: "value",
@@ -273,7 +273,7 @@ export default function SelectDoc() {
     <DocPage
       title="Select"
       slug="select"
-      description="Animated select menu with proximity hover, bordered/borderless variants, optional leading icons, and spring-animated popover."
+      description="Animated select menu with fluid hover, bordered/borderless variants, optional leading icons, and spring-animated popover."
     >
       <DocSection title="Basic">
         <ComponentPreview code={basicCode}>

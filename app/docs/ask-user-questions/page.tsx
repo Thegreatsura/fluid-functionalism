@@ -328,7 +328,7 @@ const questions = [
         id: "ask",
         title: "AskUserQuestions",
         description:
-          "This component — stepped flows with single and multi-select, optional Other, and proximity hover throughout.",
+          "This component — stepped flows with single and multi-select, optional Other, and fluid hover throughout.",
       },
       {
         id: "tabs",
@@ -355,7 +355,7 @@ const questions = [
         id: "motion",
         title: "Motion that feels alive",
         description:
-          "Spring tokens, proximity hover, and morphing backgrounds make every interaction feel intentional rather than scripted.",
+          "Spring tokens, fluid hover, and morphing backgrounds make every interaction feel intentional rather than scripted.",
       },
       {
         id: "craft",
@@ -867,7 +867,7 @@ const stackedQuestions: AskUserQuestion[] = [
         id: "ask",
         title: "AskUserQuestions",
         description:
-          "This component — stepped flows with single and multi-select, optional Other, and proximity hover throughout.",
+          "This component — stepped flows with single and multi-select, optional Other, and fluid hover throughout.",
       },
       {
         id: "tabs",
@@ -894,7 +894,7 @@ const stackedQuestions: AskUserQuestion[] = [
         id: "motion",
         title: "Motion that feels alive",
         description:
-          "Spring tokens, proximity hover, and morphing backgrounds make every interaction feel intentional rather than scripted.",
+          "Spring tokens, fluid hover, and morphing backgrounds make every interaction feel intentional rather than scripted.",
       },
       {
         id: "craft",

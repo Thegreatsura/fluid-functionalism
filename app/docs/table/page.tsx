@@ -49,7 +49,7 @@ const tableProps: PropDef[] = [
 ];
 
 const rowProps: PropDef[] = [
-  { name: "index", type: "number", description: "Row index for proximity hover. Omit for header rows." },
+  { name: "index", type: "number", description: "Row index for fluid hover. Omit for header rows." },
   { name: "children", type: "ReactNode", description: "TableCell or TableHead children." },
 ];
 

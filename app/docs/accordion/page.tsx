@@ -52,7 +52,7 @@ const groupedCode = `import { AccordionGroup, AccordionItem, AccordionTrigger, A
     <AccordionTrigger>Animation</AccordionTrigger>
     <AccordionContent>
       Smooth height transitions and spring-animated chevron rotation.
-      The proximity hover background tracks your cursor.
+      The fluid hover background tracks your cursor.
     </AccordionContent>
   </AccordionItem>
 </AccordionGroup>`;
@@ -112,7 +112,7 @@ const rootProps: PropDef[] = [
 
 const itemProps: PropDef[] = [
   { name: "value", type: "string", description: "Unique identifier for this item." },
-  { name: "index", type: "number", description: "Position index for proximity hover. Required inside AccordionGroup, omit for standalone." },
+  { name: "index", type: "number", description: "Position index for fluid hover. Required inside AccordionGroup, omit for standalone." },
   { name: "disabled", type: "boolean", default: "false", description: "Whether this item is disabled." },
 ];
 
@@ -148,7 +148,7 @@ export default function AccordionDoc() {
     <DocPage
       title="Accordion"
       slug="accordion"
-      description="Collapsible sections with animated expand/collapse and proximity hover in grouped mode."
+      description="Collapsible sections with animated expand/collapse and fluid hover in grouped mode."
     >
       <DocSection title="Playground">
         <AccordionPlaygroundSection />
@@ -171,7 +171,7 @@ export default function AccordionDoc() {
       </DocSection>
 
       <DocSection title="Single Expand">
-        <p className="text-body text-muted-foreground">Multiple items with proximity hover — only one can be expanded at a time.</p>
+        <p className="text-body text-muted-foreground">Multiple items with fluid hover — only one can be expanded at a time.</p>
         <ComponentPreview code={groupedCode} align="top">
           <AccordionGroup type="single" collapsible defaultValue="item-1">
             <AccordionItem value="item-1" index={0}>
@@ -201,7 +201,7 @@ export default function AccordionDoc() {
               <AccordionTrigger>Animation</AccordionTrigger>
               <AccordionContent>
                 Smooth height transitions and spring-animated chevron rotation.
-                The proximity hover background tracks your cursor.
+                The fluid hover background tracks your cursor.
               </AccordionContent>
             </AccordionItem>
           </AccordionGroup>
@@ -209,7 +209,7 @@ export default function AccordionDoc() {
       </DocSection>
 
       <DocSection title="Multi Expand">
-        <p className="text-body text-muted-foreground">Multiple items with proximity hover — several can be expanded at once.</p>
+        <p className="text-body text-muted-foreground">Multiple items with fluid hover — several can be expanded at once.</p>
         <ComponentPreview code={multipleCode} align="top">
           <AccordionGroup type="multiple" defaultValue={["item-1", "item-3"]}>
             <AccordionItem value="item-1" index={0}>

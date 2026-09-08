@@ -53,12 +53,13 @@ const REFERENCE_TIERS = [
     enterTransition: spring.fast,
     exitTransition: spring.fast.exit,
     components: [
-      { label: "Hover & focus rings", slug: null },
+      { label: "Fluid hover",         slug: "/docs/fluid-hover" },
+      { label: "Focus rings",         slug: null },
       { label: "Checkbox",            slug: "/docs/checkbox-group" },
       { label: "Radio",               slug: "/docs/radio-group" },
       { label: "Tooltip",             slug: "/docs/tooltip" },
       { label: "Table rows",          slug: "/docs/table" },
-      { label: "Card proximity",      slug: "/docs/card" },
+      { label: "Card grid",           slug: "/docs/card" },
       { label: "Input copy",          slug: "/docs/input-copy" },
       { label: "Slider",              slug: "/docs/slider" },
       { label: "Select",              slug: "/docs/select" },
@@ -411,7 +412,7 @@ export default function MotionDoc() {
       slug="motion"
       installSlug="springs"
       installNote="Installs the springs lib — the fast / moderate / slow spring presets every component animates with."
-      description="Three spring speeds, and exits always move a little faster than entrances. Pick a speed, wire it in — every component follows the same pattern."
+      description="Three spring speeds, exits a little faster than entrances, and one fluid hover shared by every list. Pick a speed, wire it in — every component follows the same pattern."
     >
       <DocSection title="Three speeds">
         <p className="text-body leading-relaxed text-muted-foreground">

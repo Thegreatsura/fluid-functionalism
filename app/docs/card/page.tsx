@@ -47,7 +47,7 @@ const basicCode = `import {
 </div>`;
 
 const gridCode = `// Two-column grid of image tiles — columns > 1 turns on 2-D
-// proximity: the highlight springs to the nearest card across rows AND columns.
+// fluid hover: the highlight springs to the nearest card across rows AND columns.
 <div className="w-full max-w-[560px]">
   <CardGroup columns={2} border="outlined" separated>
     <Card>
@@ -150,11 +150,11 @@ const [selected, setSelected] = useState(1);
 
 const groupProps: PropDef[] = [
   { name: "orientation", type: '"card" | "inline"', default: '"card"', description: "Per-card layout: stacked (media/header on top) or a horizontal row." },
-  { name: "columns", type: "number", default: "1", description: "Grid columns. Greater than 1 enables 2-D proximity across rows and columns." },
+  { name: "columns", type: "number", default: "1", description: "Grid columns. Greater than 1 enables 2-D fluid hover across rows and columns." },
   { name: "border", type: '"none" | "outlined"', default: '"none"', description: "Borderless (dividers only) or a drawn border." },
   { name: "separated", type: "boolean", default: "false", description: "Split into individually-shaped tiles with a gap instead of one divided block." },
-  { name: "proximityHover", type: "boolean", default: "true", description: "Enable the magnetic proximity-hover highlight." },
-  { name: "children", type: "ReactNode", description: "Card children. Each is auto-assigned its proximity index." },
+  { name: "proximityHover", type: "boolean", default: "true", description: "Enable the fluid hover highlight." },
+  { name: "children", type: "ReactNode", description: "Card children. Each is auto-assigned its fluid hover index." },
 ];
 
 const cardProps: PropDef[] = [
@@ -163,7 +163,7 @@ const cardProps: PropDef[] = [
   { name: "href", type: "string", description: "Makes the whole card a link (stretched anchor)." },
   { name: "external", type: "boolean", default: "false", description: "Opens href in a new tab." },
   { name: "label", type: "string", description: "Accessible name for the stretched link/button when the whole card is clickable." },
-  { name: "selected", type: "boolean", default: "false", description: "Persistent selected fill + title emphasis, on top of proximity hover. The group drops the hairline dividers around the selected card so the fill reads clean." },
+  { name: "selected", type: "boolean", default: "false", description: "Persistent selected fill + title emphasis, on top of fluid hover. The group drops the hairline dividers around the selected card so the fill reads clean." },
   { name: "disabled", type: "boolean", default: "false", description: "Dims and disables the card." },
   { name: "dismissible", type: "boolean", default: "false", description: "Shows a dismiss (✕) button, revealed on hover or focus by default." },
   { name: "dismissOnHover", type: "boolean", default: "true", description: "Keeps the dismiss control hidden until the card is hovered or holds focus. Pass false for an always-visible ✕." },
@@ -172,7 +172,7 @@ const cardProps: PropDef[] = [
 
 const partProps: PropDef[] = [
   { name: "CardHeader", type: "part", description: "Title + description grid; pins CardAction to the top-right." },
-  { name: "CardTitle", type: "part", description: "Weight-animates normal → semibold when the card is selected (proximity hover previews via the highlight, not the weight)." },
+  { name: "CardTitle", type: "part", description: "Weight-animates normal → semibold when the card is selected (fluid hover previews via the highlight, not the weight)." },
   { name: "CardDescription", type: "part", description: "Muted supporting text." },
   { name: "CardAction", type: "part", description: "Top-right slot in the header (e.g. a menu button); stays clickable above the card overlay." },
   { name: "CardContent", type: "part", description: "Body region below the header." },
@@ -409,7 +409,7 @@ export default function CardDoc() {
     <DocPage
       title="Card"
       slug="card"
-      description="shadcn's compositional card, dressed in Fluid Functionalism. Stacked, inline, or grid — borderless by default with proximity hover that previews where a click will land."
+      description="shadcn's compositional card, dressed in Fluid Functionalism. Stacked, inline, or grid — borderless by default with fluid hover that previews where a click will land."
     >
       <DocSection title="Playground">
         <CardPlaygroundSection />
@@ -421,7 +421,7 @@ export default function CardDoc() {
         </ComponentPreview>
       </DocSection>
 
-      <DocSection title="Grid — 2-D proximity">
+      <DocSection title="Grid: 2-D fluid hover">
         <ComponentPreview code={gridCode} padding="compact">
           <GridDemo />
         </ComponentPreview>

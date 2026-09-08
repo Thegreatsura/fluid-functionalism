@@ -309,12 +309,22 @@
     {
       "name": "use-fluid-hover",
       "type": "registry:hook",
-      "title": "useFluidHover",
-      "description": "React hook for fluid hover detection. Tracks the closest item to the mouse cursor within a container, enabling smooth animated background indicators.",
+      "title": "useFluidHover + FluidHoverHighlight",
+      "description": "Fluid hover: the hook that tracks the item nearest the cursor within a container, and the one highlight component that springs between the rects it measures.",
+      "dependencies": [
+        "framer-motion"
+      ],
+      "registryDependencies": [
+        "https://www.fluidfunctionalism.com/r/springs.json"
+      ],
       "files": [
         {
           "path": "registry/default/hooks/use-fluid-hover.ts",
           "type": "registry:hook"
+        },
+        {
+          "path": "registry/default/fluid-hover-highlight.tsx",
+          "type": "registry:component"
         }
       ],
       "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",

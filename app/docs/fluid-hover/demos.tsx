@@ -1,17 +1,15 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
-import { spring } from "@/registry/default/lib/springs";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { cn } from "@/registry/default/lib/utils";
 import { useShape } from "@/registry/default/lib/shape-context";
 import {
   useFluidHover,
   useRegisterFluidHoverItem,
-  type ItemRect,
 } from "@/registry/default/hooks/use-fluid-hover";
+import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 import { Switch } from "@/components/flavored/switch";
 import { Tabs, TabsList, TabItem } from "@/registry/radix/tabs";
 import { Dropdown } from "@/components/flavored/dropdown";
@@ -37,12 +35,11 @@ const ROWS = ["Inbox", "Drafts", "Sent", "Archive", "Trash"];
 // ---------------------------------------------------------------------------
 
 const FLUID_HOVER_CODE = `import { useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
-import { spring } from "@/lib/springs";
+import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
 // One list, one highlight. The hook picks the row whose center is nearest
-// the cursor; the overlay springs to that row's rect on spring.fast.
+// the cursor; the highlight springs to that row's rect on spring.fast.
 function List({ rows }: { rows: string[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { activeIndex, itemRects, isMeasured, sessionRef, handlers, registerItem } =
@@ -51,20 +48,9 @@ function List({ rows }: { rows: string[] }) {
 
   return (
     <div ref={containerRef} className="relative flex flex-col gap-1 p-2" {...handlers}>
-      <AnimatePresence>
-        {rect && (
-          <motion.div
-            // Re-keyed on every entry: the highlight fades in at the nearest
-            // row instead of sliding over from wherever it was last.
-            key={sessionRef.current}
-            className="pointer-events-none absolute rounded-lg bg-hover"
-            initial={{ opacity: 0, ...rect }}
-            animate={{ opacity: 1, ...rect }}
-            exit={{ opacity: 0, transition: spring.fast.exit }}
-            transition={{ ...spring.fast, opacity: { duration: 0.08 } }}
-          />
-        )}
-      </AnimatePresence>
+      {/* Re-keyed on every entry (session): fades in at the nearest row
+          instead of sliding over from wherever it was last. */}
+      <FluidHoverHighlight rect={rect} session={sessionRef.current} className="rounded-lg" />
       {rows.map((label, i) => (
         <Row key={label} index={i} registerItem={registerItem}>{label}</Row>
       ))}
@@ -127,33 +113,6 @@ function FluidRow({
   );
 }
 
-/** The library's overlay, verbatim: one absolutely positioned fill that
- *  springs between measured rects and is re-keyed per entry. */
-function HoverOverlay({
-  rect,
-  session,
-  className,
-}: {
-  rect: ItemRect | null;
-  session: number;
-  className?: string;
-}) {
-  return (
-    <AnimatePresence>
-      {rect && (
-        <motion.div
-          key={session}
-          className={cn("pointer-events-none absolute bg-hover", className)}
-          initial={{ opacity: 0, ...rect }}
-          animate={{ opacity: 1, ...rect }}
-          exit={{ opacity: 0, transition: spring.fast.exit }}
-          transition={{ ...spring.fast, opacity: { duration: 0.08 } }}
-        />
-      )}
-    </AnimatePresence>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Demo 1: plain :hover next to fluid hover
 // ---------------------------------------------------------------------------
@@ -184,7 +143,7 @@ function FluidHoverList() {
       className="relative flex w-full flex-col gap-1 p-2"
       {...handlers}
     >
-      <HoverOverlay rect={rect} session={sessionRef.current} className={shape.bg} />
+      <FluidHoverHighlight rect={rect} session={sessionRef.current} className={shape.bg} />
       {ROWS.map((label, i) => (
         <FluidRow key={label} index={i} registerItem={registerItem}>
           {label}
@@ -272,7 +231,7 @@ function MathList({ showMath }: { showMath: boolean }) {
         if (box) setCursorY(e.clientY - box.top);
       }}
     >
-      <HoverOverlay rect={rect} session={sessionRef.current} className={shape.bg} />
+      <FluidHoverHighlight rect={rect} session={sessionRef.current} className={shape.bg} />
       {ROWS.map((label, i) => (
         <FluidRow key={label} index={i} registerItem={registerItem}>
           {label}

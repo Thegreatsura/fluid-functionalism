@@ -139,7 +139,7 @@
           "type": "registry:lib"
         }
       ],
-      "docs": "Part of Fluid Functionalism \u2014 https://www.fluidfunctionalism.com",
+      "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
       "categories": [
         "lib"
       ]
@@ -171,7 +171,7 @@
           "type": "registry:lib"
         }
       ],
-      "docs": "Part of Fluid Functionalism \u2014 https://www.fluidfunctionalism.com",
+      "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
       "categories": [
         "lib"
       ]
@@ -187,7 +187,7 @@
           "type": "registry:lib"
         }
       ],
-      "docs": "Part of Fluid Functionalism \u2014 https://www.fluidfunctionalism.com",
+      "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
       "categories": [
         "lib"
       ]
@@ -206,7 +206,7 @@
       "registryDependencies": [
         "surfaces"
       ],
-      "docs": "Part of Fluid Functionalism \u2014 https://www.fluidfunctionalism.com",
+      "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
       "categories": [
         "lib"
       ]
@@ -301,7 +301,7 @@
           "type": "registry:lib"
         }
       ],
-      "docs": "Part of Fluid Functionalism \u2014 https://www.fluidfunctionalism.com",
+      "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
       "categories": [
         "lib"
       ]
@@ -309,15 +309,25 @@
     {
       "name": "use-fluid-hover",
       "type": "registry:hook",
-      "title": "useFluidHover",
-      "description": "React hook for fluid hover detection. Tracks the closest item to the mouse cursor within a container, enabling smooth animated background indicators.",
+      "title": "useFluidHover + FluidHoverHighlight",
+      "description": "Fluid hover: the hook that tracks the item nearest the cursor within a container, and the one highlight component that springs between the rects it measures.",
+      "dependencies": [
+        "framer-motion"
+      ],
+      "registryDependencies": [
+        "springs"
+      ],
       "files": [
         {
           "path": "registry/default/hooks/use-fluid-hover.ts",
           "type": "registry:hook"
+        },
+        {
+          "path": "registry/default/fluid-hover-highlight.tsx",
+          "type": "registry:component"
         }
       ],
-      "docs": "Part of Fluid Functionalism \u2014 https://www.fluidfunctionalism.com",
+      "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
       "categories": [
         "hook"
       ]
@@ -333,7 +343,7 @@
           "type": "registry:hook"
         }
       ],
-      "docs": "Part of Fluid Functionalism \u2014 https://www.fluidfunctionalism.com",
+      "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
       "categories": [
         "hook"
       ]
@@ -352,7 +362,7 @@
           "type": "registry:hook"
         }
       ],
-      "docs": "Part of Fluid Functionalism \u2014 https://www.fluidfunctionalism.com",
+      "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
       "categories": [
         "hook"
       ]
@@ -373,7 +383,7 @@
           "type": "registry:hook"
         }
       ],
-      "docs": "Part of Fluid Functionalism \u2014 https://www.fluidfunctionalism.com",
+      "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
       "categories": [
         "hook"
       ]
@@ -446,7 +456,7 @@
       "name": "ask-user-questions",
       "type": "registry:ui",
       "title": "Ask User Questions",
-      "description": "Stepped question flow with numbered options, keyboard shortcuts (1\u20139), single or multi-select, inline 'other' text input, optional skip, fluid hover, and multi-question navigation. Auto-advances on selection in single-select.",
+      "description": "Stepped question flow with numbered options, keyboard shortcuts (1–9), single or multi-select, inline 'other' text input, optional skip, fluid hover, and multi-question navigation. Auto-advances on selection in single-select.",
       "dependencies": [
         "framer-motion",
         "@base-ui/react"
@@ -891,7 +901,7 @@
           "target": "components/ui/mobile-drawer.tsx"
         }
       ],
-      "docs": "Part of Fluid Functionalism \u2014 https://www.fluidfunctionalism.com",
+      "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
       "categories": [
         "components"
       ]
@@ -917,7 +927,7 @@
           "target": "components/ui/mobile-drawer.tsx"
         }
       ],
-      "docs": "Part of Fluid Functionalism \u2014 https://www.fluidfunctionalism.com",
+      "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
       "categories": [
         "components"
       ]
@@ -1033,7 +1043,7 @@
           "type": "registry:ui"
         }
       ],
-      "docs": "Part of Fluid Functionalism \u2014 https://www.fluidfunctionalism.com",
+      "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
       "categories": [
         "components"
       ]
@@ -1529,7 +1539,7 @@
       "name": "dialog-sidebar",
       "type": "registry:block",
       "title": "Settings Dialog (Sidebar in a Dialog)",
-      "description": "A settings dialog: the xl Dialog as a canvas, a non-collapsing Sidebar of sections down its left edge, and a scrolling panel of controls \u2014 switches, selects, and an input group. Below the sm breakpoint a Select takes over navigation.",
+      "description": "A settings dialog: the xl Dialog as a canvas, a non-collapsing Sidebar of sections down its left edge, and a scrolling panel of controls — switches, selects, and an input group. Below the sm breakpoint a Select takes over navigation.",
       "registryDependencies": [
         "utils",
         "font-weight",

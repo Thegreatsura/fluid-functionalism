@@ -273,3 +273,60 @@ describe("shipped CSS variables reach installers", () => {
     }
   });
 });
+
+describe("fluid hover highlight", () => {
+  // The hover overlay is one component, `FluidHoverHighlight`
+  // (registry/default/fluid-hover-highlight.tsx). Files still carrying the
+  // hand-rolled `motion.div` copy are listed here and migrated per
+  // FLUID-HOVER-HIGHLIGHT-PLAN.md. The list only shrinks: a new copy anywhere
+  // else fails, and a stale entry fails once its file is migrated.
+  const HAND_ROLLED_OVERLAYS = new Set([
+    "registry/base/accordion.tsx",
+    "registry/base/checkbox-group.tsx",
+    "registry/base/combobox.tsx",
+    "registry/base/dropdown.tsx",
+    "registry/base/radio-group.tsx",
+    "registry/base/select.tsx",
+    "registry/default/card.tsx",
+    "registry/default/color-picker.tsx",
+    "registry/default/nav-menu.tsx",
+    "registry/default/sidebar-menu.tsx",
+    "registry/default/table.tsx",
+    "registry/radix/accordion.tsx",
+    "registry/radix/checkbox-group.tsx",
+    "registry/radix/combobox.tsx",
+    "registry/radix/dropdown.tsx",
+    "registry/radix/radio-group.tsx",
+    "registry/radix/select.tsx",
+  ]);
+  const MARKER = "key={sessionRef.current}";
+
+  function* registrySources(dir) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) yield* registrySources(full);
+      else if (entry.name.endsWith(".tsx")) yield full.slice(ROOT.length);
+    }
+  }
+
+  it("no registry file hand-rolls the hover overlay outside the migration list", () => {
+    for (const rel of registrySources(join(ROOT, "registry"))) {
+      const hasCopy = readFileSync(join(ROOT, rel), "utf-8").includes(MARKER);
+      if (hasCopy) {
+        expect(
+          HAND_ROLLED_OVERLAYS.has(rel),
+          `${rel} hand-rolls the hover overlay; use FluidHoverHighlight`
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("every listed file still carries the copy (drop entries as you migrate)", () => {
+    for (const rel of HAND_ROLLED_OVERLAYS) {
+      expect(
+        readFileSync(join(ROOT, rel), "utf-8").includes(MARKER),
+        `${rel} is migrated; remove it from HAND_ROLLED_OVERLAYS`
+      ).toBe(true);
+    }
+  });
+});

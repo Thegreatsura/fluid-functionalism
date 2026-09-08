@@ -132,8 +132,6 @@ interface ComboboxProps<
   /** Match an item against the typed query. Defaults to a case-insensitive
    *  "contains" on the label. */
   filter?: (item: T, query: string) => boolean;
-  /** Highlight the first match while typing so Enter picks it. @default true */
-  autoHighlight?: boolean;
   disabled?: boolean;
   name?: string;
   required?: boolean;
@@ -160,7 +158,6 @@ function Combobox<
   defaultValue,
   onValueChange,
   filter,
-  autoHighlight = true,
   disabled = false,
   name,
   required,
@@ -247,7 +244,7 @@ function Combobox<
         onOpenChange={(next) => setOpen(next)}
         onInputValueChange={(next) => setInputValue(next)}
         actionsRef={actionsRef}
-        autoHighlight={autoHighlight}
+        autoHighlight={ALWAYS_HIGHLIGHT}
         onItemHighlighted={(item, details) =>
           setHighlight(
             item === undefined
@@ -282,6 +279,11 @@ Combobox.displayName = "Combobox";
 // the UI is shaped: pill corners on a popover distort its padding and break
 // the concentric fit of the rows' hover and selection backgrounds inside it.
 const popupShape = shapeMap.rounded;
+
+// The first row is highlighted the moment the list opens and follows the
+// query as it filters, so Enter always has a target. AriaCombobox accepts
+// "always" for this; ComboboxRoot's prop type still says boolean.
+const ALWAYS_HIGHLIGHT = "always" as unknown as boolean;
 
 const fieldVariants = cva(
   [

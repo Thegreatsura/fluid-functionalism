@@ -156,8 +156,6 @@ interface ComboboxProps<
   /** Match an item against the typed query. Defaults to a case-insensitive
    *  "contains" on the label. */
   filter?: (item: T, query: string) => boolean;
-  /** Highlight the first match while typing so Enter picks it. @default true */
-  autoHighlight?: boolean;
   disabled?: boolean;
   name?: string;
   required?: boolean;
@@ -184,7 +182,6 @@ function Combobox<
   defaultValue,
   onValueChange,
   filter,
-  autoHighlight = true,
   disabled = false,
   name,
   required,
@@ -312,11 +309,18 @@ function Combobox<
       setInputValueState(next);
       setQuery(next);
       setOpenState(true);
-      // Auto-highlight the first match while typing so Enter picks it.
-      setHighlight(autoHighlight && next !== "" ? { index: 0, keyboard: true } : null);
+      // The first match is highlighted while typing so Enter picks it.
+      setHighlight({ index: 0, keyboard: true });
     },
-    [autoHighlight]
+    []
   );
+
+  // The first row is highlighted the moment the list opens, whatever opened
+  // it (a click, the chevron, typing), so Enter always has a target. An
+  // opener that already chose a row (ArrowUp picks the last) keeps it.
+  useEffect(() => {
+    if (open) setHighlight((h) => h ?? { index: 0, keyboard: true });
+  }, [open]);
 
   const ctx = useMemo<ComboboxContextValue>(
     () => ({

@@ -24,13 +24,11 @@ import {
 import {
   COMBOBOX_PRESET_DEF,
   COMBOBOX_DEFAULT_CODE,
-  COMBOBOX_FRAMEWORKS,
-  COMBOBOX_TIMEZONES,
+  COMBOBOX_COMPONENTS,
   COMBOBOX_COPY,
   encodeComboboxPreset,
   decodeComboboxPreset,
   type ComboboxFieldVariant,
-  type ComboboxListKind,
 } from "@/lib/preset/combobox-options";
 import {
   usePresetGlobals,
@@ -41,29 +39,25 @@ import type { PlaygroundProps } from "./types";
 
 // ── Combobox playground ──────────────────────────────────
 // A live sandbox: the controls drive a real Combobox — single or multiple,
-// framed or borderless, short or long list — with the matching code kept in
-// sync in the doc page's Code tab.
+// framed or borderless — over the library's own component list, with the
+// matching code kept in sync in the doc page's Code tab.
 
 function buildPlaygroundCode(o: {
   multiple: boolean;
   variant: ComboboxFieldVariant;
-  list: ComboboxListKind;
   icon: boolean;
   clearable: boolean;
   error: boolean;
   disabled: boolean;
-  autoHighlight: boolean;
 }) {
-  const copy = COMBOBOX_COPY[o.list];
   const Field = o.multiple ? "ComboboxChips" : "ComboboxInput";
   const root = [
-    o.list === "long" ? "items={timezones}" : "items={frameworks}",
+    "items={components}",
     ...(o.multiple ? ["multiple", "value={values}", "onValueChange={setValues}"] : ["value={value}", "onValueChange={setValue}"]),
-    ...(o.autoHighlight ? [] : ["autoHighlight={false}"]),
     ...(o.disabled ? ["disabled"] : []),
   ];
   const field = [
-    `placeholder="${o.multiple ? (o.list === "long" ? "Add timezones…" : "Add frameworks…") : copy.placeholder}"`,
+    `placeholder="${o.multiple ? COMBOBOX_COPY.placeholderMultiple : COMBOBOX_COPY.placeholder}"`,
     ...(o.variant !== "bordered" ? [`variant="${o.variant}"`] : []),
     ...(o.icon ? ["icon={Search}"] : []),
     ...(o.clearable ? ["clearable"] : []),
@@ -72,18 +66,14 @@ function buildPlaygroundCode(o: {
   const state = o.multiple
     ? "const [values, setValues] = useState<string[]>([]);"
     : 'const [value, setValue] = useState("");';
-  const rowFn =
-    o.list === "long"
-      ? "{(item) => <ComboboxItem key={item} value={item}>{item}</ComboboxItem>}"
-      : "{(item) => <ComboboxItem key={item.value} value={item.value}>{item.label}</ComboboxItem>}";
   return `${state}
 
 <Combobox ${root.join(" ")}>
   <${Field} ${field.join(" ")} />
   <ComboboxContent>
-    <ComboboxEmpty>${copy.empty}</ComboboxEmpty>
+    <ComboboxEmpty>${COMBOBOX_COPY.empty}</ComboboxEmpty>
     <ComboboxList>
-      ${rowFn}
+      {(item) => <ComboboxItem key={item.value} value={item.value}>{item.label}</ComboboxItem>}
     </ComboboxList>
   </ComboboxContent>
 </Combobox>`;
@@ -92,31 +82,27 @@ function buildPlaygroundCode(o: {
 export function ComboboxPlayground({ children }: PlaygroundProps) {
   const SearchIcon = useIcon("search");
 
-  const [multiple, setMultiple] = useState(false);
+  const [multiple, setMultiple] = useState(true);
   const [variant, setVariant] = useState<ComboboxFieldVariant>("bordered");
-  const [list, setList] = useState<ComboboxListKind>("short");
-  const [icon, setIcon] = useState(false);
+  const [icon, setIcon] = useState(true);
   const [clearable, setClearable] = useState(false);
   const [error, setError] = useState(false);
   const [disabled, setDisabled] = useState(false);
-  const [autoHighlight, setAutoHighlight] = useState(true);
 
   const [value, setValue] = useState("");
   const [values, setValues] = useState<string[]>([]);
 
-  const code = buildPlaygroundCode({ multiple, variant, list, icon, clearable, error, disabled, autoHighlight });
+  const code = buildPlaygroundCode({ multiple, variant, icon, clearable, error, disabled });
 
   // ── Get code (presets) ─────────────────────────────────
   const globals = usePresetGlobals();
   const presetCode = encodeComboboxPreset({
     multiple,
     variant,
-    list,
     icon,
     clearable,
     error,
     disabled,
-    autoHighlight,
     ...globals,
   });
   usePresetUrlSync(presetCode, COMBOBOX_DEFAULT_CODE, (raw) => {
@@ -125,12 +111,10 @@ export function ComboboxPlayground({ children }: PlaygroundProps) {
       const p = res.preset;
       setMultiple(p.multiple);
       setVariant(p.variant);
-      setList(p.list);
       setIcon(p.icon);
       setClearable(p.clearable);
       setError(p.error);
       setDisabled(p.disabled);
-      setAutoHighlight(p.autoHighlight);
     }
   });
 
@@ -139,27 +123,18 @@ export function ComboboxPlayground({ children }: PlaygroundProps) {
       arr[Math.floor(Math.random() * arr.length)];
     setMultiple(Math.random() > 0.6);
     setVariant(pick(["bordered", "borderless"] as const));
-    setList(pick(["short", "long"] as const));
     setIcon(Math.random() > 0.5);
     setClearable(Math.random() > 0.6);
     setError(Math.random() > 0.85);
     setDisabled(Math.random() > 0.9);
-    setAutoHighlight(Math.random() > 0.2);
     setValue("");
     setValues([]);
   };
 
-  const copy = COMBOBOX_COPY[list];
-  // Widened: the two seed lists are tuples of different item shapes, and
-  // the root's generic wants one element type.
-  const items: readonly ComboboxItemData[] =
-    list === "long" ? COMBOBOX_TIMEZONES : COMBOBOX_FRAMEWORKS;
+  // Widened from the tuple: the root's generic wants one element type.
+  const items: readonly ComboboxItemData[] = COMBOBOX_COMPONENTS;
   const fieldProps = {
-    placeholder: multiple
-      ? list === "long"
-        ? "Add timezones…"
-        : "Add frameworks…"
-      : copy.placeholder,
+    placeholder: multiple ? COMBOBOX_COPY.placeholderMultiple : COMBOBOX_COPY.placeholder,
     variant,
     icon: icon ? SearchIcon : undefined,
     clearable,
@@ -187,12 +162,11 @@ export function ComboboxPlayground({ children }: PlaygroundProps) {
       items={items}
       value={values}
       onValueChange={setValues}
-      autoHighlight={autoHighlight}
       disabled={disabled}
     >
       <ComboboxChips {...fieldProps} />
       <ComboboxContent>
-        <ComboboxEmpty>{copy.empty}</ComboboxEmpty>
+        <ComboboxEmpty>{COMBOBOX_COPY.empty}</ComboboxEmpty>
         {rows}
       </ComboboxContent>
     </Combobox>
@@ -201,12 +175,11 @@ export function ComboboxPlayground({ children }: PlaygroundProps) {
       items={items}
       value={value}
       onValueChange={setValue}
-      autoHighlight={autoHighlight}
       disabled={disabled}
     >
       <ComboboxInput {...fieldProps} />
       <ComboboxContent>
-        <ComboboxEmpty>{copy.empty}</ComboboxEmpty>
+        <ComboboxEmpty>{COMBOBOX_COPY.empty}</ComboboxEmpty>
         {rows}
       </ComboboxContent>
     </Combobox>
@@ -216,26 +189,10 @@ export function ComboboxPlayground({ children }: PlaygroundProps) {
     <PlaygroundPanel onShuffle={randomize}>
       <PlaySection label="Combobox" />
       <div>
-        <PlayField label="List">
-          <PlaySelect
-            value={list}
-            onChange={(v) => setList(v as ComboboxListKind)}
-            options={[
-              { value: "short", label: "Frameworks" },
-              { value: "long", label: "Timezones" },
-            ]}
-          />
-        </PlayField>
         <Switch
           label="Multiple"
           checked={multiple}
           onToggle={() => setMultiple((v) => !v)}
-          className={PLAY_SWITCH}
-        />
-        <Switch
-          label="Auto-highlight"
-          checked={autoHighlight}
-          onToggle={() => setAutoHighlight((v) => !v)}
           className={PLAY_SWITCH}
         />
       </div>

@@ -200,7 +200,6 @@ const comboboxProps: PropDef[] = [
   { name: "defaultValue", type: "string | string[]", description: "Initial selection (uncontrolled)." },
   { name: "onValueChange", type: "(value: string | string[]) => void", description: "Called with the picked value (\"\" when cleared), or the full array when multiple." },
   { name: "filter", type: "(item, query: string) => boolean", description: "Match an item against the typed query. Defaults to a case-insensitive \"contains\" on the label." },
-  { name: "autoHighlight", type: "boolean", default: "true", description: "Highlight the first match while typing so Enter picks it." },
   { name: "disabled", type: "boolean", default: "false", description: "Disables the field and the popup." },
   { name: "name", type: "string", description: "Form field name — a hidden input carries the selected value." },
   { name: "required", type: "boolean", description: "Marks the hidden form input required." },

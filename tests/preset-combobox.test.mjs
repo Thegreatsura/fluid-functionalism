@@ -104,19 +104,18 @@ describe("combobox preset codec", () => {
   // mid-table — that breaks every code in the wild. Append instead.
   it("golden code for a fixed non-default preset is stable", () => {
     const code = encodeComboboxPreset({
-      multiple: true,
+      multiple: false,
       variant: "borderless",
-      list: "long",
-      icon: true,
+      icon: false,
       error: true,
       flavor: "base",
     });
     const back = decodeComboboxPreset(code);
     expect(back.ok).toBe(true);
-    expect(back.preset.list).toBe("long");
+    expect(back.preset.multiple).toBe(false);
     expect(back.preset.flavor).toBe("base");
     // Pin the literal string — update ONLY on a deliberate version bump.
-    expect(code).toMatchInlineSnapshot(`"baJH"`);
+    expect(code).toMatchInlineSnapshot(`"ba2l"`);
   });
 });
 
@@ -173,15 +172,15 @@ function typecheckPreset(preset) {
 // every column count, selection mode, borders/separated/proximity, and the
 // no-description / no-button extremes.
 // Curated matrix: every structural branch flips at least once — single and
-// multiple, both lists, each field option, and the disabled/error states.
+// multiple, each field option, and the disabled/error states.
 const MATRIX = [
-  {}, // all defaults: single, bordered, frameworks
-  { multiple: true },
-  { list: "long", icon: true },
-  { multiple: true, list: "long", clearable: true },
+  {}, // all defaults: multiple, bordered, leading icon
+  { multiple: false },
+  { multiple: false, icon: false },
+  { clearable: true },
   { variant: "borderless", error: true },
-  { disabled: true, autoHighlight: false },
-  { multiple: true, icon: true, clearable: true, error: true },
+  { disabled: true },
+  { icon: false, clearable: true, error: true },
   { shape: "pill", size: "compact", flavor: "base", variant: "borderless" },
 ];
 

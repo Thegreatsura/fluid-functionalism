@@ -21,14 +21,11 @@ import {
 import { DEFAULT_GLOBALS, type PresetGlobals } from "./sidebar-options";
 
 export type ComboboxFieldVariant = "bordered" | "borderless";
-/** A short list of frameworks, or a long list of timezones that scrolls. */
-export type ComboboxListKind = "short" | "long";
 
 export interface ComboboxPlayState {
   /** Any number of picks, shown as chips. */
   multiple: boolean;
   variant: ComboboxFieldVariant;
-  list: ComboboxListKind;
   /** Leading search icon in the field. */
   icon: boolean;
   /** The ✕ that clears the selection (its slot is always reserved). */
@@ -36,21 +33,17 @@ export interface ComboboxPlayState {
   /** Error message under the field. */
   error: boolean;
   disabled: boolean;
-  /** Highlight the first match while typing so Enter picks it. */
-  autoHighlight: boolean;
 }
 
 export type ComboboxPreset = ComboboxPlayState & PresetGlobals;
 
 export const DEFAULT_COMBOBOX_STATE: ComboboxPlayState = {
-  multiple: false,
+  multiple: true,
   variant: "bordered",
-  list: "short",
-  icon: false,
+  icon: true,
   clearable: false,
   error: false,
   disabled: false,
-  autoHighlight: true,
 };
 
 export const DEFAULT_COMBOBOX_PRESET: ComboboxPreset = {
@@ -61,14 +54,12 @@ export const DEFAULT_COMBOBOX_PRESET: ComboboxPreset = {
 // Value arrays are ordered DEFAULT-FIRST. The three site-global fields stay
 // LAST, mirroring SIDEBAR_PRESET_FIELDS exactly.
 export const COMBOBOX_PRESET_FIELDS: readonly PresetField[] = [
-  { key: "multiple", values: [false, true], bits: 1 },
+  { key: "multiple", values: [true, false], bits: 1 },
   { key: "variant", values: ["bordered", "borderless"], bits: 2 },
-  { key: "list", values: ["short", "long"], bits: 2 },
-  { key: "icon", values: [false, true], bits: 1 },
+  { key: "icon", values: [true, false], bits: 1 },
   { key: "clearable", values: [false, true], bits: 1 },
   { key: "error", values: [false, true], bits: 1 },
   { key: "disabled", values: [false, true], bits: 1 },
-  { key: "autoHighlight", values: [true, false], bits: 1 },
   { key: "flavor", values: ["radix", "base"], bits: 3 },
   { key: "shape", values: ["rounded", "pill"], bits: 2 },
   { key: "size", values: ["default", "compact"], bits: 2 },
@@ -112,46 +103,30 @@ export const COMBOBOX_DEFAULT_CODE = encodeComboboxPreset({});
 
 // ── Demo content, shared by the playground preview and the generator ────────
 
-export const COMBOBOX_FRAMEWORKS = [
-  { value: "next", label: "Next.js" },
-  { value: "sveltekit", label: "SvelteKit" },
-  { value: "nuxt", label: "Nuxt" },
-  { value: "remix", label: "Remix" },
-  { value: "astro", label: "Astro" },
-  { value: "solid", label: "SolidStart" },
-  { value: "qwik", label: "Qwik City" },
-] as const;
-
-export const COMBOBOX_TIMEZONES = [
-  "(UTC−12) Baker Island",
-  "(UTC−10) Honolulu",
-  "(UTC−9) Anchorage",
-  "(UTC−8) Los Angeles",
-  "(UTC−7) Denver",
-  "(UTC−6) Mexico City",
-  "(UTC−5) New York",
-  "(UTC−4) Santiago",
-  "(UTC−3) São Paulo",
-  "(UTC−2) South Georgia",
-  "(UTC−1) Azores",
-  "(UTC+0) London",
-  "(UTC+1) Paris",
-  "(UTC+2) Cairo",
-  "(UTC+3) Moscow",
-  "(UTC+4) Dubai",
-  "(UTC+5) Karachi",
-  "(UTC+5:30) Mumbai",
-  "(UTC+6) Dhaka",
-  "(UTC+7) Bangkok",
-  "(UTC+8) Singapore",
-  "(UTC+9) Tokyo",
-  "(UTC+10) Sydney",
-  "(UTC+11) Nouméa",
-  "(UTC+12) Auckland",
+/** The library's own components: long enough for the list to scroll. */
+export const COMBOBOX_COMPONENTS = [
+  { value: "accordion", label: "Accordion" },
+  { value: "badge", label: "Badge" },
+  { value: "button", label: "Button" },
+  { value: "card", label: "Card" },
+  { value: "checkbox-group", label: "CheckboxGroup" },
+  { value: "color-picker", label: "ColorPicker" },
+  { value: "combobox", label: "Combobox" },
+  { value: "dialog", label: "Dialog" },
+  { value: "dropdown", label: "Dropdown" },
+  { value: "input-group", label: "InputGroup" },
+  { value: "radio-group", label: "RadioGroup" },
+  { value: "select", label: "Select" },
+  { value: "sidebar", label: "Sidebar" },
+  { value: "slider", label: "Slider" },
+  { value: "switch", label: "Switch" },
+  { value: "table", label: "Table" },
+  { value: "tabs", label: "Tabs" },
 ] as const;
 
 export const COMBOBOX_COPY = {
-  short: { placeholder: "Select a framework…", empty: "No framework found." },
-  long: { placeholder: "Search timezones…", empty: "No timezone matches." },
+  placeholder: "Pick a component…",
+  placeholderMultiple: "Add components…",
+  empty: "No component found.",
   error: "Pick one to continue.",
 } as const;

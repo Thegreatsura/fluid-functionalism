@@ -12,6 +12,8 @@ import {
   CommandMenuEmpty,
   CommandMenuFooter,
   CommandMenuShortcut,
+  formatShortcut,
+  useIsMac,
   type CommandMenuItemData,
 } from "@/registry/default/command-menu";
 import {
@@ -34,8 +36,10 @@ import {
   PlaygroundPanel,
 } from "@/lib/docs/playground";
 import {
-  COMMAND_MENU_GROUPS,
   COMMAND_MENU_SUGGESTIONS,
+  COMMAND_MENU_TABS,
+  COMMAND_MENU_TYPES,
+  COMMAND_MENU_SORTS,
   COMMAND_MENU_COPY,
   useCommandMenuItems,
 } from "@/lib/docs/command-menu-items";
@@ -62,27 +66,13 @@ import type { PlaygroundProps } from "./types";
 
 type PlayState = CommandMenuPlayState;
 
-// ⌘K opens the site's own menu, so the playground defaults to ⌘J.
-const SHORTCUT_LABELS: Record<CommandMenuTrigger, string> = {
-  "mod+j": "⌘J",
-  "mod+k": "⌘K",
-  "mod+p": "⌘P",
-  "mod+/": "⌘/",
-};
-const SHORTCUT_OPTIONS = COMMAND_MENU_TRIGGERS.map((value) => ({
-  value,
-  label: SHORTCUT_LABELS[value],
-}));
+// ⌘K opens the site's own menu, so the playground defaults to ⌘J. The
+// labels draw the platform's own modifier, like the caps in the rows.
+function shortcutLabel(value: CommandMenuTrigger, mac: boolean): string {
+  return formatShortcut(value, mac).join(mac ? "" : "+");
+}
 
-const TABS = [
-  { value: "all", label: "All" },
-  ...COMMAND_MENU_GROUPS.map((group) => ({ value: group, label: group })),
-];
-
-const SORTS = [
-  { value: "default", label: "Default order" },
-  { value: "az", label: "A to Z" },
-];
+const TABS = COMMAND_MENU_TABS;
 
 function pick<T>(options: readonly T[]): T {
   return options[Math.floor(Math.random() * options.length)];
@@ -125,19 +115,32 @@ export function buildCommandMenuPlaygroundCode(o: PlayState): string {
   const state = [
     "const [open, setOpen] = useState(false);",
     ...(o.tabs ? ['const [tab, setTab] = useState("all");'] : []),
-    ...(o.filters ? ['const [type, setType] = useState("all");'] : []),
+    ...(o.filters
+      ? ['const [type, setType] = useState("all");', 'const [sort, setSort] = useState("default");']
+      : []),
   ];
   const scoped = o.tabs || o.filters;
+  // The same derivation the preview runs: tab, then type, then sort.
   const derived = scoped
     ? [
         "",
         "// The header controls are your state: derive the rows from them.",
-        ...(o.tabs ? [`const byTab = tab === "all" ? items : items.filter((item) => item.group === tab);`] : []),
+        "let visible = items;",
+        ...(o.tabs ? [`if (tab !== "all") visible = visible.filter((item) => item.group === tab);`] : []),
         ...(o.filters
-          ? [`const visible = type === "all" ? ${o.tabs ? "byTab" : "items"} : ${o.tabs ? "byTab" : "items"}.filter((item) => item.group === type);`]
-          : [`const visible = byTab;`]),
+          ? [
+              `if (type !== "all") visible = visible.filter((item) => item.group === type);`,
+              `if (sort === "az") visible = [...visible].sort((a, b) => a.label.localeCompare(b.label));`,
+            ]
+          : []),
       ]
     : [];
+  const list = (name: string, entries: readonly { value: string; label: string }[]) =>
+    `const ${name} = [${entries.map((e) => `{ value: "${e.value}", label: "${e.label}" }`).join(", ")}];`;
+  const lists = [
+    ...(o.tabs ? [list("TABS", COMMAND_MENU_TABS)] : []),
+    ...(o.filters ? [list("TYPES", COMMAND_MENU_TYPES), list("SORTS", COMMAND_MENU_SORTS)] : []),
+  ];
   const root = [
     `items={${scoped ? "visible" : "items"}}`,
     ...(o.suggestions ? [`suggestions={${JSON.stringify([...COMMAND_MENU_SUGGESTIONS])}}`] : []),
@@ -146,17 +149,21 @@ export function buildCommandMenuPlaygroundCode(o: PlayState): string {
   // Filters inside the tabs share the row (hugging their controls); alone
   // they are a row of their own.
   const indent = o.tabs ? "      " : "    ";
+  const select = (value: string, setter: string, entries: string) => [
+    `${indent}  <Select value={${value}} onValueChange={${setter}}>`,
+    `${indent}    <SelectTrigger variant="borderless" />`,
+    `${indent}    <SelectContent>`,
+    `${indent}      {${entries}.map((option, i) => (`,
+    `${indent}        <SelectItem key={option.value} value={option.value} index={i}>{option.label}</SelectItem>`,
+    `${indent}      ))}`,
+    `${indent}    </SelectContent>`,
+    `${indent}  </Select>`,
+  ];
   const filters = o.filters
     ? [
         `${indent}<CommandMenuFilters>`,
-        `${indent}  <Select value={type} onValueChange={setType}>`,
-        `${indent}    <SelectTrigger variant="borderless" />`,
-        `${indent}    <SelectContent>`,
-        `${indent}      <SelectItem value="all" index={0}>All types</SelectItem>`,
-        `${indent}      <SelectItem value="Actions" index={1}>Actions</SelectItem>`,
-        `${indent}      <SelectItem value="Go to" index={2}>Go to</SelectItem>`,
-        `${indent}    </SelectContent>`,
-        `${indent}  </Select>`,
+        ...select("type", "setType", "TYPES"),
+        ...select("sort", "setSort", "SORTS"),
         `${indent}</CommandMenuFilters>`,
       ]
     : [];
@@ -164,13 +171,10 @@ export function buildCommandMenuPlaygroundCode(o: PlayState): string {
     `    <CommandMenuInput placeholder="${COMMAND_MENU_COPY.placeholder}" />`,
     ...(o.tabs
       ? [
-          `    <CommandMenuTabs`,
-          `      tabs={[{ value: "all", label: "All" }, { value: "Actions", label: "Actions" }, { value: "Go to", label: "Go to" }]}`,
-          `      value={tab}`,
-          `      onValueChange={setTab}`,
+          `    <CommandMenuTabs tabs={TABS} value={tab} onValueChange={setTab}${o.filters ? "" : " /"}>`,
           ...(o.filters
-            ? [`    >`, `      {/* Trailing children hug the row's end */}`, ...filters, `    </CommandMenuTabs>`]
-            : [`    />`]),
+            ? [`      {/* Trailing children hug the row's end */}`, ...filters, `    </CommandMenuTabs>`]
+            : []),
         ]
       : filters),
   ];
@@ -185,6 +189,7 @@ export function buildCommandMenuPlaygroundCode(o: PlayState): string {
     ...sample.map((item) => `  { ${fields(item)} },`),
     `  /* … */`,
     `];`,
+    ...lists,
     ...state,
     ...derived,
     ``,
@@ -205,6 +210,11 @@ export function buildCommandMenuPlaygroundCode(o: PlayState): string {
 }
 
 export function CommandMenuPlayground({ children }: PlaygroundProps) {
+  const mac = useIsMac();
+  const shortcutOptions = COMMAND_MENU_TRIGGERS.map((value) => ({
+    value,
+    label: shortcutLabel(value, mac),
+  }));
   const [state, setState] = useState<PlayState>(DEFAULT_COMMAND_MENU_STATE);
   const set = <K extends keyof PlayState>(key: K, value: PlayState[K]) =>
     setState((prev) => ({ ...prev, [key]: value }));
@@ -268,9 +278,9 @@ export function CommandMenuPlayground({ children }: PlaygroundProps) {
       <Select value={type} onValueChange={setType}>
         <SelectTrigger variant="borderless" aria-label="Type" />
         <SelectContent>
-          {TABS.map((option, i) => (
+          {COMMAND_MENU_TYPES.map((option, i) => (
             <SelectItem key={option.value} value={option.value} index={i}>
-              {option.value === "all" ? "All types" : option.label}
+              {option.label}
             </SelectItem>
           ))}
         </SelectContent>
@@ -278,7 +288,7 @@ export function CommandMenuPlayground({ children }: PlaygroundProps) {
       <Select value={sort} onValueChange={setSort}>
         <SelectTrigger variant="borderless" aria-label="Sort" />
         <SelectContent>
-          {SORTS.map((option, i) => (
+          {COMMAND_MENU_SORTS.map((option, i) => (
             <SelectItem key={option.value} value={option.value} index={i}>
               {option.label}
             </SelectItem>
@@ -342,7 +352,7 @@ export function CommandMenuPlayground({ children }: PlaygroundProps) {
         <PlaySelect
           value={state.shortcut}
           onChange={(v) => set("shortcut", v as CommandMenuTrigger)}
-          options={SHORTCUT_OPTIONS}
+          options={shortcutOptions}
         />
       </PlayField>
 

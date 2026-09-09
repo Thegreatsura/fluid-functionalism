@@ -86,6 +86,13 @@ describe("matchesShortcut", () => {
     expect(matchesShortcut(key({ key: "˚", code: "KeyK", altKey: true }), altK)).toBe(true);
   });
 
+  it("the physical key only stands in for non-Latin layouts, never for a Latin letter", () => {
+    // Cyrillic layout: the K key types "л", the combo still lands.
+    expect(matchesShortcut(key({ key: "л", code: "KeyK", metaKey: true }), modK)).toBe(true);
+    // Dvorak: the physical K types "t"; ⌘T must stay ⌘T.
+    expect(matchesShortcut(key({ key: "t", code: "KeyK", metaKey: true }), modK)).toBe(false);
+  });
+
   it("a bare key ignores modified presses", () => {
     const slash = parseShortcut("/");
     expect(matchesShortcut(key({ key: "/" }), slash)).toBe(true);
@@ -225,6 +232,26 @@ describe("CommandMenu", () => {
     // The footer knows the tabs are there.
     expect(getByText("Tabs")).toBeTruthy();
     expect(getByText("Select")).toBeTruthy();
+  });
+
+  it("keys inside an IME composition are left to the composer", () => {
+    const onSelect = vi.fn();
+    const { getByRole } = render(<Menu onSelect={onSelect} />);
+    const input = getByRole("combobox") as HTMLInputElement;
+    fireEvent.keyDown(input, { key: "Enter", isComposing: true });
+    expect(onSelect).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, { key: "Enter", keyCode: 229 });
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("group headings get ids without spaces", () => {
+    const { getAllByRole } = render(<Menu />);
+    for (const group of getAllByRole("group")) {
+      const id = group.getAttribute("aria-labelledby");
+      expect(id).toBeTruthy();
+      expect(id).not.toMatch(/\s/);
+      expect(document.getElementById(id as string)?.textContent).toBeTruthy();
+    }
   });
 
   it("Escape clears the query inline", () => {

@@ -7,7 +7,7 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import {
   useFluidHover,
@@ -65,12 +65,19 @@ function BoxedRow({
 function List({
   expose,
   rows,
+  keys,
+  pin,
   boxed,
   disabled,
   gapClick,
 }: {
   expose: (api: Api) => void;
   rows: Array<() => void>;
+  /** Row keys; a changed key remounts that row under the same index. */
+  keys?: string[];
+  /** Re-highlights this index whenever the rows change, in the same commit
+   *  the rows register in: what a filtering list does to keep Enter armed. */
+  pin?: number;
   boxed?: boolean;
   disabled?: (el: HTMLElement) => boolean;
   gapClick?: boolean | { maxDistance?: number };
@@ -78,12 +85,17 @@ function List({
   const ref = useRef<HTMLDivElement>(null);
   const api = useFluidHover(ref, { isItemDisabled: disabled, gapClick });
   expose(api);
+  const { setActiveIndex } = api;
+  const rowsKey = keys?.join("|") ?? String(rows.length);
+  useEffect(() => {
+    if (pin !== undefined) setActiveIndex(pin);
+  }, [pin, rowsKey, setActiveIndex]);
   const RowKind = boxed ? BoxedRow : Row;
   return (
     <div ref={ref} data-testid="list" {...api.handlers}>
       <input data-testid="search" placeholder="Search" />
       {rows.map((onClick, i) => (
-        <RowKind key={i} index={i} registerItem={api.registerItem} onClick={onClick} />
+        <RowKind key={keys?.[i] ?? i} index={i} registerItem={api.registerItem} onClick={onClick} />
       ))}
       <span data-testid="gap">gap</span>
     </div>
@@ -232,6 +244,24 @@ describe("useFluidHover: the hover state is in the DOM", () => {
     highlight(null);
     expect(getByTestId("row-2").hasAttribute(ACTIVE_ATTR)).toBe(false);
     expect(getByTestId("list").hasAttribute(ACTIVE_INDEX_ATTR)).toBe(false);
+  });
+
+  it("a row remounted under the highlighted index gives the mark up when the highlight moves", () => {
+    const clicks = [vi.fn(), vi.fn(), vi.fn()];
+    let api!: Api;
+    const { getByTestId, rerender } = render(
+      <List expose={(a) => (api = a)} rows={clicks} keys={["a", "b", "c"]} pin={1} />
+    );
+    expect(getByTestId("row-1").hasAttribute(ACTIVE_ATTR)).toBe(true);
+    // Row 1 remounts (a filtering list re-keys its rows) and the list pins
+    // index 1 again in the same commit: the index never changes, so the
+    // mark reaches the new element through registerItem, not the effect.
+    rerender(<List expose={(a) => (api = a)} rows={clicks} keys={["a", "b2", "c"]} pin={1} />);
+    expect(getByTestId("list").getAttribute(ACTIVE_INDEX_ATTR)).toBe("1");
+    expect(getByTestId("row-1").hasAttribute(ACTIVE_ATTR)).toBe(true);
+    act(() => api.setActiveIndex(2));
+    expect(getByTestId("row-1").hasAttribute(ACTIVE_ATTR)).toBe(false);
+    expect(getByTestId("row-2").hasAttribute(ACTIVE_ATTR)).toBe(true);
   });
 });
 

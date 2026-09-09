@@ -191,6 +191,21 @@ export const COMMAND_MENU_ITEMS: readonly {
 /** Values listed first while nothing is typed: the last things used. */
 export const COMMAND_MENU_SUGGESTIONS = ["calendar", "new-file", "settings"] as const;
 
+/** The header controls every preview and generator share: one tab per
+ *  group behind "All", the same groups as a filter select, and the sort. */
+export const COMMAND_MENU_TABS: readonly { value: string; label: string }[] = [
+  { value: "all", label: "All" },
+  ...COMMAND_MENU_GROUPS.map((group) => ({ value: group, label: group })),
+];
+export const COMMAND_MENU_TYPES: readonly { value: string; label: string }[] = [
+  { value: "all", label: "All types" },
+  ...COMMAND_MENU_GROUPS.map((group) => ({ value: group, label: group })),
+];
+export const COMMAND_MENU_SORTS: readonly { value: string; label: string }[] = [
+  { value: "default", label: "Default order" },
+  { value: "az", label: "A to Z" },
+];
+
 export const COMMAND_MENU_COPY = {
   placeholder: "Type a command or search…",
   empty: "No results.",

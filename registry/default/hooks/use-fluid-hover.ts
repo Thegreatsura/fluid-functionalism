@@ -234,7 +234,13 @@ export function useFluidHover<T extends HTMLElement>(
     else container?.setAttribute(ACTIVE_INDEX_ATTR, String(activeIndex));
     const active = activeIndex === null ? undefined : itemsRef.current.get(activeIndex);
     active?.setAttribute(ACTIVE_ATTR, "");
-    return () => active?.removeAttribute(ACTIVE_ATTR);
+    return () => {
+      active?.removeAttribute(ACTIVE_ATTR);
+      // A row that re-registered under this index while it was highlighted
+      // (a remount under a new key) was marked by registerItem, not by this
+      // effect: drop the mark from whatever element holds the index now.
+      if (activeIndex !== null) itemsRef.current.get(activeIndex)?.removeAttribute(ACTIVE_ATTR);
+    };
   }, [activeIndex, containerRef]);
   const [itemRects, setItemRects] = useState<ItemRect[]>([]);
   const [isMeasured, setIsMeasured] = useState(false);

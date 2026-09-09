@@ -12,7 +12,9 @@ import type { PresetGenerator } from "./generators";
 import {
   type CommandMenuPreset,
   COMMAND_MENU_ITEMS,
-  COMMAND_MENU_GROUPS,
+  COMMAND_MENU_TABS,
+  COMMAND_MENU_TYPES,
+  COMMAND_MENU_SORTS,
   COMMAND_MENU_SUGGESTIONS,
   COMMAND_MENU_COPY,
 } from "./command-menu-options";
@@ -81,23 +83,22 @@ function commandMenuDemoFile(p: CommandMenuPreset): string {
   }
   if (p.tabs) {
     l.push(`const TABS = [`);
-    l.push(`  { value: "all", label: "All" },`);
-    for (const group of COMMAND_MENU_GROUPS) {
-      l.push(`  { value: ${JSON.stringify(group)}, label: ${JSON.stringify(group)} },`);
+    for (const tab of COMMAND_MENU_TABS) {
+      l.push(`  { value: ${JSON.stringify(tab.value)}, label: ${JSON.stringify(tab.label)} },`);
     }
     l.push(`];`);
     l.push(``);
   }
   if (p.filters) {
     l.push(`const TYPES = [`);
-    l.push(`  { value: "all", label: "All types" },`);
-    for (const group of COMMAND_MENU_GROUPS) {
-      l.push(`  { value: ${JSON.stringify(group)}, label: ${JSON.stringify(group)} },`);
+    for (const type of COMMAND_MENU_TYPES) {
+      l.push(`  { value: ${JSON.stringify(type.value)}, label: ${JSON.stringify(type.label)} },`);
     }
     l.push(`];`);
     l.push(`const SORTS = [`);
-    l.push(`  { value: "default", label: "Default order" },`);
-    l.push(`  { value: "az", label: "A to Z" },`);
+    for (const sort of COMMAND_MENU_SORTS) {
+      l.push(`  { value: ${JSON.stringify(sort.value)}, label: ${JSON.stringify(sort.label)} },`);
+    }
     l.push(`];`);
     l.push(``);
   }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ComponentEntry } from "@/lib/docs/components";
 import { previewMap } from "@/app/components/bento-previews";
-import { BentoCard } from "@/app/components/bento-card";
+import { BentoCard, BentoTileContext } from "@/app/components/bento-card";
 import { cn } from "@/lib/utils";
 
 /**
@@ -129,7 +129,9 @@ export function BentoGrid({ components }: BentoGridProps) {
             previewClassName={STAGE_PADDING[c.slug]}
             animateLayout
           >
-            <Preview />
+            <BentoTileContext.Provider value={true}>
+              <Preview />
+            </BentoTileContext.Provider>
           </BentoCard>
         );
       })}

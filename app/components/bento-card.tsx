@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type ReactNode, type CSSProperties } from "react";
+import { type ReactNode, type CSSProperties, createContext } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/registry/default/lib/utils";
 import { fontWeights } from "@/registry/default/lib/font-weight";
@@ -13,6 +13,11 @@ const sizeClasses: Record<string, string> = {
   medium: "md:col-span-2",
   small: "col-span-1",
 };
+
+/** True inside a home Showcase tile (a 300px grid row). Previews that
+ *  also serve the full /demo stage and the /compare pairs read it to trim
+ *  themselves for the tile alone. */
+export const BentoTileContext = createContext(false);
 
 interface BentoCardProps {
   slug: string;

@@ -19,6 +19,7 @@ import {
   CommandMenuList,
   CommandMenuEmpty,
   CommandMenuFooter,
+  useIsMac,
   type CommandMenuItemData,
 } from "@/registry/default/command-menu";
 import {
@@ -139,6 +140,7 @@ function writeRecent(list: string[]) {
 /** The "Search ⌘K" row at the top of the sidebar. */
 export function SiteCommandMenuTrigger() {
   const icons = useIcons();
+  const mac = useIsMac();
   const { setOpen } = useSiteCommandMenu();
   return (
     <SidebarMenu aria-label="Search">
@@ -146,7 +148,7 @@ export function SiteCommandMenuTrigger() {
         <SidebarMenuButton icon={icons.search} onClick={() => setOpen(true)}>
           Search
         </SidebarMenuButton>
-        <SidebarMenuBadge className="font-sans text-caption">⌘K</SidebarMenuBadge>
+        <SidebarMenuBadge className="font-sans text-caption">{mac ? "⌘K" : "Ctrl K"}</SidebarMenuBadge>
       </SidebarMenuItem>
     </SidebarMenu>
   );
@@ -299,8 +301,12 @@ export function SiteCommandMenu() {
               group: "Actions",
               onSelect: () => {
                 const cmd = `npx shadcn@latest add ${installUrl(currentComponent.slug, base)}`;
-                navigator.clipboard?.writeText(cmd);
-                showSuccessToast("Install command copied");
+                // The toast follows the write: no clipboard (an insecure
+                // context) or a refused write must not announce a copy.
+                navigator.clipboard
+                  ?.writeText(cmd)
+                  .then(() => showSuccessToast("Install command copied"))
+                  .catch(() => {});
               },
             },
           ]

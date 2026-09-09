@@ -3,18 +3,23 @@
 import {
   createContext,
   forwardRef,
+  memo,
   useCallback,
   useContext,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
+  type Dispatch,
   type HTMLAttributes,
   type InputHTMLAttributes,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
   type RefObject,
+  type SetStateAction,
 } from "react";
 import { animate, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -29,7 +34,10 @@ import {
   type UseFluidHoverReturn,
 } from "@/hooks/use-fluid-hover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
+import {
+  FluidHoverHighlight,
+  type FluidHoverSource,
+} from "@/components/ui/fluid-hover-highlight";
 import {
   Dialog,
   DialogContent,
@@ -180,8 +188,11 @@ export function parseShortcut(shortcut: string): ParsedShortcut {
   return parsed;
 }
 
-/** Whether a keydown is the parsed combo. Letters also match on `code`, so
- *  ⌥ combos on a Mac (where `key` becomes a symbol) still land. */
+/** Whether a keydown is the parsed combo. The physical key (`code`) stands
+ *  in only when `key` is not a Latin letter or digit: ⌥ combos on a Mac
+ *  (where `key` becomes a symbol) and non-Latin layouts (Cyrillic, Greek).
+ *  A Latin letter is taken at face value, so on Dvorak or AZERTY the key
+ *  that types "t" is never read as the physical K. */
 export function matchesShortcut(
   e: Pick<KeyboardEvent, "key" | "code" | "metaKey" | "ctrlKey" | "altKey" | "shiftKey">,
   parsed: ParsedShortcut
@@ -191,6 +202,7 @@ export function matchesShortcut(
   const byCode =
     parsed.key.length === 1 &&
     /[a-z0-9]/.test(parsed.key) &&
+    (e.altKey || !/^[a-z0-9]$/i.test(e.key)) &&
     e.code.toLowerCase() === (/[a-z]/.test(parsed.key) ? `key${parsed.key}` : `digit${parsed.key}`);
   if (key !== parsed.key && !byCode) return false;
   if (parsed.mod) {
@@ -259,13 +271,21 @@ export function isMacPlatform(): boolean {
   return /mac|iphone|ipad|ipod/i.test(platform);
 }
 
-/** Mac until proven otherwise: the server and the first client render agree
- *  on ⌘, and other platforms swap to words right after hydration. */
-function useIsMac(): boolean {
-  const [mac, setMac] = useState(true);
-  useEffect(() => setMac(isMacPlatform()), []);
-  return mac;
+// The platform never changes, so it is read once and served as a store
+// snapshot: the server (and hydration) draw ⌘, other platforms swap to
+// words in the render that follows, with no state or effect per cap.
+let macPlatform: boolean | null = null;
+const readMac = () => (macPlatform ??= isMacPlatform());
+const serverMac = () => true;
+const subscribeNever = () => () => {};
+
+/** Whether to draw ⌘ and ⌥ rather than Ctrl and Alt. */
+export function useIsMac(): boolean {
+  return useSyncExternalStore(subscribeNever, readMac, serverMac);
 }
+
+// Layout effects have no server counterpart; on the server they are no-ops.
+const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 function isEditable(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
@@ -342,6 +362,14 @@ export function sectionRows(
 // Contexts
 // ---------------------------------------------------------------------------
 
+/** The highlighted index as a store: rows and the field subscribe to the
+ *  one value they need, so a highlight change re-renders the two rows it
+ *  concerns instead of every row in the list. */
+interface HighlightStore {
+  get: () => number | null;
+  subscribe: (listener: () => void) => () => void;
+}
+
 interface CommandMenuContextValue {
   query: string;
   setQuery: (query: string) => void;
@@ -352,19 +380,25 @@ interface CommandMenuContextValue {
   listId: string;
   listRef: RefObject<HTMLDivElement | null>;
   inputRef: RefObject<HTMLInputElement | null>;
-  hover: UseFluidHoverReturn;
+  /** The fluid hover hook's stable parts. The changing parts (the index,
+   *  the rects) travel through `highlight` and CommandMenuFillContext so
+   *  this value holds still while the pointer moves. */
+  registerItem: UseFluidHoverReturn["registerItem"];
+  setActiveIndex: Dispatch<SetStateAction<number | null>>;
+  listHandlers: UseFluidHoverReturn["handlers"];
+  highlight: HighlightStore;
   select: (item: CommandMenuItemData) => void;
   /** Moves the highlight from the keyboard: a step (wrapping), or an end. */
   move: (to: 1 | -1 | "first" | "last") => void;
-  /** Why the highlight last moved, for the list's scrolling: a keyboard
-   *  "move" centers the row, a query "reset" returns to the top, and a
-   *  pointer move (false) never scrolls. */
-  scrollPendingRef: RefObject<"move" | "reset" | false>;
   /** The mounted CommandMenuTabs, so ← and → in the field switch tabs. */
   tabsRef: RefObject<CommandMenuTabsHandle | null>;
   tabsMounted: boolean;
   setTabsMounted: (mounted: boolean) => void;
 }
+
+/** What the list's fill reads: the index and the measured rects. Its own
+ *  context, so only the list re-renders as the fill travels. */
+const CommandMenuFillContext = createContext<FluidHoverSource | null>(null);
 
 interface CommandMenuTabsHandle {
   tabs: readonly CommandMenuTab[];
@@ -480,10 +514,88 @@ const CommandMenu = forwardRef<HTMLDivElement, CommandMenuProps>(
     // container (the child's effects run before the root's, so the ref is
     // set by the time the hook observes it).
     const hover = useFluidHover(listRef, { isItemDisabled: isDisabledRow });
-    const { activeIndex, setActiveIndex } = hover;
-    const activeIndexRef = useRef<number | null>(activeIndex);
-    activeIndexRef.current = activeIndex;
-    const scrollPendingRef = useRef<"move" | "reset" | false>(false);
+    const { activeIndex, setActiveIndex, registerItem, itemRects, isMeasured, sessionRef } = hover;
+    const { onMouseEnter, onMouseMove, onMouseLeave, onClick } = hover.handlers;
+    const listHandlers = useMemo(
+      () => ({ onMouseEnter, onMouseMove, onMouseLeave, onClick }),
+      [onMouseEnter, onMouseMove, onMouseLeave, onClick]
+    );
+
+    // The highlight, published as a store right after each commit: rows and
+    // the field subscribe to the one value they need, so a change re-renders
+    // the two rows it concerns, not the list.
+    const highlightRef = useRef<number | null>(null);
+    const listenersRef = useRef(new Set<() => void>());
+    const highlight = useMemo<HighlightStore>(
+      () => ({
+        get: () => highlightRef.current,
+        subscribe: (listener) => {
+          listenersRef.current.add(listener);
+          return () => {
+            listenersRef.current.delete(listener);
+          };
+        },
+      }),
+      []
+    );
+    useIsoLayoutEffect(() => {
+      highlightRef.current = activeIndex;
+      listenersRef.current.forEach((listener) => listener());
+    }, [activeIndex]);
+    const fill = useMemo<FluidHoverSource>(
+      () => ({ activeIndex, itemRects, isMeasured, sessionRef }),
+      [activeIndex, itemRects, isMeasured, sessionRef]
+    );
+
+    // Scrolling is the root's, done the moment a move is decided rather
+    // than in an effect on the index: a move to the row already highlighted
+    // (Home at the top, ↓ in a one-row list, a query that keeps row 0) must
+    // still scroll, and no flag can be left behind for a pointer move to
+    // pick up. A keyboard move keeps its row at the CENTER of the viewport
+    // (as far as the ends allow) and the viewport travels there on the same
+    // fast spring as the highlight, so row and fill move together; a query
+    // reset snaps to the top, heading included. Offsets, not rects: the
+    // row's offsetParent is the list, whose offsetParent is the scroll
+    // area's root that the viewport fills, so their sum is the row's place
+    // in the scroll content whatever transform an ancestor carries. Never
+    // scrollIntoView, which also scrolls the page.
+    const reduceMotion = useReducedMotion() ?? false;
+    const scrollAnimationRef = useRef<{ stop: () => void } | null>(null);
+    const scrollToRow = useCallback(
+      (index: number, mode: "center" | "top") => {
+        const list = listRef.current;
+        const viewport = list?.closest<HTMLElement>('[data-slot="scroll-area-viewport"]');
+        if (!list || !viewport) return;
+        scrollAnimationRef.current?.stop();
+        scrollAnimationRef.current = null;
+        if (mode === "top" || index === 0) {
+          viewport.scrollTop = 0;
+          return;
+        }
+        const row = list.querySelector<HTMLElement>(`[data-fluid-hover-index="${index}"]`);
+        if (!row) return;
+        const rowTop = row.offsetTop + list.offsetTop;
+        const target = Math.max(
+          0,
+          Math.min(
+            rowTop + row.offsetHeight / 2 - viewport.clientHeight / 2,
+            viewport.scrollHeight - viewport.clientHeight
+          )
+        );
+        if (reduceMotion) {
+          viewport.scrollTop = target;
+          return;
+        }
+        scrollAnimationRef.current = animate(viewport.scrollTop, target, {
+          ...spring.fast,
+          onUpdate: (value) => {
+            viewport.scrollTop = value;
+          },
+        });
+      },
+      [reduceMotion]
+    );
+    useEffect(() => () => scrollAnimationRef.current?.stop(), []);
 
     // The first enabled row is highlighted whenever the row set changes, so
     // Enter always has a target and it follows the query as it filters.
@@ -491,9 +603,9 @@ const CommandMenu = forwardRef<HTMLDivElement, CommandMenuProps>(
     rowsRef.current = rows;
     useEffect(() => {
       const first = rowsRef.current.findIndex((row) => !row.disabled);
-      scrollPendingRef.current = "reset";
       setActiveIndex(first === -1 ? null : first);
-    }, [rowsKey, setActiveIndex]);
+      scrollToRow(0, "top");
+    }, [rowsKey, setActiveIndex, scrollToRow]);
 
     const move = useCallback(
       (to: 1 | -1 | "first" | "last") => {
@@ -506,17 +618,17 @@ const CommandMenu = forwardRef<HTMLDivElement, CommandMenuProps>(
         if (to === "first") next = enabled[0];
         else if (to === "last") next = enabled[enabled.length - 1];
         else {
-          const current = activeIndexRef.current;
+          const current = highlightRef.current;
           const pos = current === null ? -1 : enabled.indexOf(current);
           // Wraps at both ends: the list is the whole keyboard space, there
           // is no field to stop at.
           if (pos === -1) next = to === 1 ? enabled[0] : enabled[enabled.length - 1];
           else next = enabled[(pos + to + enabled.length) % enabled.length];
         }
-        scrollPendingRef.current = "move";
         setActiveIndex(next);
+        scrollToRow(next, "center");
       },
-      [setActiveIndex]
+      [setActiveIndex, scrollToRow]
     );
 
     const onSelectRef = useRef(onSelect);
@@ -541,15 +653,31 @@ const CommandMenu = forwardRef<HTMLDivElement, CommandMenuProps>(
         listId,
         listRef,
         inputRef,
-        hover,
+        registerItem,
+        setActiveIndex,
+        listHandlers,
+        highlight,
         select,
         move,
-        scrollPendingRef,
         tabsRef,
         tabsMounted,
         setTabsMounted,
       }),
-      [query, setQuery, sections, rows, itemsByValue, listId, hover, select, move, tabsMounted]
+      [
+        query,
+        setQuery,
+        sections,
+        rows,
+        itemsByValue,
+        listId,
+        registerItem,
+        setActiveIndex,
+        listHandlers,
+        highlight,
+        select,
+        move,
+        tabsMounted,
+      ]
     );
 
     // The panel follows its rows: the column inside is measured (offsetHeight,
@@ -558,7 +686,6 @@ const CommandMenu = forwardRef<HTMLDivElement, CommandMenuProps>(
     // ancestor. Reduced motion snaps. max-h inherits down the chain, so a
     // cap on the wrapper (or on this root's className) bounds the column and
     // the list scrolls past it.
-    const reduceMotion = useReducedMotion() ?? false;
     const columnRef = useRef<HTMLDivElement | null>(null);
     const [height, setHeight] = useState<number | null>(null);
     useEffect(() => {
@@ -573,23 +700,25 @@ const CommandMenu = forwardRef<HTMLDivElement, CommandMenuProps>(
 
     const root = (
       <CommandMenuContext.Provider value={ctx}>
-        <div
-          ref={ref}
-          data-slot="command-menu"
-          className={cn("relative w-full max-h-[inherit] overflow-hidden", className)}
-          {...props}
-        >
-          <motion.div
-            className="max-h-[inherit] overflow-hidden"
-            initial={false}
-            animate={height === null ? {} : { height }}
-            transition={reduceMotion ? { duration: 0 } : spring.moderate}
+        <CommandMenuFillContext.Provider value={fill}>
+          <div
+            ref={ref}
+            data-slot="command-menu"
+            className={cn("relative w-full max-h-[inherit] overflow-hidden", className)}
+            {...props}
           >
-            <div ref={columnRef} className="flex max-h-[inherit] min-h-0 flex-col">
-              {children}
-            </div>
-          </motion.div>
-        </div>
+            <motion.div
+              className="max-h-[inherit] overflow-hidden"
+              initial={false}
+              animate={height === null ? {} : { height }}
+              transition={reduceMotion ? { duration: 0 } : spring.moderate}
+            >
+              <div ref={columnRef} className="flex max-h-[inherit] min-h-0 flex-col">
+                {children}
+              </div>
+            </motion.div>
+          </div>
+        </CommandMenuFillContext.Provider>
       </CommandMenuContext.Provider>
     );
 
@@ -623,13 +752,18 @@ const CommandMenuInput = forwardRef<HTMLInputElement, CommandMenuInputProps>(
     const Icon = icon === undefined ? SearchIcon : icon;
     const sizeClasses = useSize();
     const compact = sizeClasses.variant === "compact";
-    const { query, setQuery, rows, listId, inputRef, hover, select, move, tabsRef } =
+    const { query, setQuery, rows, listId, inputRef, highlight, select, move, tabsRef } =
       useCommandMenu();
+    const activeIndex = useSyncExternalStore(highlight.subscribe, highlight.get, () => null);
     const dialog = useContext(CommandMenuDialogContext);
 
     const handleKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
       onKeyDown?.(e);
       if (e.defaultPrevented) return;
+      // Keys inside an IME composition belong to the composer: Enter commits
+      // a candidate, the arrows pick one. (Safari reports the commit as
+      // keyCode 229 after compositionend.)
+      if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
       switch (e.key) {
         case "ArrowLeft":
         case "ArrowRight": {
@@ -665,7 +799,7 @@ const CommandMenuInput = forwardRef<HTMLInputElement, CommandMenuInputProps>(
           return;
         case "Enter": {
           e.preventDefault();
-          const row = hover.activeIndex === null ? undefined : rows[hover.activeIndex];
+          const row = activeIndex === null ? undefined : rows[activeIndex];
           if (row) select(row);
           return;
         }
@@ -707,9 +841,7 @@ const CommandMenuInput = forwardRef<HTMLInputElement, CommandMenuInputProps>(
           aria-expanded
           aria-controls={listId}
           aria-autocomplete="list"
-          aria-activedescendant={
-            hover.activeIndex === null ? undefined : `${listId}-${hover.activeIndex}`
-          }
+          aria-activedescendant={activeIndex === null ? undefined : `${listId}-${activeIndex}`}
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -770,15 +902,20 @@ const CommandMenuTabs = forwardRef<HTMLDivElement, CommandMenuTabsProps>(
     );
 
     // The field reads the latest tabs and value from the ref on each ← / →,
-    // so nothing re-renders on registration but the footer's hint.
-    tabsRef.current = { tabs, value, onValueChange };
-    useEffect(() => {
-      setTabsMounted(true);
+    // so nothing re-renders on registration but the footer's hint. A layout
+    // effect, not a render-phase write: on a keyed remount the outgoing
+    // instance's cleanup runs before the incoming one's effect, so the ref
+    // is never left empty while the footer still announces the tabs.
+    useIsoLayoutEffect(() => {
+      tabsRef.current = { tabs, value, onValueChange };
       return () => {
         tabsRef.current = null;
-        setTabsMounted(false);
       };
-    }, [tabsRef, setTabsMounted]);
+    }, [tabsRef, tabs, value, onValueChange]);
+    useEffect(() => {
+      setTabsMounted(true);
+      return () => setTabsMounted(false);
+    }, [setTabsMounted]);
 
     return (
       <div
@@ -866,17 +1003,6 @@ CommandMenuFilters.displayName = "CommandMenuFilters";
 // with the fluid hover fill.
 // ---------------------------------------------------------------------------
 
-/** The nearest scrolling ancestor: where the list's viewport lives. */
-function scrollParent(el: HTMLElement | null): HTMLElement | null {
-  let node = el?.parentElement ?? null;
-  while (node) {
-    const { overflowY } = getComputedStyle(node);
-    if (overflowY === "auto" || overflowY === "scroll") return node;
-    node = node.parentElement;
-  }
-  return null;
-}
-
 export interface CommandMenuListProps extends HTMLAttributes<HTMLDivElement> {
   /** Custom rows: return a CommandMenuItem (or anything built on one) per
    *  visible item. Default renders `<CommandMenuItem value={item.value} />`. */
@@ -887,63 +1013,18 @@ export interface CommandMenuListProps extends HTMLAttributes<HTMLDivElement> {
 
 const CommandMenuList = forwardRef<HTMLDivElement, CommandMenuListProps>(
   ({ className, children, renderItem, ...props }, ref) => {
-    const { sections, rows, listId, listRef, hover, scrollPendingRef } = useCommandMenu();
-    const { activeIndex, setActiveIndex, handlers } = hover;
+    const { sections, rows, listId, listRef, setActiveIndex, listHandlers } = useCommandMenu();
+    const fill = useContext(CommandMenuFillContext);
     const sizeClasses = useSize();
     const compact = sizeClasses.variant === "compact";
     const empty = rows.length === 0;
 
-    // A keyboard move keeps its row at the CENTER of the viewport (as far
-    // as the ends allow), and the viewport travels there on the same fast
-    // spring as the highlight, so row and fill move together. A query
-    // reset lands on the first row and snaps the viewport to the top,
-    // heading included. A pointer move never scrolls. The input keeps DOM
-    // focus, so the browser does none of this; the viewport is scrolled by
-    // hand from the two rects (it is not positioned, so offsets would walk
-    // past it), never with scrollIntoView, which also scrolls the page.
-    const reduceMotion = useReducedMotion() ?? false;
-    useEffect(() => {
-      const reason = scrollPendingRef.current;
-      if (!reason) return;
-      scrollPendingRef.current = false;
-      if (activeIndex === null) return;
-      const list = listRef.current;
-      const row = list?.querySelector<HTMLElement>(`[data-fluid-hover-index="${activeIndex}"]`);
-      const viewport = scrollParent(list);
-      if (!list || !row || !viewport) return;
-      if (reason === "reset" || activeIndex === 0) {
-        viewport.scrollTop = 0;
-        return;
-      }
-      const rowRect = row.getBoundingClientRect();
-      const viewRect = viewport.getBoundingClientRect();
-      const rowTop = rowRect.top - viewRect.top + viewport.scrollTop;
-      const target = Math.max(
-        0,
-        Math.min(
-          rowTop + rowRect.height / 2 - viewport.clientHeight / 2,
-          viewport.scrollHeight - viewport.clientHeight
-        )
-      );
-      if (reduceMotion) {
-        viewport.scrollTop = target;
-        return;
-      }
-      const controls = animate(viewport.scrollTop, target, {
-        ...spring.fast,
-        onUpdate: (value) => {
-          viewport.scrollTop = value;
-        },
-      });
-      return () => controls.stop();
-    }, [activeIndex, listRef, scrollPendingRef, reduceMotion]);
-
     // The pointer leaving the list keeps the highlight where it was: Enter
     // still has a target, and the fill stays on the row the field points at.
     const lastActiveRef = useRef<number | null>(null);
-    if (activeIndex !== null) lastActiveRef.current = activeIndex;
+    if (fill && fill.activeIndex !== null) lastActiveRef.current = fill.activeIndex;
     const handleMouseLeave = () => {
-      handlers.onMouseLeave();
+      listHandlers.onMouseLeave();
       setActiveIndex(lastActiveRef.current);
     };
 
@@ -973,10 +1054,10 @@ const CommandMenuList = forwardRef<HTMLDivElement, CommandMenuListProps>(
           tabIndex={-1}
           data-slot="command-menu-list"
           data-empty={empty || undefined}
-          onMouseEnter={handlers.onMouseEnter}
-          onMouseMove={handlers.onMouseMove}
+          onMouseEnter={listHandlers.onMouseEnter}
+          onMouseMove={listHandlers.onMouseMove}
           onMouseLeave={handleMouseLeave}
-          onClick={handlers.onClick}
+          onClick={listHandlers.onClick}
           // A row click must not blur the field: the palette is driven from
           // the keyboard, and the click already picked.
           onMouseDown={(e) => e.preventDefault()}
@@ -988,10 +1069,13 @@ const CommandMenuList = forwardRef<HTMLDivElement, CommandMenuListProps>(
           )}
           {...props}
         >
-          <FluidHoverHighlight hover={hover} className={listShape.bg} />
+          {fill && <FluidHoverHighlight hover={fill} className={listShape.bg} />}
           {children}
-          {sections.map((section) => {
-            const headingId = section.heading ? `${listId}-${section.id}-heading` : undefined;
+          {sections.map((section, sectionIndex) => {
+            // Ids from the section's position, never its heading text: a
+            // heading with a space ("Go to") would split aria-labelledby
+            // into two ids that exist nowhere.
+            const headingId = section.heading ? `${listId}-group-${sectionIndex}` : undefined;
             return (
               <div
                 key={section.id}
@@ -1118,7 +1202,9 @@ export interface CommandMenuItemProps
   onSelect?: () => void;
 }
 
-const CommandMenuItem = forwardRef<HTMLDivElement, CommandMenuItemProps>(
+// Memoized: the list re-renders as the fill travels, and a row whose props
+// did not change (the default row has only `value`) must not follow it.
+const CommandMenuItem = memo(forwardRef<HTMLDivElement, CommandMenuItemProps>(
   (
     {
       value,
@@ -1135,10 +1221,17 @@ const CommandMenuItem = forwardRef<HTMLDivElement, CommandMenuItemProps>(
     },
     ref
   ) => {
-    const { itemsByValue, listId, hover, select } = useCommandMenu();
+    const { itemsByValue, listId, registerItem, highlight, select } = useCommandMenu();
     const index = useContext(CommandMenuIndexContext);
     const internalRef = useRef<HTMLDivElement | null>(null);
     const sizeClasses = useSize();
+    // One boolean per row: a highlight change re-renders the row it left
+    // and the row it reached, and no other.
+    const isActive = useSyncExternalStore(
+      highlight.subscribe,
+      () => highlight.get() === index,
+      () => false
+    );
 
     const data = itemsByValue.get(value);
     const item: CommandMenuItemData = {
@@ -1152,8 +1245,7 @@ const CommandMenuItem = forwardRef<HTMLDivElement, CommandMenuItemProps>(
     };
     const Icon = item.icon;
 
-    useRegisterFluidHoverItem(hover.registerItem, index, internalRef);
-    const isActive = hover.activeIndex === index;
+    useRegisterFluidHoverItem(registerItem, index, internalRef);
 
     return (
       <div
@@ -1221,7 +1313,7 @@ const CommandMenuItem = forwardRef<HTMLDivElement, CommandMenuItemProps>(
       </div>
     );
   }
-);
+));
 
 CommandMenuItem.displayName = "CommandMenuItem";
 
@@ -1287,9 +1379,22 @@ CommandMenuFooter.displayName = "CommandMenuFooter";
 // press. An open dialog answers first (the press closes it). Otherwise the
 // most recently mounted one with that combo does: a page that mounts a
 // second palette for a while (a docs demo) hands the key to it and gets it
-// back when it unmounts.
-const mountedDialogs: { id: number; combo: string; isOpen: () => boolean }[] = [];
-let nextDialogId = 0;
+// back when it unmounts. Peers are matched on the parsed combo, so "mod+k",
+// "cmd+k" and "Mod+K" are one key.
+const mountedDialogs: { combo: string; isOpen: () => boolean }[] = [];
+
+function comboKey(parsed: ParsedShortcut): string {
+  return [
+    parsed.mod && "mod",
+    parsed.meta && "meta",
+    parsed.ctrl && "ctrl",
+    parsed.alt && "alt",
+    parsed.shift && "shift",
+    parsed.key,
+  ]
+    .filter(Boolean)
+    .join("+");
+}
 
 export interface CommandMenuDialogProps {
   open?: boolean;
@@ -1329,27 +1434,31 @@ function CommandMenuDialog({
   openRef.current = open;
   const onOpenChangeRef = useRef(onOpenChange);
   onOpenChangeRef.current = onOpenChange;
+  // Read through refs so `setOpen` keeps one identity for the dialog's
+  // life: the listener below depends on it, and re-registering on every
+  // toggle would move the dialog to the end of the peer list, changing
+  // which dialog answers a shared combo with each click.
+  const controlledRef = useRef(openProp !== undefined);
+  controlledRef.current = openProp !== undefined;
 
-  const setOpen = useCallback(
-    (next: boolean) => {
-      if (openProp === undefined) setInternalOpen(next);
-      onOpenChangeRef.current?.(next);
-    },
-    [openProp]
-  );
+  const setOpen = useCallback((next: boolean) => {
+    if (!controlledRef.current) setInternalOpen(next);
+    onOpenChangeRef.current?.(next);
+  }, []);
 
   useEffect(() => {
     if (!shortcut) return;
     const parsed = parseShortcut(shortcut);
     if (parsed.key === "") return;
-    const entry = { id: nextDialogId++, combo: shortcut, isOpen: () => openRef.current };
+    const combo = comboKey(parsed);
+    const entry = { combo, isOpen: () => openRef.current };
     mountedDialogs.push(entry);
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.repeat || e.defaultPrevented) return;
       if (!matchesShortcut(e, parsed)) return;
       // A bare key stays out of fields; a modifier combo fires anywhere.
       if (!hasModifier(parsed) && isEditable(e.target)) return;
-      const peers = mountedDialogs.filter((d) => d.combo === shortcut);
+      const peers = mountedDialogs.filter((d) => d.combo === combo);
       const answers = peers.find((d) => d.isOpen()) ?? peers[peers.length - 1];
       if (answers !== entry) return;
       e.preventDefault();

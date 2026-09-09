@@ -13,6 +13,7 @@ import {
   CommandMenuItem,
   CommandMenuShortcut,
   CommandMenuFooter,
+  useIsMac,
   type CommandMenuItemData,
 } from "@/registry/default/command-menu";
 import {
@@ -32,8 +33,10 @@ import { DocPage, DocSection } from "@/lib/docs/DocPage";
 import { PlaygroundLayout } from "@/lib/docs/playground";
 import { CommandMenuPlayground } from "@/lib/docs/playgrounds/command-menu";
 import {
-  COMMAND_MENU_GROUPS,
   COMMAND_MENU_SUGGESTIONS,
+  COMMAND_MENU_TABS,
+  COMMAND_MENU_TYPES,
+  COMMAND_MENU_SORTS,
   COMMAND_MENU_COPY,
   useCommandMenuItems,
 } from "@/lib/docs/command-menu-items";
@@ -347,13 +350,11 @@ function Panel({ children, className }: { children: React.ReactNode; className?:
   );
 }
 
-const TABS = [
-  { value: "all", label: "All" },
-  ...COMMAND_MENU_GROUPS.map((group) => ({ value: group, label: group })),
-];
+const TABS = COMMAND_MENU_TABS;
 
 export default function CommandMenuDoc() {
   const PlusIcon = useIcon("plus");
+  const mac = useIsMac();
   const plain = useCommandMenuItems({ descriptions: false, shortcuts: false });
   const full = useCommandMenuItems();
   const run = (item: CommandMenuItemData) => showSuccessToast(`Ran “${item.label}”`);
@@ -387,7 +388,7 @@ export default function CommandMenuDoc() {
 
       <DocSection title="Basic">
         <p className="text-subtitle text-muted-foreground">
-          Type to filter, press ↓ ↑ to move, Enter to run. Rows come from
+          Type to filter, press ↓ ↑ to move, Enter to run. Rows come from{" "}
           <code>items</code>, grouped by <code>group</code>.
         </p>
         <ComponentPreview code={basicCode} minHeightClass="min-h-[400px]">
@@ -474,9 +475,9 @@ export default function CommandMenuDoc() {
                 <Select value={type} onValueChange={setType}>
                   <SelectTrigger variant="borderless" aria-label="Type" />
                   <SelectContent>
-                    {TABS.map((option, i) => (
+                    {COMMAND_MENU_TYPES.map((option, i) => (
                       <SelectItem key={option.value} value={option.value} index={i}>
-                        {option.value === "all" ? "All types" : option.label}
+                        {option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -484,8 +485,11 @@ export default function CommandMenuDoc() {
                 <Select value={sort} onValueChange={setSort}>
                   <SelectTrigger variant="borderless" aria-label="Sort" />
                   <SelectContent>
-                    <SelectItem value="default" index={0}>Default order</SelectItem>
-                    <SelectItem value="az" index={1}>A to Z</SelectItem>
+                    {COMMAND_MENU_SORTS.map((option, i) => (
+                      <SelectItem key={option.value} value={option.value} index={i}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </CommandMenuFilters>
@@ -499,8 +503,8 @@ export default function CommandMenuDoc() {
 
       <DocSection title="Dialog and trigger shortcut">
         <p className="text-subtitle text-muted-foreground">
-          Press ⌘P anywhere on this page (⌘K is the site&apos;s own menu).
-          A pick or Escape closes it.
+          Press {mac ? "⌘P" : "Ctrl+P"} anywhere on this page ({mac ? "⌘K" : "Ctrl+K"} is
+          the site&apos;s own menu). A pick or Escape closes it.
         </p>
         <ComponentPreview code={dialogCode}>
           <div className="flex flex-wrap items-center gap-3">

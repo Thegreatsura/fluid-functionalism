@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import Image from "next/image";
 import { useIcon, useIcons } from "@/lib/icon-context";
 import { fontWeights } from "@/lib/font-weight";
@@ -113,11 +113,12 @@ import {
 } from "@/registry/default/command-menu";
 import {
   COMMAND_MENU_COPY,
-  COMMAND_MENU_GROUPS,
   COMMAND_MENU_SUGGESTIONS,
+  COMMAND_MENU_TABS,
   useCommandMenuItems,
 } from "@/lib/docs/command-menu-items";
 import { Elevated } from "@/lib/elevated";
+import { BentoTileContext } from "@/app/components/bento-card";
 import { cn } from "@/lib/utils";
 import { useShape } from "@/lib/shape-context";
 import { Slider } from "@/registry/radix/slider";
@@ -440,11 +441,6 @@ function SwitchPreview() {
   );
 }
 
-const COMMAND_MENU_TABS = [
-  { value: "all", label: "All" },
-  ...COMMAND_MENU_GROUPS.map((group) => ({ value: group, label: group })),
-];
-
 function CommandMenuPreview() {
   const shape = useShape();
   const all = useCommandMenuItems();
@@ -476,6 +472,7 @@ function CommandMenuPreview() {
 }
 
 function TablePreview() {
+  const inTile = useContext(BentoTileContext);
   return (
     <div className="w-full max-w-[420px]">
       <Table>
@@ -487,9 +484,9 @@ function TablePreview() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {/* 4 rows: a medium tile's stage, with the row fluid hover
-              still readable. */}
-          {TABLE_ROWS.slice(0, 4).map((row, i) => (
+          {/* 4 rows fit a medium tile's stage; the /demo stage and the
+              /compare pair keep all 7, matching the shadcn original. */}
+          {(inTile ? TABLE_ROWS.slice(0, 4) : TABLE_ROWS).map((row, i) => (
             <TableRow key={row[0]} index={i}>
               {row.map((cell) => (
                 <TableCell key={cell}>{cell}</TableCell>

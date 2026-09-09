@@ -15,8 +15,8 @@
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { DUAL_FLAVOR_SLUGS } from "../lib/dual-flavor-slugs.mjs";
-import { BASE_URL, CUSTOM_ITEMS } from "../scripts/postbuild-registry.mjs";
+import { DUAL_FLAVOR_SLUGS, FLAVORED_SINGLE_SOURCE_SLUGS } from "../lib/dual-flavor-slugs.mjs";
+import { BASE_URL, CUSTOM_ITEMS, FLAVORED_SINGLE_SOURCE } from "../scripts/postbuild-registry.mjs";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const registry = JSON.parse(readFileSync(join(ROOT, "registry.json"), "utf-8"));
@@ -35,6 +35,14 @@ describe("dual-flavour slugs", () => {
   it.each(DUAL_FLAVOR_SLUGS)("%s has both <slug> and <slug>-base items in registry.json", (slug) => {
     expect(itemNames.has(slug)).toBe(true);
     expect(itemNames.has(`${slug}-base`)).toBe(true);
+  });
+
+  it("the hand-maintained flavoured single-source list matches the postbuild's derivation", () => {
+    // The client-side install URL reads the list (no manifest in the bundle);
+    // the postbuild derives the same set from registry.json. A component
+    // that gains a dual-flavour dependency must be added here, or Base UI
+    // installs of it silently pull the Radix flavours.
+    expect([...FLAVORED_SINGLE_SOURCE_SLUGS].sort()).toEqual([...FLAVORED_SINGLE_SOURCE].sort());
   });
 
   it("every -base item in registry.json is a declared dual-flavour slug", () => {

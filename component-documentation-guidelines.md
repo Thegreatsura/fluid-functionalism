@@ -126,6 +126,12 @@ If the component animates, add it to the `REFERENCE_TIERS` array on the Motion p
 
 ---
 
+### 7. README (`README.md`)
+
+Add a row to the Components table (or Systems / Blocks) with the docs link, the registry name(s), and a one-line description. A dual-flavor component lists both names: `` `name` · `base/name` ``. `tests/readme-consistency.test.mjs` fails when a docs entry has no README link or a listed name has no `public/r` payload.
+
+---
+
 ## Animated Font Weight — the Ghost-Span Pattern
 
 When text gets heavier on an interactive state (selected, checked, active, open, interacting), **every** instance in this project uses the same structure. A heavier weight is wider, so animating weight on a bare text node causes the layout to reflow as the user interacts. To prevent this, render an invisible "ghost" copy of the label at the **heaviest** weight to reserve the width, and overlay the visible (animating) copy in the same grid cell.

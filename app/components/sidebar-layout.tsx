@@ -11,6 +11,7 @@ import {
   useSidebar,
 } from "@/components/flavored/sidebar";
 import { SiteSidebar } from "@/app/components/sidebar";
+import { SiteCommandMenu, SiteCommandMenuProvider } from "@/app/components/site-command-menu";
 import { RightPanel } from "@/app/components/right-panel";
 import { RightRailProvider } from "@/lib/right-rail";
 import { showShortcutToast } from "@/lib/docs/settings-toast";
@@ -162,13 +163,19 @@ export function SidebarLayout({ children, defaultOpen = true }: SidebarLayoutPro
 
   if (isFullscreen) {
     return (
-      <main className="min-h-screen">
-        {children}
-      </main>
+      <SiteCommandMenuProvider>
+        <SiteCommandMenu />
+        <main className="min-h-screen">
+          {children}
+        </main>
+      </SiteCommandMenuProvider>
     );
   }
 
   return (
+    <SiteCommandMenuProvider>
+    {/* ⌘K anywhere: every page and setting in one field. */}
+    <SiteCommandMenu />
     <RightRailProvider>
       {/* The Sidebar component, dogfooded: the provider owns the desktop
           collapse (⌘B + cookie persistence via app/layout.tsx) and the
@@ -195,6 +202,7 @@ export function SidebarLayout({ children, defaultOpen = true }: SidebarLayoutPro
         <RightPanel />
       </SidebarProvider>
     </RightRailProvider>
+    </SiteCommandMenuProvider>
   );
 }
 

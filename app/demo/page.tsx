@@ -51,6 +51,7 @@ function DemoPageInner() {
   const slideOrder = [
     "dropdown",
     "combobox",
+    "command-menu",
     "checkbox-group",
     "accordion",
     "tabs",

@@ -3,6 +3,7 @@ import { AskUserQuestionsPlayground } from "./ask-user-questions";
 import { ButtonPlayground } from "./button";
 import { CardPlayground } from "./card";
 import { ComboboxPlayground } from "./combobox";
+import { CommandMenuPlayground } from "./command-menu";
 import { DropdownPlayground } from "./dropdown";
 import { InputMessagePlayground } from "./input-message";
 import { SidebarPlayground } from "./sidebar";
@@ -27,6 +28,7 @@ export const playgroundMap: Record<string, PlaygroundComponent> = {
   button: ButtonPlayground,
   card: CardPlayground,
   combobox: ComboboxPlayground,
+  "command-menu": CommandMenuPlayground,
   dropdown: DropdownPlayground,
   "input-message": InputMessagePlayground,
   sidebar: SidebarPlayground,

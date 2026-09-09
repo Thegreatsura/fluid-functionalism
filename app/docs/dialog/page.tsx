@@ -102,6 +102,8 @@ const dialogSlotProps: PropDef[] = [
 const dialogContentProps: PropDef[] = [
   { name: "size", type: '"sm" | "lg" | "xl"', default: '"sm"', description: "Width: 400, 540, or 880. Compact regions narrow each by 1 notch: 360, 480, 800. xl is the canvas for layouts; add className=\"p-0\" and a fixed height." },
   { name: "container", type: "HTMLElement | null", description: "Portal target. Scopes overlay and panel to a positioned container." },
+  { name: "showCloseButton", type: "boolean", default: "true", description: "The ✕ in the corner. Drop it when the content has its own way out." },
+  { name: "position", type: '"center" | "top"', default: '"center"', description: "Centered, or anchored 12dvh from the top so a content-sized panel keeps its top edge still." },
   { name: "children", type: "ReactNode", description: "Dialog content." },
 ];
 

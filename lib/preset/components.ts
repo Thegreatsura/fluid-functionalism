@@ -25,6 +25,7 @@ export { CARD_PRESET_DEF, encodeCardPreset, decodeCardPreset, CARD_DEFAULT_CODE 
 export * from "./input-message-options";
 export { DROPDOWN_PRESET_DEF, encodeDropdownPreset, decodeDropdownPreset, DROPDOWN_DEFAULT_CODE } from "./dropdown-options";
 export { COMBOBOX_PRESET_DEF, encodeComboboxPreset, decodeComboboxPreset, COMBOBOX_DEFAULT_CODE } from "./combobox-options";
+export { COMMAND_MENU_PRESET_DEF, encodeCommandMenuPreset, decodeCommandMenuPreset, COMMAND_MENU_DEFAULT_CODE } from "./command-menu-options";
 export type { PresetComponentDef, DecodeResult } from "./codec";
 
 // ── Sidebar (tag "s") ───────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useIcon, useIcons } from "@/lib/icon-context";
 import { fontWeights } from "@/lib/font-weight";
@@ -103,6 +103,23 @@ import {
   COMBOBOX_COPY,
   COMBOBOX_DEFAULT_VALUES,
 } from "@/lib/preset/combobox-options";
+import {
+  CommandMenu,
+  CommandMenuInput,
+  CommandMenuTabs,
+  CommandMenuList,
+  CommandMenuEmpty,
+  CommandMenuFooter,
+} from "@/registry/default/command-menu";
+import {
+  COMMAND_MENU_COPY,
+  COMMAND_MENU_GROUPS,
+  COMMAND_MENU_SUGGESTIONS,
+  useCommandMenuItems,
+} from "@/lib/docs/command-menu-items";
+import { Elevated } from "@/lib/elevated";
+import { cn } from "@/lib/utils";
+import { useShape } from "@/lib/shape-context";
 import { Slider } from "@/registry/radix/slider";
 import { Switch } from "@/registry/radix/switch";
 import {
@@ -423,6 +440,41 @@ function SwitchPreview() {
   );
 }
 
+const COMMAND_MENU_TABS = [
+  { value: "all", label: "All" },
+  ...COMMAND_MENU_GROUPS.map((group) => ({ value: group, label: group })),
+];
+
+function CommandMenuPreview() {
+  const shape = useShape();
+  const all = useCommandMenuItems();
+  const [tab, setTab] = useState("all");
+  const items = useMemo(
+    () => (tab === "all" ? all : all.filter((item) => item.group === tab)),
+    [all, tab]
+  );
+  // The playground's default design (preset kb9J): field, tabs, suggestions
+  // first, caps, and the hint footer. A medium tile with the stage padding
+  // trimmed to 12px; the panel's own height caps the list, which fades into
+  // its scroll edge.
+  return (
+    <Elevated
+      offset={2}
+      shadowLevel={3}
+      className={cn("flex max-h-[230px] w-full max-w-[520px] flex-col overflow-hidden", shape.container)}
+    >
+      <CommandMenu items={items} suggestions={COMMAND_MENU_SUGGESTIONS}>
+        <CommandMenuInput placeholder={COMMAND_MENU_COPY.placeholder} />
+        <CommandMenuTabs tabs={COMMAND_MENU_TABS} value={tab} onValueChange={setTab} />
+        <CommandMenuList>
+          <CommandMenuEmpty>{COMMAND_MENU_COPY.empty}</CommandMenuEmpty>
+        </CommandMenuList>
+        <CommandMenuFooter />
+      </CommandMenu>
+    </Elevated>
+  );
+}
+
 function TablePreview() {
   return (
     <div className="w-full max-w-[420px]">
@@ -435,7 +487,9 @@ function TablePreview() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {TABLE_ROWS.map((row, i) => (
+          {/* 4 rows: a medium tile's stage, with the row fluid hover
+              still readable. */}
+          {TABLE_ROWS.slice(0, 4).map((row, i) => (
             <TableRow key={row[0]} index={i}>
               {row.map((cell) => (
                 <TableCell key={cell}>{cell}</TableCell>
@@ -802,6 +856,7 @@ export const previewMap: Record<string, React.FC> = {
   "checkbox-group": CheckboxPreview,
   "color-picker": ColorPickerPreview,
   combobox: ComboboxPreview,
+  "command-menu": CommandMenuPreview,
   dialog: DialogPreview,
   dropdown: DropdownPreview,
   "input-copy": InputCopyPreview,

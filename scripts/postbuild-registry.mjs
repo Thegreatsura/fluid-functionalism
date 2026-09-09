@@ -80,6 +80,7 @@ export const CUSTOM_ITEMS = new Set([
   "badge",
   "chat-message",
   "color-picker",
+  "command-menu",
   "dropdown",
   "file-thumbnail",
   "input-copy",

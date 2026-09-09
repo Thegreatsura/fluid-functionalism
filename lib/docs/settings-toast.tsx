@@ -11,6 +11,7 @@ import { useShape, useShapeContext } from "@/lib/shape-context";
 import { useSizeContext } from "@/lib/size-context";
 import { useThemeContext } from "@/registry/default/lib/theme-context";
 import { useIconLibrary, iconLibraryLabels } from "@/lib/docs/icon-playground";
+import { useIcon } from "@/lib/icon-context";
 
 /** Which right-panel setting each global shortcut key drives. */
 const shortcutSettings = {
@@ -58,6 +59,43 @@ export function showShortcutToast(keyLabel: string, message: string) {
       // centered 356px-wide list; full width lets the body's mx-auto center.
       style: { width: "100%" },
     }
+  );
+}
+
+/** Surface a completed action (a command menu pick, a copy) in the same
+ *  shell as the shortcut toasts — fit to its text, control height, inverted
+ *  colors — with a check where the key cap would be. Its own slot, so a
+ *  shortcut toast and a success toast never fight over one. */
+export function showSuccessToast(message: string) {
+  toast.custom(() => <SuccessToast message={message} />, {
+    id: "site-success",
+    duration: TOAST_MS,
+    style: { width: "100%" },
+  });
+}
+
+function SuccessToast({ message }: { message: string }) {
+  const shapeClasses = useShape();
+  const CheckIcon = useIcon("check");
+  return (
+    <div
+      className={cn(
+        "mx-auto flex h-9 w-max items-center gap-2 bg-foreground px-3 text-body text-background",
+        shapeClasses.bg
+      )}
+      style={{ fontVariationSettings: fontWeights.medium }}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "inline-flex h-[18px] w-[18px] items-center justify-center bg-background/15 text-background",
+          shapeClasses.bg
+        )}
+      >
+        <CheckIcon size={12} strokeWidth={2.5} />
+      </span>
+      <span className="[text-box:trim-both_cap_alphabetic]">{message}</span>
+    </div>
   );
 }
 

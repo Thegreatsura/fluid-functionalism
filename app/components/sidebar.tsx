@@ -15,6 +15,7 @@ import {
 } from "@/components/flavored/sidebar";
 import { componentList, systemList } from "@/lib/docs/components";
 import { GitHubStarButton, SettingsContent } from "@/app/components/right-panel";
+import { SiteCommandMenuTrigger } from "@/app/components/site-command-menu";
 
 interface NavEntry {
   slug: string;
@@ -83,6 +84,11 @@ export function SiteSidebar() {
   return (
     <Sidebar collapsible="offcanvas" bordered={false} rail={false} className="ml-2">
       <SidebarContent className="py-2">
+        {/* Search: opens the site's command menu (⌘K anywhere). */}
+        <SidebarGroup>
+          <SiteCommandMenuTrigger />
+        </SidebarGroup>
+
         {/* Top-level navigation */}
         <SidebarGroup>
           <SidebarMenu aria-label="Main navigation">

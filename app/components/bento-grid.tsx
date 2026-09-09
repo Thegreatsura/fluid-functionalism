@@ -15,38 +15,46 @@ import { cn } from "@/lib/utils";
  * left/right band by band.
  *
  * The size mix is balanced so the grid fills with NO holes at both md and xl:
- * smalls needed = 2·(larges) + 1·(mediums) = 2·7 + 2 = 16 = smalls available
+ * smalls needed = 2·(larges) + 1·(mediums) = 2·6 + 4 = 16 = smalls available
  * (and an even small count keeps md's half-width pairs complete). Adding a
  * card or changing a gridSize breaks that equation — rebalance before
  * shipping or the bottom rows develop holes again.
  */
 const displayOrder: { slug: string; side?: "right" }[] = [
-  { slug: "input-message" },                 // band 1 · medium left
+  { slug: "input-message" },                  // band 1 · medium left
   { slug: "thinking-indicator" },
-  { slug: "sidebar", side: "right" },        // band 2 · large right
+  { slug: "command-menu", side: "right" },    // band 2 · medium right
+  { slug: "combobox" },
+  { slug: "sidebar" },                        // band 3 · large left
   { slug: "radio-group" },
   { slug: "chat-message" },
-  { slug: "card" },                          // band 3 · large left
+  { slug: "card", side: "right" },            // band 4 · large right
   { slug: "switch" },
   { slug: "select" },
-  { slug: "thinking-steps", side: "right" }, // band 4 · large right
+  { slug: "thinking-steps" },                 // band 5 · large left
   { slug: "tabs-subtle" },
   { slug: "checkbox-group" },
-  { slug: "ask-user-questions" },            // band 5 · large left
+  { slug: "ask-user-questions", side: "right" }, // band 6 · large right
   { slug: "slider" },
   { slug: "dropdown" },
-  { slug: "tabs", side: "right" },           // band 6 · medium right
+  { slug: "tabs" },                           // band 7 · medium left
   { slug: "input-copy" },
-  { slug: "accordion" },                     // band 7 · large left
+  { slug: "accordion", side: "right" },       // band 8 · large right
   { slug: "input-group" },
   { slug: "button" },
-  { slug: "table", side: "right" },          // band 8 · large right
+  { slug: "table" },                          // band 9 · medium left
   { slug: "dialog" },
-  { slug: "combobox" },
-  { slug: "color-picker" },                  // band 9 · large left
+  { slug: "color-picker", side: "right" },    // band 10 · large right
   { slug: "tooltip" },
   { slug: "badge" },
 ];
+
+/** Stage padding overrides, by slug (the default is px-6 py-16). */
+const STAGE_PADDING: Record<string, string> = {
+  sidebar: "px-4 py-8",
+  table: "px-6 py-6",
+  "command-menu": "px-6 py-3",
+};
 
 /**
  * Column count driven from React state (not just CSS breakpoints) so the
@@ -115,9 +123,10 @@ export function BentoGrid({ components }: BentoGridProps) {
             isNew={c.isNew}
             gridSize={c.gridSize}
             className={side === "right" ? "xl:col-start-2" : undefined}
-            // A whole app shell needs more of the card than the default
-            // 24px/64px stage padding leaves it, in both directions.
-            previewClassName={c.slug === "sidebar" ? "px-4 py-8" : undefined}
+            // Tall previews spend less of the 300px row on stage padding:
+            // a whole app shell, and the two medium tiles that show a list
+            // (a 4-row table, a command menu with its suggestions).
+            previewClassName={STAGE_PADDING[c.slug]}
             animateLayout
           >
             <Preview />

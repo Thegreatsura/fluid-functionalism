@@ -4,6 +4,15 @@ import { PROMPT_ENTRIES, type PromptEntry } from "@/lib/docs/prompt-entries";
 
 const SITE = "https://www.fluidfunctionalism.com";
 
+/** Why the install command carries --overwrite: a stock shadcn project already
+ *  has button.tsx, dialog.tsx, tooltip.tsx and friends, and this library's
+ *  files install under the same names. Without the flag the CLI asks per
+ *  existing file (default No), so a person keeps the stock file next to the
+ *  new ones, and an agent's non-interactive shell exits at the question after
+ *  the CSS and npm dependencies were already written. */
+const OVERWRITE_NOTE =
+  "--overwrite replaces same-named stock shadcn files (button.tsx, dialog.tsx, ...) with this library's versions. Without it the CLI prompts per existing file and exits in a non-interactive shell before any component is written.";
+
 interface BuildInstallPromptOptions {
   /** Doc page slug (matches `componentList` / `systemList`). */
   slug: string;
@@ -38,7 +47,8 @@ export function buildInstallPrompt({ slug, installSlug, base }: BuildInstallProm
   );
   lines.push("");
   lines.push("Install (shadcn CLI, pulls the shared libs and npm dependencies on its own):");
-  lines.push(`npx shadcn@latest add ${installUrl(registrySlug, base)}`);
+  lines.push(`npx shadcn@latest add ${installUrl(registrySlug, base)} --overwrite`);
+  lines.push(OVERWRITE_NOTE);
 
   if (details?.usage) {
     lines.push("");

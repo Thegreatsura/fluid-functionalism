@@ -128,7 +128,7 @@ If the component animates, add it to the `REFERENCE_TIERS` array on the Motion p
 
 ### 7. README (`README.md`)
 
-Add a row to the Components table (or Systems / Blocks) with the docs link, the registry name(s), and a one-line description. A dual-flavor component lists both names: `` `name` · `base/name` ``. `tests/readme-consistency.test.mjs` fails when a docs entry has no README link or a listed name has no `public/r` payload.
+Add a row to the Components table (or Systems / Blocks) with the docs link, the registry name(s), and a one-line description. A dual-flavor component lists both names: `` `name` · `base/name` ``. `tests/readme-consistency.test.mjs` fails when a docs entry has no README link or a listed name has no `public/r` payload. The README carries no roster counts, so nothing else in its copy changes; [README-guidelines.md](README-guidelines.md) says what the file carries and what it defers.
 
 ---
 

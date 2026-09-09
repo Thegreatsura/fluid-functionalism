@@ -1,8 +1,24 @@
+```text
+
+
+
+
+
+───────────────────────────────────────
+F L U I D   F U N C T I O N A L I S M
+───────────────────────────────────────
+
+
+
+
+
+```
+
 # Fluid Functionalism
 
 Refined UI components with satisfying hover.
 
-A [shadcn/ui](https://ui.shadcn.com) registry of 26 components, 5 shared systems, and 3 blocks. Every transition exists to make a state change legible: springs instead of durations, one hover highlight that glides to the item nearest your cursor, and labels that get heavier without shifting the layout. Components that touch a primitive ship in two flavors, [Radix](https://www.radix-ui.com) and [Base UI](https://base-ui.com), with the same API on both.
+A [shadcn/ui](https://ui.shadcn.com) registry of components, the systems they share, and blocks that compose them. Every transition exists to make a state change legible: springs instead of durations, one hover highlight that glides to the item nearest your cursor, and labels that get heavier without shifting the layout. Components that touch a primitive ship in two flavors, [Radix](https://www.radix-ui.com) and [Base UI](https://base-ui.com), with the same API on both.
 
 [Docs and demos](https://www.fluidfunctionalism.com) · [Browse components](https://www.fluidfunctionalism.com/docs) · [Compare with shadcn/ui](https://www.fluidfunctionalism.com/compare)
 
@@ -71,7 +87,7 @@ Every doc page and playground has a **Copy prompt** button. The prompt is a self
 
 ## Components
 
-26 components. Install with `npx shadcn@latest add @fluid/<name>`. A second name means the component has a Base UI flavor.
+Install with `npx shadcn@latest add @fluid/<name>`. A second name means the component has a Base UI flavor.
 
 | Component | Registry name | What it does |
 |---|---|---|
@@ -104,7 +120,7 @@ Every doc page and playground has a **Copy prompt** button. The prompt is a self
 
 ## Systems
 
-5 systems every component shares. Each installs as code, the same way.
+The systems every component shares. Each installs as code, the same way.
 
 | System | Registry name | What it does |
 |---|---|---|
@@ -116,7 +132,7 @@ Every doc page and playground has a **Copy prompt** button. The prompt is a self
 
 ## Blocks
 
-3 compositions install as one item each, with every component they use.
+Compositions that install as one item each, with every component they use.
 
 | Block | Registry name | What it is |
 |---|---|---|
@@ -126,7 +142,7 @@ Every doc page and playground has a **Copy prompt** button. The prompt is a self
 
 ## Presets
 
-7 playgrounds (Sidebar, Card, InputMessage, AskUserQuestions, Dropdown, Combobox, CommandMenu) encode the configuration you build in the rail into a short code. Nothing is stored: the code is the configuration itself. Install it as one block that composes the component with the options you picked:
+The Sidebar, Card, InputMessage, AskUserQuestions, Dropdown, Combobox, and CommandMenu playgrounds encode the configuration you build in the rail into a short code. Nothing is stored: the code is the configuration itself. Install it as one block that composes the component with the options you picked:
 
 ```bash
 npx shadcn@latest add https://www.fluidfunctionalism.com/r/preset/<code>.json
@@ -178,7 +194,11 @@ npm run registry:build   # shadcn build + scripts/postbuild-registry.mjs, writes
 
 Sources live in `registry/`: `radix/` and `base/` hold the two flavors, `default/` the single-source components, hooks, and libs, `blocks/` the compositions. `public/r` is the built output users install from, and it is committed. CI rebuilds it and fails when it drifts from the sources, so run `npm run registry:build` and commit the result with any registry change.
 
-Guides in the repo: [motion-guidelines.md](motion-guidelines.md), [component-documentation-guidelines.md](component-documentation-guidelines.md), [preset-guidelines.md](preset-guidelines.md), and [tone-of-voice.md](tone-of-voice.md).
+Guides in the repo: [motion-guidelines.md](motion-guidelines.md), [component-documentation-guidelines.md](component-documentation-guidelines.md), [preset-guidelines.md](preset-guidelines.md), [tone-of-voice.md](tone-of-voice.md), and [README-guidelines.md](README-guidelines.md) for what this file carries and what it defers.
+
+## Contributing
+
+Open an issue before a pull request, so the direction is agreed before the work starts. Contributions then follow [component-documentation-guidelines.md](component-documentation-guidelines.md) and the Development section above.
 
 ## License
 

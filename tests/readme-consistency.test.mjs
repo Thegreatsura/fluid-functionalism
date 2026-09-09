@@ -6,7 +6,8 @@
  *
  *  - every docs entry in lib/docs/components.ts is linked from the README,
  *  - every registry name the README's tables advertise exists in public/r,
- *    so `npx shadcn@latest add @fluid/<name>` cannot 404 for a reader.
+ *    so `npx shadcn@latest add @fluid/<name>` cannot 404 for a reader,
+ *  - the copy follows README-guidelines.md: no em dashes, no roster counts.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -42,6 +43,21 @@ describe("README", () => {
         ).toBe(true);
       }
     }
+  });
+
+  it("opens with the tracked-caps wordmark (README-guidelines.md, Defers)", () => {
+    // The one piece of art the guidelines allow, and the routine must not
+    // "clean up": a code block, first thing in the file, padded with blank rows.
+    expect(readme.startsWith("```text\n")).toBe(true);
+    const block = readme.split("```")[1] ?? "";
+    expect(block).toContain("\nF L U I D   F U N C T I O N A L I S M\n");
+  });
+
+  it("carries no roster counts (README-guidelines.md rule 3)", () => {
+    // "26 components" goes stale the week a component lands; the tables are
+    // the count. Numbers inside a description ("3 widths") are not rosters.
+    const hits = readme.match(/\b\d+ (?:components?|systems?|blocks?|playgrounds?|compositions?)\b/gi) ?? [];
+    expect(hits, "roster count in README copy").toEqual([]);
   });
 
   it("uses no em dashes (tone-of-voice.md rule 6)", () => {

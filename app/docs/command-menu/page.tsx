@@ -503,8 +503,9 @@ export default function CommandMenuDoc() {
 
       <DocSection title="Dialog and trigger shortcut">
         <p className="text-subtitle text-muted-foreground">
-          Press {mac ? "⌘P" : "Ctrl+P"} anywhere on this page ({mac ? "⌘K" : "Ctrl+K"} is
-          the site&apos;s own menu). A pick or Escape closes it.
+          Press {mac ? "⌘P" : "Ctrl+P"} anywhere on this page: this demo binds its
+          own combo, and the default {mac ? "⌘K" : "Ctrl+K"} opens the playground
+          above. A pick or Escape closes it.
         </p>
         <ComponentPreview code={dialogCode}>
           <div className="flex flex-wrap items-center gap-3">

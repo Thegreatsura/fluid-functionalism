@@ -113,7 +113,21 @@ describe("command menu preset codec", () => {
     expect(back.preset.shortcut).toBe("mod+p");
     expect(back.preset.flavor).toBe("base");
     // Pin the literal string — update ONLY on a deliberate version bump.
-    expect(code).toMatchInlineSnapshot(`"kcAU"`);
+    expect(code).toMatchInlineSnapshot(`"kdAU"`);
+  });
+
+  // Version "c" led the combo values with ⌘J; its codes keep their meaning.
+  it("a version-c code still decodes", () => {
+    const back = decodeCommandMenuPreset("kcAU");
+    expect(back.ok).toBe(true);
+    expect(back.version).toBe("c");
+    expect(back.preset).toEqual({
+      ...DEFAULT_COMMAND_MENU_PRESET,
+      shortcut: "mod+p",
+      descriptions: false,
+      filters: true,
+      flavor: "base",
+    });
   });
 
   // Version "b" flipped `tabs` off-first; its codes keep their meaning.
@@ -196,12 +210,12 @@ function typecheckPreset(preset) {
 // Curated matrix: every structural branch flips at least once — each header
 // combination (none, tabs, filters, both), each row field, and each combo.
 const MATRIX = [
-  {}, // all defaults: ⌘J, descriptions + caps + suggestions, tabs, footer
+  {}, // all defaults: ⌘K, descriptions + caps + suggestions, tabs, footer
   { tabs: false },
   { filters: true },
   { tabs: true, filters: true },
   { descriptions: false, shortcuts: false },
-  { suggestions: false, shortcut: "mod+k" },
+  { suggestions: false, shortcut: "mod+j" },
   { shortcut: "mod+/", tabs: true, descriptions: false },
   { shape: "pill", size: "compact", flavor: "base", filters: true, shortcuts: false },
   { footer: false },

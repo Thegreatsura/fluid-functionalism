@@ -21,16 +21,20 @@ import {
 } from "./codec";
 import { DEFAULT_GLOBALS, type PresetGlobals } from "./sidebar-options";
 
-/** The combos the playground offers for the dialog. ⌘K is the site's own
- *  menu, so the playground defaults to ⌘J. */
-export type CommandMenuTrigger = "mod+j" | "mod+k" | "mod+p" | "mod+/";
+/** The combos the playground offers for the dialog, ⌘K first: the
+ *  component's own default. */
+export type CommandMenuTrigger = "mod+k" | "mod+j" | "mod+p" | "mod+/";
 
 export const COMMAND_MENU_TRIGGERS: readonly CommandMenuTrigger[] = [
-  "mod+j",
   "mod+k",
+  "mod+j",
   "mod+p",
   "mod+/",
 ];
+
+/** The order versions a to c encoded the combo in (⌘J led while the
+ *  playground kept away from the site's ⌘K). Frozen for their codes. */
+const TRIGGERS_J_FIRST: readonly CommandMenuTrigger[] = ["mod+j", "mod+k", "mod+p", "mod+/"];
 
 export interface CommandMenuPlayState {
   /** The combo that toggles the dialog. */
@@ -52,7 +56,7 @@ export interface CommandMenuPlayState {
 export type CommandMenuPreset = CommandMenuPlayState & PresetGlobals;
 
 export const DEFAULT_COMMAND_MENU_STATE: CommandMenuPlayState = {
-  shortcut: "mod+j",
+  shortcut: "mod+k",
   descriptions: true,
   shortcuts: true,
   suggestions: true,
@@ -77,7 +81,7 @@ const GLOBAL_FIELDS: readonly PresetField[] = [
 /** Version "a": the first table. Kept so its codes still decode (the
  *  footer takes its default). */
 const COMMAND_MENU_PRESET_FIELDS_A: readonly PresetField[] = [
-  { key: "shortcut", values: [...COMMAND_MENU_TRIGGERS], bits: 3 },
+  { key: "shortcut", values: [...TRIGGERS_J_FIRST], bits: 3 },
   { key: "descriptions", values: [true, false], bits: 1 },
   { key: "shortcuts", values: [true, false], bits: 1 },
   { key: "suggestions", values: [true, false], bits: 1 },
@@ -89,7 +93,7 @@ const COMMAND_MENU_PRESET_FIELDS_A: readonly PresetField[] = [
 /** Version "b": the footer hint strip, ahead of the globals so the tail
  *  keeps the sidebar's layout. Kept for its published codes. */
 const COMMAND_MENU_PRESET_FIELDS_B: readonly PresetField[] = [
-  { key: "shortcut", values: [...COMMAND_MENU_TRIGGERS], bits: 3 },
+  { key: "shortcut", values: [...TRIGGERS_J_FIRST], bits: 3 },
   { key: "descriptions", values: [true, false], bits: 1 },
   { key: "shortcuts", values: [true, false], bits: 1 },
   { key: "suggestions", values: [true, false], bits: 1 },
@@ -100,7 +104,20 @@ const COMMAND_MENU_PRESET_FIELDS_B: readonly PresetField[] = [
 ];
 
 /** Version "c": tabs on by default (the design the Showcase and /demo
- *  show), so the `tabs` values flip to keep the default at index 0. */
+ *  show), so the `tabs` values flipped to keep the default at index 0. */
+const COMMAND_MENU_PRESET_FIELDS_C: readonly PresetField[] = [
+  { key: "shortcut", values: [...TRIGGERS_J_FIRST], bits: 3 },
+  { key: "descriptions", values: [true, false], bits: 1 },
+  { key: "shortcuts", values: [true, false], bits: 1 },
+  { key: "suggestions", values: [true, false], bits: 1 },
+  { key: "tabs", values: [true, false], bits: 1 },
+  { key: "filters", values: [false, true], bits: 1 },
+  { key: "footer", values: [true, false], bits: 1 },
+  ...GLOBAL_FIELDS,
+];
+
+/** Version "d": ⌘K is the default combo, the component's own, so the
+ *  trigger values lead with it. */
 export const COMMAND_MENU_PRESET_FIELDS: readonly PresetField[] = [
   { key: "shortcut", values: [...COMMAND_MENU_TRIGGERS], bits: 3 },
   { key: "descriptions", values: [true, false], bits: 1 },
@@ -121,9 +138,10 @@ export const COMMAND_MENU_PRESET_DEF: PresetComponentDef = {
   versions: {
     a: COMMAND_MENU_PRESET_FIELDS_A,
     b: COMMAND_MENU_PRESET_FIELDS_B,
-    c: COMMAND_MENU_PRESET_FIELDS,
+    c: COMMAND_MENU_PRESET_FIELDS_C,
+    d: COMMAND_MENU_PRESET_FIELDS,
   },
-  currentVersion: "c",
+  currentVersion: "d",
   defaults: DEFAULT_COMMAND_MENU_PRESET as unknown as PresetComponentDef["defaults"],
   installable: true,
 };

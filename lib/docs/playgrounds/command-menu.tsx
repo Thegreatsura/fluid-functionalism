@@ -66,8 +66,10 @@ import type { PlaygroundProps } from "./types";
 
 type PlayState = CommandMenuPlayState;
 
-// ⌘K opens the site's own menu, so the playground defaults to ⌘J. The
-// labels draw the platform's own modifier, like the caps in the rows.
+// The rail's combo labels draw the platform's own modifier, like the caps
+// in the rows. ⌘K, the component's default, leads; on the docs page the
+// playground's dialog then answers it ahead of the site's own menu, which
+// the sidebar's Search row still opens.
 function shortcutLabel(value: CommandMenuTrigger, mac: boolean): string {
   return formatShortcut(value, mac).join(mac ? "" : "+");
 }

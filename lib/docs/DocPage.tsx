@@ -4,12 +4,13 @@ import Link from "next/link";
 import { type ReactNode } from "react";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { useSizeVariant } from "@/lib/size-context";
-import { InputCopy } from "@/registry/default/input-copy";
+import { CopyPromptButton } from "@/lib/docs/copy-prompt-button";
+import { buildInstallPrompt } from "@/lib/docs/install-prompt";
 import { Button } from "@/registry/radix/button";
 import { useIcon } from "@/lib/icon-context";
 import { docOrder } from "@/lib/docs/components";
 import { Tooltip } from "@/registry/radix/tooltip";
-import { useBase, installUrl, DUAL_FLAVOR_SLUGS } from "@/lib/base-context";
+import { useBase, DUAL_FLAVOR_SLUGS } from "@/lib/base-context";
 
 interface DocPageProps {
   title: string;
@@ -99,32 +100,39 @@ export function DocPage({
         )}
       </div>
       {slug && showInstall && (
-        <div className="flex flex-col gap-3">
-          <h2
-            className="text-title text-foreground leading-none"
-            style={{ fontVariationSettings: fontWeights.semibold }}
-          >
-            Installation
-          </h2>
-          <InputCopy
-            value={`npx shadcn@latest add ${installUrl(installSlug ?? slug, base)}`}
+        // Two columns: title with its note on the left, the copy button
+        // vertically centered on the right.
+        <div className="flex items-center justify-between gap-6">
+          <div className="flex min-w-0 flex-col gap-2">
+            <h2
+              className="text-title text-foreground leading-none"
+              style={{ fontVariationSettings: fontWeights.semibold }}
+            >
+              Installation
+            </h2>
+            {installNote ? (
+              <p className="text-caption text-muted-foreground text-balance">{installNote}</p>
+            ) : DUAL_FLAVOR_SLUGS.has(installSlug ?? slug) ? (
+              <p className="text-caption text-muted-foreground text-balance">
+                {base === "base"
+                  ? "Base UI flavor. Switch in the right panel."
+                  : "Radix flavor. Switch in the right panel."}
+              </p>
+            ) : base === "base" ? (
+              // User has Base UI selected globally, but this component has no
+              // Base flavour. Surface that so the toggle doesn't feel inert.
+              <p className="text-caption text-muted-foreground text-balance">
+                Same source under both flavors.
+              </p>
+            ) : (
+              <p className="text-caption text-muted-foreground text-balance">
+                One prompt for your coding agent: install command, usage, props.
+              </p>
+            )}
+          </div>
+          <CopyPromptButton
+            prompt={buildInstallPrompt({ slug, installSlug, base })}
           />
-          {installNote ? (
-            <p className="text-caption text-muted-foreground">{installNote}</p>
-          ) : DUAL_FLAVOR_SLUGS.has(installSlug ?? slug) ? (
-            <p className="text-caption text-muted-foreground">
-              {base === "base"
-                ? "Installs the Base UI flavor. Switch in the right panel."
-                : "Installs the Radix flavor. Switch in the right panel."}
-            </p>
-          ) : base === "base" ? (
-            // User has Base UI selected globally, but this component has no
-            // Base flavour. Surface that so the toggle doesn't feel inert.
-            <p className="text-caption text-muted-foreground">
-              This component is primitive-agnostic — same source under both
-              flavors.
-            </p>
-          ) : null}
         </div>
       )}
       {children}

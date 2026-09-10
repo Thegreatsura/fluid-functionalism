@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
  * FluidHoverHighlight: the one hover overlay every fluid hover list renders.
- * These pin the behaviours the 19 hand-rolled copies relied on, so the
- * migration in FLUID-HOVER-HIGHLIGHT-PLAN.md can swap them in with confidence.
+ * These pin the behaviours the 19 hand-rolled copies it replaced relied on
+ * (see the 2026-09-07 `refactor(fluid-hover)` commits).
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, waitFor } from "@testing-library/react";

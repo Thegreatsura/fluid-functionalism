@@ -211,7 +211,7 @@ function FilePreviewTile({ file, onRemove, size }: FilePreviewTileProps) {
   return (
     <motion.div
       // `layout` animates sibling tiles into the gap when one is removed.
-      // Enter: spring-fast (0.08s) — the chip category per animation-guidelines.md.
+      // Enter: spring.fast (0.08s) — the small-state-flip tier per motion-guidelines.md.
       // Exit: 0.06s linear — "exits should be slightly faster than enter",
       // matches CheckboxGroup's hover-bg pattern.
       layout
@@ -283,7 +283,7 @@ function QueuedRow({
       value={item}
       layout
       // Enter: spring-fast chip category. Exit slightly faster (0.06s linear),
-      // per animation-guidelines.md. Reduced-motion drops the scale.
+      // per motion-guidelines.md. Reduced-motion drops the scale.
       initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={

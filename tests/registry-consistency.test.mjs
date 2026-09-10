@@ -284,8 +284,8 @@ describe("shipped CSS variables reach installers", () => {
 
 describe("fluid hover highlight", () => {
   // The hover overlay is one component, `FluidHoverHighlight`
-  // (registry/default/fluid-hover-highlight.tsx). The migration in
-  // FLUID-HOVER-HIGHLIGHT-PLAN.md emptied this list; it stays so a future
+  // (registry/default/fluid-hover-highlight.tsx). The 2026-09-07
+  // `refactor(fluid-hover)` migration emptied this list; it stays so a future
   // hand-rolled copy has to be listed here on purpose, and a listed file
   // that no longer carries one fails until it is removed.
   const HAND_ROLLED_OVERLAYS = new Set([

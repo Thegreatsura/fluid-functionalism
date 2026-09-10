@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useMemo, useState } from "react";
+import { useContext, useState } from "react";
 import Image from "next/image";
 import { useIcon, useIcons } from "@/lib/icon-context";
 import { fontWeights } from "@/lib/font-weight";
@@ -44,7 +44,6 @@ import {
   CardGroup,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardMedia,
 } from "@/registry/default/card";
 import { InputMessage } from "@/registry/default/input-message";
@@ -106,15 +105,12 @@ import {
 import {
   CommandMenu,
   CommandMenuInput,
-  CommandMenuTabs,
   CommandMenuList,
   CommandMenuEmpty,
-  CommandMenuFooter,
 } from "@/registry/default/command-menu";
 import {
   COMMAND_MENU_COPY,
   COMMAND_MENU_SUGGESTIONS,
-  COMMAND_MENU_TABS,
   useCommandMenuItems,
 } from "@/lib/docs/command-menu-items";
 import { Elevated } from "@/lib/elevated";
@@ -172,20 +168,30 @@ function CardPreview() {
   const Palette = useIcon("palette");
   const Search = useIcon("search");
   const items = [
-    { icon: Circle, title: "Fluid motion", description: "Spring-tuned transitions across three tiers" },
-    { icon: Shield, title: "Accessible", description: "Focus rings and ARIA roles in every part" },
-    { icon: Palette, title: "Yours to theme", description: "Swap radius, icons, and primitive at runtime" },
-    { icon: Search, title: "Fluid hover", description: "A magnetic highlight previews the click" },
+    { icon: Circle, title: "Fluid motion" },
+    { icon: Shield, title: "Accessible" },
+    { icon: Palette, title: "Yours to theme" },
+    { icon: Search, title: "Fluid hover" },
   ];
+  // A medium tile: 4 compact inline rows (icon and title) under one fluid
+  // hover, divided by hairlines. The descriptions stay on the docs page:
+  // with them the 4 rows outgrow the tile's stage.
   return (
-    <div className="w-full max-w-[460px]">
-      <CardGroup orientation="card" columns={2} fluidHover>
+    <div className="w-full max-w-[520px]">
+      <CardGroup orientation="inline" fluidHover>
         {items.map((item) => (
-          <Card key={item.title} label={item.title} onClick={() => {}}>
+          <Card
+            key={item.title}
+            label={item.title}
+            size="compact"
+            // 4 rows must share a 300px tile row with the stage padding and
+            // the footer: 52px rows instead of the compact row's 60px minimum.
+            className="min-h-[52px] py-1.5"
+            onClick={() => {}}
+          >
+            <CardMedia icon={item.icon} />
             <CardHeader>
-              <CardMedia icon={item.icon} />
               <CardTitle>{item.title}</CardTitle>
-              <CardDescription>{item.description}</CardDescription>
             </CardHeader>
           </Card>
         ))}
@@ -443,29 +449,22 @@ function SwitchPreview() {
 
 function CommandMenuPreview() {
   const shape = useShape();
-  const all = useCommandMenuItems();
-  const [tab, setTab] = useState("all");
-  const items = useMemo(
-    () => (tab === "all" ? all : all.filter((item) => item.group === tab)),
-    [all, tab]
-  );
-  // The playground's default design (preset kb9J): field, tabs, suggestions
-  // first, caps, and the hint footer. A medium tile with the stage padding
-  // trimmed to 12px; the panel's own height caps the list, which fades into
-  // its scroll edge.
+  const items = useCommandMenuItems();
+  // The tile shows the essence: the field, the suggested rows with their
+  // caps, and the rows fading into the list's scroll edge. Tabs and the hint
+  // footer stay on the docs page. A large tile, so the panel runs tall
+  // enough to show the first groups; its own height caps the list.
   return (
     <Elevated
       offset={2}
       shadowLevel={3}
-      className={cn("flex max-h-[230px] w-full max-w-[520px] flex-col overflow-hidden", shape.container)}
+      className={cn("flex max-h-[440px] w-full max-w-[520px] flex-col overflow-hidden", shape.container)}
     >
       <CommandMenu items={items} suggestions={COMMAND_MENU_SUGGESTIONS}>
         <CommandMenuInput placeholder={COMMAND_MENU_COPY.placeholder} />
-        <CommandMenuTabs tabs={COMMAND_MENU_TABS} value={tab} onValueChange={setTab} />
         <CommandMenuList>
           <CommandMenuEmpty>{COMMAND_MENU_COPY.empty}</CommandMenuEmpty>
         </CommandMenuList>
-        <CommandMenuFooter />
       </CommandMenu>
     </Elevated>
   );

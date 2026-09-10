@@ -14,7 +14,15 @@ const variantsCode = `import { Button } from "./components";
 <Button variant="primary">Primary</Button>
 <Button variant="secondary">Secondary</Button>
 <Button variant="tertiary">Tertiary</Button>
-<Button variant="ghost">Ghost</Button>`;
+<Button variant="ghost">Ghost</Button>
+
+{/* Full width: w-full stretches any variant to its container */}
+<div className="flex w-full max-w-[320px] flex-col gap-2">
+  <Button variant="primary" className="w-full">Primary</Button>
+  <Button variant="secondary" className="w-full">Secondary</Button>
+  <Button variant="tertiary" className="w-full">Tertiary</Button>
+  <Button variant="ghost" className="w-full">Ghost</Button>
+</div>`;
 
 const iconsCode = `import { Button } from "./components";
 import { Plus, ArrowRight, Search } from "lucide-react";
@@ -84,12 +92,24 @@ export default function ButtonDoc() {
       </DocSection>
 
       <DocSection title="Variants">
+        <p className="text-subtitle text-muted-foreground">
+          4 variants, inline or full width: add <code>className=&quot;w-full&quot;</code>{" "}
+          to stretch one to its container.
+        </p>
         <ComponentPreview code={variantsCode}>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="primary">Primary</Button>
-            <Button variant="secondary">Secondary</Button>
-            <Button variant="tertiary">Tertiary</Button>
-            <Button variant="ghost">Ghost</Button>
+          <div className="flex w-full flex-col items-center gap-8">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button variant="primary">Primary</Button>
+              <Button variant="secondary">Secondary</Button>
+              <Button variant="tertiary">Tertiary</Button>
+              <Button variant="ghost">Ghost</Button>
+            </div>
+            <div className="flex w-full max-w-[320px] flex-col gap-2">
+              <Button variant="primary" className="w-full">Primary</Button>
+              <Button variant="secondary" className="w-full">Secondary</Button>
+              <Button variant="tertiary" className="w-full">Tertiary</Button>
+              <Button variant="ghost" className="w-full">Ghost</Button>
+            </div>
           </div>
         </ComponentPreview>
       </DocSection>

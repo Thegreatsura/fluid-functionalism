@@ -23,13 +23,13 @@ import { cn } from "@/lib/utils";
 const displayOrder: { slug: string; side?: "right" }[] = [
   { slug: "input-message" },                  // band 1 · medium left
   { slug: "thinking-indicator" },
-  { slug: "command-menu", side: "right" },    // band 2 · medium right
+  { slug: "command-menu", side: "right" },    // band 2 · large right
   { slug: "combobox" },
+  { slug: "switch" },
   { slug: "sidebar" },                        // band 3 · large left
   { slug: "radio-group" },
   { slug: "chat-message" },
-  { slug: "card", side: "right" },            // band 4 · large right
-  { slug: "switch" },
+  { slug: "card", side: "right" },            // band 4 · medium right
   { slug: "select" },
   { slug: "thinking-steps" },                 // band 5 · large left
   { slug: "tabs-subtle" },
@@ -53,7 +53,8 @@ const displayOrder: { slug: string; side?: "right" }[] = [
 const STAGE_PADDING: Record<string, string> = {
   sidebar: "px-4 py-8",
   table: "px-6 py-6",
-  "command-menu": "px-6 py-3",
+  card: "px-6 py-5",
+  "command-menu": "px-6 py-8",
 };
 
 /**
@@ -123,9 +124,9 @@ export function BentoGrid({ components }: BentoGridProps) {
             isNew={c.isNew}
             gridSize={c.gridSize}
             className={side === "right" ? "xl:col-start-2" : undefined}
-            // Tall previews spend less of the 300px row on stage padding:
-            // a whole app shell, and the two medium tiles that show a list
-            // (a 4-row table, a command menu with its suggestions).
+            // Tall previews spend less of the row on stage padding: a whole
+            // app shell, the command menu's panel, and the two medium tiles
+            // that show a list (a 4-row table, 4 inline cards).
             previewClassName={STAGE_PADDING[c.slug]}
             animateLayout
           >

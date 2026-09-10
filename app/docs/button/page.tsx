@@ -16,12 +16,16 @@ const variantsCode = `import { Button } from "./components";
 <Button variant="tertiary">Tertiary</Button>
 <Button variant="ghost">Ghost</Button>
 
-{/* Full width: w-full stretches any variant to its container */}
-<div className="flex w-full max-w-[320px] flex-col gap-2">
-  <Button variant="primary" className="w-full">Primary</Button>
-  <Button variant="secondary" className="w-full">Secondary</Button>
-  <Button variant="tertiary" className="w-full">Tertiary</Button>
-  <Button variant="ghost" className="w-full">Ghost</Button>
+{/* Full width: w-full stretches a button to its container. A w-fit
+    container hugs the row above, so the column shares its width. */}
+<div className="flex w-fit flex-col gap-8">
+  <div className="flex items-center gap-2">{/* the 4 buttons above */}</div>
+  <div className="flex flex-col gap-2">
+    <Button variant="primary" className="w-full">Primary</Button>
+    <Button variant="secondary" className="w-full">Secondary</Button>
+    <Button variant="tertiary" className="w-full">Tertiary</Button>
+    <Button variant="ghost" className="w-full">Ghost</Button>
+  </div>
 </div>`;
 
 const iconsCode = `import { Button } from "./components";
@@ -97,14 +101,16 @@ export default function ButtonDoc() {
           to stretch one to its container.
         </p>
         <ComponentPreview code={variantsCode}>
-          <div className="flex w-full flex-col items-center gap-8">
-            <div className="flex flex-wrap items-center justify-center gap-2">
+          {/* w-fit: the frame hugs the inline row, and the full-width column
+              below inherits exactly that width. */}
+          <div className="flex w-fit max-w-full flex-col gap-8">
+            <div className="flex items-center gap-2">
               <Button variant="primary">Primary</Button>
               <Button variant="secondary">Secondary</Button>
               <Button variant="tertiary">Tertiary</Button>
               <Button variant="ghost">Ghost</Button>
             </div>
-            <div className="flex w-full max-w-[320px] flex-col gap-2">
+            <div className="flex flex-col gap-2">
               <Button variant="primary" className="w-full">Primary</Button>
               <Button variant="secondary" className="w-full">Secondary</Button>
               <Button variant="tertiary" className="w-full">Tertiary</Button>

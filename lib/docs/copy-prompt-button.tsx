@@ -1,21 +1,80 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "@/registry/radix/button";
-import { useIcon } from "@/lib/icon-context";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { motion, useReducedMotion, type Transition } from "framer-motion";
+import { Button, type ButtonSize } from "@/registry/radix/button";
+import { useIcon, type IconComponentProps } from "@/lib/icon-context";
+import { spring } from "@/lib/springs";
+import { cn } from "@/lib/utils";
 
 interface CopyPromptButtonProps {
   /** The prompt text written to the clipboard. */
   prompt: string;
+  /** Button size; omitted, it follows the SizeProvider. */
+  size?: ButtonSize;
+  className?: string;
+}
+
+/** Whether the prompt was just copied — read by the leading icon, which the
+ *  Button renders from a component type, so the state can't ride a prop. */
+const CopiedContext = createContext(false);
+
+const SHOWN = { opacity: 1, scale: 1, filter: "blur(0px)" };
+const HIDDEN = { opacity: 0, scale: 0.6, filter: "blur(4px)" };
+
+/** The button's leading icon: the copy glyph, crossfading to a check while
+ *  the prompt was just copied. Both glyphs share one cell the size of the
+ *  icon, so the slot the Button lays out never changes. The glyph leaving
+ *  fades, blurs to 4px, and scales to 0.6 over the tier's exit token, eased
+ *  in; the one arriving does the reverse over the tier's full duration,
+ *  eased out, so an appear always outlasts a disappear (0.08s vs 0.06s).
+ *  Both are tweens: a spring settles visibly sooner than its nominal
+ *  duration, which would invert that order. Reduced motion swaps in place. */
+function CopyPromptIcon({ size = 16, strokeWidth, className }: IconComponentProps) {
+  const copied = useContext(CopiedContext);
+  const CopyIcon = useIcon("copy");
+  const CheckIcon = useIcon("check");
+  const reduced = useReducedMotion();
+  const enter: Transition = reduced
+    ? { duration: 0 }
+    : { type: "tween", duration: spring.fast.duration, ease: "easeOut" };
+  const leave: Transition = reduced
+    ? { duration: 0 }
+    : { type: "tween", ...spring.fast.exit, ease: "easeIn" };
+  return (
+    <span className="grid shrink-0" style={{ width: size, height: size }}>
+      <motion.span
+        className="col-start-1 row-start-1 flex"
+        initial={false}
+        animate={copied ? HIDDEN : SHOWN}
+        transition={copied ? leave : enter}
+      >
+        <CopyIcon size={size} strokeWidth={strokeWidth} className={className} />
+      </motion.span>
+      <motion.span
+        className="col-start-1 row-start-1 flex"
+        initial={false}
+        animate={copied ? SHOWN : HIDDEN}
+        transition={copied ? enter : leave}
+      >
+        <CheckIcon size={size} strokeWidth={strokeWidth} className={className} />
+      </motion.span>
+    </span>
+  );
 }
 
 /** Primary "Copy prompt" button for the Installation block of every doc
  *  page. Copies a self-contained brief for an AI coding agent (see
- *  `install-prompt.ts`). The label flips to "Copied" for 2s with a check
- *  icon; both labels share one grid cell so the button keeps its width. */
-export function CopyPromptButton({ prompt }: CopyPromptButtonProps) {
-  const CopyIcon = useIcon("copy");
-  const CheckIcon = useIcon("check");
+ *  `install-prompt.ts`). The label never changes; only the leading icon
+ *  turns into a check for 2s, and a visually hidden "Copied" is read out. */
+export function CopyPromptButton({ prompt, size, className }: CopyPromptButtonProps) {
   const [copied, setCopied] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
@@ -53,21 +112,18 @@ export function CopyPromptButton({ prompt }: CopyPromptButtonProps) {
   }, [prompt]);
 
   return (
-    <Button
-      variant="primary"
-      leadingIcon={copied ? CheckIcon : CopyIcon}
-      onClick={handleCopy}
-      className="w-fit shrink-0"
-      aria-live="polite"
-    >
-      <span className="inline-grid">
-        <span className={copied ? "col-start-1 row-start-1" : "col-start-1 row-start-1 invisible"} aria-hidden={!copied}>
-          Copied
-        </span>
-        <span className={copied ? "col-start-1 row-start-1 invisible" : "col-start-1 row-start-1"} aria-hidden={copied}>
-          Copy prompt
-        </span>
-      </span>
-    </Button>
+    <CopiedContext.Provider value={copied}>
+      <Button
+        variant="primary"
+        leadingIcon={CopyPromptIcon}
+        onClick={handleCopy}
+        size={size}
+        className={cn("w-fit shrink-0", className)}
+        aria-live="polite"
+      >
+        Copy prompt
+        {copied && <span className="sr-only">Copied</span>}
+      </Button>
+    </CopiedContext.Provider>
   );
 }

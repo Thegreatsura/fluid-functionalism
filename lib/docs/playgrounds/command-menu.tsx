@@ -337,7 +337,7 @@ export function CommandMenuPlayground({ children }: PlaygroundProps) {
   const preview = (
     <div className="flex w-full flex-col items-center gap-4">
       {panel("max-h-[400px]")}
-      <Button variant="secondary" onClick={() => setOpen(true)} className="pr-[10px]">
+      <Button variant="secondary" onClick={() => setOpen(true)} className="pr-3">
         Open as a dialog
         <CommandMenuShortcut keys={state.shortcut} className="ml-1" />
       </Button>

@@ -55,6 +55,61 @@ identical modals open on `spring.slow`, then close — one on the same
 `spring.slow` (drags, and bounces), one on `spring.slow.exit` (crisp). It's the
 clearest argument for why the exit is its own, quicker token.
 
+## Icon swaps
+
+Two glyphs, one cell. When a control's icon changes state (copy → check,
+play → pause), both glyphs stay mounted in a grid cell the size of the icon and
+crossfade. The slot never resizes, and the label never changes: sighted users
+see the check, a screen reader hears "Copied" from a visually hidden span inside
+the button's `aria-live="polite"` region.
+
+Three properties move together, on two tweens from the `fast` tier:
+
+| Glyph | Opacity | Blur | Scale | Transition |
+|---|---|---|---|---|
+| Leaving | 1 → 0 | 0 → 4px | 1 → 0.6 | `spring.fast.exit` (0.06s), `ease: "easeIn"` |
+| Arriving | 0 → 1 | 4px → 0 | 0.6 → 1 | `spring.fast.duration` (0.08s), `ease: "easeOut"` |
+
+The arriving glyph rides the tier's full duration and the leaving one its exit
+token, so an appear always outlasts a disappear. Both are tweens on purpose: a
+critically damped spring settles visibly well before its nominal duration and
+would invert that order, and blur is a `filter` string a spring cannot drive
+anyway. Reduced motion swaps the glyphs in place.
+
+```tsx
+import { motion } from "framer-motion";
+import { spring } from "@/lib/springs";
+
+const SHOWN = { opacity: 1, scale: 1, filter: "blur(0px)" };
+const HIDDEN = { opacity: 0, scale: 0.6, filter: "blur(4px)" };
+const enter = { type: "tween", duration: spring.fast.duration, ease: "easeOut" };
+const leave = { type: "tween", ...spring.fast.exit, ease: "easeIn" };
+
+<span className="grid" style={{ width: size, height: size }}>
+  <motion.span
+    className="col-start-1 row-start-1 flex"
+    initial={false}
+    animate={copied ? HIDDEN : SHOWN}
+    transition={copied ? leave : enter}
+  >
+    <CopyIcon size={size} />
+  </motion.span>
+  <motion.span
+    className="col-start-1 row-start-1 flex"
+    initial={false}
+    animate={copied ? SHOWN : HIDDEN}
+    transition={copied ? enter : leave}
+  >
+    <CheckIcon size={size} />
+  </motion.span>
+</span>
+```
+
+Reference implementation: [`lib/docs/copy-prompt-button.tsx`](lib/docs/copy-prompt-button.tsx),
+the Copy prompt button on every doc page. Button's `leadingIcon` takes a
+component type, so the swap state reaches the glyph through a context rather
+than a prop.
+
 ## Weight without reflow
 
 State changes (selected / checked / active / open) make text heavier, and a
@@ -250,6 +305,9 @@ Do this as part of the [new-component checklist](component-documentation-guideli
    reduce it for free (see [Reduced motion](#reduced-motion)). If you must
    animate a layout property, gate the movement on `useReducedMotion()`.
 6. **Animated weight?** Follow the ghost-span pattern (link above).
-7. If you changed a spring token's value, re-check every duration quoted on the
+7. **An icon that changes state?** Crossfade it with the [Icon swaps](#icon-swaps)
+   recipe: both glyphs mounted in one cell, `fast` tier, arrive on the tier's
+   duration and leave on its exit token.
+8. If you changed a spring token's value, re-check every duration quoted on the
    Motion page (the Reference token tables, code comments, and the
    "Slow in, faster out" demo) and in this file.

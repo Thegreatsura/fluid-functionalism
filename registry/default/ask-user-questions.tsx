@@ -1450,7 +1450,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                           onClick={handleBack}
                           // Arrow is desktop-only; restore symmetric padding on
                           // mobile where it's hidden, tighten for the icon on ≥sm.
-                          className="pl-3 sm:pl-[6px]"
+                          className="pl-3 sm:pl-2"
                         >
                           Back
                         </Button>
@@ -1509,7 +1509,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                           onClick={handleSkip}
                           // Arrow is desktop-only; restore symmetric padding on
                           // mobile where it's hidden, tighten for the icon on ≥sm.
-                          className="pr-3 sm:pr-[6px]"
+                          className="pr-3 sm:pr-2"
                         >
                           {skipLabel}
                         </Button>
@@ -1543,7 +1543,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                           // the right padding to match the Button's iconRight on
                           // desktop. The chip is hidden on mobile, so restore
                           // symmetric padding there.
-                          className="pr-3 sm:pr-[6px]"
+                          className="pr-3 sm:pr-2"
                         >
                           <span className="inline-flex items-center gap-1.5">
                             {question.nextLabel ??

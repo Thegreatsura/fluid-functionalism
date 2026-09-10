@@ -1,6 +1,8 @@
 import { componentList, systemList } from "@/lib/docs/components";
 import { installUrl, DUAL_FLAVOR_SLUGS, type Base } from "@/lib/base-context";
 import { PROMPT_ENTRIES, type PromptEntry } from "@/lib/docs/prompt-entries";
+import { decodePreset, type PresetComponentDef } from "@/lib/preset/components";
+import { PRESET_GENERATORS } from "@/lib/preset/generators";
 
 const SITE = "https://www.fluidfunctionalism.com";
 
@@ -77,6 +79,74 @@ export function buildInstallPrompt({ slug, installSlug, base }: BuildInstallProm
     "Needs a shadcn-style project: Tailwind v4, the `@/` alias, and the Inter variable font loaded for the weight animations. Installed files land in components/ui, lib, and hooks. Compose with props and className rather than editing them.",
   );
   lines.push(about.join(" "));
+  lines.push(`Docs: ${SITE}/docs/${slug}`);
+
+  return lines.join("\n");
+}
+
+interface BuildPresetPromptOptions {
+  def: PresetComponentDef;
+  /** Encoded playground configuration (see lib/preset/codec.ts). */
+  code: string;
+  base: Base;
+}
+
+/** The playground's "Copy prompt": same brief as the doc page, but the
+ *  install command is the preset block, and the usage section names the
+ *  generated file and its export instead of a hand-written snippet. The
+ *  block already composes the component with the chosen options, so the
+ *  agent only has to import and render it. */
+export function buildPresetPrompt({ def, code, base }: BuildPresetPromptOptions): string {
+  const slug = def.docsPath.split("/").pop() ?? "";
+  const entry = componentList.find((c) => c.slug === slug);
+  const name = entry?.name ?? def.label;
+  const description = (entry?.description ?? "").replace(/\s+\u2014\s+/g, ": ");
+  const details = PROMPT_ENTRIES[slug];
+  const dual = DUAL_FLAVOR_SLUGS.has(slug);
+
+  // The generator is pure, so the exact file list is available client-side.
+  const decoded = decodePreset(code);
+  const generator = PRESET_GENERATORS[def.tag];
+  const files = decoded.ok && generator ? generator.files(decoded.preset) : [];
+
+  const lines: string[] = [];
+  lines.push(`Add the ${name} I configured on Fluid Functionalism to my React app.`);
+  lines.push("");
+  lines.push("Install (shadcn CLI, one block with the component, its shared libs, and npm dependencies):");
+  lines.push(`npx shadcn@latest add ${SITE}/r/preset/${code}.json --overwrite`);
+  lines.push(OVERWRITE_NOTE);
+
+  if (files.length) {
+    lines.push("");
+    lines.push("Usage:");
+    for (const file of files) {
+      const exportName = file.content.match(/export (?:default )?function (\w+)/)?.[1];
+      lines.push(
+        exportName
+          ? `- ${file.target} exports ${exportName}. Import it and render it where the ${name.toLowerCase()} belongs.`
+          : `- ${file.target}`,
+      );
+    }
+    lines.push(
+      `The block already composes the ${name} with the options I picked. Change props in that file, not in components/ui.`,
+    );
+  }
+
+  if (details?.props?.length) {
+    lines.push("");
+    lines.push(`Props of the underlying ${name}:`);
+    for (const prop of details.props) lines.push(`- ${prop}`);
+  }
+
+  lines.push("");
+  const about: string[] = [];
+  if (description) about.push(stripTrailingPeriod(description) + ".");
+  if (dual) about.push(base === "base" ? "Base UI flavor." : "Radix flavor.");
+  about.push(
+    "Needs a shadcn-style project: Tailwind v4, the `@/` alias, and the Inter variable font loaded for the weight animations.",
+  );
+  lines.push(about.join(" "));
+  lines.push(`Reopen or tweak this configuration: ${SITE}${def.docsPath}?preset=${code}`);
   lines.push(`Docs: ${SITE}/docs/${slug}`);
 
   return lines.join("\n");

@@ -164,7 +164,7 @@ function commandMenuDemoFile(p: CommandMenuPreset): string {
   }
   l.push(`  return (`);
   l.push(`    <>`);
-  l.push(`      <Button variant="secondary" onClick={() => setOpen(true)} className="pr-[10px]">`);
+  l.push(`      <Button variant="secondary" onClick={() => setOpen(true)} className="pr-3">`);
   l.push(`        ${COMMAND_MENU_COPY.trigger}`);
   l.push(`        <CommandMenuShortcut keys=${JSON.stringify(p.shortcut)} className="ml-1" />`);
   l.push(`      </Button>`);

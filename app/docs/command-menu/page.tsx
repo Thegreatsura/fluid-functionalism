@@ -509,7 +509,7 @@ export default function CommandMenuDoc() {
         </p>
         <ComponentPreview code={dialogCode}>
           <div className="flex flex-wrap items-center gap-3">
-            <Button variant="secondary" onClick={() => setOpen(true)} className="pr-[10px]">
+            <Button variant="secondary" onClick={() => setOpen(true)} className="pr-3">
               Open
               <CommandMenuShortcut keys="mod+p" className="ml-1" />
             </Button>

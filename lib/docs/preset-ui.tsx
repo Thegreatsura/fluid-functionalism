@@ -20,6 +20,8 @@ import {
   DialogDescription,
 } from "@/registry/radix/dialog";
 import { InputCopy } from "@/registry/default/input-copy";
+import { CopyPromptButton } from "@/lib/docs/copy-prompt-button";
+import { buildPresetPrompt } from "@/lib/docs/install-prompt";
 import type { PresetGlobals } from "@/lib/preset/sidebar-options";
 import type { PresetComponentDef } from "@/lib/preset/codec";
 
@@ -78,8 +80,10 @@ export function usePresetUrlSync(
   }, [code, defaultCode]);
 }
 
-/** The rail-bottom button + modal. Installable components get the install
- *  command; share-only components get the playground link instead. */
+/** The rail-bottom action. Installable components get a "Copy prompt"
+ *  button (same brief as the doc page's Installation block, pointed at the
+ *  preset block); share-only components get a modal with the playground
+ *  link instead. */
 export function GetCodeDialog({
   def,
   code,
@@ -87,11 +91,23 @@ export function GetCodeDialog({
   def: PresetComponentDef;
   code: string;
 }) {
+  const { base } = useBase();
+  if (def.installable) {
+    return (
+      <CopyPromptButton
+        prompt={buildPresetPrompt({ def, code, base })}
+        size="sm"
+        // Full width only in the desktop rail; inline under the preview
+        // (below xl) it hugs its label and sits left.
+        className="xl:w-full"
+      />
+    );
+  }
   return (
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="primary" size="sm" className="w-full">
-          {def.installable ? "Get code" : "Share"}
+          Share
         </Button>
       </DialogTrigger>
       <DialogContent
@@ -101,22 +117,12 @@ export function GetCodeDialog({
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle>
-            {def.installable ? "Install this component" : "Share this configuration"}
-          </DialogTitle>
+          <DialogTitle>Share this configuration</DialogTitle>
           <DialogDescription>
-            {def.installable
-              ? `The exact ${def.label} variant you personalized, as one block.`
-              : `Reopens the ${def.label} playground exactly as configured.`}
+            Reopens the {def.label} playground exactly as configured.
           </DialogDescription>
         </DialogHeader>
-        <InputCopy
-          value={
-            def.installable
-              ? `npx shadcn@latest add ${SITE}/r/preset/${code}.json`
-              : `${SITE}${def.docsPath}?preset=${code}`
-          }
-        />
+        <InputCopy value={`${SITE}${def.docsPath}?preset=${code}`} />
       </DialogContent>
     </Dialog>
   );

@@ -21,6 +21,8 @@ import { Tooltip } from "@/registry/radix/tooltip";
 // On hover it measures the deepest element under the cursor — crosshair guide
 // lines at its box edges, a green box-model overlay (padding + flex/grid gaps),
 // and an FF tooltip with the tag, selector, display, size, padding, and margin.
+// Controls measure whole: hovering a button's label or icon row reads the
+// button (its padding, its gap), with the label lending its type metrics.
 // Only the content region captures the pointer, so the toggles stay clickable
 // and the component underneath is frozen while you inspect it. Portalled
 // menus/listboxes the demo holds open are inspectable like any in-frame
@@ -112,6 +114,69 @@ function boxShorthand(t: number, r: number, b: number, l: number): string {
   return `${R(t)}px ${R(r)}px ${R(b)}px ${R(l)}px`;
 }
 
+/** Whether the element directly wraps text (a title, label, paragraph). */
+function wrapsText(el: Element): boolean {
+  return Array.from(el.childNodes).some(
+    (n) => n.nodeType === 3 && (n.textContent ?? "").trim().length > 0
+  );
+}
+
+// Interactive controls are measured whole. Hovering an anonymous inner part —
+// a label span, the icon row, the painted background layer — snaps to the
+// control, so a button reads as its own box rather than as the SPAN under
+// the cursor. Parts that are designed boxes in their own right stay
+// inspectable: replaced content (an icon's 16px), named slots, and anything
+// that paints a border, background, or padding (a shortcut cap in a row).
+const CONTROL_SELECTOR = [
+  "button",
+  "a[href]",
+  "input",
+  "select",
+  "textarea",
+  "summary",
+  ...[
+    "button", "link", "tab", "option", "menuitem", "menuitemcheckbox",
+    "menuitemradio", "checkbox", "radio", "switch", "combobox", "slider",
+    "searchbox", "textbox", "spinbutton", "treeitem",
+  ].map((role) => `[role="${role}"]`),
+].join(",");
+
+const REPLACED = new Set(["svg", "img", "video", "canvas", "picture", "iframe"]);
+
+function isControl(el: Element): boolean {
+  return el.matches(CONTROL_SELECTOR);
+}
+
+function isDesignedPart(el: Element): boolean {
+  if (REPLACED.has(el.tagName.toLowerCase())) return true;
+  // Decorative layers (a button's inset background) belong to the control.
+  if (el.getAttribute("aria-hidden") === "true") return false;
+  if (el.hasAttribute("data-slot")) return true;
+  const cs = getComputedStyle(el);
+  const px = (v: string) => parseFloat(v) || 0;
+  if (px(cs.paddingTop) + px(cs.paddingRight) + px(cs.paddingBottom) + px(cs.paddingLeft) > 0) return true;
+  if (px(cs.borderTopWidth) + px(cs.borderRightWidth) + px(cs.borderBottomWidth) + px(cs.borderLeftWidth) > 0) return true;
+  if (cs.backgroundColor !== "rgba(0, 0, 0, 0)" && cs.backgroundColor !== "transparent") return true;
+  return cs.backgroundImage !== "none";
+}
+
+/** The element to measure for a hit: the hit itself, or the control it is an
+ *  anonymous part of. The climb never leaves the preview (`root`) and stops
+ *  at a designed part on the way, which keeps a padded inner box its own. */
+function snapToControl(hit: HTMLElement, root: Element): HTMLElement {
+  // An icon is one designed unit: a hit on one of its paths measures the
+  // outermost <svg> (the 16px the size ladder speaks of), not the path.
+  let svg = (hit as unknown as SVGElement).ownerSVGElement;
+  while (svg?.ownerSVGElement) svg = svg.ownerSVGElement;
+  if (svg) hit = svg as unknown as HTMLElement;
+  if (isControl(hit) || isDesignedPart(hit)) return hit;
+  for (let n = hit.parentElement; n && n !== root && n !== document.body; n = n.parentElement) {
+    if (isControl(n)) return n;
+    if (isDesignedPart(n)) return hit;
+  }
+  return hit;
+}
+
 export function InspectOverlay({
   frameRef,
   contentRef,
@@ -176,25 +241,31 @@ export function InspectOverlay({
   // toggle) can refresh its numbers in place even if it slid out from under
   // the frozen cursor.
   const lastElRef = useRef<HTMLElement | null>(null);
+  // The part under the cursor inside it (a label span), for type metrics.
+  const lastPartRef = useRef<HTMLElement | null>(null);
+  const livePart = useCallback((el: HTMLElement) => {
+    const part = lastPartRef.current;
+    return part && part.isConnected && el.contains(part) ? part : el;
+  }, []);
   // Re-measure when the inspected element itself resizes — a demo-local step
   // toggle re-lays-out the content without any site-level signal, and the
   // cursor may be parked (keyboard-driven toggle) with no mousemove coming.
-  const measureElRef = useRef<(el: HTMLElement) => void>(() => {});
+  const measureElRef = useRef<(el: HTMLElement, part?: HTMLElement) => void>(() => {});
   const targetRoRef = useRef<ResizeObserver | null>(null);
   const getTargetRo = useCallback(() => {
     if (targetRoRef.current === null && typeof ResizeObserver !== "undefined") {
       targetRoRef.current = new ResizeObserver(() =>
         requestAnimationFrame(() => {
           const el = lastElRef.current;
-          if (el && el.isConnected) measureElRef.current(el);
+          if (el && el.isConnected) measureElRef.current(el, livePart(el));
         })
       );
     }
     return targetRoRef.current;
-  }, []);
+  }, [livePart]);
 
   const measureEl = useCallback(
-    (el: HTMLElement) => {
+    (el: HTMLElement, part: HTMLElement = el) => {
       const frame = frameRef.current;
       if (!frame) return;
       const fRect = frame.getBoundingClientRect();
@@ -205,6 +276,7 @@ export function InspectOverlay({
         getTargetRo()?.observe(el);
       }
       lastElRef.current = el;
+      lastPartRef.current = part;
 
       const r = el.getBoundingClientRect();
       const cs = getComputedStyle(el);
@@ -228,10 +300,23 @@ export function InspectOverlay({
       if (pl > 0) padStrips.push({ left, top: top + pt, width: pl, height: height - pt - pb, label: String(Math.round(pl)) });
       if (pr > 0) padStrips.push({ left: left + width - pr, top: top + pt, width: pr, height: height - pt - pb, label: String(Math.round(pr)) });
 
+      // The gap the hovered part sits in: a snapped control may hold only a
+      // layout row (a button's icon + label), so the strips come from the
+      // nearest flex/grid container on the way up from the part.
+      let gapHost: HTMLElement = el;
+      let gapCs = cs;
+      for (let n: HTMLElement | null = part; n && n !== el; n = n.parentElement) {
+        const ncs = getComputedStyle(n);
+        if ((ncs.display.includes("flex") || ncs.display.includes("grid")) && n.children.length > 1) {
+          gapHost = n;
+          gapCs = ncs;
+          break;
+        }
+      }
       const gapStrips: Strip[] = [];
-      const isFlex = cs.display.includes("flex") || cs.display.includes("grid");
+      const isFlex = gapCs.display.includes("flex") || gapCs.display.includes("grid");
       if (isFlex) {
-        const kids = Array.from(el.children).map((k) => k.getBoundingClientRect());
+        const kids = Array.from(gapHost.children).map((k) => k.getBoundingClientRect());
         for (let i = 0; i < kids.length - 1; i++) {
           const a = kids[i];
           const b = kids[i + 1];
@@ -270,32 +355,32 @@ export function InspectOverlay({
       // otherwise the anchor already *is* the tag, so listing it again repeats.
       const meta = `${slot ? `${tag} · ` : ""}${cs.display}${flexDir} · ${Math.round(width)} × ${Math.round(height)}`;
 
-      const gapVal = Math.max(parseFloat(cs.columnGap) || 0, parseFloat(cs.rowGap) || 0);
+      const gapVal = Math.max(parseFloat(gapCs.columnGap) || 0, parseFloat(gapCs.rowGap) || 0);
 
-      // Type metrics, but only when this element directly wraps text (a title,
-      // label, paragraph) — not a layout container that merely inherits a font.
-      const wrapsText = Array.from(el.childNodes).some(
-        (n) => n.nodeType === 3 && (n.textContent ?? "").trim().length > 0
-      );
+      // Type metrics come from the hovered part when it is the text itself (a
+      // snapped button's label), else from the element when it directly wraps
+      // text — never from a layout container that merely inherits a font.
+      const textEl = wrapsText(part) ? part : wrapsText(el) ? el : null;
+      const tcs = textEl === el ? cs : textEl ? getComputedStyle(textEl) : null;
       let font: Target["font"] = null;
-      if (wrapsText) {
-        const sizePx = Math.round(parseFloat(cs.fontSize));
+      if (tcs) {
+        const sizePx = Math.round(parseFloat(tcs.fontSize));
         const lh =
-          cs.lineHeight === "normal"
+          tcs.lineHeight === "normal"
             ? "normal"
-            : `${Math.round(parseFloat(cs.lineHeight))}px`;
-        const family = cs.fontFamily
+            : `${Math.round(parseFloat(tcs.lineHeight))}px`;
+        const family = tcs.fontFamily
           .split(",")[0]
           .replace(/["']/g, "")
           .trim();
         const tracking =
-          cs.letterSpacing === "normal" || cs.letterSpacing === "0px"
+          tcs.letterSpacing === "normal" || tcs.letterSpacing === "0px"
             ? "0"
-            : cs.letterSpacing;
+            : tcs.letterSpacing;
         // FF drives weight through variable-font axes, so the CSS font-weight
         // reads a flat 400 — surface the axes (wght/opsz) when present.
-        const fvs = cs.fontVariationSettings;
-        let weight = cs.fontWeight;
+        const fvs = tcs.fontVariationSettings;
+        let weight = tcs.fontWeight;
         if (fvs && fvs !== "normal") {
           const wght = /wght["'\s]+([\d.]+)/.exec(fvs)?.[1];
           const opsz = /opsz["'\s]+([\d.]+)/.exec(fvs)?.[1];
@@ -310,11 +395,11 @@ export function InspectOverlay({
           family,
           weight,
           tracking,
-          color: rgbToHex(cs.color),
+          color: rgbToHex(tcs.color),
         };
       }
 
-      const rawFontSize = wrapsText ? parseFloat(cs.fontSize) : null;
+      const rawFontSize = tcs ? parseFloat(tcs.fontSize) : null;
 
       setTarget({
         left,
@@ -391,10 +476,11 @@ export function InspectOverlay({
 
       if (!el) {
         lastElRef.current = null;
+        lastPartRef.current = null;
         setTarget(null);
         return;
       }
-      measureEl(el);
+      measureEl(snapToControl(el, content), el);
     },
     [contentRef, measureEl]
   );
@@ -420,6 +506,7 @@ export function InspectOverlay({
     cancelAnimationFrame(rafRef.current);
     lastPos.current = null;
     lastElRef.current = null;
+    lastPartRef.current = null;
     targetRoRef.current?.disconnect();
     setTarget(null);
   }, []);
@@ -444,12 +531,12 @@ export function InspectOverlay({
     const id = requestAnimationFrame(() =>
       requestAnimationFrame(() => {
         const el = lastElRef.current;
-        if (el && el.isConnected) measureEl(el);
+        if (el && el.isConnected) measureEl(el, livePart(el));
         else if (lastPos.current) compute(lastPos.current.x, lastPos.current.y);
       })
     );
     return () => cancelAnimationFrame(id);
-  }, [sizeVariant, compute, measureEl]);
+  }, [sizeVariant, compute, measureEl, livePart]);
 
   const { w, h } = size;
   // The rulers overlay the content instead of reserving a gutter, so the demo

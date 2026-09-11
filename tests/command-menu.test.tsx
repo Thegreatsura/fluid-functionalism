@@ -6,8 +6,10 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
+import { useRef } from "react";
 import {
   CommandMenu,
+  CommandMenuDialog,
   CommandMenuInput,
   CommandMenuTabs,
   CommandMenuList,
@@ -234,6 +236,32 @@ describe("CommandMenu", () => {
     expect(getByText("Select")).toBeTruthy();
   });
 
+  it("the footer names Enter after the highlighted row, its action first", async () => {
+    const items: CommandMenuItemData[] = [
+      { value: "home", label: "Home", action: "Go to Home", group: "Go to" },
+      { value: "new", label: "New file", group: "Actions" },
+    ];
+    const { getByRole, container } = render(
+      <CommandMenu items={items}>
+        <CommandMenuInput />
+        <CommandMenuList />
+        <CommandMenuFooter />
+      </CommandMenu>
+    );
+    await act(async () => {});
+    const footer = container.querySelector('[data-slot="command-menu-footer"]') as HTMLElement;
+    const action = () => footer.querySelector('[data-slot="command-menu-footer-action"]')?.textContent;
+    expect(action()).toContain("Go to Home");
+    expect(footer.textContent).not.toContain("Run");
+    const input = getByRole("combobox") as HTMLInputElement;
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    expect(action()).toContain("New file");
+    // No row, no Enter hint.
+    fireEvent.change(input, { target: { value: "zzz" } });
+    await act(async () => {});
+    expect(action()).toBeUndefined();
+  });
+
   it("keys inside an IME composition are left to the composer", () => {
     const onSelect = vi.fn();
     const { getByRole } = render(<Menu onSelect={onSelect} />);
@@ -260,5 +288,43 @@ describe("CommandMenu", () => {
     fireEvent.change(input, { target: { value: "cal" } });
     fireEvent.keyDown(input, { key: "Escape" });
     expect(input.value).toBe("");
+  });
+});
+
+describe("CommandMenuDialog shortcut peers", () => {
+  function Scoped({ onOpenChange }: { onOpenChange: (open: boolean) => void }) {
+    const scope = useRef<HTMLDivElement>(null);
+    return (
+      <div ref={scope}>
+        <button>inside</button>
+        <CommandMenuDialog open={false} onOpenChange={onOpenChange} shortcutScope={scope}>
+          <Menu />
+        </CommandMenuDialog>
+      </div>
+    );
+  }
+
+  it("a scoped dialog takes the combo only while focus is inside its element", () => {
+    const root = vi.fn();
+    const demo = vi.fn();
+    const { getByText } = render(
+      <>
+        <CommandMenuDialog open={false} onOpenChange={root}>
+          <Menu />
+        </CommandMenuDialog>
+        <button>outside</button>
+        <Scoped onOpenChange={demo} />
+      </>
+    );
+    // Focus outside: the root palette answers, though the demo mounted last.
+    getByText("outside").focus();
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    expect(root).toHaveBeenCalledWith(true);
+    expect(demo).not.toHaveBeenCalled();
+    // Focus inside the scope: the demo answers.
+    getByText("inside").focus();
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    expect(demo).toHaveBeenCalledWith(true);
+    expect(root).toHaveBeenCalledTimes(1);
   });
 });

@@ -71,6 +71,9 @@ export interface CommandMenuItemData {
   /** Unique id. Doubles as the row's key and `aria-activedescendant` target. */
   value: string;
   label: string;
+  /** What the footer names Enter while the row is highlighted, e.g. "Open
+   *  Showcase" for a row labelled "Showcase". Defaults to the label. */
+  action?: string;
   /** Secondary text after the label: the label's size, one contrast step
    *  lower. */
   description?: string;
@@ -507,7 +510,8 @@ const CommandMenu = forwardRef<HTMLDivElement, CommandMenuProps>(
     // What the rows ARE, not the array's identity: an inline `items` literal
     // re-runs the memos every render, and only a real change may reset the
     // highlight.
-    const rowsKey = rows.map((row) => row.value).join(" ");
+    // Joined on a NUL so values with spaces cannot collide.
+    const rowsKey = rows.map((row) => row.value).join("\u0000");
 
     // The highlight lives in the fluid hover hook. It is created here, at the
     // root, so the input can drive it; the list attaches `listRef` as its
@@ -930,9 +934,12 @@ const CommandMenuTabs = forwardRef<HTMLDivElement, CommandMenuTabsProps>(
       >
         <div
           // A pointer pick must not take focus from the field (the tabs are
-          // buttons); keyboard users still reach them with Tab.
+          // buttons); keyboard users still reach them with Tab. No overflow
+          // clip here: TabsSubtle scrolls itself and keeps 4px of room around
+          // the tabs for the 2px-outset focus ring, which a second scroll
+          // container this tight would crop.
           onMouseDown={(e) => e.preventDefault()}
-          className="flex min-w-0 flex-1 items-center overflow-x-auto scrollbar-hide"
+          className="flex min-w-0 flex-1 items-center"
         >
           <TabsSubtle
             size="compact"
@@ -1081,7 +1088,7 @@ const CommandMenuList = forwardRef<HTMLDivElement, CommandMenuListProps>(
                 key={section.id}
                 role="group"
                 aria-labelledby={headingId}
-                className="flex flex-col gap-0.5"
+                className="flex flex-col"
               >
                 {section.heading && (
                   <div
@@ -1337,12 +1344,18 @@ export interface CommandMenuFooterProps extends HTMLAttributes<HTMLDivElement> {
 
 const CommandMenuFooter = forwardRef<HTMLDivElement, CommandMenuFooterProps>(
   ({ hints, className, children, ...props }, ref) => {
-    const { tabsMounted } = useCommandMenu();
+    const { rows, highlight, tabsMounted } = useCommandMenu();
     const dialog = useContext(CommandMenuDialogContext);
     const compact = useSize().variant === "compact";
+    // The Enter hint names the highlighted row, so it reads as the thing
+    // Enter does ("Open Showcase") rather than a generic "Run". It rides
+    // the highlight store like a row does, and sits at the trailing edge so
+    // its changing width never moves the other hints. No row, no hint.
+    const activeIndex = useSyncExternalStore(highlight.subscribe, highlight.get, () => null);
+    const row = activeIndex === null ? undefined : rows[activeIndex];
+    const action = hints ? null : row ? (row.action ?? row.label) : null;
     const resolved: readonly CommandMenuHint[] = hints ?? [
       { label: "Select", keys: ["up", "down"] },
-      { label: "Run", keys: "enter" },
       ...(tabsMounted ? [{ label: "Tabs", keys: ["left", "right"] }] : []),
       ...(dialog ? [{ label: "Close", keys: "esc" }] : []),
     ];
@@ -1357,13 +1370,25 @@ const CommandMenuFooter = forwardRef<HTMLDivElement, CommandMenuFooterProps>(
         )}
         {...props}
       >
-        {children ??
-          resolved.map((hint) => (
-            <span key={hint.label} className="flex shrink-0 items-center gap-1.5">
-              <span>{hint.label}</span>
-              <CommandMenuShortcut keys={hint.keys} className="ml-0" />
-            </span>
-          ))}
+        {children ?? (
+          <>
+            {resolved.map((hint) => (
+              <span key={hint.label} className="flex shrink-0 items-center gap-1.5">
+                <span>{hint.label}</span>
+                <CommandMenuShortcut keys={hint.keys} className="ml-0" />
+              </span>
+            ))}
+            {action !== null && (
+              <span
+                data-slot="command-menu-footer-action"
+                className="ml-auto flex min-w-0 items-center gap-1.5 text-foreground"
+              >
+                <span className="truncate">{action}</span>
+                <CommandMenuShortcut keys="enter" className="ml-0" />
+              </span>
+            )}
+          </>
+        )}
       </div>
     );
   }
@@ -1377,11 +1402,16 @@ CommandMenuFooter.displayName = "CommandMenuFooter";
 
 // Every mounted dialog listens for its own combo; one of them answers a
 // press. An open dialog answers first (the press closes it). Otherwise the
-// most recently mounted one with that combo does: a page that mounts a
-// second palette for a while (a docs demo) hands the key to it and gets it
-// back when it unmounts. Peers are matched on the parsed combo, so "mod+k",
-// "cmd+k" and "Mod+K" are one key.
-const mountedDialogs: { combo: string; isOpen: () => boolean }[] = [];
+// most recently mounted one with that combo whose scope holds the focus
+// does: a dialog without a scope is in scope everywhere, so an app-wide
+// palette keeps its key, and a scoped one (a docs demo, a pane) takes it
+// only while focus is inside its element. Peers are matched on the parsed
+// combo, so "mod+k", "cmd+k" and "Mod+K" are one key.
+const mountedDialogs: {
+  combo: string;
+  isOpen: () => boolean;
+  inScope: () => boolean;
+}[] = [];
 
 function comboKey(parsed: ParsedShortcut): string {
   return [
@@ -1403,6 +1433,10 @@ export interface CommandMenuDialogProps {
   /** The combo that toggles the dialog from anywhere on the page, in the
    *  shortcut syntax. `null` binds nothing. @default "mod+k" */
   shortcut?: string | null;
+  /** Focus must be inside this element for the combo to open the dialog:
+   *  for a demo or a pane that must not take an app-wide combo from the
+   *  palette mounted at the root. Closing on the combo works from anywhere. */
+  shortcutScope?: RefObject<HTMLElement | null>;
   /** Read to screen readers as the dialog's name. @default "Command menu" */
   title?: string;
   /** @default "Search for a command to run." */
@@ -1421,6 +1455,7 @@ function CommandMenuDialog({
   defaultOpen = false,
   onOpenChange,
   shortcut = "mod+k",
+  shortcutScope,
   title = "Command menu",
   description = "Search for a command to run.",
   modal,
@@ -1432,6 +1467,8 @@ function CommandMenuDialog({
   const open = openProp ?? internalOpen;
   const openRef = useRef(open);
   openRef.current = open;
+  const scopeRef = useRef(shortcutScope);
+  scopeRef.current = shortcutScope;
   const onOpenChangeRef = useRef(onOpenChange);
   onOpenChangeRef.current = onOpenChange;
   // Read through refs so `setOpen` keeps one identity for the dialog's
@@ -1451,7 +1488,14 @@ function CommandMenuDialog({
     const parsed = parseShortcut(shortcut);
     if (parsed.key === "") return;
     const combo = comboKey(parsed);
-    const entry = { combo, isOpen: () => openRef.current };
+    const entry = {
+      combo,
+      isOpen: () => openRef.current,
+      inScope: () => {
+        const scope = scopeRef.current?.current;
+        return !scope || scope.contains(document.activeElement);
+      },
+    };
     mountedDialogs.push(entry);
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.repeat || e.defaultPrevented) return;
@@ -1459,7 +1503,8 @@ function CommandMenuDialog({
       // A bare key stays out of fields; a modifier combo fires anywhere.
       if (!hasModifier(parsed) && isEditable(e.target)) return;
       const peers = mountedDialogs.filter((d) => d.combo === combo);
-      const answers = peers.find((d) => d.isOpen()) ?? peers[peers.length - 1];
+      const answers =
+        peers.find((d) => d.isOpen()) ?? peers.slice().reverse().find((d) => d.inScope());
       if (answers !== entry) return;
       e.preventDefault();
       setOpen(!openRef.current);
@@ -1480,11 +1525,13 @@ function CommandMenuDialog({
         size="lg"
         container={container}
         showCloseButton={false}
-        // Anchored near the top and sized to its rows up to a cap: the field
-        // keeps its place while the list under it grows and shrinks.
+        // Opens centered at its cap and keeps that top edge: the top is where
+        // a panel at the cap height, min(440px, 76dvh), sits centered, so
+        // the field stays put while the rows under it filter down. Below
+        // 580px of height the cap is 76dvh and the top lands on 12dvh.
         position="top"
         className={cn(
-          "flex max-h-[min(440px,76dvh)] flex-col overflow-hidden p-0",
+          "top-[max(12dvh,calc(50dvh-220px))] flex max-h-[min(440px,76dvh)] flex-col overflow-hidden p-0",
           className
         )}
       >

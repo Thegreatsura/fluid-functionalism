@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { showSuccessToast } from "@/lib/docs/settings-toast";
 import {
   CommandMenu,
@@ -84,6 +84,7 @@ export function buildCommandMenuPlaygroundCode(o: PlayState): string {
   const fields = (item: {
     value: string;
     label: string;
+    action?: string;
     icon: string;
     description?: string;
     shortcut?: string;
@@ -92,6 +93,7 @@ export function buildCommandMenuPlaygroundCode(o: PlayState): string {
     [
       `value: "${item.value}"`,
       `label: "${item.label}"`,
+      ...(item.action ? [`action: "${item.action}"`] : []),
       ...(o.descriptions && item.description ? [`description: "${item.description}"`] : []),
       `icon: ${item.icon}`,
       ...(o.shortcuts && item.shortcut ? [`shortcut: "${item.shortcut}"`] : []),
@@ -100,8 +102,8 @@ export function buildCommandMenuPlaygroundCode(o: PlayState): string {
   const sample = [
     { value: "new-file", label: "New file", description: "Blank document", icon: "Plus", shortcut: "mod+n", group: "Actions" },
     { value: "theme", label: "Toggle dark mode", description: "System, light, or dark", icon: "Moon", shortcut: "mod+shift+l", group: "Actions" },
-    { value: "calendar", label: "Calendar", description: "Today", icon: "Calendar", group: "Go to" },
-    { value: "settings", label: "Settings", description: "Account and workspace", icon: "Settings", shortcut: "mod+,", group: "Go to" },
+    { value: "calendar", label: "Calendar", action: "Go to Calendar", description: "Today", icon: "Calendar", group: "Go to" },
+    { value: "settings", label: "Settings", action: "Go to Settings", description: "Account and workspace", icon: "Settings", shortcut: "mod+,", group: "Go to" },
   ];
   const parts = [
     "CommandMenuDialog",
@@ -226,6 +228,7 @@ export function CommandMenuPlayground({ children }: PlaygroundProps) {
   const [tab, setTab] = useState("all");
   const [type, setType] = useState("all");
   const [sort, setSort] = useState("default");
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const all = useCommandMenuItems({
     descriptions: state.descriptions,
@@ -334,14 +337,21 @@ export function CommandMenuPlayground({ children }: PlaygroundProps) {
     </Elevated>
   );
 
+  // The trigger combo fires only while focus is inside the preview: the
+  // site's own ⌘K menu keeps the key everywhere else on the page.
   const preview = (
-    <div className="flex w-full flex-col items-center gap-4">
+    <div ref={previewRef} className="flex w-full flex-col items-center gap-4">
       {panel("max-h-[400px]")}
       <Button variant="secondary" onClick={() => setOpen(true)} className="pr-3">
         Open as a dialog
         <CommandMenuShortcut keys={state.shortcut} className="ml-1" />
       </Button>
-      <CommandMenuDialog open={open} onOpenChange={setOpen} shortcut={state.shortcut}>
+      <CommandMenuDialog
+        open={open}
+        onOpenChange={setOpen}
+        shortcut={state.shortcut}
+        shortcutScope={previewRef}
+      >
         {menu}
       </CommandMenuDialog>
     </div>
@@ -357,6 +367,9 @@ export function CommandMenuPlayground({ children }: PlaygroundProps) {
           options={shortcutOptions}
         />
       </PlayField>
+      <p className="px-1 text-caption text-muted-foreground">
+        Fires while the preview has focus.
+      </p>
 
       <PlayDivider />
       <PlaySection label="Rows" />

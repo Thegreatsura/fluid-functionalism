@@ -54,6 +54,8 @@ function commandMenuDemoFile(p: CommandMenuPreset): string {
   l.push(`const ITEMS: readonly {`);
   l.push(`  value: string;`);
   l.push(`  label: string;`);
+  l.push(`  /** Names Enter in the footer while highlighted; defaults to the label. */`);
+  l.push(`  action?: string;`);
   if (p.descriptions) l.push(`  description?: string;`);
   l.push(`  icon: IconName;`);
   if (p.shortcuts) l.push(`  shortcut?: string;`);
@@ -65,6 +67,7 @@ function commandMenuDemoFile(p: CommandMenuPreset): string {
     const fields = [
       `value: ${JSON.stringify(item.value)}`,
       `label: ${JSON.stringify(item.label)}`,
+      ...(item.action ? [`action: ${JSON.stringify(item.action)}`] : []),
       ...(p.descriptions && item.description ? [`description: ${JSON.stringify(item.description)}`] : []),
       `icon: ${JSON.stringify(item.icon)}`,
       ...(p.shortcuts && item.shortcut ? [`shortcut: ${JSON.stringify(item.shortcut)}`] : []),

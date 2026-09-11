@@ -265,6 +265,24 @@ describe("useFluidHover: the hover state is in the DOM", () => {
   });
 });
 
+describe("useFluidHover: rows move index", () => {
+  it("a row that moves off the highlighted index hands the highlight to the row now there", () => {
+    const clicks = [vi.fn(), vi.fn(), vi.fn()];
+    let api!: Api;
+    const { rerender, getByTestId } = render(
+      <List expose={(a) => (api = a)} rows={clicks} keys={["b", "c", "d"]} pin={0} />
+    );
+    expect(api.activeIndex).toBe(0);
+    expect(getByTestId("row-0").hasAttribute("data-fluid-hover-active")).toBe(true);
+    // The query clears: row "a" returns at the top and "b" moves to index 1,
+    // unregistering index 0 on its way. The list pins index 0 again.
+    rerender(<List expose={(a) => (api = a)} rows={[vi.fn(), ...clicks]} keys={["a", "b", "c", "d"]} pin={0} />);
+    expect(api.activeIndex).toBe(0);
+    expect(getByTestId("row-0").hasAttribute("data-fluid-hover-active")).toBe(true);
+    expect(getByTestId("row-1").hasAttribute("data-fluid-hover-active")).toBe(false);
+  });
+});
+
 describe("useFluidHover: the highlighted row unregisters", () => {
   it("clears the highlight so nothing stale stays lit or takes a routed click", () => {
     const clicks = [vi.fn(), vi.fn(), vi.fn()];

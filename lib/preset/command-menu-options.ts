@@ -179,6 +179,8 @@ export const COMMAND_MENU_GROUPS = ["Actions", "Go to", "Help"] as const;
 export const COMMAND_MENU_ITEMS: readonly {
   value: string;
   label: string;
+  /** Names Enter in the footer while highlighted; defaults to the label. */
+  action?: string;
   description?: string;
   icon: string;
   shortcut?: string;
@@ -194,12 +196,12 @@ export const COMMAND_MENU_ITEMS: readonly {
   { value: "invite", label: "Invite people", description: "Send an email invite", icon: "users", keywords: ["team", "member"], group: "Actions" },
   { value: "export", label: "Export as PDF", description: "Pro plan", icon: "image", keywords: ["download"], group: "Actions", disabled: true },
   // Go to
-  { value: "home", label: "Home", icon: "home", group: "Go to" },
-  { value: "inbox", label: "Inbox", description: "3 unread", icon: "inbox", keywords: ["mail", "notifications"], group: "Go to" },
-  { value: "calendar", label: "Calendar", description: "Today", icon: "calendar", keywords: ["events", "schedule"], group: "Go to" },
-  { value: "starred", label: "Starred", icon: "star", keywords: ["favorites"], group: "Go to" },
-  { value: "recent", label: "Recent", description: "Last 7 days", icon: "clock", keywords: ["history"], group: "Go to" },
-  { value: "settings", label: "Settings", description: "Account and workspace", icon: "settings", shortcut: "mod+,", keywords: ["preferences"], group: "Go to" },
+  { value: "home", label: "Home", action: "Go to Home", icon: "home", group: "Go to" },
+  { value: "inbox", label: "Inbox", action: "Go to Inbox", description: "3 unread", icon: "inbox", keywords: ["mail", "notifications"], group: "Go to" },
+  { value: "calendar", label: "Calendar", action: "Go to Calendar", description: "Today", icon: "calendar", keywords: ["events", "schedule"], group: "Go to" },
+  { value: "starred", label: "Starred", action: "Go to Starred", icon: "star", keywords: ["favorites"], group: "Go to" },
+  { value: "recent", label: "Recent", action: "Go to Recent", description: "Last 7 days", icon: "clock", keywords: ["history"], group: "Go to" },
+  { value: "settings", label: "Settings", action: "Go to Settings", description: "Account and workspace", icon: "settings", shortcut: "mod+,", keywords: ["preferences"], group: "Go to" },
   // Help
   { value: "docs", label: "Documentation", icon: "square-library", keywords: ["help", "guide"], group: "Help" },
   { value: "whats-new", label: "What's new", description: "Release notes", icon: "rocket", keywords: ["changelog", "updates"], group: "Help" },

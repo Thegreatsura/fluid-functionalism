@@ -199,8 +199,10 @@ const footerCode = `import {
   CommandMenu, CommandMenuInput, CommandMenuList, CommandMenuEmpty, CommandMenuFooter,
 } from "./components";
 
-{/* Default hints follow the menu: Select ↑↓, Run ↵, Tabs ← → when tabs
-    are mounted, Close Esc in a dialog. Pass hints, or children, to replace. */}
+{/* Default hints follow the menu: Select ↑↓, Tabs ← → when tabs are
+    mounted, Close Esc in a dialog, and at the trailing edge the highlighted
+    row's action ↵ (its label, unless the item sets action). Pass hints, or
+    children, to replace. */}
 <CommandMenu items={items} onSelect={run}>
   <CommandMenuInput />
   <CommandMenuList>
@@ -244,6 +246,7 @@ const customRowsCode = `import { CommandMenu, CommandMenuInput, CommandMenuList,
 const itemDataProps: PropDef[] = [
   { name: "value", type: "string", description: "Unique id. The row's key and what aria-activedescendant points at." },
   { name: "label", type: "string", description: "The row's text." },
+  { name: "action", type: "string", description: 'What the footer names Enter while the row is highlighted, e.g. "Open Showcase". Defaults to the label.' },
   { name: "description", type: "string", description: "Text after the label, at its size, 1 contrast step lower." },
   { name: "icon", type: "IconComponent", description: "Leading icon." },
   { name: "shortcut", type: "string", description: 'Caps at the trailing edge, e.g. "mod+p" or "⌘P". Display only.' },
@@ -271,11 +274,12 @@ const dialogProps: PropDef[] = [
   { name: "defaultOpen", type: "boolean", default: "false", description: "Initial open state." },
   { name: "onOpenChange", type: "(open: boolean) => void", description: "Called when the dialog opens or closes, including from the shortcut." },
   { name: "shortcut", type: "string | null", default: '"mod+k"', description: 'The combo that toggles the dialog from anywhere: "mod" is ⌘ on a Mac and Ctrl elsewhere, joined with "+" to alt, shift, and one key. null binds nothing.' },
+  { name: "shortcutScope", type: "RefObject<HTMLElement>", description: "Focus must be inside this element for the combo to open the dialog. For a demo or a pane that shares its combo with the palette at the root: the root palette keeps the key everywhere else." },
   { name: "title", type: "string", default: '"Command menu"', description: "The dialog's name for screen readers." },
   { name: "description", type: "string", default: '"Search for a command to run."', description: "Read after the title." },
   { name: "modal", type: "boolean", default: "true", description: "Traps focus and locks page scroll while open." },
   { name: "container", type: "HTMLElement | null", description: "Portal target, to scope the dialog to a region." },
-  { name: "className", type: "string", description: "Merged onto the panel. Anchored 12dvh from the top, sized by its rows up to min(440px, 76dvh)." },
+  { name: "className", type: "string", description: "Merged onto the panel. It opens centered at its cap of min(440px, 76dvh) and keeps that top edge as the rows filter down, so the field never moves." },
 ];
 
 const inputProps: PropDef[] = [
@@ -306,7 +310,7 @@ const tabsProps: PropDef[] = [
 ];
 
 const footerProps: PropDef[] = [
-  { name: "hints", type: "{ label: string; keys: string | string[] }[]", description: "Replaces the default hints. A keys list draws 1 cap per entry." },
+  { name: "hints", type: "{ label: string; keys: string | string[] }[]", description: "Replaces the default hints, the highlighted row's Enter hint included. A keys list draws 1 cap per entry." },
   { name: "children", type: "ReactNode", description: "Replaces the hints with your own content." },
 ];
 
@@ -543,7 +547,9 @@ export default function CommandMenuDoc() {
       <DocSection title="Footer hints">
         <p className="text-subtitle text-muted-foreground">
           4 hints at most, following the menu: ← → with tabs, Esc in a
-          dialog. Pass <code>hints</code> for your own.
+          dialog, and ↵ named after the highlighted row (its{" "}
+          <code>action</code>, or its label). Pass <code>hints</code> for
+          your own.
         </p>
         <ComponentPreview code={footerCode} minHeightClass="min-h-[400px]">
           <Panel>

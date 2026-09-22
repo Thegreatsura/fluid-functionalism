@@ -186,6 +186,14 @@ system:
   tokens, so the layout never shifts.
 - **Icon swaps crossfade in one cell.** Two glyphs mounted in the same grid
   cell, fading with a touch of blur and scale — the slot never resizes.
+- **Nested corners are concentric.** When a rounded surface sits close inside
+  another, derive `inner radius = max(0, outer radius - inset - border)`; the
+  inset is the interior spacing, usually parent padding, and the border is the
+  parent's border width. The shipped shape pair (`container` 12/24px → `bg`
+  8/20px) is fixed for a 4px total inset. For any other inset use
+  `nestedRadius()` from `@/lib/shape-context` rather than reusing the pair. Past
+  24px, with asymmetric gaps, or when the inner surface does not reach the
+  corner, treat the layers independently and tune by eye.
 - **Move with `transform`/`opacity`**, never `top`/`left`/`width`/`height` —
   that keeps motion on the compositor and lets `MotionConfig` reduce it for
   free.

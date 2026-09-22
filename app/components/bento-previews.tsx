@@ -824,7 +824,7 @@ function SidebarPreview() {
                     alt=""
                     width={20}
                     height={20}
-                    className="size-5 shrink-0 rounded-full"
+                    className="size-5 shrink-0 rounded-full outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
                   />
                   <span className="min-w-0 truncate text-foreground">Micka Touillaud</span>
                 </SidebarMenuButton>

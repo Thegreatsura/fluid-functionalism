@@ -159,10 +159,12 @@ function Toolbar() {
       "Conventional offsets: `2` for dropdown / popover / select menu, `4` for dialog / modal.",
       "`shadowLevel` decouples shadow from background: a dropdown always reads `shadow-surface-3` whether it opens on the page or inside a dialog \u2014 the background tracks the substrate, but the shadow weight stays constant, so \"a popover still reads as a popover three layers down\".",
       "Hover and selected states are surface-relative overlays, not fixed colors, so they work at any elevation: `--overlay` flips tint direction per theme (black on light, white on dark); dark hover is +6% white and selected +10% (light: 4% / 7%) \u2014 the demo labels these exactly.",
+      "Closely nested rounded surfaces use concentric corners: inner radius = max(0, outer radius - inset - border), where inset is the interior spacing (usually parent padding) and border is the parent's border width. The fixed shape pair (`container` 12/24px \u2192 `bg` 8/20px) is for a 4px total inset; any other padding uses `nestedRadius()` instead of reusing those classes. Past 24px, with asymmetric gaps, or when the inner element does not reach the corner, the layers are independent and may be tuned by eye.",
     ],
     usage: `import { Elevated } from "@/lib/elevated";
 import { SurfaceProvider, useSurface } from "@/lib/surface-context";
 import { surfaceClasses } from "@/lib/surface-classes";
+import { nestedRadius, useShape } from "@/lib/shape-context";
 
 // Elevated reads the substrate from context, computes min(substrate + offset, 8),
 // applies the surface background and shadow classes, then re-provides the new
@@ -170,7 +172,9 @@ import { surfaceClasses } from "@/lib/surface-classes";
 <Elevated offset={2} className="rounded-xl p-2">   {/* popover / dropdown: 2 above */}
   <Elevated offset={4} shadowLevel={5}>...</Elevated>   {/* dialog: 4 above, fixed shadow */}
 </Elevated>
-// Manual: const level = Math.min(useSurface() + 2, 8); className={surfaceClasses(level)}`,
+// Manual: const level = Math.min(useSurface() + 2, 8); className={surfaceClasses(level)}
+// Nested corner: const shape = useShape();
+// const inner = nestedRadius(shape.containerRadius, padding, borderWidth);`,
     props: [
       "offset: number. Steps above the current substrate; the surface level becomes min(substrate + offset, 8). Use 2 for dropdown, popover, select menu and 4 for dialog, modal.",
       "shadowLevel: number (default the computed level). Override the shadow level so a dropdown keeps a constant shadow weight however deep it nests.",
@@ -179,6 +183,7 @@ import { surfaceClasses } from "@/lib/surface-classes";
       "SurfaceProvider value: number. Set the substrate for a subtree by hand (1 page, 3 popover, 5 dialog).",
       "useSurface(): number. The current substrate level from context, 1 when no provider is present.",
       "surfaceClasses(bgLevel, shadowLevel = bgLevel): string. Background plus shadow Tailwind classes for a level, for components that do not use Elevated.",
+      "nestedRadius(outerRadius, inset, borderWidth = 0): number. Returns max(0, outerRadius - inset - borderWidth) for concentric nested corners.",
     ],
   },
   accordion: {
@@ -323,6 +328,7 @@ import { Plus, ArrowRight } from "lucide-react";
       "Clickable cards use a stretched z-20 overlay link/button, with footer actions and dismiss at z-30 above it \u2014 the accessible alternative to nesting interactive elements; a disabled card drops the overlay entirely so keyboard can't reach it (pointer-events-none only blocks the mouse).",
       "The on-hover dismiss \u2715 gates pointer-events alongside opacity (an invisible control must not swallow touch taps meant for the card), gets a bg-card/70 backdrop-blur ground over images so the icon never reads against arbitrary pixels, and in inline rows the header yields pr-10 only while the control is revealed.",
       "An inline card with a CardImage reflows its text + actions into a centred column beside the image (footer drops below the text in natural order); CardImage keeps a fixed 2px corner radius in every state rather than inheriting a frame's larger clip \u2014 a 16:9 banner stacked, a 160px square inline.",
+      "CardImage and CardMedia logos paint a 1px inset image outline over their outermost pixels (pure black at 10% in light mode, pure white at 10% in dark), so pale image edges keep their shape without a border changing the box size.",
     ],
     usage: `import {
   Card, CardGroup, CardHeader, CardMedia,
@@ -361,7 +367,7 @@ import { Circle } from "lucide-react";
       "`text-pretty` is applied only to user bubbles and deliberately left off assistant replies: `text-wrap: pretty` re-balances the last lines on every content change, so a word-by-word stream would visibly reflow earlier words onto new lines; normal wrapping appends left-to-right and stays put.",
       "The meta row (timestamp + icon actions) is always rendered so it reserves its height and the gap between bubbles never shifts; it fades in over 150ms on hover or focus-within, and stays permanently visible on touch where hover is unreachable.",
       "Timestamps are a user-message-only affordance \u2014 `time` is ignored on assistant replies, which show their actions alone; the timestamp renders tabular-nums.",
-      "Messages cap at max-w-[80%]; attachments render as square thumbnails (default 64px) in a row above the bubble, justified toward the message's own side, and an attachment-only message (no children) drops the text bubble entirely.",
+      "Messages cap at max-w-[80%]; attachments render as square thumbnails (default 64px) in a row above the bubble, justified toward the message's own side, and an attachment-only message (no children) drops the text bubble entirely. Each thumbnail gets a 1px inset pure-black/pure-white 10% outline so bright edge pixels do not disappear into the page.",
     ],
     usage: `import { ChatMessage } from "@/components/ui/chat-message";
 import { Copy } from "lucide-react";
@@ -423,7 +429,7 @@ const toggle = (i: number) => setChecked((prev) => {
     craft: [
       "Switching format (HEX/RGB/HSL/OKLCH) immediately re-emits the current color formatted in the new format through onValueChange, so consumers stay in sync without touching the color.",
       "The eyedropper is the native `window.EyeDropper` API; support is detected in an effect (SSR-safe) and the button renders only when supported \u2014 the docs note it's Chromium-only and auto-hidden elsewhere; user cancellation is silently swallowed.",
-      "The saturation square hides the OS cursor (`cursor-none`); a ghost ring cursor follows hover (suppressed while dragging), and the real 18px thumb is filled with the live color, white border + black ring, moving with duration 0 so it never lags the pointer; arrow keys nudge S/V by 0.01, Shift by 0.1.",
+      "The saturation square hides the OS cursor (`cursor-none`); a ghost ring cursor follows hover (suppressed while dragging), and the real 18px thumb is filled with the live color, white border + black ring, moving with duration 0 so it never lags the pointer; arrow keys nudge S/V by 0.01, Shift by 0.1. Its radius is derived from the panel's outer radius minus the real 12px padding, keeping the top corners concentric in rounded and pill modes.",
       "Hue and alpha rails are the compact Slider engine with `hideFill` and the thumb colored by the current color; the alpha gradient's transparent stop keeps the same hue at alpha 0 \"so the gradient stays chromatically consistent and reaches fully opaque at 100% with no edge gap\", over an 8px conic-gradient checker.",
       "HSV is the canonical internal state with H preserved across S=0/V=0 transitions, and a sticky OKLCH hue preserves the user's stated H across the lossy RGB round-trip and achromatic colors (where RGB-derived H would collapse to 0); L/C edits anchor on that stated H \"so we don't drift along with chroma changes\".",
       "Channel fields are scrubbable (Base UI NumberField ScrubArea with pointer-lock and a virtual cursor); a no-drag press enters edit mode (focus + select), typing commits on blur (per-keystroke parses ignored) while keyboard nudges/scroll/scrub commit immediately, and Escape reverts the draft; nudge steps are 1 / Shift 10 (0.01 / 0.1 for OKLCH chroma).",
@@ -645,6 +651,7 @@ const [value, setValue] = useState("");
       "Enter sends, Shift+Enter newlines, and IME composition keydowns are ignored (`e.nativeEvent.isComposing`) so committing Japanese/Chinese input never fires a send.",
       "The composer's edge is the box-shadow's 1px hairline ring recolored in place \u2014 drag-over #6B97FF > focus (20% foreground) > hover (border) \u2014 so state changes bump contrast \"without ever appearing to thicken\" the stroke; the 0 1px 1px drop layer is kept so the lift never flickers. Applied inline because Tailwind shadow utilities mangle multi-layer arbitrary values.",
       "File drop only reacts to drags whose dataTransfer types include \"Files\" (text/HTML drags don't trigger), sets dropEffect \"copy\", swaps the placeholder to \"Drop files here to add to chat\", and ignores dragLeave into children; drops are filtered by accept and deduped by a name+size+lastModified fingerprint.",
+      "Attachment thumbnails use a 1px inset image outline (pure black at 10% in light mode, pure white at 10% in dark) instead of an outside border, so light image/PDF edges stay legible without shrinking the preview or changing its box. Their radius is the composer's outer radius minus its real 8px padding, not the popup-specific 4px shape pair.",
       "The three collapsible regions (attachments, queue, suggestions) spring to a self-measured PIXEL height, never `height:\"auto\"`, because framer resolves auto from the element's visual (transformed) size \u2014 under a scaled ancestor the region would balloon to scale\u00d7 and snap back. The suggestions region exits height-only (no opacity fade) because a simultaneous fade \"read as a height glitch\".",
       "Send button morphs by state: Stop (streaming + empty draft) \u21c4 arrow-up; Send and Queue intentionally share the arrow glyph so only the Stop\u21c4arrow swap animates. While streaming, a submit enqueues the draft (text + attached files snapshot) instead of sending; on the streaming\u2192idle edge the queue head auto-dispatches through onSend with meta.queuedId, and an sr-only aria-live=\"polite\" region announces \"Message sent. N still queued.\".",
       "Queued rows are fully keyboard-operable: Enter/F2 edits the row back into the composer, Delete/Backspace removes, Alt+\u2191/\u2193 reorders (drag via Reorder also works); the \u00d7 is hover-revealed on pointer devices but persistent on touch, detected via `(hover: none)`.",
@@ -756,6 +763,7 @@ const [value, setValue] = useState("");
       "One highlight scope per SidebarMenu tree: hover/active/focus overlays glide between all visible rows, sub-rows included; hit-testing measures the row's BUTTON, not the `<li>` (an expanded sub-tree would otherwise hand its gaps to the parent row), and overlay height is clamped to the button box with a 48px fallback.",
       "Active backgrounds are keyed per level so the selection GLIDES when it moves instead of remounting; a rect change on the SAME row (reflow from a sibling collapsing) snaps rather than springing, and hover tracking freezes across every scope while any sidebar-anchored popup is open.",
       "There is deliberately no icon-rail collapsed mode (`collapsible` is only \"offcanvas\" | \"none\"): the docs argue icon rails make \"every destination take a hover, a beat, a tooltip\" and section labels collapse to a divider \u2014 collapsed means gone, and `peek=\"hover\"` floats the REAL sidebar, labels and all, instead.",
+      "The avatar remains a consumer-owned ReactNode, but image examples apply a 1px inset pure-black/pure-white 10% outline; at 20px this is the difference between a pale portrait reading as a circle and dissolving into the row surface.",
     ],
     usage: `import { Home, Inbox } from "lucide-react";
 import {
@@ -997,7 +1005,7 @@ const [selected, setSelected] = useState(0);
       "The collapse panel keeps content force-mounted: Radix/Base UI would apply `hidden` (display:none) the moment it closes, freezing the exit mid-flight, so the component applies `hidden` itself only after the framer exit completes, preserving the trigger\u2194panel aria-controls contract.",
       "A panel that is already open at mount SNAPs (duration 0) to its first measured pixel target instead of springing \u2014 the auto\u2192pixel hand-off would otherwise animate on load; later opens spring normally with `bounce: 0` because \"pure height looks better without overshoot\".",
       "Each step's icon column is a fixed 14px cell with a 1px connector line stretching from below the icon to the step's bottom; `isLast` hides the line so the rail terminates cleanly.",
-      "Source badges enter with a blur(4px)\u21920 + scale 0.85\u21921 + fade on spring.moderate, staggerable via per-badge `delay` (docs use 0.05s increments); step images use the same blur-in without the scale.",
+      "Source badges enter with a blur(4px)\u21920 + scale 0.85\u21921 + fade on spring.moderate, staggerable via per-badge `delay` (docs use 0.05s increments); step images use the same blur-in without the scale, plus a 1px inset pure-black/pure-white 10% outline so screenshots keep a visible edge on either theme.",
     ],
     usage: `import {
   ThinkingSteps, ThinkingStepsHeader, ThinkingStepsContent,
@@ -1109,6 +1117,7 @@ const items = [
       "Drag-to-reorder works only while expanded: a 4px dead zone arms the drag, the card follows the pointer at duration 0 (scale 1.03, z-index 200) while the rest spring to their slots; listeners are on window so release works anywhere, and touchAction none claims the vertical gesture so a touch drag reorders instead of scrolling the transcript.",
       "morphLayoutId shares a framer layoutId between a dispatching card and its sent bubble \u2014 but only for text-only cards (attachment layouts differ too much; those fade) and only while no drag is in progress (layout projection fights the animated y transform). The consumer clears the morph props ~450ms after dispatch so later transcript reflows don't re-fire it.",
       "Edit (pencil, same as double-click) and remove buttons are hidden until hover \u2014 out of layout so the text gets the full card width \u2014 and always visible on touch; both stopPropagation on pointer-down so they never start a drag.",
+      "Attachment thumbnails and the +N tile derive their radius from the queue card's radius minus the actual 8px inset (~7px compact), so the leading nested corner remains concentric in both rounded and pill modes.",
     ],
     usage: `import { InputMessage, type QueuedMessage } from "@/components/ui/input-message";
 import { QueuedStack, collapsedStackHeight, useQueueCardHeight } from "@/components/queued-stack";

@@ -101,7 +101,10 @@ for (const [group, list] of [
 ]) {
   lines.push("", group);
   for (const [slug, name] of list) {
-    lines.push("", `## ${name} {#${slug}}`, "");
+    // GFM/CommonMark do not support Pandoc-style `{#id}` heading attributes.
+    // Emit a real HTML anchor so the generated contents links work anywhere
+    // the skill reference is rendered, including GitHub.
+    lines.push("", `<a id="${slug}"></a>`, `## ${name}`, "");
     for (const bullet of craftOf(slug)) lines.push(`- ${bullet}`);
   }
 }

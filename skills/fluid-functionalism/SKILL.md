@@ -37,11 +37,12 @@ Three jobs this skill covers:
    instead of re-guessing.
 2. **Install and compose the components** — pick the right registry item and
    flavor, wire it in, and compose around what's already built in. The
-   catalog is [references/components.md](references/components.md); the
-   per-component craft — the exact behaviors, values, and reasons baked into
-   each item — is [references/craft.md](references/craft.md), and reading
-   the relevant section before composing is what separates using this
-   library from merely installing it.
+   catalog is [references/components.md](references/components.md); the craft
+   for every doc page and top-level block — the exact behaviors, values, and
+   reasons baked into them — is [references/craft.md](references/craft.md).
+   The catalog maps separately installable parts to the parent section that
+   governs them. Reading that section before composing is what separates
+   using this library from merely installing it.
 3. **Write custom UI that belongs next to them** — when you build something
    the library doesn't ship, follow the motion system so it moves like the
    rest of the app. Read
@@ -51,10 +52,14 @@ Three jobs this skill covers:
 ## First run in a project: the stack audit
 
 Check for `.claude/fluid-functionalism.md`. If it exists and `package.json`
-hasn't changed since it was written, read it and trust its verdicts — flavor,
-`--overwrite`, what's installed — without re-deriving them; surface any still-
-open advice items only when the current task touches what they affect. If it
-doesn't exist (or is stale), run the audit in
+hasn't changed since it was written, read it and trust its stable verdicts —
+flavor and stack requirements — without re-deriving them; surface any still-
+open advice items only when the current task touches what they affect. Treat
+its installed-item inventory and stock/customized notes as leads, not current
+truth: files can be added or edited without changing `package.json`. Before
+every install, verify the target's current files and diff any same-named file;
+only pass `--overwrite` when that check shows the targets are still stock. If
+the audit doesn't exist (or its stable verdicts are stale), run the audit in
 [references/stack-audit.md](references/stack-audit.md) first: it checks the
 dependencies FF needs (React 19, Tailwind v4, framer-motion, shadcn wiring),
 settles the flavor verdict from what the project already depends on, catches
@@ -195,11 +200,12 @@ The references here teach the system; the fine grain of each component —
 its exact choreography, edge-case behavior, and the reasons — is also
 written down. In order of reach:
 
-- **[references/craft.md](references/craft.md)** — per-component craft for
-  every system and component: the built-in behaviors, exact values, and the
-  why. Read the relevant section **before composing with, wrapping,
-  extending, or imitating a component** — it is what keeps composed code
-  from fighting behaviors it didn't know existed (the button already
+- **[references/craft.md](references/craft.md)** — craft for every documented
+  system and component plus each top-level block: the built-in behaviors,
+  exact values, and the why. The catalog routes separately installable parts
+  to their governing parent section. Read that section **before composing
+  with, wrapping, extending, or imitating a component** — it keeps composed
+  code from fighting behaviors it didn't know existed (the button already
   handles its own press geometry; select already acknowledges a pick for
   300ms; the panel already snaps under a collapsing child).
 - **The installed source is the final word.** These components ship with

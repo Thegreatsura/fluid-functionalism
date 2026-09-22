@@ -13,6 +13,14 @@ import { SECTIONS } from "../scripts/build-skill-craft.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const entriesSrc = readFileSync(join(root, "lib/docs/prompt-entries.ts"), "utf8");
+const catalogSrc = readFileSync(
+  join(root, "skills/fluid-functionalism/references/components.md"),
+  "utf8",
+);
+const craftSrc = readFileSync(
+  join(root, "skills/fluid-functionalism/references/craft.md"),
+  "utf8",
+);
 
 const docSlugs = readdirSync(join(root, "app/docs")).filter((name) =>
   statSync(join(root, "app/docs", name)).isDirectory(),
@@ -60,6 +68,27 @@ describe("the craft reference covers every component", () => {
       entry,
       `scripts/build-skill-craft.mjs lists "${slug}", but lib/docs/prompt-entries.ts has no craft entry for it`,
     ).toBe(true);
+  });
+
+  const catalogRows = catalogSrc
+    .split("\n")
+    .filter((line) => /^\| \[/.test(line));
+
+  it.each(catalogRows)("catalog row links to a generated craft section: %s", (row) => {
+    const target = /\]\(craft\.md#([^)]+)\)/.exec(row)?.[1];
+    expect(target, `catalog row has no craft link: ${row}`).toBeTruthy();
+    expect(
+      listed,
+      `catalog row links to craft.md#${target}, but the generator has no such section`,
+    ).toContain(target);
+  });
+
+  it.each(listed)("section %s has a portable explicit anchor", (slug) => {
+    expect(craftSrc).toContain(`<a id="${slug}"></a>`);
+  });
+
+  it("does not emit unsupported Pandoc-style heading attributes", () => {
+    expect(craftSrc).not.toMatch(/\{#[a-z0-9-]+\}/);
   });
 });
 

@@ -278,7 +278,8 @@ Template (fill every section; keep it under ~40 lines):
 ## Verdicts
 - flavor: base (@base-ui/react 1.4.1 present) — all flavored installs use base/<name>
 - framework: Next.js app router; root layout at app/layout.tsx
-- stock shadcn files present → always pass --overwrite
+- stock shadcn files present at audit time → recheck each install target before
+  passing --overwrite; never cache overwrite safety
 - fluid hover: asked 2026-09-14, wanted — menus first, then the sidebar
   (a declined answer is recorded the same way, and stops being pitched)
 
@@ -306,11 +307,15 @@ Template (fill every section; keep it under ~40 lines):
 
 ## Using it on later runs
 
-- **Read it first**; trust its verdicts (flavor, `--overwrite`) without
-  re-deriving them.
+- **Read it first**; trust stable verdicts such as flavor without re-deriving
+  them. Installed-item and stock/customized notes are only a starting point:
+  files can change without `package.json` changing.
 - **Refresh when stale**: if `package.json` changed since the audit date or
   a check obviously no longer matches reality, re-run the relevant checks
   and update the file — don't start over.
+- **Before every install**, inspect or diff every same-named target file. Pass
+  `--overwrite` only when that current check shows the targets are still stock;
+  a cached audit verdict never authorizes overwriting a file.
 - **Keep the inventory current**: after you install components, add them to
   the installed list in the same edit session.
 - **Surface open advice at natural moments**, once: when a task touches the

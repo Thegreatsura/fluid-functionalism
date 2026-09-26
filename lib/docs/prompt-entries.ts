@@ -359,6 +359,39 @@ import { Circle } from "lucide-react";
       "CardGroup separated: boolean (default false). Individually shaped tiles with a gap instead of one divided block.",
     ],
   },
+  "carousel-dots": {
+    craft: [
+      "Each 6px dot sits in a button with 6px of padding on every side: an 18px round click area, and 12px from dot to dot. The buttons touch (no gap), so one fluid hover highlight (`axis: \"x\"`) glides between click areas and never drops out between dots.",
+      "The current dot is a 24px pill whose width springs on the moderate tier. Static, the pill is solid; the other dots keep the same light track color, so only the current pill's fill reads as dark.",
+      "Built-in autoplay runs its own requestAnimationFrame clock: the fill advances by elapsed time over `duration`, then calls `onValueChange` with the next index once, and waits for `value` to change before filling again. Any change of `value` (a click, the clock, the parent) restarts the fill.",
+      "Autoplay never runs under reduced motion: no timer moves the page on the reader's behalf. `paused` holds the fill in place, and a stalled frame (a background tab) is skipped rather than counted.",
+      "The fill is a full-width pill slid in with `translateX`, never scaled: `scaleX` would squash its rounded end. The track clips it, so the leading edge is always a perfect half-circle, and the fill starts as a full 6px dot at 0 instead of nothing.",
+      "`progress` (a number or a MotionValue) hands the clock to the caller and takes precedence over `autoplay`; a MotionValue moves the fill every frame through a transform, with no React re-render.",
+      "Colors are `color-mix()` of `--foreground` (15% track, 40% fill), so the dots follow light and dark themes with no extra tokens. Each dot is a real button with `aria-label` (from `getLabel`) and `aria-current` on the current one.",
+    ],
+    usage: `import { CarouselDots } from "@/components/ui/carousel-dots";
+
+const [slide, setSlide] = useState(0);
+
+// Static: a solid pill, click a dot to move.
+<CarouselDots count={4} value={slide} onValueChange={setSlide} />
+
+// Autoplay: the pill fills over 3s, then onValueChange(next). Pause on hover.
+<CarouselDots
+  count={4}
+  value={slide}
+  onValueChange={setSlide}
+  autoplay={{ duration: 3000, paused: hovering }}
+/>`,
+    props: [
+      "count: number. How many dots to show.",
+      "value: number. Index of the current dot.",
+      "onValueChange: (index: number) => void. Called with a clicked dot's index, and with the next index each time autoplay finishes a slide.",
+      "autoplay: boolean | { duration?: number; paused?: boolean; loop?: boolean } (default off). The current pill fills over duration (default 3000ms), then the next slide comes in; loop (default true) wraps to the first. Off under reduced motion.",
+      "progress: number | MotionValue<number>. Drive the fill yourself, 0 to 1, when something else owns the clock. Takes precedence over autoplay.",
+      "getLabel: (index: number) => string (default \"Go to slide N\"). Accessible name for each dot.",
+    ],
+  },
   "chat-message": {
     craft: [
       "Every message enters with opacity 0, y 8, scale 0.96 \u2192 settled on spring.moderate, with transformOrigin bottom-right for user messages and bottom-left for assistant, so bubbles appear to grow from the composer side they belong to.",

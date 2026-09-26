@@ -24,6 +24,7 @@ Systems first — their craft applies across every component below.
 - [Badge](#badge)
 - [Button](#button)
 - [Card](#card)
+- [CarouselDots](#carousel-dots)
 - [ChatMessage](#chat-message)
 - [CheckboxGroup](#checkbox-group)
 - [ColorPicker](#color-picker)
@@ -167,6 +168,17 @@ Systems first — their craft applies across every component below.
 - The on-hover dismiss ✕ gates pointer-events alongside opacity (an invisible control must not swallow touch taps meant for the card), gets a bg-card/70 backdrop-blur ground over images so the icon never reads against arbitrary pixels, and in inline rows the header yields pr-10 only while the control is revealed.
 - An inline card with a CardImage reflows its text + actions into a centred column beside the image (footer drops below the text in natural order); CardImage keeps a fixed 2px corner radius in every state rather than inheriting a frame's larger clip — a 16:9 banner stacked, a 160px square inline.
 - CardImage and CardMedia logos paint a 1px inset image outline over their outermost pixels (pure black at 10% in light mode, pure white at 10% in dark), so pale image edges keep their shape without a border changing the box size.
+
+<a id="carousel-dots"></a>
+## CarouselDots
+
+- Each 6px dot sits in a button with 6px of padding on every side: an 18px round click area, and 12px from dot to dot. The buttons touch (no gap), so one fluid hover highlight (`axis: "x"`) glides between click areas and never drops out between dots.
+- The current dot is a 24px pill whose width springs on the moderate tier. Static, the pill is solid; the other dots keep the same light track color, so only the current pill's fill reads as dark.
+- Built-in autoplay runs its own requestAnimationFrame clock: the fill advances by elapsed time over `duration`, then calls `onValueChange` with the next index once, and waits for `value` to change before filling again. Any change of `value` (a click, the clock, the parent) restarts the fill.
+- Autoplay never runs under reduced motion: no timer moves the page on the reader's behalf. `paused` holds the fill in place, and a stalled frame (a background tab) is skipped rather than counted.
+- The fill is a full-width pill slid in with `translateX`, never scaled: `scaleX` would squash its rounded end. The track clips it, so the leading edge is always a perfect half-circle, and the fill starts as a full 6px dot at 0 instead of nothing.
+- `progress` (a number or a MotionValue) hands the clock to the caller and takes precedence over `autoplay`; a MotionValue moves the fill every frame through a transform, with no React re-render.
+- Colors are `color-mix()` of `--foreground` (15% track, 40% fill), so the dots follow light and dark themes with no extra tokens. Each dot is a real button with `aria-label` (from `getLabel`) and `aria-current` on the current one.
 
 <a id="chat-message"></a>
 ## ChatMessage

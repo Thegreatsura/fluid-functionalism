@@ -31,6 +31,7 @@ export const COMPONENTS = [
   ["badge", "Badge"],
   ["button", "Button"],
   ["card", "Card"],
+  ["carousel-dots", "CarouselDots"],
   ["chat-message", "ChatMessage"],
   ["checkbox-group", "CheckboxGroup"],
   ["color-picker", "ColorPicker"],

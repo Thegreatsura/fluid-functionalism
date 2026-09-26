@@ -98,6 +98,7 @@ Install with `npx shadcn@latest add @fluid/<name>`. A second name means the comp
 | [Badge](https://www.fluidfunctionalism.com/docs/badge) | `badge` | Compact label with solid and dot variants, the Tailwind color palette, and 2 sizes |
 | [Button](https://www.fluidfunctionalism.com/docs/button) | `button` · `base/button` | Variants, sizes, loading state, icon slots, and a weight shift on hover |
 | [Card](https://www.fluidfunctionalism.com/docs/card) | `card` | shadcn's compositional card with stacked, inline, and grid layouts, borderless dividers, media/logo/feature slots, and 2-D fluid hover |
+| [CarouselDots](https://www.fluidfunctionalism.com/docs/carousel-dots) | `carousel-dots` | Carousel dots, static or on autoplay, with fluid-hover click areas and a current pill that fills over each slide |
 | [ChatMessage](https://www.fluidfunctionalism.com/docs/chat-message) | `chat-message` | Chat transcript bubble with baked-in motion, user/assistant alignment, and file attachments |
 | [CheckboxGroup](https://www.fluidfunctionalism.com/docs/checkbox-group) | `checkbox-group` · `base/checkbox-group` | Checkbox group with merged backgrounds for contiguous selections |
 | [ColorPicker](https://www.fluidfunctionalism.com/docs/color-picker) | `color-picker` · `base/color-picker` | HEX, RGB, HSL, and OKLCH formats with alpha, swatches, and eyedropper, inline or in a popover |

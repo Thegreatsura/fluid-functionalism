@@ -22,8 +22,12 @@ const craftSrc = readFileSync(
   "utf8",
 );
 
-const docSlugs = readdirSync(join(root, "app/docs")).filter((name) =>
-  statSync(join(root, "app/docs", name)).isDirectory(),
+// The skill page documents the skill itself, not a registry item, so it
+// has no craft to ship.
+const NOT_REGISTRY = new Set(["skill"]);
+
+const docSlugs = readdirSync(join(root, "app/docs")).filter(
+  (name) => statSync(join(root, "app/docs", name)).isDirectory() && !NOT_REGISTRY.has(name),
 );
 
 describe("prompt entries cover the docs", () => {

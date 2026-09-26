@@ -18,6 +18,7 @@ export interface SystemEntry {
 }
 
 export const systemList: SystemEntry[] = [
+  { slug: "skill", name: "/fluid-functionalism skill", description: "A skill for your coding agent: it reads your stack, installs the right components, and writes new motion that matches them.", isNew: true },
   { slug: "fluid-hover", name: "Fluid Hover", description: "Hover that never blinks and always follows your cursor to the nearest item.", isNew: true },
   { slug: "motion", name: "Motion", description: "Spring tokens, faster exits, fluid hover, and reflow-free weight animation — the motion rules shared by every component." },
   { slug: "scrollbars", name: "Scrollbars", description: "A scrollbar that stays out of the way but never disappears, over shadcn's scroll-fade baseline — restyled to the shape system, native scroll on touch." },

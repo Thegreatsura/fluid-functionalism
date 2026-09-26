@@ -85,7 +85,13 @@ With `next/font/google`, ask for the axis: `Inter({ subsets: ["latin"], axes: ["
 
 Every doc page and playground has a **Copy prompt** button. The prompt is a self-contained brief: the install command, a usage snippet, the props, the built-in behaviors to compose around, and the docs URL. Paste it into your agent and it wires the component in without fetching anything.
 
-For a whole project rather than one component, this repo also ships an agent skill in [skills/fluid-functionalism](skills/fluid-functionalism). It audits the stack the first time it runs and records the flavor verdict, so later runs install without re-deriving it. Alongside it sit the component catalog, the interaction-design decisions built into each component, and the rules for writing custom motion next to them.
+For a whole project rather than one component, install the [/fluid-functionalism skill](https://www.fluidfunctionalism.com/docs/skill):
+
+```bash
+npx skills add mickadesign/fluid-functionalism
+```
+
+The source lives in [skills/fluid-functionalism](skills/fluid-functionalism). It audits the stack the first time it runs and records the flavor verdict, so later runs install without re-deriving it. Alongside it sit the component catalog, the interaction-design decisions built into each component, and the rules for writing custom motion next to them.
 
 ## Components
 

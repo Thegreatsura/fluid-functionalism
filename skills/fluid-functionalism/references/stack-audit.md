@@ -4,7 +4,7 @@ Run this the first time the skill fires in a project, before installing or
 writing anything. It takes under a minute, produces the audit file the skill
 reads on every later run, and is where most of the skill's *advice* comes
 from: every check below maps to a concrete consequence you can explain to the
-user. Skip the audit entirely when `.claude/fluid-functionalism.md` exists
+user. Skip the audit entirely when `.agents/fluid-functionalism.md` exists
 and `package.json` has not changed since it was written — just read the file
 and act on it.
 
@@ -243,7 +243,19 @@ is rarely the advice the user came for. Instead:
 
 ## The audit file
 
-Write the results to `.claude/fluid-functionalism.md` in the project root.
+Write the results to `.agents/fluid-functionalism.md` in the project root,
+creating `.agents/` if needed. This is one shared record for any coding agent;
+read it explicitly when the skill runs rather than relying on a tool's
+implicit memory loading.
+
+For existing projects, if the shared record is missing but
+`.claude/fluid-functionalism.md` exists, read it and copy its decisions,
+inventory, and open/done/declined advice into the shared record. Preserve its
+original audit date and refresh stale facts using the usual checks. Leave the
+legacy file intact, but use and update only the shared record from then on.
+If both exist, the shared record takes precedence; do not overwrite it with
+the legacy copy.
+
 It's plain markdown on purpose: the user can read it, correct a wrong
 verdict, or delete it to force a re-audit — say so when you create it. Ask
 before writing anywhere else, and if the project forbids new files, keep the

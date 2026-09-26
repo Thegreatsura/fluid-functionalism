@@ -127,7 +127,7 @@ export function Compare({
 }) {
   const shape = useShape();
   const frame = cn(
-    "relative w-full overflow-hidden border border-border/60",
+    "relative w-full overflow-hidden",
     !bare && "flex items-center justify-center",
     shape.container
   );

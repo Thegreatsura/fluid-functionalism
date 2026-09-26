@@ -14,7 +14,7 @@ description: >-
   weight changes, enter/exit transitions) there, so custom code follows the
   system instead of inventing timings. On first use in a
   project it audits the stack (deps, Radix vs Base UI flavor, MotionConfig,
-  Inter opsz axis) and records verdicts in .claude/fluid-functionalism.md
+  Inter opsz axis) and records verdicts in .agents/fluid-functionalism.md
   for later runs.
 ---
 
@@ -51,7 +51,12 @@ Three jobs this skill covers:
 
 ## First run in a project: the stack audit
 
-Check for `.claude/fluid-functionalism.md`. If it exists and `package.json`
+Use `.agents/fluid-functionalism.md` as the shared project record for any
+coding agent. If only the legacy `.claude/fluid-functionalism.md` exists,
+carry its decisions forward as described in the
+[audit reference](references/stack-audit.md#the-audit-file).
+
+Check for `.agents/fluid-functionalism.md`. If it exists and `package.json`
 hasn't changed since it was written, read it and trust its stable verdicts —
 flavor and stack requirements — without re-deriving them; surface any still-
 open advice items only when the current task touches what they affect. Treat

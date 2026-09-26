@@ -14,10 +14,10 @@ import { SpeedProvider, useSlowMotion } from "./slow-motion";
 /** One example per recipe the skill teaches: fluid hover, weight without
  *  reflow, the icon swap, and a press that never warps. */
 const EXAMPLES = [
-  { label: "Menu", Example: MenuExample },
-  { label: "Tabs", Example: TabsExample },
-  { label: "Copy field", Example: CopyExample },
-  { label: "Button press", Example: PressExample },
+  { label: "Menu", caption: "One highlight follows your pointer smoothly between menu items.", Example: MenuExample },
+  { label: "Tabs", caption: "Active labels get heavier without shifting neighboring tabs.", Example: TabsExample },
+  { label: "Copy field", caption: "Hover and click anywhere on the text to copy.", Example: CopyExample },
+  { label: "Button press", caption: "Buttons inset one pixel without shrinking their labels.", Example: PressExample },
 ];
 
 /** Real speed, or slow enough to watch every frame of a spring. */
@@ -28,7 +28,7 @@ export function SkillHero() {
   const [speed, setSpeed] = useState(1);
   const panelRef = useRef<HTMLDivElement>(null);
   useSlowMotion(panelRef, speed);
-  const { label, Example } = EXAMPLES[selected];
+  const { label, caption, Example } = EXAMPLES[selected];
 
   // The dot's fill runs on its own clock: elapsed time, scaled by speed,
   // advancing only while the example reports it is playing. One continuous
@@ -73,35 +73,36 @@ export function SkillHero() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* The speed switch overlays the frame's top-right corner but sits
-          outside the slowed panel, so its own pill never plays at 0.2x. */}
-      <div className="relative">
-        <div ref={panelRef} role="group" aria-roledescription="carousel" aria-label={`${label} example`}>
-          <SpeedProvider value={speed}>
-            <CycleContext.Provider value={cycle}>
-              <ComponentPreview hideHeader inspectable={false}>
+      <div role="group" aria-roledescription="carousel" aria-label={`${label} example`}>
+        <SpeedProvider value={speed}>
+          <CycleContext.Provider value={cycle}>
+            <ComponentPreview hideHeader inspectable={false}>
+              <div className="flex w-full flex-col items-center gap-6">
                 {/* Keyed so each example starts its script fresh. */}
-                <Example key={selected} />
-              </ComponentPreview>
-            </CycleContext.Provider>
-          </SpeedProvider>
-        </div>
-        <div className="absolute right-3 top-3 z-10">
-          <TabsSubtle
-            size="compact"
-            selectedIndex={SPEEDS.indexOf(speed)}
-            onSelect={(i) => {
-              setSpeed(SPEEDS[i]);
-              track("Skill hero speed", { speed: SPEEDS[i] });
-            }}
-            idPrefix="skill-hero-speed"
-            aria-label="Playback speed"
-          >
-            {SPEEDS.map((v, i) => (
-              <TabsSubtleItem key={v} index={i} label={`${v}x`} />
-            ))}
-          </TabsSubtle>
-        </div>
+                <div ref={panelRef} className="flex w-full justify-center">
+                  <Example key={selected} />
+                </div>
+                <p className="text-center text-caption text-muted-foreground">{caption}</p>
+                <div className="flex justify-center">
+                  <TabsSubtle
+                    size="compact"
+                    selectedIndex={SPEEDS.indexOf(speed)}
+                    onSelect={(i) => {
+                      setSpeed(SPEEDS[i]);
+                      track("Skill hero speed", { speed: SPEEDS[i] });
+                    }}
+                    idPrefix="skill-hero-speed"
+                    aria-label="Playback speed"
+                  >
+                    {SPEEDS.map((v, i) => (
+                      <TabsSubtleItem key={v} index={i} label={`${v}x`} />
+                    ))}
+                  </TabsSubtle>
+                </div>
+              </div>
+            </ComponentPreview>
+          </CycleContext.Provider>
+        </SpeedProvider>
       </div>
       <div className="flex justify-center">
         <CarouselDots
@@ -115,6 +116,7 @@ export function SkillHero() {
           }}
         />
       </div>
+
     </div>
   );
 }

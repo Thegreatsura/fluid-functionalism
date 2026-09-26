@@ -1,18 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy } from "lucide-react";
-import { spring } from "@/registry/default/lib/springs";
 import { cn } from "@/registry/default/lib/utils";
 import { useShape } from "@/registry/default/lib/shape-context";
+import { InputCopy } from "@/registry/default/input-copy";
 import { Tabs, TabsList, TabItem } from "@/registry/radix/tabs";
 import { Compare, turns, useLoop, usePlayback, type Side } from "./hero-shared";
 
 // ---------------------------------------------------------------------------
 // The hero's other examples. Each pairs what an agent writes on its own with
 // what it writes following the skill's references: the real Tabs component,
-// the icon-swap recipe, and the Button's 1px press.
+// InputCopy component, and the Button's 1px press.
 // The script plays the generic side, then the skill side, turn by turn; a
 // real pointer takes over while inside.
 // ---------------------------------------------------------------------------
@@ -89,7 +88,7 @@ export function TabsExample() {
 
 const COMMAND = "npx skills add mickadesign/fluid-functionalism";
 
-/** The read-only field both sides share: the command, truncated, with the
+/** The generic read-only field: the command, truncated, with the
  *  copy action inside on the right, like shadcn's copy input. */
 function CopyField({ children }: { children: React.ReactNode }) {
   const shape = useShape();
@@ -124,69 +123,19 @@ function GenericCopy({ copied, onCopy }: { copied: boolean; onCopy: () => void }
   );
 }
 
-/** With the skill: only the icon swaps, as InputCopy does it, on the fast
- *  spring (in from 0.6 scale, out to 0.8) with the check drawing in. The
- *  "Copy" label never changes, so the field never reflows; a screen reader
- *  hears "Copied" from a live region instead. */
-function SkillCopy({ copied, onCopy }: { copied: boolean; onCopy: () => void }) {
-  const shape = useShape();
-  return (
-    <CopyField>
-      <button type="button" onClick={onCopy} className={cn(actionClass, shape.bg)}>
-        <span className="grid size-3.5 place-items-center">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.span
-              key={copied ? "copied" : "copy"}
-              className="col-start-1 row-start-1 flex"
-              initial={{ opacity: 0, scale: copied ? 0.6 : 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={spring.fast}
-            >
-              {copied ? (
-                <svg
-                  width={14}
-                  height={14}
-                  viewBox="2 4 20 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <motion.path
-                    d="M6 12L10 16L18 8"
-                    initial={{ pathLength: 0 }}
-                    animate={{ pathLength: 1, transition: { duration: 0.08, ease: "easeOut" } }}
-                  />
-                </svg>
-              ) : (
-                <Copy className="size-3.5" strokeWidth={1.5} />
-              )}
-            </motion.span>
-          </AnimatePresence>
-        </span>
-        Copy
-        <span className="sr-only" aria-live="polite">
-          {copied ? "Copied" : ""}
-        </span>
-      </button>
-    </CopyField>
-  );
-}
-
 export function CopyExample() {
   const { rootRef, playing, bind } = usePlayback();
   const [generic, setGeneric] = useState(false);
-  const [skill, setSkill] = useState(false);
   const [active, setActive] = useState<Side | null>(null);
-  const set = (side: Side) => (side === "generic" ? setGeneric : setSkill);
   useLoop(
     playing,
-    turns(setActive, (side) => [
-      { ms: 1400, run: () => set(side)(true) },
-      { ms: 900, run: () => set(side)(false) },
-    ])
+    [
+      { ms: 1400, run: () => { setActive("generic"); setGeneric(true); } },
+      { ms: 900, run: () => setGeneric(false) },
+      // The real component owns its copy feedback. Autoplay never writes
+      // to the clipboard; visitors can hover and click the whole field.
+      { ms: 2300, run: () => setActive("skill") },
+    ]
   );
 
   return (
@@ -195,7 +144,9 @@ export function CopyExample() {
       bind={bind}
       active={playing ? active : null}
       generic={<GenericCopy copied={generic} onCopy={() => setGeneric((v) => !v)} />}
-      skill={<SkillCopy copied={skill} onCopy={() => setSkill((v) => !v)} />}
+      skill={
+        <InputCopy value={COMMAND} align="left" className="w-full max-w-[240px]" />
+      }
     />
   );
 }

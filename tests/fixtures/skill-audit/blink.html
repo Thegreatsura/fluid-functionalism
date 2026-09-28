@@ -1,0 +1,28 @@
+<!doctype html><meta charset="utf-8"><title>blink</title>
+<style>
+  body { font: 14px system-ui; margin: 40px; }
+  nav { display: flex; flex-direction: column; gap: 8px; width: 240px; }
+  nav a { display: block; padding: 8px 12px; color: #111; text-decoration: none; border-radius: 6px;
+          transition: background-color 150ms ease; }
+  nav a:hover { background: #f3f4f6; }
+  .actions { display: flex; gap: 8px; margin-top: 24px; }
+  .actions button { height: 40px; padding: 0 16px; transition: all 200ms; }
+  [role="tablist"] { display: flex; gap: 4px; margin-top: 24px; }
+  [role="tab"] { height: 36px; padding: 0 12px; border: 0; background: none; font-weight: 400; }
+  [role="tab"][aria-selected="true"] { font-weight: 700; }
+</style>
+<nav aria-label="Settings">
+  <a href="#p">Profile</a><a href="#b">Billing</a><a href="#t">Team members</a><a href="#n">Notifications</a>
+</nav>
+<div class="actions"><button>Cancel</button><button>Save changes</button><button>Export</button></div>
+<div role="tablist">
+  <button role="tab" aria-selected="true">Overview</button>
+  <button role="tab" aria-selected="false">Usage</button>
+  <button role="tab" aria-selected="false">Logs</button>
+</div>
+<script>
+  for (const tab of document.querySelectorAll('[role="tab"]'))
+    tab.addEventListener("click", () => {
+      for (const t of document.querySelectorAll('[role="tab"]')) t.setAttribute("aria-selected", String(t === tab));
+    });
+</script>

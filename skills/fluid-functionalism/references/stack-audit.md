@@ -72,6 +72,84 @@ flavor mixing happens.
 - **TypeScript strictness, `"use client"` conventions**: only worth noting
   if the project deviates in a way that will fight the installed components.
 
+## Measure before you advise
+
+Source shows what a component asks for; only the rendered page shows what it
+does. Most FF advice turns on questions source cannot settle — whether a
+list's hover glides or blinks off between rows, whether selecting a tab
+shoves its neighbours, which transition durations survive the cascade, which
+control heights ship, whether the loaded font can render a weight change at
+all. When the app runs, measure those instead of inferring them:
+
+```bash
+cd <skill>/scripts && npm install        # once: playwright-core
+node audit.mjs http://localhost:3000/<route> [--widths 1280,390] [--json out.json]
+```
+
+Point it at the surfaces with the most exposure — the ones the shortlist is
+going to be about — not at every route. It needs a Chromium (the Playwright
+download, a local Chrome, or `CHROME_PATH`). What it reports, per viewport:
+
+- **HOVER** — each labelled list of 3+ rows, classified by moving a real
+  pointer: `glide` (FF's hook, identified by `data-fluid-hover-active-index`),
+  `custom-glide` (a moving overlay that is not FF's hook), `per-row` (each
+  row repaints its own fill, with whether it goes dark in the gap between
+  rows), or `none`; plus any row that moves when a neighbour is hovered.
+- **SELECT** — whether selecting a tab moves the other tabs (a weight change
+  without a ghost span).
+- **TRANSITIONS** — CSS durations off FF's tokens (0/60/80/120/160/180/240ms)
+  and `transition-property: all`, with example elements.
+- **LADDER** — the distribution of control heights against 36 / 28px.
+- **FONT** — for each family that sets `font-variation-settings: 'wght'`,
+  whether a variable face actually loaded. A static face means every weight
+  change on the page is silently inert.
+- **OVERFLOW** — horizontal overflow and the element causing it.
+
+What it cannot see, so do not read silence as a pass: framer-motion springs
+(they run in JS, not CSS transitions), popups and menus closed at load, states
+behind auth, reduced-motion behavior, and taste. Screenshots at the same
+widths still carry the judgment call; the numbers carry the claims.
+
+Run it in bounded passes: once before advising, once after a change to confirm
+it, then stop. If the app cannot run — no dev server, no browser — say so and
+file any entry that depended on a measurement as a `check:` question rather
+than a finding.
+
+## The evidence gate
+
+Every advice item and every shortlist entry passes this gate before it is
+written, and it is what lets the audit be trusted on the next run:
+
+1. **Evidence.** A line `audit.mjs` printed, quoted with its route and
+   width, or a `file:line`. A hunch, a grep hit, a similar name, or "this
+   looks hand-rolled" is a lead to measure, not evidence.
+2. **Reach.** The evidence is on a surface people actually use in this
+   product — the measured route renders it, or the file is on that route's
+   render path. A problem in a demo page, a storybook, or a depicted mockup is
+   not the product's problem.
+3. **One correction.** The entry names exactly one FF replacement — the
+   token, component, or registry item, in the project's flavor. If the
+   evidence supports two corrections, or the fix needs product intent nobody
+   has stated, it is a question for the user, not an entry.
+
+Then try to break each survivor. Re-open what it cites and delete it when:
+
+- the measurement or the file does not match what the entry claims;
+- the difference is a documented exception or a recorded verdict (a
+  deliberate stillness, an off-token duration someone chose on purpose);
+- the surface is depicted UI rather than the app's own chrome;
+- another entry has the same root cause — merge them into one;
+- it is infrastructure, which the shortlist never carries.
+
+Evidence is the footnote, not the headline: the interface-first rule below
+still decides how an entry reads. It sits on its own `evidence:` line in the
+audit file so the next session can re-check it instead of trusting it.
+
+If fewer than two entries survive, say so rather than pad. If none survive,
+that is a result, not a failure — write *"No changes recommended: nothing
+measured on <routes> departs from the system"* and stop. An audit that always
+finds something teaches people to ignore it.
+
 ## Replacement shortlist (2–5 items, systems first)
 
 Part of every audit and refresh: name the **2–5 upgrades** that would most
@@ -302,16 +380,19 @@ Template (fill every section; keep it under ~40 lines):
 ## Advice (open)
 - [ ] MotionConfig reducedMotion="user" missing from app/layout.tsx — one line,
       restores OS reduced-motion support
-- [ ] Inter loads without the opsz axis — weight animations will shift label
-      width; add axes: ["opsz"]
+      evidence: app/layout.tsx:12 renders <ThemeProvider> with no MotionConfig above it
+- [ ] Selecting a tab on /settings shoves the tabs beside it, so the row jumps
+      each time the section changes; the label needs a ghost span
+      evidence: audit.mjs /settings @1280 — SELECT "General / Billing / Team":
+      selecting tab 2 moved tab 3 by 2.8px
 
 ## Replacement shortlist
-| Now | Replace with | Impact | Effort | Why |
-|---|---|---|---|---|
-| durations hand-written in 6 files | springs (motion tokens) | high | S | exits reuse the entrance spring today, so dismissals drag; tokens pair every tier with a one-tier-quicker exit tween |
-| nav + table per-row :hover | use-fluid-hover | high | S | hover blinks off between rows; the highlight glides to the nearest row and a gap click still lands on what's lit |
-| static card grid (projects.tsx), the landing surface | card | med | M | the grid is the first thing anyone sees and nothing answers the cursor on it; the highlight tracks the nearest card in both axes and dividers drop beside the active one — local markup to carry over |
-| hand-rolled command palette (cmd-k.tsx) | base/command-menu | med | M | keyboard scroll keeps the row centered and travels with the highlight; ⌘K resolves per-platform with a Dvorak-safe fallback — both missing locally |
+| Now | Replace with | Impact | Effort | Why | Evidence |
+|---|---|---|---|---|---|
+| durations hand-written in 6 files | springs (motion tokens) | high | S | exits reuse the entrance spring today, so dismissals drag; tokens pair every tier with a one-tier-quicker exit tween | components/panel.tsx:44, dock.tsx:18 (+4) |
+| nav + table per-row :hover | use-fluid-hover | high | S | hover blinks off between rows; the highlight glides to the nearest row and a gap click still lands on what's lit | audit.mjs / @1280: per-row, dark in the 4px gap |
+| static card grid (projects.tsx), the landing surface | card | med | M | the grid is the first thing anyone sees and nothing answers the cursor on it; the highlight tracks the nearest card in both axes and dividers drop beside the active one — local markup to carry over | audit.mjs / @1280: none on 9 cards |
+| hand-rolled command palette (cmd-k.tsx) | base/command-menu | med | M | keyboard scroll keeps the row centered and travels with the highlight; ⌘K resolves per-platform with a Dvorak-safe fallback — both missing locally | cmd-k.tsx:88 scrollIntoView, :31 metaKey only |
 
 ## Advice (done / declined)
 - (move items here instead of deleting, so they aren't re-raised)
@@ -330,6 +411,9 @@ Template (fill every section; keep it under ~40 lines):
   a cached audit verdict never authorizes overwriting a file.
 - **Keep the inventory current**: after you install components, add them to
   the installed list in the same edit session.
+- **Confirm with one more measurement**: after a change lands, re-run
+  `audit.mjs` on the route it touched and move the item to done only when the
+  line that justified it is gone. One confirming run, not a loop.
 - **Surface open advice at natural moments**, once: when a task touches the
   affected area (mention the missing `opsz` axis when a task involves
   selected/active labels, not on every run). If the user declines, move the

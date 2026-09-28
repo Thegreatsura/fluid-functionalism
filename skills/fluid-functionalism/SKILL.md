@@ -89,6 +89,19 @@ separates advice from a lint report:
   blocks the CLI, not the product getting better; every item is reachable by
   hand. Never front a migration the user didn't ask for.
 
+**Measure, then advise.** When the app runs, point
+[`scripts/audit.mjs`](scripts/audit.mjs) at its most-used routes before
+recommending anything: it moves a real pointer and reports whether each
+list's hover glides or blinks off between rows, whether selecting a tab
+shoves its neighbours, which transition durations and control heights
+actually ship, and whether the loaded font can render a weight change. Every
+advice item and shortlist entry then passes the
+[evidence gate](references/stack-audit.md#the-evidence-gate): a quoted
+measurement or `file:line`, a surface people actually use, exactly one FF
+correction — and a falsification pass that deletes whatever doesn't hold.
+"No changes recommended" is a valid outcome; an audit that always finds
+something teaches people to ignore it.
+
 It writes the results to that file so the project remembers.
 
 ## One-time project setup

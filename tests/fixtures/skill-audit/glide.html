@@ -1,0 +1,41 @@
+<!doctype html><meta charset="utf-8"><title>glide</title>
+<style>
+  body { font: 14px system-ui; margin: 40px; }
+  nav { position: relative; display: flex; flex-direction: column; gap: 8px; width: 240px; }
+  nav a { position: relative; z-index: 1; display: block; height: 36px; line-height: 36px; padding: 0 12px;
+          color: #111; text-decoration: none; transition: color 80ms ease; }
+  .hl { position: absolute; left: 0; right: 0; height: 36px; border-radius: 6px; background: rgb(0 0 0 / 0.04);
+        opacity: 0; pointer-events: none; transition: transform 160ms, opacity 80ms; }
+  [role="tablist"] { display: flex; gap: 4px; margin-top: 24px; }
+  [role="tab"] { display: inline-grid; height: 36px; padding: 0 12px; border: 0; background: none; }
+  [role="tab"] > span { grid-area: 1 / 1; }
+  [role="tab"] .ghost { visibility: hidden; font-weight: 700; }
+  [role="tab"][aria-selected="true"] .label { font-weight: 700; }
+</style>
+<!-- Mimics FF's use-fluid-hover: one overlay, nearest row wins, and the
+     container carries data-fluid-hover-active-index while a row is lit. -->
+<nav aria-label="Settings">
+  <div class="hl"></div>
+  <a href="#p">Profile</a><a href="#b">Billing</a><a href="#t">Team members</a><a href="#n">Notifications</a>
+</nav>
+<div role="tablist">
+  <button role="tab" aria-selected="true"><span class="ghost">Overview</span><span class="label">Overview</span></button>
+  <button role="tab" aria-selected="false"><span class="ghost">Usage</span><span class="label">Usage</span></button>
+  <button role="tab" aria-selected="false"><span class="ghost">Logs</span><span class="label">Logs</span></button>
+</div>
+<script>
+  const nav = document.querySelector("nav"), hl = nav.querySelector(".hl"), rows = [...nav.querySelectorAll("a")];
+  nav.addEventListener("mousemove", (e) => {
+    const top = nav.getBoundingClientRect().top;
+    let best = 0, dist = Infinity;
+    rows.forEach((r, i) => { const b = r.getBoundingClientRect(); const d = Math.abs(e.clientY - (b.top + b.height / 2)); if (d < dist) { dist = d; best = i; } });
+    nav.setAttribute("data-fluid-hover-active-index", String(best));
+    hl.style.transform = `translateY(${rows[best].getBoundingClientRect().top - top}px)`;
+    hl.style.opacity = "1";
+  });
+  nav.addEventListener("mouseleave", () => { nav.removeAttribute("data-fluid-hover-active-index"); hl.style.opacity = "0"; });
+  for (const tab of document.querySelectorAll('[role="tab"]'))
+    tab.addEventListener("click", () => {
+      for (const t of document.querySelectorAll('[role="tab"]')) t.setAttribute("aria-selected", String(t === tab));
+    });
+</script>

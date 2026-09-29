@@ -102,6 +102,7 @@ Install with `npx shadcn@latest add @fluid/<name>`. A second name means the comp
 | [Accordion](https://www.fluidfunctionalism.com/docs/accordion) | `accordion` · `base/accordion` | Collapsible sections with animated expand/collapse and fluid hover in grouped mode |
 | [AskUserQuestions](https://www.fluidfunctionalism.com/docs/ask-user-questions) | `ask-user-questions` · `base/ask-user-questions` | Stepped question flow with single/multi-select, an inline "other" input, skip, and multi-question navigation |
 | [Badge](https://www.fluidfunctionalism.com/docs/badge) | `badge` | Compact label with solid and dot variants, the Tailwind color palette, and 2 sizes |
+| [Banner](https://www.fluidfunctionalism.com/docs/banner) | `banner` | Status message in 5 statuses and 2 contrasts with a status icon, up to 3 actions, a dismiss that collapses its height, and a fixed full-bleed variant |
 | [Button](https://www.fluidfunctionalism.com/docs/button) | `button` · `base/button` | Variants, sizes, loading state, icon slots, and a weight shift on hover |
 | [Card](https://www.fluidfunctionalism.com/docs/card) | `card` | shadcn's compositional card with stacked, inline, and grid layouts, borderless dividers, media/logo/feature slots, and 2-D fluid hover |
 | [CarouselDots](https://www.fluidfunctionalism.com/docs/carousel-dots) | `carousel-dots` | Carousel dots, static or on autoplay, with fluid-hover click areas and a current pill that fills over each slide |

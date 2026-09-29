@@ -72,6 +72,7 @@ function DemoPageInner() {
     "__settings__",
     "input-copy",
     "carousel-dots",
+    "banner",
     // Any component with a registered playground gets a slide automatically
     // (see lib/docs/playgrounds) — a playground on the doc page always shows
     // up here too, under the pen menu. Curate the position by naming the slug

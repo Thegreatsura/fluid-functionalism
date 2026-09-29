@@ -22,6 +22,7 @@ Systems first — their craft applies across every component below.
 - [Accordion](#accordion)
 - [AskUserQuestions](#ask-user-questions)
 - [Badge](#badge)
+- [Banner](#banner)
 - [Button](#button)
 - [Card](#card)
 - [CarouselDots](#carousel-dots)
@@ -145,10 +146,25 @@ Systems first — their craft applies across every component below.
 - The label sits in its own span with `text-box: trim-both cap alphabetic`; the badge height is fixed, so trimming only recenters the letterforms vertically.
 - Corner radius comes from the shape context (`shape.item`), so badges follow the app's pill/rounded shape system rather than hardcoding a radius.
 
+<a id="banner"></a>
+## Banner
+
+- The status color lands in one place at a time. `contrast="low"` puts every status on the same neutral `var(--hover)` fill and colors only the glyph; `contrast="high"` washes the banner in `color-mix(in oklab, <status> 12%, transparent)`, 8% for the neutral default because grey reads darker than a hue at the same mix.
+- Both fills are translucent, so an inline banner takes on the surface under it. The fixed bar paints the same fill over an opaque `var(--background)`, so the page scrolling under it never shows through.
+- The status glyphs are drawn in the component, not taken from the icon set: a filled circle or triangle in the status color with the mark stroked in the page color, so they stay filled whatever icon library the app uses. Status colors are Tailwind 500s in light mode (matching `--destructive`) and 300s in dark mode, where the mark turns dark. The neutral default skips the filled glyph and uses the icon set's outline info icon at the usual 1.5 stroke, since it carries no status.
+- Title and description stay on the foreground ramp on every status. The description is 70% foreground, not muted-foreground, which drops under 4.5:1 on the tinted and neutral fills.
+- Every part sits on one 4-column grid (icon, text, actions, ✕), so layout is pure CSS: actions trail a title-only banner and drop under the text when a BannerDescription is present (`:has()`) or the banner is under 24rem (container query). Margins space the columns, not grid gaps, so a missing part leaves no gap.
+- The glyph box is one title line tall (20px, 18px compact). A title-only banner centres the icon, actions and ✕ on the text; a description switches the grid to `items-start` so they hold the first line.
+- Each BannerAction orders itself by variant with CSS `order`, whatever order it is written in: trailing the title, ghost, secondary, primary (the strongest action at the edge); under the text, primary, secondary, ghost (it leads where the eye starts the row). Tab order follows the markup, so write primary first.
+- Trailing actions and the ✕ are 28px targets pulled into the padding with negative margins, so a one-line banner stays 48px tall whether or not it has actions.
+- Closing collapses the height on a one-row grid whose track springs between `0fr` and `1fr` (spring.moderate in, spring.moderate.exit out) while the banner fades, so the content below slides up. Nothing is measured: fr resolves from layout, so it stays right under a scaled parent and never lags a text rewrap. Reduced motion snaps.
+- The fixed variant runs edge to edge with square corners and no frame, and is `position: sticky; top: 0`, not `fixed`: it takes its own height and pushes the content down instead of covering it. It goes between the header and the content that scrolls.
+- Error and warning banners get `role="alert"`, the rest `role="status"`. Uncontrolled, the ✕ hides the banner on its own; pass `open` to bring a dismissed banner back.
+
 <a id="button"></a>
 ## Button
 
-- Press effect: the surface layer sits 1px inside the button (inset-px) and a same-color 1px box-shadow spread fills it back to full bounds; pressing collapses the spread so the surface shrinks exactly 1px per side at any width — a scale would warp (2% of a 400px button is 8px sideways but under 1px vertically). Fill colors are opaque color-mix()es rather than alpha so fill and spread ring never seam.
+- Press effect: the surface layer sits 1px inside the button (inset-px) and a same-color 1px box-shadow spread fills it back to full bounds; pressing collapses the spread so the surface shrinks exactly 1px per side at any width — a scale would warp (2% of a 400px button is 8px sideways but under 1px vertically). Primary's fills are opaque color-mix()es; secondary's are see-through (`--tint`, black 8% / white 25%, lighter on hover), so it takes on whatever surface or tinted banner it sits on, and still never seams because an outer shadow renders only outside the surface box.
 - The press geometry releases slowly, presses fast: box-shadow transitions at 180ms cubic-bezier(0.23,1,0.32,1) at rest, dropping to 80ms while :active; background-color always runs 80ms ease.
 - Tertiary's border is an outer 1px shadow at rest that hands off to an inset 1px shadow when pressed, so the ring moves inward with the shrinking surface.
 - Icons thicken on hover instead of the label changing: strokeWidth animates 1.5 → 2 over 80ms; icons also sit 4px closer to their edge than text (12px default / 8px compact vs 16px / 12px base padding).

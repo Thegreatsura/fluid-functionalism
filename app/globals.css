@@ -78,8 +78,16 @@
   --input: light-dark(#E5E5E5, #404040);
 
   /* ── Error / Destructive ── */
-  --destructive: light-dark(#EF4444, #F87171);
+  --destructive: light-dark(#EF4444, #FCA5A5);
   --destructive-light: light-dark(#FEF2F2, #450A0A);
+
+  /* ── Status (Banner) ──
+     Error reuses --destructive. Tailwind 500s in light mode and 300s in
+     dark mode (where the mark cut into a filled glyph turns dark), the same
+     steps as --destructive. */
+  --info: light-dark(#3B82F6, #93C5FD);
+  --success: light-dark(#22C55E, #86EFAC);
+  --warning: light-dark(#F59E0B, #FCD34D);
 
   /* ── Focus indicator ──
      Every component focus ring reads var(--focus-ring, #6B97FF), so this is
@@ -99,6 +107,12 @@
   --overlay: 0 0 0;
   --hover: light-dark(rgb(0 0 0 / 0.04), rgb(255 255 255 / 0.06));
   --active: light-dark(rgb(0 0 0 / 0.07), rgb(255 255 255 / 0.1));
+  /* See-through fill for secondary buttons. On the page background it
+     matches the solid --accent grey it replaced; on a panel or a tinted
+     banner it takes on the color underneath. Hover is lighter, like the
+     solid hover before it. */
+  --tint: light-dark(rgb(0 0 0 / 0.08), rgb(255 255 255 / 0.25));
+  --tint-hover: light-dark(rgb(0 0 0 / 0.065), rgb(255 255 255 / 0.2));
 
   /* ── Shadow recipes ──
      Light: additive stacked drops, halving offsets (1/3/6/12/24/48/96 px).

@@ -29,6 +29,7 @@ export const COMPONENTS = [
   ["accordion", "Accordion"],
   ["ask-user-questions", "AskUserQuestions"],
   ["badge", "Badge"],
+  ["banner", "Banner"],
   ["button", "Button"],
   ["card", "Card"],
   ["carousel-dots", "CarouselDots"],

@@ -21,6 +21,12 @@ import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
+// True only while a row's mousedown handler moves focus onto the row. Chrome
+// reports a focus() call from script as :focus-visible, so without this flag
+// every click would draw the keyboard focus ring. focus() fires its focus
+// events synchronously, so the flag never outlives that one call.
+let pointerFocusRedirect = false;
+
 interface CheckboxGroupContextValue {
   registerItem: (index: number, element: HTMLElement | null) => void;
   activeIndex: number | null;
@@ -122,8 +128,13 @@ const CheckboxGroup = forwardRef<HTMLDivElement, CheckboxGroupProps>(
             if (indexAttr != null) {
               const idx = Number(indexAttr);
               setActiveIndex(idx);
+              // A row focused by its own mousedown gets no ring, even though
+              // the browser reports that focus as :focus-visible.
               setFocusedIndex(
-                (e.target as HTMLElement).matches(":focus-visible") ? idx : null
+                !pointerFocusRedirect &&
+                  (e.target as HTMLElement).matches(":focus-visible")
+                  ? idx
+                  : null
               );
             }
           }}
@@ -258,7 +269,12 @@ const CheckboxItem = forwardRef<HTMLDivElement, CheckboxItemProps>(
           );
           if (interactive && interactive !== e.currentTarget) return;
           e.preventDefault();
-          e.currentTarget.focus();
+          pointerFocusRedirect = true;
+          try {
+            e.currentTarget.focus();
+          } finally {
+            pointerFocusRedirect = false;
+          }
         }}
         onKeyDown={(e) => {
           if (e.key === " " || e.key === "Enter") {

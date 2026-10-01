@@ -26,7 +26,7 @@
       "target": "components/ui/accordion.tsx"
     }
   ],
-  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/accordion.",
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/accordion. Craft notes, the color, layout and motion decisions to keep when you change it: https://github.com/mickadesign/fluid-functionalism/blob/main/skills/fluid-functionalism/references/craft.md#accordion.",
   "categories": [
     "components"
   ],

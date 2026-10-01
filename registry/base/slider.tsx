@@ -27,6 +27,16 @@ import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 
 // ---------------------------------------------------------------------------
+// One Slider, two engines picked by the size ladder. The default step renders
+// ComfortableSlider: a 32px bordered row holding the label and value, drawn as
+// pips (one dot per step) or a scrubber. The compact step renders
+// CompactSlider: a thumb on a pill track with ranges, step dots, a value list
+// and a click-to-edit value. Both position every moving layer with motion
+// values over an invisible slider primitive that supplies ARIA and arrow keys.
+// Pointer input never reaches the primitive, so presses can spring, not jump.
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -53,8 +63,16 @@ interface SliderEngineProps
   steps?: number[];
   showSteps?: boolean;
   showValue?: boolean;
+  /** "tooltip" shows a bubble above each thumb only while hovered or
+   *  pressed; the other positions place a click-to-edit label on that side
+   *  of the track. */
   valuePosition?: ValuePosition;
+  /** Formats every displayed value (labels and tooltips) and, with `steps`,
+   *  the thumbs' aria-valuetext. */
   formatValue?: (v: number) => string;
+  /** The thumb's accessible name, also shown as text (the value label's
+   *  prefix, or the row's leading label at the default size). Range thumbs
+   *  get "<label> minimum" / "<label> maximum". */
   label?: string;
   disabled?: boolean;
   trackClassName?: string;
@@ -70,9 +88,14 @@ interface SliderEngineProps
 // Constants
 // ---------------------------------------------------------------------------
 
+// The thumb's layout box. Travel is the track width minus this, so the thumb
+// never overhangs either end; the visible knob is THUMB_SIZE_REST inside it.
 const THUMB_SIZE = 20;
 const THUMB_SIZE_REST = 16;
+// 2px shorter than the thumb box, so the 16px knob fits inside the pill with
+// 1px to spare above and below.
 const TRACK_BG_HEIGHT = 18;
+// Step dots grow 1.25x (4px → 5px) while the slider is hovered.
 const DOT_SIZE = 4;
 const PIP_SIZE = 5;
 // Inset track BG so its rounded-end centers align with thumb centers at min/max
@@ -82,6 +105,9 @@ const TRACK_INSET = (THUMB_SIZE - TRACK_BG_HEIGHT) / 2;
 // Helpers
 // ---------------------------------------------------------------------------
 
+// Value → the thumb's left offset in layout px. Thumb centers land
+// THUMB_SIZE / 2 in from each end, the same inset the pill's end caps, step
+// dots and hover bar measure from.
 function valueToPixel(
   v: number,
   min: number,
@@ -93,6 +119,7 @@ function valueToPixel(
   return ((v - min) / (max - min)) * usable;
 }
 
+// Strict `<`: a value exactly halfway between two entries snaps to the lower.
 function nearestStepIndex(v: number, steps: number[]): number {
   let idx = 0;
   for (let i = 1; i < steps.length; i++) {
@@ -101,6 +128,10 @@ function nearestStepIndex(v: number, steps: number[]): number {
   return idx;
 }
 
+// Inverse of valueToPixel with snapping built in: the nearest `steps` entry,
+// or the step grid clamped to min/max. Press, drag and release all go
+// pixel → snapped value → pixel through here, so a thumb at rest always sits
+// on a value the slider can emit.
 function pixelToValue(
   px: number,
   min: number,
@@ -117,6 +148,8 @@ function pixelToValue(
   return Math.max(min, Math.min(max, snapped));
 }
 
+// The primitive and the per-thumb math both take arrays; a single value
+// becomes a one-entry array.
 function toRadixValue(value: SliderValue): number[] {
   return Array.isArray(value) ? value : [value];
 }
@@ -141,6 +174,10 @@ interface ValueDisplayProps {
   isInteracting: boolean;
 }
 
+// The compact engine's value label, click-to-edit: clicking a number swaps in
+// a number input, focused and selected so typing replaces it. Enter or blur
+// commits, Escape cancels. It is a pointer shortcut; keyboard users change the
+// value with arrow keys on the hidden slider.
 function ValueDisplay({
   values,
   editingIndex,
@@ -160,6 +197,9 @@ function ValueDisplay({
   const [inputValue, setInputValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Seed the draft with the raw number, not formatValue's output, so a
+  // formatted "50%" never has to be parsed back. Keyed on editingIndex alone:
+  // value updates mid-edit don't overwrite what is being typed.
   useEffect(() => {
     if (editingIndex !== null) {
       setInputValue(String(values[editingIndex]));
@@ -167,6 +207,8 @@ function ValueDisplay({
     }
   }, [editingIndex]);
 
+  // Clamp to min/max, then snap to the nearest `steps` entry or the step
+  // grid. Unparseable input (empty, a lone "-") cancels instead.
   const commitEdit = useCallback(
     (index: number) => {
       const parsed = parseFloat(inputValue);
@@ -200,6 +242,8 @@ function ValueDisplay({
             {label && (
               <span className="text-muted-foreground">{label}:</span>
             )}
+            {/* List values sit off any grid, so the input takes step="any"
+                and commitEdit snaps to the list instead. */}
             <input
               ref={inputRef}
               type="number"
@@ -236,10 +280,15 @@ function ValueDisplay({
   };
 
 
+  // Assumes formatValue(max) is the longest string. Range mode reserves both
+  // ends plus the separator.
   const widestValue = isRange
     ? `${label ? `${label}: ` : ""}${formatValue(max)} — ${formatValue(max)}`
     : `${label ? `${label}: ` : ""}${formatValue(max)}`;
 
+  // Weight, not color, signals interaction: normal → medium over 100ms while
+  // hovered or pressed. tabular-nums plus a ghost set at medium weight (the
+  // heaviest this label gets) keep the box from changing width.
   return (
     <span
       className={cn(
@@ -261,6 +310,7 @@ function ValueDisplay({
         {widestValue}
       </span>
       <span className="col-start-1 row-start-1 whitespace-nowrap">
+        {/* While editing, the edit slot draws its own label beside the input. */}
         {label && editingIndex === null && (
           <span className="text-muted-foreground">{label}: </span>
         )}
@@ -288,6 +338,9 @@ interface TooltipValueProps {
   motionX: MotionValue<number>;
 }
 
+// The thumb-riding bubble for valuePosition="tooltip". Its x is a transform
+// of the thumb's motion value (left offset + THUMB_SIZE / 2 = thumb center),
+// so it follows springs and drags frame by frame.
 function TooltipValue({ value, formatValue, motionX }: TooltipValueProps) {
   const shape = useShape();
   const tooltipX = useTransform(motionX, (x) => x + THUMB_SIZE / 2);
@@ -317,6 +370,11 @@ function TooltipValue({ value, formatValue, motionX }: TooltipValueProps) {
 // CompactSlider — the compact-step design (formerly the only `Slider`).
 // ---------------------------------------------------------------------------
 
+// Pointer input is handled here, not by the primitive: a press snaps to the
+// step grid and springs the thumb there (spring.moderate), a drag re-snaps on
+// every move and sets the position directly, and release springs onto the
+// final quantized value. The primitive underneath handles focus, ARIA and
+// arrow keys only.
 const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
   (
     {
@@ -356,16 +414,23 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
       const parsed = Array.from(new Set(stepsKey.split(",").map(Number))).sort(
         (a, b) => a - b
       );
+      // A single entry can't span a track; fall back to min/max/step.
       return parsed.length > 1 ? parsed : null;
     }, [stepsKey]);
+    // With a list, min and max are its extremes and `step` is ignored.
     const min = stepValues ? stepValues[0] : minProp;
     const max = stepValues ? stepValues[stepValues.length - 1] : maxProp;
 
     // --- Refs ---
     const trackRef = useRef<HTMLDivElement>(null);
+    // Layout width, unaffected by ancestor CSS transforms.
     const trackWidthRef = useRef(0);
+    // True while a pointer drag owns the thumbs; the value-sync and resize
+    // effects stand down so they never fight the pointer.
     const dragging = useRef(false);
     const activeDragThumb = useRef<number>(0);
+    // Latest props for the ResizeObserver callback, which subscribes once per
+    // isRange and would otherwise read stale values.
     const valuesRef = useRef(values);
     const minRef = useRef(min);
     const maxRef = useRef(max);
@@ -377,6 +442,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
     const [isHovered, setIsHovered] = useState(false);
     const [isPressed, setIsPressed] = useState(false);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    // Track px: the preview bar's span, the snapped value, and that value's x
+    // (the hover tooltip's anchor).
     const [hoverPreview, setHoverPreview] = useState<{
       left: number;
       width: number;
@@ -388,6 +455,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
     const hoverDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Show hover tooltip after 100ms delay
+    // The preview bar appears on the first move; only the tooltip waits, so
+    // sweeping the cursor across the slider doesn't flash it.
     useEffect(() => {
       if (isHovered) {
         hoverDelayRef.current = setTimeout(() => setShowHoverTooltip(true), 100);
@@ -399,10 +468,15 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
     }, [isHovered]);
 
     // --- Motion values ---
+    // Each thumb's left offset in layout px. Thumbs, fill, dot mask and
+    // tooltips all derive from these, so every layer moves together mid-spring.
     const motionX0 = useMotionValue(0);
     const motionX1 = useMotionValue(0);
 
     // --- Derived motion values for fill ---
+    // Transforms of the thumb positions, so the fill stays glued to the thumbs
+    // through springs and drags. Single: pill start → thumb center. Range:
+    // center → center. `- TRACK_INSET` converts to the inset pill's own px.
     const fillLeft = useTransform(motionX0, (x) =>
       isRange ? x + THUMB_SIZE / 2 - TRACK_INSET : 0
     );
@@ -414,6 +488,9 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
     const fillWidth = isRange ? fillWidthRange : fillWidthSingle;
 
     // --- Step dots mask (hides dots on filled side, like SliderComfortable pips) ---
+    // A 2px transparent → black feather at each thumb center instead of a hard
+    // clip, moving with the thumb's motion value. Range keeps dots outside the
+    // thumbs and hides the ones between them.
     const stepDotsMaskSingle = useTransform(
       motionX0,
       (x) => {
@@ -432,6 +509,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
     const stepDotsMask = isRange ? stepDotsMaskRange : stepDotsMaskSingle;
 
     // --- Hover preview computation ---
+    // The bar previews what a click would change: it runs from the nearer
+    // thumb's center (ties go to the first) to the snapped hover value.
     const computeHoverPreview = useCallback(
       (cursorX: number, trackWidth: number) => {
         // cursorX and trackWidth are in layout space (offsetWidth-relative),
@@ -462,12 +541,17 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
         const edgeX = snappedVal === min ? 0 : snappedVal === max ? trackWidth : snappedX;
         const left = Math.min(nearest, edgeX);
         const width = Math.abs(edgeX - nearest);
+        // cursorX holds the snapped center, not the raw cursor, so the tooltip
+        // sits over the step a click would land on.
         setHoverPreview({ left, width, snappedValue: snappedVal, cursorX: snappedX });
       },
       [min, max, step, stepValues, isRange, motionX0, motionX1]
     );
 
     // --- Initial sync (before paint) ---
+    // Places the thumbs from the measured width with no animation. The track
+    // stays at opacity 0 until `ready`, so the first frame never shows thumbs
+    // parked at 0 sliding into place.
     const initialSyncDone = useRef(false);
     const [ready, setReady] = useState(false);
     useLayoutEffect(() => {
@@ -486,6 +570,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
     }, []);
 
     // --- Track width measurement (resize only) ---
+    // On resize the thumbs spring (spring.moderate) to their new pixel spots
+    // instead of jumping; skipped mid-drag.
     useEffect(() => {
       const el = trackRef.current;
       if (!el) return;
@@ -512,6 +598,9 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
     // Depend on a primitive key rather than the `values` array — its identity
     // changes every render (toRadixValue allocates), which would restart the
     // animation on unrelated re-renders (hover/tooltip state churn).
+    // Keyboard and programmatic changes spring on spring.moderate. Skipped
+    // mid-drag: the drag already placed the thumb, and springing toward the
+    // emitted value would fight the pointer.
     const valuesKey = values.join(",");
     useEffect(() => {
       if (!initialSyncDone.current) return;
@@ -528,6 +617,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
     }, [valuesKey, min, max, isRange, motionX0, motionX1]);
 
     // --- Range crossing prevention ---
+    // Each thumb stops half a thumb (10px) short of the other, so the 16px
+    // knobs may overlap a little but never swap sides.
     const clampForRange = useCallback(
       (px: number, thumbIndex: number): number => {
         if (!isRange) return px;
@@ -541,6 +632,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
     );
 
     // --- Emit value change ---
+    // Range mode replaces only the moving thumb's entry. Click-to-edit
+    // commits come through here too.
     const emitChange = useCallback(
       (thumbIndex: number, newValue: number) => {
         if (isRange) {
@@ -560,7 +653,9 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
         if (disabled) return;
         if (e.pointerType === "mouse" && e.button !== 0) return;
         e.preventDefault();
-        e.stopPropagation(); // Prevent Radix from also handling the drag
+        // The 8px hit area sits inside the track and both carry these
+        // handlers; stopping here keeps one press from running twice.
+        e.stopPropagation();
 
         const trackEl = trackRef.current;
         if (!trackEl) return;
@@ -577,6 +672,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
         );
 
         // Determine which thumb to drag
+        // The nearer thumb takes the press; a tie (stacked thumbs) goes to
+        // the first.
         if (isRange) {
           const dist0 = Math.abs(clamped - motionX0.get());
           const dist1 = Math.abs(clamped - motionX1.get());
@@ -611,6 +708,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
         animate(motionX, finalPx, spring.moderate);
 
         // Update value
+        // Derived from the clamped pixel, so the emitted value matches where
+        // the range clamp actually left the thumb.
         const finalValue = pixelToValue(
           finalPx,
           min,
@@ -621,6 +720,7 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
         );
         emitChange(activeDragThumb.current, finalValue);
 
+        // Capture keeps the drag alive when the pointer leaves the track.
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       },
       [disabled, isRange, min, max, step, stepValues, motionX0, motionX1, clampForRange, emitChange]
@@ -646,6 +746,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
           activeDragThumb.current === 0 ? motionX0 : motionX1;
 
         // Snap to step grid during drag
+        // Set, not animated: the thumb steps along the grid under the cursor,
+        // so fine steps read as a continuous drag and coarse ones visibly snap.
         const snappedValue = pixelToValue(
           clamped,
           min,
@@ -681,6 +783,9 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
       setHoverPreview(null);
 
       // Spring settle to final quantized position
+      // Moves already land on the grid; this catches a thumb the range clamp
+      // left between steps. Clearing the preview above keeps the stale
+      // pre-drag bar from fading back in.
       const tw = trackWidthRef.current;
       const motionX =
         activeDragThumb.current === 0 ? motionX0 : motionX1;
@@ -690,9 +795,10 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
       animate(motionX, snappedPx, spring.moderate);
     }, [min, max, step, stepValues, motionX0, motionX1]);
 
-    // --- Radix keyboard handler ---
+    // --- Base UI keyboard handler ---
     // In steps mode the primitive runs on indices (0..len-1, step 1) so arrow
     // keys walk the list; map indices back to actual values on the way out.
+    // Ignored while a pointer drag owns the value.
     const handleRadixChange = useCallback(
       (newValues: number[]) => {
         if (dragging.current) return;
@@ -726,6 +832,9 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
     }, []);
 
     // --- Step dots ---
+    // One dot per list entry or grid step, as a fraction of thumb travel. The
+    // render applies the same THUMB_SIZE / 2 inset as valueToPixel, so every
+    // dot sits exactly under a thumb center.
     const stepDots = useMemo(
       () =>
         showSteps
@@ -747,6 +856,7 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
     );
 
     // --- Interaction state for tooltip ---
+    // Also drives the value label's normal → medium weight shift.
     const isInteracting = isHovered || isPressed;
 
     // --- Per-thumb accessible names ---
@@ -759,6 +869,7 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
     };
 
     // --- Value display component ---
+    // Not rendered in tooltip mode, where the thumb bubbles carry the value.
     const valueDisplay = showValue && valuePosition !== "tooltip" && (
       <ValueDisplay
         values={values}
@@ -777,7 +888,9 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
       />
     );
 
-    // --- Render visual thumb (not Radix — purely visual) ---
+    // --- Render visual thumb (not the Base UI thumb, purely visual) ---
+    // pointer-events-none lets presses fall through to the track handlers. A
+    // 20px box centered on the track, holding the 16px knob.
     const renderVisualThumb = (index: number) => {
       const motionX = index === 0 ? motionX0 : motionX1;
       return (
@@ -811,6 +924,9 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
             }}
           />
           {/* Focus ring */}
+          {/* 24px, 4px outside the knob. focusedThumb is set only when the
+              hidden thumb matches :focus-visible, so a pointer press never
+              shows it. */}
           <motion.span
             className="absolute rounded-full border border-[color:var(--focus-ring,#6B97FF)] pointer-events-none"
             initial={false}
@@ -829,6 +945,7 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
       <div
         ref={ref}
         className={cn(
+          // touch-none: a touch drag moves the thumb instead of scrolling.
           "flex flex-col gap-0 w-full select-none touch-none overflow-visible",
           valuePosition === "left" || valuePosition === "right"
             ? "flex-row items-center gap-2 mb-2"
@@ -842,6 +959,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
         {(valuePosition === "top" || valuePosition === "left") && valueDisplay}
 
         {/* Track area */}
+        {/* Tooltip mode adds 16px of top padding so the bubble above the
+            thumb has room. */}
         <div
           className="relative flex-1 overflow-visible"
           style={{
@@ -864,7 +983,7 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
             if (layoutWidth <= 0 || trackRect.width <= 0) return;
             // Normalize to layout space so the formula's THUMB_SIZE / TRACK_INSET
             // constants (layout px) match the cursor's coordinate space, even
-            // when an ancestor applies a CSS scale transform (e.g. /demo).
+            // when an ancestor applies a CSS scale transform.
             const scale = trackRect.width / layoutWidth;
             const layoutX = (e.clientX - trackRect.left) / scale;
             const clamped = Math.max(0, Math.min(layoutWidth, layoutX));
@@ -872,6 +991,7 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
           }}
         >
           {/* Tooltip values */}
+          {/* Shown while hovered or pressed, one bubble per thumb. */}
           {showValue && valuePosition === "tooltip" && (
             <AnimatePresence>
               {isInteracting && (
@@ -894,6 +1014,9 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
           )}
 
           {/* Base UI Slider — invisible, provides ARIA + keyboard nav */}
+          {/* With a `steps` list it runs on indices (0..n-1, step 1), so arrow
+              keys walk the list. aria-valuenow is then an index, so each
+              thumb also announces the formatted value as aria-valuetext. */}
           <SliderPrimitive.Root
             value={
               stepValues
@@ -940,6 +1063,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
           </SliderPrimitive.Root>
 
           {/* Visual track with pointer handlers */}
+          {/* py-2 adds 8px above and below the 20px thumb row, so the press
+              target is 36px tall. */}
           <div
             ref={trackRef}
             className="relative w-full cursor-ew-resize py-2"
@@ -950,6 +1075,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
             onPointerCancel={handlePointerUp}
           >
             {/* Extended hit area — 8px beyond each edge */}
+            {/* Presses out there clamp to min or max, so the ends are easy to
+                hit. */}
             <div
               className="absolute cursor-ew-resize"
               style={{ left: -8, right: -8, top: 0, bottom: 0 }}
@@ -959,6 +1086,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
               onPointerCancel={handlePointerUp}
             />
             {/* Hover value tooltip */}
+            {/* Waits out the 100ms delay, hides while pressed, and gives way
+                in tooltip mode, where each thumb carries its own bubble. */}
             <AnimatePresence>
               {hoverPreview && showHoverTooltip && !isPressed && valuePosition !== "tooltip" && (
                 <motion.div
@@ -984,6 +1113,9 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
             </AnimatePresence>
 
             {/* Track background */}
+            {/* overflow-hidden clips the fill and hover bar to the pill, so
+                they inherit its rounded ends. top: py-2's 8px plus 1px to
+                center the 18px pill on the 20px thumb row. */}
             <motion.div
               className={cn("absolute border border-border overflow-hidden rounded-full", trackClassName)}
               initial={false}
@@ -1012,6 +1144,10 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
               )}
 
               {/* Hover preview */}
+              {/* 40% accent, fading over 0.15s and hidden while pressed. The
+                  thumb end hides under the knob; the leading end is rounded
+                  (at min, by the pill's clip). Track px minus TRACK_INSET, as
+                  this lives in the pill. */}
               <motion.div
                 className="absolute h-full pointer-events-none z-[2]"
                 initial={false}
@@ -1034,6 +1170,7 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
             </motion.div>
 
             {/* Step dots — masked so filled side is hidden */}
+            {/* Muted at 30% and grown 1.25x on hover (spring.moderate). */}
             {stepDots.length > 0 && (
               <motion.div
                 className="absolute left-0 right-0 pointer-events-none"
@@ -1093,6 +1230,8 @@ CompactSlider.displayName = "SliderCompact";
 // ComfortableSlider — the default-step design (pips / scrubber layouts).
 // ---------------------------------------------------------------------------
 
+// The drag and animation handlers are omitted because rest props spread onto
+// a motion.div, whose own types for those names clash with the DOM ones.
 interface SliderComfortableProps
   extends Omit<HTMLAttributes<HTMLDivElement>, "onChange" | "defaultValue" | "onDrag" | "onDragStart" | "onDragEnd" | "onDragOver" | "onAnimationStart"> {
   value: number;
@@ -1106,6 +1245,11 @@ interface SliderComfortableProps
   disabled?: boolean;
 }
 
+// A 32px bordered row with the label at the start and the value at the end.
+// "pips" draws a dot per step and springs the fill on every snap; "scrubber"
+// fills continuously, glued to the cursor. Both mark the value with a 2px
+// handle line, and label and value go muted → foreground on spring.fast while
+// hovered or focused.
 const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
   (
     {
@@ -1124,6 +1268,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
     ref
   ) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    // Row presses and the scrubber's handle strip track their drags apart.
     const dragging = useRef(false);
     const handleDragging = useRef(false);
     const [isHovered, setIsHovered] = useState(false);
@@ -1140,6 +1285,8 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
     const shape = useShape();
 
     // Show hover tooltip after 100ms delay
+    // The preview bar appears on the first move; only the tooltip waits, so
+    // sweeping the cursor across the slider doesn't flash it.
     useEffect(() => {
       if (isHovered) {
         hoverDelayRef.current = setTimeout(() => setShowHoverTooltip(true), 100);
@@ -1150,6 +1297,8 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
       return () => { if (hoverDelayRef.current) clearTimeout(hoverDelayRef.current); };
     }, [isHovered]);
 
+    // The forwarded ref and rest props land on the bordered row, not the outer
+    // wrapper; containerRef keeps a local handle for measuring.
     const mergedRef = useCallback(
       (el: HTMLDivElement | null) => {
         containerRef.current = el;
@@ -1173,27 +1322,39 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
       max === min ? 0 : Math.max(0, Math.min(1, (value - min) / (max - min)))
     );
     // Small offset when value is at min so the handle line stays visible
+    // 8px for pips, 17px for scrubber, eased in and out on spring.fast as the
+    // value lands on or leaves min.
     const zeroTarget = variant === "pips" ? 8 : 17;
     const zeroOffset = useMotionValue(value === min ? zeroTarget : 0);
 
     const fillWidthStyle = useTransform(fillPercent, (p) => `${p * 100}%`);
+    // Scrubber handle strip: 8px wide, ending at the fill edge (plus
+    // zeroOffset at min).
     const handleLeftStyle = useTransform(
       [fillPercent, zeroOffset] as MotionValue<number>[],
       ([p, zo]) => `calc(${(p as number) * 100}% - 8px + ${zo as number}px)`
     );
+    // Scrubber line: 9px behind the fill edge, which at min would put it past
+    // the row's left edge; zeroOffset (17px) brings it back to 8px.
     const handleLineLeftStyle = useTransform(
       [fillPercent, zeroOffset] as MotionValue<number>[],
       ([p, zo]) => `calc(${(p as number) * 100}% - 9px + ${zo as number}px)`
     );
-    // Pips-specific: offset by px-3 (12px) padding so fill edge aligns with active pip center
+    // Pips fill: its edge runs from 20px at p = 0 to the full width at p = 1,
+    // a few px past the active pip, so the mask hides that pip and the handle
+    // line stands in for it. At min, zeroOffset × 2.5 (20px) cancels the 20px
+    // base and the fill empties.
     const pipsFillWidthStyle = useTransform(
       [fillPercent, zeroOffset] as MotionValue<number>[],
       ([p, zo]) => `calc(${(p as number) * 100}% + ${20 - 20 * (p as number) - (zo as number) * 2.5}px)`
     );
+    // Pips line: centered 12px in from each edge at the extremes (the pips
+    // row's px-3 inset), so it stays visible at min without zeroOffset.
     const pipsHandleLineLeftStyle = useTransform(
       fillPercent,
       (p) => `calc(${p * 100}% + ${11 - 24 * p}px)`
     );
+    // Hides pips under the fill with a 2px feather, tracking the fill edge.
     const pipsMaskStyle = useTransform(
       [fillPercent, zeroOffset] as MotionValue<number>[],
       ([p, zo]) => {
@@ -1253,6 +1414,8 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
     );
 
     // Sync fill on programmatic value change
+    // Arrow keys land here too, springing on spring.fast; skipped during
+    // either drag.
     useEffect(() => {
       if (dragging.current || handleDragging.current) return;
       const percent = max === min ? 0 : Math.max(0, Math.min(1, (value - min) / (max - min)));
@@ -1260,6 +1423,9 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
       animate(zeroOffset, value === min ? zeroTarget : 0, spring.fast);
     }, [value, min, max, variant, fillPercent, zeroOffset, zeroTarget]);
 
+    // Visual x over visual width: the ratio holds at any ancestor scale, so
+    // no layout normalization is needed. Clamping maps presses in the 8px
+    // gutters to min or max.
     const getValueFromX = useCallback(
       (clientX: number) => {
         const rect = containerRef.current?.getBoundingClientRect();
@@ -1289,6 +1455,8 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         e.preventDefault();
         dragging.current = true;
         setIsPressed(true);
+        // A press anywhere jumps to the snapped value; the fill springs there
+        // on spring.fast.
         const newVal = getValueFromX(e.clientX);
         onChange(newVal);
         const newPercent = Math.max(0, Math.min(1, (newVal - min) / (max - min)));
@@ -1305,6 +1473,8 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         const newVal = getValueFromX(e.clientX);
         onChange(newVal);
         const newPercent = Math.max(0, Math.min(1, (newVal - min) / (max - min)));
+        // Scrubber: set directly, so the fill stays glued to the cursor.
+        // Pips: spring per snap, so each jump between pips eases.
         if (variant === "scrubber") {
           fillPercent.set(newPercent);
         } else {
@@ -1315,6 +1485,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
       [getValueFromX, onChange, variant, fillPercent, zeroOffset, zeroTarget, min, max]
     );
 
+    // No settle step on release: every move already landed on a snapped value.
     const handlePointerUp = useCallback(() => {
       dragging.current = false;
       setIsPressed(false);
@@ -1322,6 +1493,9 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
     }, []);
 
     // Resize handle drag handlers (direct cursor position)
+    // Unlike a row press, grabbing the handle sets the fill from the first
+    // event with no spring; stopPropagation keeps the row's press handler
+    // from also firing.
     const handleResizePointerDown = useCallback(
       (e: React.PointerEvent<HTMLDivElement>) => {
         if (disabled) return;
@@ -1363,8 +1537,12 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
       [onChange]
     );
 
+    // Hover or keyboard focus brightens the label and value and grows the
+    // handle line.
     const isActive = isHovered || isFocused;
 
+    // Hover state and the preview live on this wrapper, so the 8px gutters
+    // count as hovering too.
     return (
       <div
         className="relative w-full touch-none"
@@ -1381,6 +1559,8 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         }}
       >
         {/* Extended hit area — 8px beyond each edge */}
+        {/* The row paints over its middle, so this only catches the 8px
+            gutters, which getValueFromX clamps to min or max. */}
         <div
           className="absolute cursor-ew-resize"
           style={{ left: -8, right: -8, top: 0, bottom: 0 }}
@@ -1414,6 +1594,8 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
           )}
         </AnimatePresence>
 
+      {/* The focus ring is an outline 2px outside the row, which the row's
+          own overflow-hidden can't clip. */}
       <motion.div
         ref={mergedRef}
         className={cn(
@@ -1437,6 +1619,8 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         {...props}
       >
         {/* Invisible Base UI Slider for keyboard nav + a11y */}
+        {/* [&_*]:pointer-events-none keeps its thumb off the hit path too, so
+            presses always reach the row. */}
         <SliderPrimitive.Root
           value={[value]}
           onValueChange={(v) => handleRadixChange(v as number[])}
@@ -1463,6 +1647,9 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         </SliderPrimitive.Root>
 
         {/* Hover preview */}
+        {/* Same 40% accent bar as the compact design, from the fill edge to
+            the snapped hover value. Unrounded; at min or max the row's clip
+            rounds its outer end. */}
         <motion.div
           className="absolute inset-y-0 pointer-events-none z-[3]"
           initial={false}
@@ -1484,6 +1671,8 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
             style={{ WebkitMaskImage: pipsMaskStyle, maskImage: pipsMaskStyle }}
           >
             {pipSteps.map((pipValue) => {
+              // The active pip goes full foreground. At rest it only shows at
+              // min; elsewhere the mask hides it behind the handle line.
               const isActivePip = pipValue === value;
               return (
                 <div
@@ -1508,6 +1697,8 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         )}
 
         {/* Pips: label + value BG layer — z-[2] (occludes dots behind text) */}
+        {/* Transparent-text copies of the label and value on bg-background,
+            sized like the visible text so pips never cross the words. */}
         {variant === "pips" && (
           <div className="absolute inset-0 flex items-center px-2 z-[2] pointer-events-none" aria-hidden>
             {label && (
@@ -1536,6 +1727,9 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         )}
 
         {/* Pips: handle line — z-[3] */}
+        {/* 2px wide. Active (hover or focus) shrinks the inset 8 → 7, 2px
+            taller in all; color steps 25% → 50% → 100% foreground for rest,
+            hover, focus. */}
         {variant === "pips" && (
           <motion.div
             className="absolute rounded-full pointer-events-none z-[3]"
@@ -1570,6 +1764,8 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
                 {label}
               </motion.span>
             )}
+            {/* minWidth reserves formatValue(max)'s length in ch, so the value
+                slot keeps its width as the number changes. */}
             <motion.span
               className="text-[13px] tabular-nums ml-auto px-2"
               initial={false}
@@ -1583,6 +1779,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         )}
 
         {/* Scrubber: fill */}
+        {/* Width maps straight from fillPercent, with no offsets. */}
         {variant === "scrubber" && (
           <motion.div
             className="absolute left-0 top-0 bottom-0 pointer-events-none"
@@ -1594,6 +1791,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         )}
 
         {/* Scrubber: handle line */}
+        {/* Same sizes and color steps as the pips line. */}
         {variant === "scrubber" && (
           <motion.div
             className="absolute rounded-full pointer-events-none z-10"
@@ -1644,6 +1842,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         )}
 
         {/* Resize handle (scrubber only) */}
+        {/* An 8px grab strip at the handle line, above the text (z-20). */}
         {variant === "scrubber" && (
           <motion.div
             className="absolute top-0 bottom-0 w-2 cursor-ew-resize z-20"
@@ -1676,14 +1875,19 @@ interface SliderProps extends SliderEngineProps {
   /** Default-step layout: value pips along the track, or an edge-to-edge
    *  scrubber. Ignored when the compact design renders. */
   variant?: "pips" | "scrubber";
-  /** Pins the slider to one step of the size ladder (see /docs/sizes).
+  /** Pins the slider to one step of the size ladder.
    *  Omitted, it follows the surrounding SizeProvider. */
   size?: SizeVariant;
 }
 
 const Slider = forwardRef<HTMLDivElement, SliderProps>(
   ({ size, variant = "pips", ...props }, ref) => {
+    // `size` and `variant` come off first, so neither reaches the compact
+    // engine's root div.
     const resolved = useSizeVariant(size);
+    // Presence, not truthiness: an explicit showValue={false} or
+    // hideFill={false} still picks the compact engine, the only one that
+    // reads those props.
     const needsCompactEngine =
       Array.isArray(props.value) ||
       props.steps !== undefined ||

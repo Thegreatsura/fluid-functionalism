@@ -658,15 +658,35 @@ html[data-size="compact"] {
   }
 
   :where(.typeset) :where(ul):not(:where(.not-typeset, .not-typeset *)) {
-    list-style-type: disc;
+    list-style-type: "• ";
   }
 
   :where(.typeset) :where(ol):not(:where(.not-typeset, .not-typeset *)) {
     list-style-type: decimal;
   }
 
+  :where(.typeset) :where(ol ol):not(:where(.not-typeset, .not-typeset *)) {
+    list-style-type: lower-alpha;
+  }
+
+  :where(.typeset) :where(ol ol ol):not(:where(.not-typeset, .not-typeset *)) {
+    list-style-type: lower-roman;
+  }
+
+  :where(.typeset) :where(ol ol ol ol):not(:where(.not-typeset, .not-typeset *)) {
+    list-style-type: decimal;
+  }
+
+  :where(.typeset) :where(ol ol ol ol ol):not(:where(.not-typeset, .not-typeset *)) {
+    list-style-type: lower-alpha;
+  }
+
+  :where(.typeset) :where(ol ol ol ol ol ol):not(:where(.not-typeset, .not-typeset *)) {
+    list-style-type: lower-roman;
+  }
+
   :where(.typeset) :where(ul ul):not(:where(.not-typeset, .not-typeset *)) {
-    list-style-type: circle;
+    list-style-type: "◦ ";
   }
 
   :where(.typeset) :where(li):not(:where(.not-typeset, .not-typeset *))::marker {
@@ -688,17 +708,19 @@ html[data-size="compact"] {
 
   :where(.typeset) :where(input[type=checkbox]):not(:where(.not-typeset, .not-typeset *)) {
     margin: 0;
+    width: 1em;
+    height: 1em;
     accent-color: var(--foreground, currentColor);
   }
 
   :where(.typeset) :where(.task-list-item > input[type=checkbox]):not(:where(.not-typeset, .not-typeset *)) {
-    margin-right: 0.5em;
+    margin-right: 0.25em;
     vertical-align: -0.125em;
   }
 
   :where(.typeset) :where(ul[data-type="taskList"] > li):not(:where(.not-typeset, .not-typeset *)) {
     display: flex;
-    gap: 0.5em;
+    gap: 0.25em;
     align-items: flex-start;
   }
 

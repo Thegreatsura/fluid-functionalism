@@ -247,9 +247,18 @@ export function typesetRules(
     [el("a:hover"), { "text-decoration-color": "currentColor" }],
 
     [el("ul, ol"), { "padding-left": "1.25em" }],
-    [el("ul"), { "list-style-type": "disc" }],
+    // Bullets as text with one space after, the same as a number's ". ":
+    // the built-in disc gets a wider gap, so it sat further from its text.
+    [el("ul"), { "list-style-type": '"• "' }],
     [el("ol"), { "list-style-type": "decimal" }],
-    [el("ul ul"), { "list-style-type": "circle" }],
+    // Nested numbers outline the way Notion and Docs do: 1. → a. → i., then
+    // the cycle repeats, so a level never reads like its parent.
+    [el("ol ol"), { "list-style-type": "lower-alpha" }],
+    [el("ol ol ol"), { "list-style-type": "lower-roman" }],
+    [el("ol ol ol ol"), { "list-style-type": "decimal" }],
+    [el("ol ol ol ol ol"), { "list-style-type": "lower-alpha" }],
+    [el("ol ol ol ol ol ol"), { "list-style-type": "lower-roman" }],
+    [el("ul ul"), { "list-style-type": '"◦ "' }],
     // Pseudo-elements can't sit inside :where(), so the marker goes after it.
     [`${el("li")}::marker`, { color: MUTED }],
     [el("li + li, li > ul, li > ol, li > p + p"), { "margin-top": space(0.25) }],
@@ -259,9 +268,14 @@ export function typesetRules(
     // drops data-type from the items, so they're matched through the list.
     [el('.contains-task-list, ul[data-type="taskList"]'), { "list-style-type": "none", "padding-left": "0" }],
     [el(".contains-task-list .contains-task-list"), { "padding-left": "1.5em" }],
-    [el("input[type=checkbox]"), { margin: "0", "accent-color": "var(--foreground, currentColor)" }],
-    [el(".task-list-item > input[type=checkbox]"), { "margin-right": "0.5em", "vertical-align": "-0.125em" }],
-    [el('ul[data-type="taskList"] > li'), { display: "flex", gap: "0.5em", "align-items": "flex-start" }],
+    // A 1em box plus a 0.25em gap lands to-do text on the list indent
+    // (1.25em) at every size, and the box scales with the text.
+    [
+      el("input[type=checkbox]"),
+      { margin: "0", width: "1em", height: "1em", "accent-color": "var(--foreground, currentColor)" },
+    ],
+    [el(".task-list-item > input[type=checkbox]"), { "margin-right": "0.25em", "vertical-align": "-0.125em" }],
+    [el('ul[data-type="taskList"] > li'), { display: "flex", gap: "0.25em", "align-items": "flex-start" }],
     // One line box tall, so the box centers on the first line of the item.
     [
       el('ul[data-type="taskList"] > li > label'),

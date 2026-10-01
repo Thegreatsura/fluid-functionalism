@@ -126,12 +126,21 @@ const EXTENSIONS = [
   TaskList,
   TaskItem.configure({ nested: true }),
   TableKit.configure({ table: { resizable: false, renderWrapper: true } }),
-  Placeholder.configure({ placeholder: "Write, or type # and a space for a heading" }),
+  // Short and per line, like Notion: a long hint wraps and runs into the
+  // next block, since the placeholder takes no height.
+  Placeholder.configure({
+    placeholder: ({ node }) =>
+      node.type.name === "heading"
+        ? `Heading ${node.attrs.level}`
+        : node.type.name === "codeBlock"
+          ? "Code"
+          : "Write something",
+  }),
 ];
 
 // Tiptap marks the empty line with data-placeholder; show it as a ghost.
 const PLACEHOLDER =
-  "[&_.is-empty]:before:pointer-events-none [&_.is-empty]:before:float-left [&_.is-empty]:before:h-0 [&_.is-empty]:before:text-muted-foreground/60 [&_.is-empty]:before:content-[attr(data-placeholder)]";
+  "[&_.is-empty]:before:pointer-events-none [&_.is-empty]:before:float-left [&_.is-empty]:before:h-0 [&_.is-empty]:before:whitespace-nowrap [&_.is-empty]:before:text-muted-foreground/60 [&_.is-empty]:before:content-[attr(data-placeholder)]";
 
 // ── Inspect ──────────────────────────────────────────────
 // Hover a text block to see its line boxes (one band per line) and a readout

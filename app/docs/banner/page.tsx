@@ -91,6 +91,7 @@ const bannerProps: PropDef[] = [
   { name: "dismissLabel", type: "string", default: '"Dismiss"', description: "Label read by screen readers for the ✕." },
   { name: "open", type: "boolean", description: "Controls visibility. Without it, the ✕ hides the banner." },
   { name: "size", type: '"default" | "compact"', default: "from SizeProvider", description: "Default or compact." },
+  { name: "motion", type: "BannerMotionConfig", default: "bannerMotion", description: "Overrides the appear and dismiss values for this banner." },
 ];
 
 const partProps: PropDef[] = [

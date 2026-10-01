@@ -147,94 +147,139 @@ function StatusGlyph({ status, size }: { status: ColoredStatus; size: number }) 
 // with a gap, the row also takes back one gap, so nothing jumps when the
 // banner mounts or unmounts.
 
-/** Every value in the appear and dismiss, in one place. Each is a motion
- *  token or derived from one, and each is read when an animation starts, so
- *  changing one retunes the next appear or dismiss of every banner. */
-const bannerMotion: {
-  appear: {
-    row: ValueAnimationTransition<number>;
-    banner: ValueAnimationTransition<number>;
-    fromScale: number;
+/** Every value in the appear and dismiss. */
+interface BannerMotionConfig {
+  readonly appear: {
+    /** The row opening. */
+    readonly row: ValueAnimationTransition<number>;
+    /** The banner fading in and growing. */
+    readonly banner: ValueAnimationTransition<number>;
+    /** The scale the banner grows from. */
+    readonly fromScale: number;
   };
-  dismiss: { row: ValueAnimationTransition<number>; shrinkTo: number };
-} = {
+  readonly dismiss: {
+    /** The row closing. The banner rides it. */
+    readonly row: ValueAnimationTransition<number>;
+    /** The scale the banner shrinks to, which is also how open the row is
+     *  when the banner is gone. One number, so the banner's visible height
+     *  always equals the row's and the row never cuts it. */
+    readonly shrinkTo: number;
+  };
+}
+
+/** The default appear and dismiss, each value a motion token or derived from
+ *  one. Pass a banner's `motion` prop to change them for that banner; spread
+ *  these to change one value and keep the rest. */
+const bannerMotion: BannerMotionConfig = {
   appear: {
-    /** The row opening: twice the moderate tier, no bounce. */
-    row: { type: "spring" as const, duration: spring.moderate.duration * 2, bounce: 0 },
-    /** The banner fading in and growing: the slow tier, bounce included,
-     *  starting a fast tier after the row. */
+    // Twice the moderate tier, no bounce.
+    row: { type: "spring", duration: spring.moderate.duration * 2, bounce: 0 },
+    // The slow tier, bounce included, starting a fast tier after the row.
     banner: {
-      type: "spring" as const,
+      type: "spring",
       duration: spring.slow.duration,
       bounce: spring.slow.bounce,
       delay: spring.fast.duration,
     },
-    /** The scale the banner grows from. */
     fromScale: 0.4,
   },
   dismiss: {
-    /** The row closing (easeInOut, twice the moderate exit). The banner
-     *  rides it. */
+    // easeInOut, twice the moderate exit.
     row: { duration: spring.moderate.exit.duration * 2, ease: "easeInOut" },
-    /** The scale the banner shrinks to, which is also how open the row is
-     *  when the banner is gone. One number, so the banner's visible height
-     *  always equals the row's and the row never cuts it. */
     shrinkTo: 0.6,
   },
 };
 
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Where keyboard focus goes when a banner holding it closes: the first
+ *  focusable element after the banner, else the last one before it. */
+function focusNeighbour(banner: HTMLElement) {
+  const candidates = Array.from(document.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+    (el) => !banner.contains(el) && (el.checkVisibility?.() ?? true)
+  );
+  const after = candidates.find(
+    (el) => banner.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING
+  );
+  const before = candidates
+    .filter((el) => banner.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_PRECEDING)
+    .pop();
+  (after ?? before)?.focus({ preventScroll: true });
+}
+
 interface BannerMotionProps {
   fixed: boolean;
   reduceMotion: boolean;
-  /** The parent flex column's gap, taken back as the row closes. */
-  gap: number;
-  measureGap: (el: HTMLDivElement | null) => void;
+  config: BannerMotionConfig;
   children: ReactNode;
 }
 
-function BannerMotion({ fixed, reduceMotion, gap, measureGap, children }: BannerMotionProps) {
+function BannerMotion({ fixed, reduceMotion, config, children }: BannerMotionProps) {
   // A banner that is open on first render arrives already in place.
   const appear = useContext(PresenceContext)?.initial !== false;
   const [isPresent, safeToRemove] = usePresence();
-  const scaled = !fixed && !reduceMotion;
-
-  // Two progress values, 0 to 1: how open the row is (as a share of the
-  // banner's height), and how shown the banner is. Every style below is
-  // derived from them, so the row and the banner render from the same frame.
-  const row = useMotionValue(appear ? 0 : 1);
-  const shown = useMotionValue(appear ? 0 : 1);
-  const gapRef = useRef(gap);
-  const leaving = useRef(false);
+  // AnimatePresence hands out a new `safeToRemove` on every render while a
+  // banner leaves, and the config may change mid-flight. Reading both
+  // through refs keeps a parent re-render from restarting an animation.
+  const safeToRemoveRef = useRef(safeToRemove);
+  const configRef = useRef(config);
   useEffect(() => {
-    gapRef.current = gap;
-  }, [gap]);
-
-  const gridTemplateRows = useTransform(row, (v) => `${v}fr`);
-  // The row clips only while it has to. Appearing inline, the banner's
-  // slow-tier bounce takes it a touch past full size; the row lets that show
-  // rather than cutting its edges. Leaving, the banner's height equals the
-  // row's, so clipping costs nothing; a fixed bar slides out of it.
-  const overflow = useMotionValue(fixed ? "hidden" : "visible");
-  const marginBottom = useTransform(row, (v) => (v - 1) * gapRef.current);
-  const opacity = shown;
-  const scale = useTransform(shown, (v) => {
-    if (!scaled) return 1;
-    const from = leaving.current ? bannerMotion.dismiss.shrinkTo : bannerMotion.appear.fromScale;
-    return from + v * (1 - from);
+    safeToRemoveRef.current = safeToRemove;
+    configRef.current = config;
   });
+  const scaled = !fixed && !reduceMotion;
   // A fixed bar rides its row both ways: its bottom edge sits on the row's,
   // so it slides down into an opening row and up out of a closing one.
   const slides = fixed && !reduceMotion;
+
+  // How open the row is (as a share of the banner's height), how shown and
+  // how large the banner is. Every style below is one of these or derived
+  // from one, so the row and the banner render from the same frame.
+  const row = useMotionValue(appear ? 0 : 1);
+  const shown = useMotionValue(appear ? 0 : 1);
+  const scale = useMotionValue(appear && scaled ? config.appear.fromScale : 1);
+  // The gap a flex-column parent puts next to the banner, measured when the
+  // banner mounts (before it paints), and taken back as the row closes.
+  const gap = useMotionValue(0);
+  // The row clips only while it has to. Appearing inline, the banner's
+  // slow-tier bounce takes it a touch past full size; the row lets that show
+  // rather than cutting its edges. Leaving, the banner never outgrows the
+  // row, so clipping costs nothing; a fixed bar slides out of it.
+  const overflow = useMotionValue(fixed ? "hidden" : "visible");
+
+  const gridTemplateRows = useTransform(row, (v) => `${v}fr`);
+  const marginBottom = useTransform([row, gap], ([r, g]: number[]) => (r - 1) * g);
   const y = useTransform(row, (v) => (slides ? `${(v - 1) * 100}%` : "0%"));
+  // A banner that is mostly faded takes no clicks: one appearing can't catch
+  // clicks meant for what's under it, and one leaving can't be hit twice.
+  const pointerEvents = useTransform(shown, (v) => (v > 0.5 ? "auto" : "none"));
+
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const measure = useCallback(
+    (el: HTMLDivElement | null) => {
+      rootRef.current = el;
+      const parent = el?.parentElement;
+      if (!parent) return;
+      const style = getComputedStyle(parent);
+      const column =
+        parent.children.length > 1 &&
+        style.display.endsWith("flex") &&
+        style.flexDirection.startsWith("column");
+      gap.set(column ? parseFloat(style.rowGap) || 0 : 0);
+    },
+    [gap]
+  );
 
   useEffect(() => {
+    const { appear: enter, dismiss: leave } = configRef.current;
+
     if (isPresent) {
-      // Appearing: the row opens. Inline, the banner fades in and grows from
-      // `fromScale` just behind it; a fixed bar slides down into the row and
-      // fades in with it, on the row's spring.
-      leaving.current = false;
+      // Appearing (or coming back mid-dismiss, from wherever it is): the row
+      // opens. Inline, the banner fades in and grows just behind it; a fixed
+      // bar slides down into the row and fades in with it.
       overflow.set(fixed ? "hidden" : "visible");
-      const open = animate(row, 1, reduceMotion ? { duration: 0 } : bannerMotion.appear.row);
+      const open = animate(row, 1, reduceMotion ? { duration: 0 } : enter.row);
       if (slides) {
         const follow = row.on("change", (v) => shown.set(v));
         return () => {
@@ -242,41 +287,53 @@ function BannerMotion({ fixed, reduceMotion, gap, measureGap, children }: Banner
           open.stop();
         };
       }
-      const show = animate(shown, 1, reduceMotion ? spring.fast : bannerMotion.appear.banner);
+      const show = animate(shown, 1, reduceMotion ? spring.fast : enter.banner);
+      const grow = scaled ? animate(scale, 1, enter.banner) : undefined;
       return () => {
         open.stop();
         show.stop();
+        grow?.stop();
       };
     }
 
+    // Leaving with keyboard focus inside: hand it to a neighbour, so it
+    // doesn't fall back to the top of the page when the banner unmounts.
+    const root = rootRef.current;
+    if (root?.contains(document.activeElement)) focusNeighbour(root);
+
     if (reduceMotion) {
       const hide = animate(shown, 0, spring.fast.exit);
-      hide.then(() => safeToRemove?.());
+      hide.then(() => safeToRemoveRef.current?.());
       return () => hide.stop();
     }
 
     // Dismissing: the row closes from the start, and the banner rides it.
-    // Inline, while the row closes from 1 to `shrinkTo` the banner shrinks
-    // to `shrinkTo` and fades out, so its visible height equals the row's on
-    // every frame. A fixed bar slides up and fades over the whole close, both
-    // on the row's curve.
-    leaving.current = true;
+    // Inline, the banner is gone by the time the row is `shrinkTo` open,
+    // shrinking toward `shrinkTo` as it fades, so it is never taller than the
+    // row; a fixed bar fades over the whole close. Both start from wherever
+    // the banner is, so a dismiss mid-appear doesn't jump.
     overflow.set("hidden");
-    const end = fixed ? 0 : Math.min(bannerMotion.dismiss.shrinkTo, 0.99);
-    const unfollow = row.on("change", (v) =>
-      shown.set(Math.min(1, Math.max(0, (v - end) / (1 - end))))
-    );
-    const close = animate(row, 0, bannerMotion.dismiss.row);
-    close.then(() => safeToRemove?.());
+    const end = fixed ? 0 : Math.min(leave.shrinkTo, 0.99);
+    const rowFrom = row.get();
+    const shownFrom = shown.get();
+    const scaleFrom = scale.get();
+    const unfollow = row.on("change", (v) => {
+      const left =
+        rowFrom > end ? (v - end) / (rowFrom - end) : rowFrom > 0 ? v / rowFrom : 0;
+      shown.set(shownFrom * Math.min(1, Math.max(0, left)));
+      if (scaled) scale.set(Math.min(scaleFrom, Math.max(v, end)));
+    });
+    const close = animate(row, 0, leave.row);
+    close.then(() => safeToRemoveRef.current?.());
     return () => {
       unfollow();
       close.stop();
     };
-  }, [isPresent, reduceMotion, fixed, slides, row, shown, overflow, safeToRemove]);
+  }, [isPresent, reduceMotion, fixed, scaled, slides, row, shown, scale, overflow]);
 
   return (
     <motion.div
-      ref={measureGap}
+      ref={measure}
       style={{ gridTemplateRows, marginBottom, overflow }}
       // w-full: the banner is a container (for its narrow layout), so it
       // can't size to its content and has to take the full row.
@@ -289,7 +346,9 @@ function BannerMotion({ fixed, reduceMotion, gap, measureGap, children }: Banner
       className={cn("grid w-full", fixed && "sticky top-0 z-40")}
     >
       <div className="min-h-0">
-        <motion.div style={{ opacity, scale, y, transformOrigin: "top" }}>{children}</motion.div>
+        <motion.div style={{ opacity: shown, scale, y, pointerEvents, transformOrigin: "top" }}>
+          {children}
+        </motion.div>
       </div>
     </motion.div>
   );
@@ -321,6 +380,9 @@ interface BannerProps extends HTMLAttributes<HTMLDivElement> {
   /** Pins the banner to one step of the size ladder. Omitted, it follows the
    *  surrounding SizeProvider. */
   size?: SizeVariant;
+  /** Overrides the appear and dismiss values for this banner. Spread
+   *  `bannerMotion` to change one and keep the rest. */
+  motion?: BannerMotionConfig;
 }
 
 const Banner = forwardRef<HTMLDivElement, BannerProps>(
@@ -335,6 +397,7 @@ const Banner = forwardRef<HTMLDivElement, BannerProps>(
       dismissLabel = "Dismiss",
       open: openProp,
       size,
+      motion: motionConfig = bannerMotion,
       role,
       className,
       style,
@@ -353,18 +416,6 @@ const Banner = forwardRef<HTMLDivElement, BannerProps>(
 
     const [openState, setOpenState] = useState(true);
     const open = openProp ?? openState;
-
-    // The gap a flex-column parent puts next to the banner, read whenever the
-    // banner mounts and kept for the next time it opens.
-    const [gap, setGap] = useState(0);
-    const measureGap = useCallback((el: HTMLDivElement | null) => {
-      const parent = el?.parentElement;
-      if (!parent || parent.children.length < 2) return;
-      const style = getComputedStyle(parent);
-      const column =
-        style.display.endsWith("flex") && style.flexDirection.startsWith("column");
-      setGap(column ? parseFloat(style.rowGap) || 0 : 0);
-    }, []);
 
     const handleDismiss = () => {
       onDismiss?.();
@@ -455,8 +506,7 @@ const Banner = forwardRef<HTMLDivElement, BannerProps>(
             key="banner"
             fixed={fixed}
             reduceMotion={reduceMotion}
-            gap={gap}
-            measureGap={measureGap}
+            config={motionConfig}
           >
             {body}
           </BannerMotion>
@@ -575,7 +625,8 @@ const BANNER_ACTION_ORDER: Record<BannerActionVariant, string> = {
     "order-1 group-has-data-[slot=banner-description]/banner:order-3 @max-sm/banner:order-3",
 };
 
-interface BannerActionProps extends Omit<ButtonProps, "variant" | "size" | "asChild"> {
+interface BannerActionProps
+  extends Omit<ButtonProps, "variant" | "size" | "asChild" | "render" | "nativeButton"> {
   /** @default "secondary" */
   variant?: BannerActionVariant;
   /** Renders a link instead of a button. */
@@ -635,6 +686,7 @@ BannerAction.displayName = "BannerAction";
 export { Banner, BannerTitle, BannerDescription, BannerActions, BannerAction, bannerMotion };
 export type {
   BannerProps,
+  BannerMotionConfig,
   BannerStatus,
   BannerContrast,
   BannerVariant,

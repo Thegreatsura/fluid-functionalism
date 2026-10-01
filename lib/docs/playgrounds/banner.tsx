@@ -1,17 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { DialRoot, useDialKit } from "dialkit";
-import "dialkit/styles.css";
-import { useSlowMotion } from "@/app/docs/skill/slow-motion";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import {
   Banner,
   BannerTitle,
   BannerDescription,
   BannerActions,
   BannerAction,
-  bannerMotion,
   type BannerContrast,
+  type BannerMotionConfig,
   type BannerStatus,
   type BannerVariant,
 } from "@/registry/default/banner";
@@ -162,96 +160,51 @@ export function MockPage({
   );
 }
 
-// ── Motion dials (development only) ─────────────────────
-// A DialKit panel showing every appear and dismiss value. It starts at the
-// shipped values (read once, before any dial writes) and writes each change
-// into `bannerMotion`, which the banner reads when an animation starts.
+// The motion dials (a DialKit panel with every appear and dismiss value and a
+// speed control) load only in development, so DialKit and its stylesheet
+// never ship to the live site.
+const BannerMotionDials =
+  process.env.NODE_ENV === "development"
+    ? dynamic(() => import("./banner-motion-dials"), { ssr: false })
+    : null;
 
-const SHIPPED_MOTION = {
-  appear: {
-    row: { ...bannerMotion.appear.row },
-    banner: { ...bannerMotion.appear.banner },
-    fromScale: bannerMotion.appear.fromScale,
-  },
-  dismiss: { row: { ...bannerMotion.dismiss.row }, shrinkTo: bannerMotion.dismiss.shrinkTo },
-};
-
-const num = (value: unknown, fallback = 0) => (typeof value === "number" ? value : fallback);
-const percent = (scale: number) => Math.round(scale * 100);
-
-const CURVES = [
-  { value: "easeInOut", label: "Ease in-out" },
-  { value: "easeOut", label: "Ease out" },
-  { value: "easeIn", label: "Ease in" },
-  { value: "linear", label: "Linear" },
-];
-
-/** Slows framer's clock page-wide while mounted (the /docs/skill hero's
- *  slow motion). Mounted only below 1x, so normal speed is untouched. */
-function SlowMotion({ rate }: { rate: number }) {
-  const rootRef = useRef<HTMLElement>(null);
-  useSlowMotion(rootRef, rate);
-  return null;
-}
-
-function BannerMotionDials({ onReplay }: { onReplay: (speed: number) => void }) {
-  const { appear, dismiss } = SHIPPED_MOTION;
-  const dials = useDialKit(
-    "Banner motion",
-    {
-      "Speed (x)": [1, 0.1, 1, 0.05],
-      appear: {
-        "Space opens (s)": [num(appear.row.duration), 0, 1, 0.01],
-        "Space bounce": [num(appear.row.bounce), 0, 1, 0.01],
-        "Banner delay (s)": [num(appear.banner.delay), 0, 0.5, 0.01],
-        "Banner appears (s)": [num(appear.banner.duration), 0, 1, 0.01],
-        "Banner bounce": [num(appear.banner.bounce), 0, 1, 0.01],
-        "Banner grows from (%)": [percent(appear.fromScale), 0, 100, 1],
-      },
-      dismiss: {
-        "Space closes (s)": [num(dismiss.row.duration), 0, 1, 0.01],
-        Curve: {
-          type: "select",
-          options: CURVES,
-          default: typeof dismiss.row.ease === "string" ? dismiss.row.ease : "easeInOut",
-        },
-        "Banner shrinks to (%)": [percent(dismiss.shrinkTo), 5, 95, 1],
-      },
-      replay: { type: "action", label: "Dismiss, then show" },
-    },
-    { onAction: (action) => action === "replay" && onReplay(speedRef.current) }
-  );
-  const speed = dials["Speed (x)"];
-  const speedRef = useRef(speed);
+/** Holds the inline page at the tallest height it has had while the banner
+ *  was open: a dismiss then never shrinks the page (which would re-centre it
+ *  in the preview), and a tall banner (a narrow screen, wrapped actions) is
+ *  never cut. A width change, or `resetKey` changing while open, measures
+ *  afresh. */
+function useHeldHeight(open: boolean, resetKey: string) {
+  const [held, setHeld] = useState(0);
+  const openRef = useRef(open);
+  const elRef = useRef<HTMLDivElement | null>(null);
+  const roRef = useRef<ResizeObserver | null>(null);
+  const widthRef = useRef(0);
   useEffect(() => {
-    speedRef.current = speed;
-  }, [speed]);
-
+    openRef.current = open;
+  }, [open]);
   useEffect(() => {
-    const { appear: a, dismiss: d } = dials;
-    Object.assign(bannerMotion.appear.row, {
-      duration: a["Space opens (s)"],
-      bounce: a["Space bounce"],
+    const el = elRef.current;
+    if (el && openRef.current) setHeld(el.offsetHeight);
+  }, [resetKey]);
+  const ref = useCallback((el: HTMLDivElement | null) => {
+    roRef.current?.disconnect();
+    roRef.current = null;
+    elRef.current = el;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      if (!openRef.current) return;
+      const height = el.offsetHeight;
+      if (el.offsetWidth !== widthRef.current) {
+        widthRef.current = el.offsetWidth;
+        setHeld(height);
+      } else {
+        setHeld((h) => Math.max(h, height));
+      }
     });
-    Object.assign(bannerMotion.appear.banner, {
-      delay: a["Banner delay (s)"],
-      duration: a["Banner appears (s)"],
-      bounce: a["Banner bounce"],
-    });
-    bannerMotion.appear.fromScale = a["Banner grows from (%)"] / 100;
-    bannerMotion.dismiss.row = {
-      duration: d["Space closes (s)"],
-      ease: d.Curve as "easeInOut" | "easeOut" | "easeIn" | "linear",
-    };
-    bannerMotion.dismiss.shrinkTo = d["Banner shrinks to (%)"] / 100;
-  });
-
-  return (
-    <>
-      <DialRoot position="bottom-right" />
-      {speed < 1 && <SlowMotion rate={speed} />}
-    </>
-  );
+    ro.observe(el);
+    roRef.current = ro;
+  }, []);
+  return [ref, held] as const;
 }
 
 export function BannerPlayground({ children }: PlaygroundProps) {
@@ -264,6 +217,20 @@ export function BannerPlayground({ children }: PlaygroundProps) {
   const [ghost, setGhost] = useState(false);
   const [dismissible, setDismissible] = useState(true);
   const [open, setOpen] = useState(true);
+  const [motionConfig, setMotionConfig] = useState<BannerMotionConfig>();
+  const [pageRef, pageHeight] = useHeldHeight(
+    open,
+    [variant, status, contrast, description, primary, secondary, ghost, dismissible].join()
+  );
+
+  // One replay at a time, and none left behind after unmount.
+  const replayTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(replayTimer.current), []);
+  const replay = (delayMs: number) => {
+    window.clearTimeout(replayTimer.current);
+    setOpen(false);
+    replayTimer.current = window.setTimeout(() => setOpen(true), delayMs);
+  };
 
   const state: PlayState = {
     variant,
@@ -378,6 +345,7 @@ export function BannerPlayground({ children }: PlaygroundProps) {
       dismissible={dismissible}
       open={open}
       onDismiss={() => setOpen(false)}
+      motion={motionConfig}
     >
       <BannerTitle>{copy.title}</BannerTitle>
       {description && <BannerDescription>{copy.description}</BannerDescription>}
@@ -399,44 +367,38 @@ export function BannerPlayground({ children }: PlaygroundProps) {
     </Button>
   );
 
-  // Inline, the banner sits in a fixed-height page between skeleton lines,
-  // so its appear and dismiss move real content: the line above stays put,
-  // the ones below slide, and the page never re-centres in the preview. The
-  // height fits the default banner.
-  const render = (maxWidth: string, pageHeight: string, inlineHeight: string) =>
+  // Inline, the banner sits in a page between skeleton lines, so its appear
+  // and dismiss move real content: the line above stays put and the ones
+  // below slide. The page holds its height (see useHeldHeight).
+  const render = (maxWidth: string, mockHeight: string) =>
     variant === "fixed" ? (
       <div className={`w-full ${maxWidth}`}>
-        <MockPage className={pageHeight}>{banner}</MockPage>
+        <MockPage className={mockHeight}>{banner}</MockPage>
       </div>
     ) : (
-      <div className={`flex w-full ${maxWidth} ${inlineHeight} flex-col gap-3 overflow-hidden`}>
-        <SkeletonLines widths={[45]} />
-        {banner}
-        <SkeletonLines widths={[85, 60]} />
+      <div className={`w-full ${maxWidth}`} style={{ minHeight: pageHeight || undefined }}>
+        <div ref={pageRef} className="flex flex-col gap-3">
+          <SkeletonLines widths={[45]} />
+          {banner}
+          <SkeletonLines widths={[85, 60]} />
+        </div>
       </div>
     );
 
-  // Replays the dismiss, then the appear, once the close has played out
-  // (longer when the dials slow the clock down).
-  const replay = (speed: number) => {
-    setOpen(false);
-    const close = num(bannerMotion.dismiss.row.duration, 0.5);
-    window.setTimeout(() => setOpen(true), (close / speed) * 1000 + 400);
-  };
-  const dials = process.env.NODE_ENV === "development" && (
-    <BannerMotionDials onReplay={replay} />
+  const dials = BannerMotionDials && (
+    <BannerMotionDials onChange={setMotionConfig} onReplay={replay} />
   );
 
   return children({
     preview: (
       <>
-        {render("max-w-[560px]", "h-[280px]", "h-[200px]")}
+        {render("max-w-[560px]", "h-[280px]")}
         {dials}
       </>
     ),
     demoPreview: (
       <>
-        {render("max-w-[420px]", "h-[260px]", "h-[220px]")}
+        {render("max-w-[420px]", "h-[260px]")}
         {dials}
       </>
     ),

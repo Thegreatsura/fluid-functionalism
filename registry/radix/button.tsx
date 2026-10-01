@@ -84,6 +84,14 @@ interface ButtonProps
    *  compact 28px). Legacy sm/md/lg values still resolve. */
   size?: ButtonSize;
   asChild?: boolean;
+  /** Base UI's spelling of `asChild`: the element to render as, with the
+   *  button's children as its label. Accepted so code written either way
+   *  works, including the shadcn CLI's asChild-to-render rewrite in Base UI
+   *  projects. */
+  render?: ReactElement;
+  /** Accepted for Base UI parity and ignored: the button already knows
+   *  whether it renders a native button. */
+  nativeButton?: boolean;
   loading?: boolean;
   leadingIcon?: IconComponent;
   trailingIcon?: IconComponent;
@@ -138,6 +146,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       variant,
       size,
       asChild = false,
+      render,
+      nativeButton: _nativeButton,
       loading = false,
       leadingIcon: LeadingIcon,
       trailingIcon: TrailingIcon,
@@ -154,10 +164,17 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     // requires exactly one child, so instead of Slottable we clone the user's
     // element with our internals as its children — the element's own children
     // become the label inside the content wrapper.
+    // `render` is the same thing written the Base UI way: its element is the
+    // root and the children, when given, are the label (otherwise the
+    // element keeps its own).
     const asChildElement =
-      asChild && isValidElement(children)
-        ? (children as ReactElement<{ children?: ReactNode }>)
-        : null;
+      render && isValidElement(render)
+        ? children === undefined
+          ? (render as ReactElement<{ children?: ReactNode }>)
+          : cloneElement(render as ReactElement<{ children?: ReactNode }>, undefined, children)
+        : asChild && isValidElement(children)
+          ? (children as ReactElement<{ children?: ReactNode }>)
+          : null;
     const Comp = asChildElement ? Slot : "button";
     const label = asChildElement ? asChildElement.props.children : children;
     // Resolve the size: explicit prop (legacy aliases mapped onto the

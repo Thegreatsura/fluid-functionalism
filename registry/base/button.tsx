@@ -85,6 +85,14 @@ interface ButtonProps
   size?: ButtonSize;
   /** When true, the given single React-element child becomes the rendered element (slot-style). */
   asChild?: boolean;
+  /** Base UI's spelling of `asChild`: the element to render as, with the
+   *  button's children as its label. Accepted so code written either way
+   *  works, including the shadcn CLI's asChild-to-render rewrite in Base UI
+   *  projects. */
+  render?: ReactElement;
+  /** Accepted for Base UI parity and ignored: the button already knows
+   *  whether it renders a native button. */
+  nativeButton?: boolean;
   loading?: boolean;
   leadingIcon?: IconComponent;
   trailingIcon?: IconComponent;
@@ -139,6 +147,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       variant,
       size,
       asChild = false,
+      render,
+      nativeButton: _nativeButton,
       loading = false,
       leadingIcon: LeadingIcon,
       trailingIcon: TrailingIcon,
@@ -156,15 +166,23 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     // element directly instead of routing through ButtonPrimitive's `render`:
     // Base UI would bolt button semantics (role="button", Space activation)
     // onto e.g. a link, where plain-link output is wanted.
+    // `render` is the same thing written the Base UI way, and takes the same
+    // path: its element is the root and the children, when given, are the
+    // label (otherwise the element keeps its own).
+    type SlotElement = ReactElement<{
+      children?: ReactNode;
+      className?: string;
+      style?: React.CSSProperties;
+      ref?: React.Ref<HTMLButtonElement>;
+    }>;
     const asChildElement =
-      asChild && isValidElement(children)
-        ? (children as ReactElement<{
-            children?: ReactNode;
-            className?: string;
-            style?: React.CSSProperties;
-            ref?: React.Ref<HTMLButtonElement>;
-          }>)
-        : null;
+      render && isValidElement(render)
+        ? children === undefined
+          ? (render as SlotElement)
+          : cloneElement(render as SlotElement, undefined, children)
+        : asChild && isValidElement(children)
+          ? (children as SlotElement)
+          : null;
     const label = asChildElement ? asChildElement.props.children : children;
     // Resolve the size: explicit prop (legacy aliases mapped onto the
     // canonical ladder) > surrounding SizeProvider > default.

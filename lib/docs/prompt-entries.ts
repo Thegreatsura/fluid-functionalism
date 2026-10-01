@@ -307,9 +307,12 @@ const questions: AskUserQuestion[] = [
       "The row is a one-row grid whose track runs between `0fr` and `1fr`. At rest it is exactly the content height, so a text rewrap never waits on a measurement, and fr resolves from layout, so a scaled parent can't skew it the way it skews a framer `\"auto\"` target.",
       "The clip goes on the grid container, not on the `min-h-0` track item: below 1fr, Chrome sizes the container to f of the content but the track to f\u00b2 (0.5fr renders a quarter). The container's height is the space pushed down, so clipping there keeps what is shown and what is pushed the same box.",
       "The row clips only while it has to: `overflow: visible` while an inline banner appears, so the slow bounce's small overshoot isn't cut; `hidden` while leaving, where the banner matches the row and nothing is lost, and always for the fixed bar.",
-      "In a flex column with a gap, `margin-bottom` follows the row down to minus that gap (read from the parent's `row-gap` when the banner mounts), so the content below never jumps when the banner mounts or unmounts.",
+      "In a flex column with a gap, `margin-bottom` follows the row down to minus that gap (read from the parent's `row-gap` as the banner mounts, before it paints, and 0 when it is the only child), so the content below never jumps when the banner mounts or unmounts, the first open included.",
       "A banner open on first render arrives already in place (`PresenceContext.initial`). Reduced motion keeps the fades on the fast tier, drops the scale and the slide, and snaps the row once the fade is done.",
-      "Every motion value lives in the exported `bannerMotion` object, each derived from a motion token and read when an animation starts, so retuning it changes the next appear or dismiss of every banner.",
+      "The defaults live in the exported `bannerMotion` object, each value derived from a motion token; the `motion` prop overrides them for one banner (spread `bannerMotion` to change one value). Values are read when an animation starts, so changing them never restarts one in flight.",
+      "Presence is hand-rolled with `usePresence`, and `safeToRemove` is read through a ref: AnimatePresence hands out a new one on every render while a child leaves, so depending on it would restart the close on every parent re-render and a page that re-renders often would never finish a dismiss.",
+      "Appear and dismiss start from wherever the banner is: re-opening mid-dismiss continues the scale and fade instead of snapping, and a dismiss mid-appear fades from the current opacity and never lets the banner outgrow the closing row.",
+      "A banner that is mostly faded (under 50%) takes no clicks, so one appearing can't catch clicks meant for what's under it and one leaving can't be clicked twice. When a banner closes with keyboard focus inside, focus moves to the next focusable element after it (else the one before), not back to the top of the page.",
       "Errors and warnings get `role=\"alert\"` and interrupt a screen reader; the rest get `role=\"status\"`. Uncontrolled, the \u2715 hides the banner on its own; pass `open` to bring a dismissed banner back.",
     ],
     usage: `import {
@@ -337,7 +340,7 @@ const questions: AskUserQuestion[] = [
       "dismissible: boolean (default false). Shows a ✕ button; onDismiss fires when it is pressed.",
       "open: boolean. Controls visibility; omitted, the ✕ hides the banner on its own. Closing collapses its height.",
       "size: \"default\" | \"compact\" (default from SizeProvider). Step on the size ladder.",
-      "bannerMotion: exported object holding every appear and dismiss value (token-derived). Retune it to change the motion of every banner.",
+      "motion: BannerMotionConfig (default bannerMotion). Overrides the appear and dismiss values for this banner; the exported `bannerMotion` holds the token-derived defaults.",
       "BannerAction: the library Button at its compact size (takes Button props). variant: \"primary\" | \"secondary\" | \"ghost\" (default \"secondary\"), laid out by variant; href renders a link; external opens it in a new tab.",
     ],
   },
@@ -350,6 +353,7 @@ const questions: AskUserQuestion[] = [
       "Loading keeps label and icons mounted at opacity-0 so the button's width never changes; the spinner overlays them, its box tracking the button height (h-9 / h-7). The spinner is a figure-eight SVG path with a 15/85 dash driven by two loops: 2s linear movement + 4s ease-in-out dash.",
       "`active` prop forces the pressed colors at full size \u2014 for a button holding a dropdown/popover open \u2014 and the geometric press-collapse still reacts on top.",
       "Size ladder: default h-9 (36px) px-4 13px text, compact h-7 (28px) px-3 12px text; unset size follows the surrounding SizeProvider, legacy sm/md/lg resolve as aliases. asChild clones the user's element with the button's internals as children and drops `disabled` on non-button roots.",
+      "`render` is accepted as a second spelling of `asChild` (and `nativeButton` is accepted and ignored), on the same clone path, so a link stays a plain link with no `role=\"button\"`. The shadcn CLI rewrites `asChild` into `render` plus `nativeButton={false}` when it installs into a Base UI project, so components that hand Button a link keep working there.",
     ],
     usage: `import { Button } from "@/components/ui/button";
 import { Plus, ArrowRight } from "lucide-react";

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import dynamic from "next/dynamic";
 import {
   Banner,
   BannerTitle,
@@ -9,7 +8,6 @@ import {
   BannerActions,
   BannerAction,
   type BannerContrast,
-  type BannerMotionConfig,
   type BannerStatus,
   type BannerVariant,
 } from "@/registry/default/banner";
@@ -160,14 +158,6 @@ export function MockPage({
   );
 }
 
-// The motion dials (a DialKit panel with every appear and dismiss value and a
-// speed control) load only in development, so DialKit and its stylesheet
-// never ship to the live site.
-const BannerMotionDials =
-  process.env.NODE_ENV === "development"
-    ? dynamic(() => import("./banner-motion-dials"), { ssr: false })
-    : null;
-
 /** Holds the inline page at the tallest height it has had while the banner
  *  was open: a dismiss then never shrinks the page (which would re-centre it
  *  in the preview), and a tall banner (a narrow screen, wrapped actions) is
@@ -217,20 +207,10 @@ export function BannerPlayground({ children }: PlaygroundProps) {
   const [ghost, setGhost] = useState(false);
   const [dismissible, setDismissible] = useState(true);
   const [open, setOpen] = useState(true);
-  const [motionConfig, setMotionConfig] = useState<BannerMotionConfig>();
   const [pageRef, pageHeight] = useHeldHeight(
     open,
     [variant, status, contrast, description, primary, secondary, ghost, dismissible].join()
   );
-
-  // One replay at a time, and none left behind after unmount.
-  const replayTimer = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(replayTimer.current), []);
-  const replay = (delayMs: number) => {
-    window.clearTimeout(replayTimer.current);
-    setOpen(false);
-    replayTimer.current = window.setTimeout(() => setOpen(true), delayMs);
-  };
 
   const state: PlayState = {
     variant,
@@ -345,7 +325,6 @@ export function BannerPlayground({ children }: PlaygroundProps) {
       dismissible={dismissible}
       open={open}
       onDismiss={() => setOpen(false)}
-      motion={motionConfig}
     >
       <BannerTitle>{copy.title}</BannerTitle>
       {description && <BannerDescription>{copy.description}</BannerDescription>}
@@ -385,23 +364,9 @@ export function BannerPlayground({ children }: PlaygroundProps) {
       </div>
     );
 
-  const dials = BannerMotionDials && (
-    <BannerMotionDials onChange={setMotionConfig} onReplay={replay} />
-  );
-
   return children({
-    preview: (
-      <>
-        {render("max-w-[560px]", "h-[280px]")}
-        {dials}
-      </>
-    ),
-    demoPreview: (
-      <>
-        {render("max-w-[420px]", "h-[260px]")}
-        {dials}
-      </>
-    ),
+    preview: render("max-w-[560px]", "h-[280px]"),
+    demoPreview: render("max-w-[420px]", "h-[260px]"),
     controls,
     code,
     onReplay: () => setOpen(true),

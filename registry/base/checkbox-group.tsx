@@ -274,16 +274,21 @@ const CheckboxItem = forwardRef<HTMLDivElement, CheckboxItemProps>(
         )}
         {...props}
       >
-        {/* Checkbox — Base UI primitive for accessibility */}
+        {/* Checkbox: Base UI primitive for accessibility. It has no
+            onCheckedChange on purpose; the row toggles for it (see onClick). */}
         <CheckboxPrimitive.Root
           checked={checked}
-          onCheckedChange={() => onToggle()}
           tabIndex={-1}
           aria-hidden
           className={cn(
             "relative shrink-0 appearance-none bg-transparent p-0 border-0 outline-none cursor-pointer",
             compact ? "w-[14px] h-[14px]" : "w-[16px] h-[16px]"
           )}
+          // Base UI swallows a click on the square and replays it on its
+          // hidden input, which sits inside this row, so the replay bubbles
+          // to the row's onClick. Stop the original click here so the row
+          // sees one click and toggles once. Listening to onCheckedChange as
+          // well would toggle a second time and undo the first.
           onClick={(e) => e.stopPropagation()}
         >
           {/* Border */}

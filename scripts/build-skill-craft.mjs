@@ -16,13 +16,14 @@ const OUT =
         new URL("../skills/fluid-functionalism/references/craft.md", import.meta.url),
       );
 
-// Section order: the five systems first (one adopted system lifts every
+// Section order: the six systems first (one adopted system lifts every
 // surface), then components alphabetically. Display names match the docs.
 export const SYSTEMS = [
   ["motion", "Motion (springs)"],
   ["fluid-hover", "Fluid Hover (use-fluid-hover)"],
   ["surfaces", "Surfaces (elevated)"],
   ["sizes", "Sizes (size-context)"],
+  ["typography", "Typography (type-scale, typography)"],
   ["scrollbars", "Scrollbars (scroll-area)"],
 ];
 export const COMPONENTS = [

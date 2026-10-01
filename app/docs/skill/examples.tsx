@@ -38,7 +38,7 @@ function GenericTabs({ selected, onSelect }: { selected: number; onSelect: (i: n
           aria-selected={selected === i}
           onClick={() => onSelect(i)}
           className={cn(
-            "h-9 px-3 text-body text-muted-foreground [&:is(:hover,[data-script-hover])]:bg-muted/60",
+            "h-9 px-3 text-site-body text-muted-foreground [&:is(:hover,[data-script-hover])]:bg-muted/60",
             selected === i && "bg-muted font-semibold text-foreground [&:is(:hover,[data-script-hover])]:bg-muted",
             shape.bg
           )}
@@ -102,14 +102,14 @@ function CopyField({ children }: { children: React.ReactNode }) {
         shape.bg
       )}
     >
-      <span className="min-w-0 flex-1 truncate font-mono text-caption text-muted-foreground">{COMMAND}</span>
+      <span className="min-w-0 flex-1 truncate font-mono text-site-caption text-muted-foreground">{COMMAND}</span>
       {children}
     </div>
   );
 }
 
 const actionClass =
-  "flex h-7 shrink-0 items-center gap-1.5 px-1.5 text-caption text-muted-foreground [&:is(:hover,[data-script-hover])]:text-foreground";
+  "flex h-7 shrink-0 items-center gap-1.5 px-1.5 text-site-caption text-muted-foreground [&:is(:hover,[data-script-hover])]:text-foreground";
 
 /** Generic: the icon snaps to a check and "Copy" turns into "Copied!", which
  *  is wider, so the action grows and eats into the command text. */
@@ -219,8 +219,8 @@ const button = "relative inline-flex items-center justify-center text-background
  *  default button. The script presses them one after the other, so the
  *  difference between them is felt, not just seen. */
 const SIZES = [
-  { className: "h-7 px-3 text-caption", label: "Skip" },
-  { className: "h-9 w-full max-w-64 text-body", label: "Continue" },
+  { className: "h-7 px-3 text-site-caption", label: "Skip" },
+  { className: "h-9 w-full max-w-64 text-site-body", label: "Continue" },
 ];
 
 type PressProps = { pressed: number | null; setPressed: (v: number | null) => void };

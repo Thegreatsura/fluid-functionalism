@@ -13,7 +13,6 @@ import {
   sizeMap,
   typeScale,
   type SizeVariant,
-  type TypeScaleRole,
 } from "@/registry/default/lib/size-context";
 import { Button } from "@/registry/radix/button";
 import {
@@ -33,89 +32,9 @@ import { ChevronDown, ListFilter, Plus, Search, SquareKanban, Table2 } from "luc
 /** Inline code chip used throughout the prose. */
 function Code({ children }: { children: ReactNode }) {
   return (
-    <code className="mx-1 rounded bg-[light-dark(#EBEBED,#2C2C2C)] px-1 py-0.5 text-caption text-foreground">
+    <code className="mx-1 rounded bg-[light-dark(#EBEBED,#2C2C2C)] px-1 py-0.5 text-site-caption text-foreground">
       {children}
     </code>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Typography scale — live specimen rendered from the typeScale tokens
-// ---------------------------------------------------------------------------
-
-const TYPE_ROLES: Array<{
-  role: TypeScaleRole;
-  tag: string;
-  label: string;
-  weight: string;
-  sample: string;
-  muted?: boolean;
-}> = [
-  { role: "display", tag: "h1", label: "Display", weight: fontWeights.bold, sample: "Fluid Functionalism" },
-  { role: "title", tag: "h2", label: "Title", weight: fontWeights.semibold, sample: "Create teamspace" },
-  { role: "subtitle", tag: "h3", label: "Subtitle", weight: fontWeights.medium, sample: "Weekly design review" },
-  { role: "body", tag: "p", label: "Body", weight: fontWeights.normal, sample: "The quick brown fox jumps over the lazy dog" },
-  { role: "caption", tag: "small", label: "Caption", weight: fontWeights.normal, sample: "Last updated 4 minutes ago", muted: true },
-];
-
-function TypeScaleTable({ step }: { step: SizeVariant }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <span
-        className="text-body text-foreground"
-        style={{ fontVariationSettings: fontWeights.semibold }}
-      >
-        {step === "default" ? "Default" : "Compact"}
-      </span>
-      <ScrollArea
-        orientation="horizontal"
-        viewportClassName="scroll-fade-x"
-        className="w-full"
-      >
-        <table className="w-full min-w-[480px] border-collapse text-body [&_th:first-child]:pl-0 [&_td:first-child]:pl-0">
-          {/* Column labels stay for screen readers only — the samples are
-              self-describing and the header row just added chrome. */}
-          <thead className="sr-only">
-            <tr>
-              {["Size", "Sample", "Role"].map((h) => (
-                <th key={h} className="text-left">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {TYPE_ROLES.map(({ role, tag, label, weight, sample, muted }) => (
-              <tr key={role} className="border-b border-border/50">
-                <td className="px-3 py-2.5 tabular-nums text-muted-foreground">
-                  {typeScale[role][step]}px
-                </td>
-                <td className="px-3 py-2.5">
-                  <span
-                    className={cn(
-                      muted ? "text-muted-foreground" : "text-foreground",
-                      "block truncate leading-snug max-w-[360px]"
-                    )}
-                    style={{
-                      fontSize: typeScale[role][step],
-                      fontVariationSettings: weight,
-                    }}
-                  >
-                    {sample}
-                  </span>
-                  <span className="sr-only">{label}</span>
-                </td>
-                <td className="px-3 py-2.5">
-                  <code className="rounded bg-[light-dark(#EBEBED,#2C2C2C)] px-1 py-0.5 text-caption text-foreground">
-                    {tag}
-                  </code>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </ScrollArea>
-    </div>
   );
 }
 
@@ -131,7 +50,7 @@ const TOKEN_ROWS: Array<{
 }> = [
   { token: "control", applies: "Controls and rows — shared so menu rows line up with their trigger", def: "h-9 · 36px", compact: "h-7 · 28px" },
   { token: "segmentItem + segmentPad", applies: "Segmented tabs inside their padded list", def: "28px + 4px = 36px", compact: "24px + 2px = 28px" },
-  { token: "text", applies: "Labels inside controls", def: "13px", compact: "12px" },
+  { token: "text", applies: "Labels inside controls (the body role)", def: "13px / 18px", compact: "12px / 16px" },
   { token: "icon", applies: "Leading/trailing icons, checkbox square, radio circle", def: "16px", compact: "14px" },
   { token: "px / itemPx", applies: "Control / row horizontal padding", def: "12px / 8px", compact: "10px / 6px" },
   { token: "gap", applies: "Icon-to-label and control-to-control gap", def: "8px", compact: "4px" },
@@ -144,7 +63,7 @@ function TokenTable() {
       viewportClassName="scroll-fade-x"
       className="w-full"
     >
-      <table className="w-full min-w-[560px] text-body border-collapse [&_th:first-child]:pl-0 [&_td:first-child]:pl-0">
+      <table className="w-full min-w-[560px] text-site-body border-collapse [&_th:first-child]:pl-0 [&_td:first-child]:pl-0">
         <thead>
           <tr className="border-b border-border">
             {["Token", "Applies to", "Default", "Compact"].map((h) => (
@@ -162,7 +81,7 @@ function TokenTable() {
           {TOKEN_ROWS.map((row) => (
             <tr key={row.token} className="border-b border-border/50">
               <td className="px-3 py-2">
-                <code className="rounded bg-[light-dark(#EBEBED,#2C2C2C)] px-1 py-0.5 text-caption text-foreground">
+                <code className="rounded bg-[light-dark(#EBEBED,#2C2C2C)] px-1 py-0.5 text-site-caption text-foreground">
                   {row.token}
                 </code>
               </td>
@@ -276,7 +195,7 @@ function HeightGuides({ height }: { height: number }) {
           />
         </svg>
         <span
-          className="text-caption tabular-nums"
+          className="text-site-caption tabular-nums"
           style={{ color: "#6B97FF", fontVariationSettings: fontWeights.semibold }}
         >
           {height}px
@@ -297,7 +216,7 @@ function ToolbarRow({ variant }: { variant: SizeVariant }) {
   return (
     <SizeProvider size={variant}>
       <div className="flex w-full flex-col items-start gap-3">
-        <span className="text-caption text-muted-foreground select-none">
+        <span className="text-site-caption text-muted-foreground select-none">
           {variant === "default" ? "Default · 36px" : "Compact · 28px"}
         </span>
         <div className="relative w-full">
@@ -468,7 +387,7 @@ function CompactRegionDemo() {
         />
       </svg>
       <span
-        className="absolute text-caption leading-snug select-none hidden sm:block"
+        className="absolute text-site-caption leading-snug select-none hidden sm:block"
         style={{
           left: 318,
           top: 18,
@@ -502,7 +421,7 @@ function tokenReadout(raw: InspectRaw, step: SizeVariant) {
   const px = step === "default" ? 12 : 10;
   const itemPx = step === "default" ? 8 : 6;
   const gap = step === "default" ? 8 : 4;
-  const text = typeScale.body[step];
+  const text = typeScale.body[step].size;
 
   const rows: Array<[string, string]> = [];
   if (eq(raw.height, t.controlHeight))
@@ -677,18 +596,18 @@ export default function SizesPage() {
       }
       slug="sizes"
       installSlug="size-context"
-      installNote="Installs the size-context lib: SizeProvider, the useSize and useTypeScale hooks, and the token maps behind both steps."
+      installNote="Installs the size-context lib: SizeProvider, the useSize and useTypeScale hooks, the token maps behind both steps, and the type-scale tokens."
     >
       <DocSection title="The principle">
-        <p className="text-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground leading-relaxed">
           An interface reads as one product when its controls share a sizing
           rhythm. A button next to a select next to a tab should land on the
           same height.
         </p>
-        <p className="text-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground leading-relaxed">
           Each size scales text, icons, and padding together.
         </p>
-        <p className="text-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground leading-relaxed">
           Compact is for dense, data-heavy tools; default is the right call
           for everything else.
         </p>
@@ -698,18 +617,16 @@ export default function SizesPage() {
       </DocSection>
 
       <DocSection title="Typography scale">
-        <p className="text-body text-muted-foreground leading-relaxed">
-          Type follows the ladder. Compact drops each role one notch, so a
-          dense screen keeps the same hierarchy at a smaller size.
+        <p className="text-site-body text-muted-foreground leading-relaxed">
+          Type follows the ladder. Compact drops each of the six roles one
+          notch, size and leading together, so a dense screen keeps the same
+          hierarchy at a smaller size. The full scale lives on
+          <a href="/docs/typography" className="mx-1 text-foreground underline underline-offset-4">Typography</a>.
         </p>
-        <div className="flex flex-col gap-10 pt-3">
-          <TypeScaleTable step="default" />
-          <TypeScaleTable step="compact" />
-        </div>
       </DocSection>
 
       <DocSection title="Compact regions">
-        <p className="text-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground leading-relaxed">
           Density is a region decision, not a per-control one. Wrap the region
           in a<Code>SizeProvider</Code> and everything inside follows — menus
           included, since React context crosses portals.
@@ -718,7 +635,7 @@ export default function SizesPage() {
       </DocSection>
 
       <DocSection title="Token reference">
-        <p className="text-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground leading-relaxed">
           The table, measured live: hover a control below and every number in
           the readout is a token from this table. Flip the step and the
           element re-measures under your cursor.

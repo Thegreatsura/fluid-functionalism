@@ -24,9 +24,9 @@ const FOCUS_RING_MESSAGE =
 // the surrounding SizeProvider (see /docs/sizes). Overriding that with a raw
 // px in className freezes one step of the ladder, so the text stops
 // responding when the site size changes. Site chrome has the type-scale
-// roles for this — text-display / text-title / text-subtitle / text-body /
-// text-caption, defined in app/globals.css — and a component that genuinely
-// wants a different step takes `size`.
+// roles for this — text-site-display / -title / -subtitle / -body /
+// -caption / -micro, generated into app/globals.css — and a component that
+// genuinely wants a different step takes `size`.
 //
 // Deliberately scoped to className on FF components, not to every element:
 // previews that mimic a component's internals with plain divs legitimately
@@ -35,7 +35,17 @@ const FF_COMPONENT_REGEX =
   "^(Accordion|AskUser|Badge|Button|Card|Chat|Checkbox|Color|Dialog|Dropdown|Elevated|Input|Menu|Nav|Radio|Scroll|Select|Sidebar|Slider|Switch|Table|Tabs|Thinking|Tooltip)";
 const HARDCODED_TYPE_REGEX = "\\btext-\\[[0-9]";
 const HARDCODED_TYPE_MESSAGE =
-  "Hardcoded font size on a component. Type follows the size ladder: pass `size`, or use a type-scale role (text-caption / text-body / text-subtitle / text-title / text-display) so it tracks the site size step.";
+  "Hardcoded font size on a component. Type follows the size ladder: pass `size`, or use a site type-scale role (text-site-caption / -body / -subtitle / -title / -display / -micro) so it tracks the site size step.";
+
+// Inside the registry every size and leading comes from the type scale
+// (/docs/typography): typeClass(role, variant), sizeClasses.type.<role>, or
+// the literal role class with its var(--fs-*) / var(--lh-*) fallback. A raw
+// text-[13px] or leading-[18px] is drift the scale can't reach, and a bare
+// text-caption (or site-only text-site-caption) breaks in installs: stock
+// tailwind-merge takes it for a color and drops it inside cn().
+const REGISTRY_TYPE_REGEX = "\\btext-\\[[0-9]|\\bleading-\\[(?!var\\(--lh-)|(?:^|\\s)text-(?:site-)?(?:display|title|subtitle|body|caption|micro)(?:-compact)?(?:\\s|$)";
+const REGISTRY_TYPE_MESSAGE =
+  "Registry type comes from the type scale: typeClass(role, variant) / sizeClasses.type.<role> from @/lib/size-context, not a raw text-[Npx], leading-[…], or bare text-<role> class.";
 
 const shadcnRestrictedRules = {
   "no-restricted-syntax": [
@@ -70,6 +80,14 @@ const shadcnRestrictedRules = {
       selector: `JSXOpeningElement[name.name=/${FF_COMPONENT_REGEX}/] > JSXAttribute[name.name="className"] TemplateElement[value.raw=/${HARDCODED_TYPE_REGEX}/]`,
       message: HARDCODED_TYPE_MESSAGE,
     },
+  ],
+};
+
+const registryRestrictedRules = {
+  "no-restricted-syntax": [
+    ...shadcnRestrictedRules["no-restricted-syntax"],
+    { selector: `Literal[value=/${REGISTRY_TYPE_REGEX}/]`, message: REGISTRY_TYPE_MESSAGE },
+    { selector: `TemplateElement[value.raw=/${REGISTRY_TYPE_REGEX}/]`, message: REGISTRY_TYPE_MESSAGE },
   ],
 };
 
@@ -124,5 +142,13 @@ export default [
       "app/components/shadcn-previews.tsx",
     ],
     rules: shadcnRestrictedRules,
+  },
+  // Registry sources: the shadcn rules plus the type-scale rule. A later
+  // block replaces no-restricted-syntax wholesale, so this one repeats them.
+  {
+    files: ["registry/**/*.{ts,tsx}"],
+    // The tailwind-merge list names the role utilities on purpose.
+    ignores: ["registry/default/lib/utils.ts"],
+    rules: registryRestrictedRules,
   },
 ];

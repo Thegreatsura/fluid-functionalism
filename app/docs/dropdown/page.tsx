@@ -489,7 +489,7 @@ export default function DropdownDoc() {
       </DocSection>
 
       <DocSection title="Triggered menu">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-subtitle text-muted-foreground">
           3 parts: <code>DropdownMenu</code>, <code>DropdownTrigger</code>,{" "}
           <code>DropdownContent</code>. Any element goes in <code>render</code>.
         </p>
@@ -515,7 +515,7 @@ export default function DropdownDoc() {
       </DocSection>
 
       <DocSection title="Multiple selection">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-subtitle text-muted-foreground">
           Pass <code>checkedIndices</code>: rows become checkboxes, the menu
           stays open, and touching picks share one background.
         </p>
@@ -540,7 +540,7 @@ export default function DropdownDoc() {
       </DocSection>
 
       <DocSection title="Searchable menu">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-subtitle text-muted-foreground">
           Put a <code>DropdownSearch</code> first and filter the rows you
           render. Type to filter, arrow down to a row, press Enter.
         </p>
@@ -577,7 +577,7 @@ export default function DropdownDoc() {
       </DocSection>
 
       <DocSection title="Searchable multiple selection">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-subtitle text-muted-foreground">
           Both at once. Compute <code>checkedIndices</code> against the
           filtered rows; Enter toggles the focused row and the menu stays open.
         </p>
@@ -616,7 +616,7 @@ export default function DropdownDoc() {
       </DocSection>
 
       <DocSection title="Create from the query">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-subtitle text-muted-foreground">
           1 extra row when nothing matches. Type a component that is not
           there, press ↑ to reach it, then Enter.
         </p>

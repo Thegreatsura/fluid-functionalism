@@ -1,0 +1,87 @@
+// Six-role type scale: each role is a font size and a line height, per step
+// of the size ladder. This file is the single source: the CSS variables, the
+// Tailwind theme tokens (text-<role>, text-<role>-compact) and the registry
+// `type-scale` item are generated from `typeScale` below.
+
+type TypeScaleVariant = "default" | "compact";
+
+/** One role at one ladder step, in px. */
+interface TypeScalePair {
+  size: number;
+  leading: number;
+}
+
+type TypeScaleStep = Record<TypeScaleVariant, TypeScalePair>;
+
+const typeScale = {
+  /** Page titles. */
+  display: {
+    default: { size: 28, leading: 34 },
+    compact: { size: 24, leading: 30 },
+  },
+  /** Section headings, dialog titles. */
+  title: {
+    default: { size: 16, leading: 22 },
+    compact: { size: 15, leading: 20 },
+  },
+  /** Card titles, chat bubbles, emphasized rows. */
+  subtitle: {
+    default: { size: 14, leading: 20 },
+    compact: { size: 13, leading: 18 },
+  },
+  /** Control labels and body copy. */
+  body: {
+    default: { size: 13, leading: 18 },
+    compact: { size: 12, leading: 16 },
+  },
+  /** Secondary text: descriptions, meta rows, errors, group labels. */
+  caption: {
+    default: { size: 12, leading: 16 },
+    compact: { size: 11, leading: 14 },
+  },
+  /** Keyboard caps, counters, tiny badges. Single line only. */
+  micro: {
+    default: { size: 11, leading: 14 },
+    compact: { size: 10, leading: 12 },
+  },
+} as const satisfies Record<string, TypeScaleStep>;
+
+type TypeScaleRole = keyof typeof typeScale;
+
+const typeScaleRoles = Object.keys(typeScale) as TypeScaleRole[];
+
+// Class strings per role and step. Arbitrary values over the CSS variables,
+// with the px values as fallbacks, so a component renders the right size even
+// where the `type-scale` tokens were never installed, and stock
+// tailwind-merge reads them as font-size / line-height (a bare `text-caption`
+// would be taken for a color and dropped next to `text-muted-foreground`).
+// Literal strings on purpose: Tailwind only generates classes it can read in
+// source. Written by scripts/generate-type-scale.mjs, do not edit by hand.
+// <generated:type-classes>
+const typeClasses = {
+  default: {
+    display: "text-[length:var(--fs-display,28px)] leading-[var(--lh-display,34px)]",
+    title: "text-[length:var(--fs-title,16px)] leading-[var(--lh-title,22px)]",
+    subtitle: "text-[length:var(--fs-subtitle,14px)] leading-[var(--lh-subtitle,20px)]",
+    body: "text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)]",
+    caption: "text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]",
+    micro: "text-[length:var(--fs-micro,11px)] leading-[var(--lh-micro,14px)]",
+  },
+  compact: {
+    display: "text-[length:var(--fs-display-compact,24px)] leading-[var(--lh-display-compact,30px)]",
+    title: "text-[length:var(--fs-title-compact,15px)] leading-[var(--lh-title-compact,20px)]",
+    subtitle: "text-[length:var(--fs-subtitle-compact,13px)] leading-[var(--lh-subtitle-compact,18px)]",
+    body: "text-[length:var(--fs-body-compact,12px)] leading-[var(--lh-body-compact,16px)]",
+    caption: "text-[length:var(--fs-caption-compact,11px)] leading-[var(--lh-caption-compact,14px)]",
+    micro: "text-[length:var(--fs-micro-compact,10px)] leading-[var(--lh-micro-compact,12px)]",
+  },
+} as const satisfies Record<TypeScaleVariant, Record<TypeScaleRole, string>>;
+// </generated:type-classes>
+
+/** The class string for one role at one step (size + leading). */
+function typeClass(role: TypeScaleRole, variant: TypeScaleVariant = "default"): string {
+  return typeClasses[variant][role];
+}
+
+export { typeScale, typeScaleRoles, typeClasses, typeClass };
+export type { TypeScaleRole, TypeScaleVariant, TypeScalePair, TypeScaleStep };

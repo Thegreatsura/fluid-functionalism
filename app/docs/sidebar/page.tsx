@@ -819,7 +819,7 @@ function FakeCursor({ x, y }: { x: number; y: number }) {
 
 function CompareLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="text-caption text-muted-foreground text-center">
+    <span className="text-site-caption text-muted-foreground text-center">
       {children}
     </span>
   );
@@ -1655,7 +1655,7 @@ function DemoCallout({ variant }: { variant: "banner" | "inline" }) {
         className={variant === "banner" ? "gap-0 pt-3" : "gap-[2px] py-3"}
       >
         <CardTitle className="truncate">{AI_CALLOUT.title}</CardTitle>
-        <CardDescription className="truncate text-caption">
+        <CardDescription className="truncate text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]">
           {variant === "banner" ? AI_CALLOUT.media : AI_CALLOUT.icon}
         </CardDescription>
       </CardHeader>
@@ -1846,7 +1846,7 @@ export default function SidebarDoc() {
       </DocSection>
 
       <DocSection title="Layouts">
-        <p className="text-body text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           3 layout options: <code>sidebar</code> default,{" "}
           <code>floating</code> to elevate the sidebar in a higher surface,{" "}
           <code>inset</code> to make your content stand out.
@@ -1863,7 +1863,7 @@ export default function SidebarDoc() {
       </DocSection>
 
       <DocSection title="Nesting">
-        <p className="text-body text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           2 levels of nesting, one section level and one parent level.
         </p>
         <ComponentPreview code={nestingCode} padding="none" minHeightClass={SHELL_HEIGHT} inspectRulers={false}>
@@ -1872,7 +1872,7 @@ export default function SidebarDoc() {
       </DocSection>
 
       <DocSection title="Actions & badges">
-        <p className="text-body text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           Add badge indicator and up to 3 actions. Actions show on hover so
           the label keeps maximum readability.
         </p>
@@ -1882,7 +1882,7 @@ export default function SidebarDoc() {
       </DocSection>
 
       <DocSection title="Header & footer">
-        <p className="text-body text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           Stack the header and footer content <code>vertically</code> or{" "}
           <code>horizontally</code>.
         </p>
@@ -1895,7 +1895,7 @@ export default function SidebarDoc() {
       </DocSection>
 
       <DocSection title="Callouts">
-        <p className="text-body text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           Elevate &amp; promote news using the callout with stackable{" "}
           <code>Banners</code> or <code>Inlines</code>.
         </p>
@@ -1908,7 +1908,7 @@ export default function SidebarDoc() {
       </DocSection>
 
       <DocSection title="Resize, collapse & peek">
-        <p className="text-body text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           Drag to resize, click to collapse, or press <code>[</code> key.
           Open sidebar on <code>click</code> or <code>hover</code>.
         </p>
@@ -1921,7 +1921,7 @@ export default function SidebarDoc() {
       </DocSection>
 
       <DocSection title="Inside a dialog">
-        <p className="text-body text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           A settings dialog with the sidebar inside. 3 props make it fit:{" "}
           <code>collapsible=&quot;none&quot;</code> drops the rail and the
           drawer, <code>persist={"{false}"}</code> skips the cookie, and{" "}
@@ -1934,28 +1934,28 @@ export default function SidebarDoc() {
       </DocSection>
 
       <DocSection title="No icon rail version?">
-        <p className="text-body text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           Hot take baked into this component: there&apos;s no icon-only
           collapsed mode. On purpose.
         </p>
-        <p className="text-body text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           Icon rails look tidy in screenshots but fail in use. Six ambiguous
           glyphs, and you suddenly need to tooltip most of them until
           you&apos;ve found the right one.
         </p>
-        <p className="text-body text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           Nesting, section labels and complementary actions are impossible to
           reflect. It only benefits power users on simple sidebars — and
           it&apos;s your worst way to educate users.
         </p>
-        <p className="text-body text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           Half a sidebar is confusing for everybody. Convert yours now.
         </p>
         <IconRailVsPeekDemo />
       </DocSection>
 
       <DocSection title="Functional and perfectly aligned">
-        <p className="text-body text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           One rhythm everywhere: 24px icon buttons with 16px icons from
           header to footer.
         </p>

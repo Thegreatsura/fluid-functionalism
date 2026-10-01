@@ -125,7 +125,7 @@ export function SiteSidebar() {
         <SidebarFooter className="p-4 pt-2">
           <div className="flex items-center justify-between pt-2">
             <h2
-              className="text-title text-foreground leading-none"
+              className="text-site-title text-foreground leading-none"
               style={{ fontVariationSettings: "'wght' 600" }}
             >
               Make them yours

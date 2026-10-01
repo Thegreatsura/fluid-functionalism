@@ -158,7 +158,7 @@ function FooterCallout({
         className={variant === "banner" ? "gap-0 pt-3" : "gap-[2px] py-3"}
       >
         <CardTitle className="truncate">Sidebar is here</CardTitle>
-        <CardDescription className="truncate text-caption">
+        <CardDescription className="truncate text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]">
           New in Fluid Functionalism
         </CardDescription>
       </CardHeader>
@@ -332,7 +332,7 @@ export function FooterCalloutStack({
                 }
               >
                 <CardTitle className="truncate">{c.title}</CardTitle>
-                <CardDescription className="truncate text-caption">
+                <CardDescription className="truncate text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]">
                   {c.desc}
                 </CardDescription>
               </CardHeader>
@@ -887,7 +887,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
           : `${stackCardIndent}  <CardHeader className="gap-[2px] py-3">`
       );
       lines.push(`${stackCardIndent}    <CardTitle className="truncate">{c.title}</CardTitle>`);
-      lines.push(`${stackCardIndent}    <CardDescription className="truncate text-caption">{c.desc}</CardDescription>`);
+      lines.push(`${stackCardIndent}    <CardDescription className="truncate text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]">{c.desc}</CardDescription>`);
       lines.push(`${stackCardIndent}  </CardHeader>`);
       lines.push(`${stackCardIndent}</Card>`);
       if (o.footerCallout === "inline") {
@@ -925,7 +925,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
       );
       lines.push(`${calloutIndent}    <CardTitle className="truncate">Sidebar is here</CardTitle>`);
       lines.push(
-        `${calloutIndent}    <CardDescription className="truncate text-caption">New in Fluid Functionalism</CardDescription>`
+        `${calloutIndent}    <CardDescription className="truncate text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]">New in Fluid Functionalism</CardDescription>`
       );
       lines.push(`${calloutIndent}  </CardHeader>`);
       lines.push(`${calloutIndent}</Card>`);

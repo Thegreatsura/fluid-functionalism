@@ -55,7 +55,7 @@ function Slide({ index, direction }: { index: number; direction: number }) {
       <AnimatePresence mode="popLayout" initial={false} custom={direction}>
         <motion.span
           key={index}
-          className="col-start-1 row-start-1 text-body text-foreground"
+          className="col-start-1 row-start-1 text-site-body text-foreground"
           custom={direction}
           variants={slideVariants}
           initial="enter"
@@ -109,7 +109,7 @@ function AutoplayDemo() {
 
 function Code({ children }: { children: ReactNode }) {
   return (
-    <code className="mx-1 rounded bg-[light-dark(#EBEBED,#2C2C2C)] px-1 py-0.5 text-caption text-foreground">
+    <code className="mx-1 rounded bg-[light-dark(#EBEBED,#2C2C2C)] px-1 py-0.5 text-site-caption text-foreground">
       {children}
     </code>
   );
@@ -123,7 +123,7 @@ export default function CarouselDotsDoc() {
       description="Dots for a carousel, static or on autoplay."
     >
       <DocSection title="Static">
-        <p className="text-body leading-relaxed text-muted-foreground">
+        <p className="text-site-body leading-relaxed text-muted-foreground">
           Hover a dot to see its click area, then click it. The highlight glides
           from dot to dot.
         </p>
@@ -133,7 +133,7 @@ export default function CarouselDotsDoc() {
       </DocSection>
 
       <DocSection title="Autoplay">
-        <p className="text-body leading-relaxed text-muted-foreground">
+        <p className="text-site-body leading-relaxed text-muted-foreground">
           Add <Code>autoplay</Code> and the pill fills, then the next slide comes
           in. Hover the slide to pause. Reduced motion turns the timer off.
         </p>

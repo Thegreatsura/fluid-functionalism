@@ -228,6 +228,12 @@ system:
 - **Weight without reflow.** Text that gets heavier on state
   (selected/active/open) uses the ghost-span pattern with `fontWeights`
   tokens, so the layout never shifts.
+- **Type comes from six roles.** Size text with `typeClass(role, variant)` or
+  `useSize().type.<role>` from `@/lib/size-context` (display, title,
+  subtitle, body, caption, micro; each a size and a line height). Never a raw
+  `text-[13px]`, and never a bare `text-caption` inside `cn()`: stock
+  tailwind-merge reads it as a color and drops it. Rendered markdown goes in
+  `.typeset` (install `@fluid/typography`), not hand-styled elements.
 - **Icon swaps crossfade in one cell.** Two glyphs mounted in the same grid
   cell, fading with a touch of blur and scale — the slot never resizes.
 - **Nested corners are concentric.** When a rounded surface sits close inside

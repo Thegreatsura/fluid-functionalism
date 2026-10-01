@@ -391,7 +391,7 @@ export default function CommandMenuDoc() {
       </DocSection>
 
       <DocSection title="Basic">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-subtitle text-muted-foreground">
           Type to filter, press ↓ ↑ to move, Enter to run. Rows come from{" "}
           <code>items</code>, grouped by <code>group</code>.
         </p>
@@ -408,7 +408,7 @@ export default function CommandMenuDoc() {
       </DocSection>
 
       <DocSection title="Descriptions, shortcuts, disabled rows">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-subtitle text-muted-foreground">
           3 more fields per row: <code>description</code>, <code>shortcut</code>{" "}
           caps, and <code>disabled</code>, which the arrows skip. Type{" "}
           <code>clipboard</code>: keywords match too.
@@ -426,7 +426,7 @@ export default function CommandMenuDoc() {
       </DocSection>
 
       <DocSection title="Suggestions">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-subtitle text-muted-foreground">
           3 suggested rows lead until you type 1 letter, then the groups take
           over.
         </p>
@@ -448,7 +448,7 @@ export default function CommandMenuDoc() {
       </DocSection>
 
       <DocSection title="Tabs">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-subtitle text-muted-foreground">
           Click a tab or press ← →, then derive <code>items</code> from the
           value. Children hug the row&apos;s end: put{" "}
           <code>CommandMenuFilters</code> there to share the line.
@@ -467,7 +467,7 @@ export default function CommandMenuDoc() {
       </DocSection>
 
       <DocSection title="Filters">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-subtitle text-muted-foreground">
           A frameless compact row under the field: drop borderless Selects or
           ghost Buttons in.
         </p>
@@ -506,7 +506,7 @@ export default function CommandMenuDoc() {
       </DocSection>
 
       <DocSection title="Dialog and trigger shortcut">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-subtitle text-muted-foreground">
           Press {mac ? "⌘P" : "Ctrl+P"} anywhere on this page: this demo binds its
           own combo, and the default {mac ? "⌘K" : "Ctrl+K"} opens the playground
           above. A pick or Escape closes it.
@@ -545,7 +545,7 @@ export default function CommandMenuDoc() {
       </DocSection>
 
       <DocSection title="Footer hints">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-subtitle text-muted-foreground">
           4 hints at most, following the menu: ← → with tabs, Esc in a
           dialog, and ↵ named after the highlighted row (its{" "}
           <code>action</code>, or its label). Pass <code>hints</code> for
@@ -566,7 +566,7 @@ export default function CommandMenuDoc() {
       </DocSection>
 
       <DocSection title="Custom rows">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-subtitle text-muted-foreground">
           1 <code>CommandMenuItem</code> per row from <code>renderItem</code>:
           children replace the label, the icon and caps stay.
         </p>

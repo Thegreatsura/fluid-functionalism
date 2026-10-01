@@ -32,7 +32,7 @@ import {
   SelectionBackgrounds,
 } from "@/hooks/use-merge-split";
 import { shapeMap } from "@/lib/shape-context";
-import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
+import { SizeProvider, useSize, typeClass, type SizeVariant } from "@/lib/size-context";
 import { Elevated } from "@/lib/elevated";
 import {
   popupMotionClass,
@@ -695,7 +695,7 @@ const DropdownLabel = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>
       ref={ref}
       className={cn(
         "px-2 py-1.5 shrink-0 text-muted-foreground",
-        compact ? "text-[11px]" : "text-[12px]",
+        typeClass("caption", compact ? "compact" : "default"),
         className
       )}
       {...props}

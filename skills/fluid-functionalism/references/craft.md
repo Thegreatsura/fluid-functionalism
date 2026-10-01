@@ -18,6 +18,7 @@ Systems first — their craft applies across every component below.
 - [Fluid Hover (use-fluid-hover)](#fluid-hover)
 - [Surfaces (elevated)](#surfaces)
 - [Sizes (size-context)](#sizes)
+- [Typography (type-scale, typography)](#typography)
 - [Scrollbars (scroll-area)](#scrollbars)
 - [Accordion](#accordion)
 - [AskUserQuestions](#ask-user-questions)
@@ -94,9 +95,24 @@ Systems first — their craft applies across every component below.
 - One `control` height token by design for BOTH bounded controls (buttons, inputs, select triggers) AND list/menu rows: a popup row lines up with the trigger that opened it because they share this height.
 - Segmented tabs are sized so `segmentPad` + `segmentItem` adds back up to the control height (28px item + 4px pad = 36px default; 24 + 2 = 28 compact) — the segmented control's outer box stays on the same ladder as its neighbours.
 - The compact step halves the `gap` token (8px → 4px) because "density is spacing as much as control height" — control-to-control spacing comes from the ladder, not from layout code.
-- Type follows the ladder: compact drops each role one notch (display 28→24, title 16→15, subtitle 14→13, body 13→12, caption 12→11) so a dense region reads as "a smaller sibling of the same hierarchy, not a squeezed copy".
+- Type follows the ladder: compact drops each of the six roles one notch, size and leading together (body 13/18px → 12/16px, caption 12/16px → 11/14px), so a dense region reads as "a smaller sibling of the same hierarchy, not a squeezed copy". The scale itself is its own system: see Typography.
 - Resolution order is explicit component `size` prop > surrounding `SizeProvider` > `"default"`; ~20 components accept the per-component override and it wins over the provider.
 - Density is a region decision, not a per-control one: wrap the region in one `SizeProvider` and everything follows — menus opened from it included, since React context crosses portals.
+
+<a id="typography"></a>
+## Typography (type-scale, typography)
+
+- Six roles, each a size and a line height at both ladder steps: display 28/34px (compact 24/30), title 16/22 (15/20), subtitle 14/20 (13/18), body 13/18 (12/16), caption 12/16 (11/14), micro 11/14 (10/12). Pairing the leading with the size puts a caption in a menu and a caption in a table on the same rhythm.
+- Pick the role by purpose, then check its default/compact pair: a 14/13px chat bubble is `subtitle` at both steps, not `body` when compact; an 11px error inside a compact control is compact `caption`. `micro` is only for keyboard caps, counters, and tiny badges, single line, so its leading is tight on purpose.
+- Components never write `text-[13px]`: they use `typeClass(role, variant)` or `useSize().type.<role>`, which emit `text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]`. Stock tailwind-merge reads a bare `text-caption` as a color and drops it next to `text-muted-foreground` inside `cn()`; the arbitrary form survives, and its px fallbacks render even without the `type-scale` tokens.
+- A deliberate line-height override (a `leading-none` key cap, a `leading-5` input whose line box sets the caret height) keeps only the size half of the role class: two leadings in one plain class string resolve by stylesheet order, not by the order you wrote them.
+- Weights carry an optical size (`fontWeights`: 400 with opsz 14, 450/15, 550/18, 700/25) so a label that turns bold holds its width: medium and semibold stay within ±0.4px across a corpus of real labels and bold within ±0.7px, where weight alone widens a 25-character label by about 7px.
+- `.typeset` styles plain markdown elements from four values: size (`1em` inherits the surroundings), leading, flow, and heading ratio (h3 = ratio, h2 = ratio², h1 = ratio³ of the base, so headings always outgrow body text). Presets: `.typeset-docs` (15px, 1.65) and `.typeset-chat` (inherits the bubble, 1.5, tighter flow).
+- `.typeset-scale` pins every level to a type role instead of the ratio, so markdown's six heading levels show all six roles: h1 display, h2 title, h3 subtitle, h4 and paragraphs body, h5 caption, h6 micro, code caption, each with its role's leading. A single ratio can't produce 28/16/14/13, so each level has its own `--typeset-h1` … `--typeset-h6` size and leading variable.
+- `.typeset-compact` steps any preset one notch down, the way compact steps the roles: 1px off a px base (an inheriting base already follows its compact context), 0.05 off the leading, a fifth off the rhythm. Under `.typeset-scale` it switches to the compact roles (12/16 body, 24/30 display).
+- The prose sheet sits in `@layer components` with every selector inside `:where()`, so it has zero specificity and any utility on an element wins without `!important`. `.not-typeset` skips a subtree but keeps its outer spacing, so a component dropped into prose still sits in the rhythm.
+- It styles editors as well as rendered markdown: GFM task lists (remark-gfm classes) and Tiptap's markup (a `li[data-type=taskItem]` with a checkbox label and a content div, tables in `.tableWrapper`) both work as is. A to-do's checkbox centers on its first line, and a checked item fades and strikes through, as in Notion.
+- Space only goes above an element (no `:last-child`, no `:has()`, no `margin-bottom`), so text streamed in at the end of a chat reply never moves what is already on screen.
 
 <a id="scrollbars"></a>
 ## Scrollbars (scroll-area)

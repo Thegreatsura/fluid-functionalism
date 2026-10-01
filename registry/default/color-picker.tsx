@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { nestedRadius, useShape, shapeMap } from "@/lib/shape-context";
-import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
+import { SizeProvider, useSize, typeClass, type SizeVariant } from "@/lib/size-context";
 import { useSurface, SurfaceProvider } from "@/lib/surface-context";
 import { surfaceClasses } from "@/lib/surface-classes";
 import { useIcon } from "@/lib/icon-context";
@@ -1200,7 +1200,7 @@ const TextColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
           <span
             className={cn(
               "text-muted-foreground mr-1 select-none",
-              compact ? "text-[11px]" : "text-[12px]"
+              typeClass("caption", compact ? "compact" : "default")
             )}
           >
             {prefix}
@@ -1435,7 +1435,7 @@ const ScrubColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
             <span
               className={cn(
                 "text-muted-foreground mr-1 select-none",
-                compact ? "text-[11px]" : "text-[12px]"
+                typeClass("caption", compact ? "compact" : "default")
               )}
             >
               {prefix}

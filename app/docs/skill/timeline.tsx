@@ -200,7 +200,7 @@ function Step({
       />
       <span
         className={cn(
-          "text-body transition-colors duration-80",
+          "text-site-body transition-colors duration-80",
           // Touch never hovers, so its titles stay at full strength.
           active ? "text-foreground" : "text-foreground/70 [@media(hover:none)]:text-foreground"
         )}
@@ -210,7 +210,7 @@ function Step({
       </span>
       <p
         className={cn(
-          "mt-0.5 text-body leading-snug transition-colors duration-80",
+          "mt-0.5 text-site-body leading-snug transition-colors duration-80",
           active
             ? "text-muted-foreground"
             : "text-muted-foreground/70 [@media(hover:none)]:text-muted-foreground"

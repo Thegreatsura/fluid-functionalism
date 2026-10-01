@@ -228,7 +228,7 @@ function ValueDisplay({
   const renderValue = (index: number) => {
     if (editingIndex === index) {
       return (
-        <span className="inline-grid text-[13px]">
+        <span className="inline-grid text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)]">
           {/* Ghost for layout stability — widest possible value */}
           <span
             className="col-start-1 row-start-1 invisible"
@@ -292,7 +292,7 @@ function ValueDisplay({
   return (
     <span
       className={cn(
-        "inline-grid shrink-0 text-[13px] leading-none text-muted-foreground transition-[font-variation-settings] duration-100",
+        "inline-grid shrink-0 text-[length:var(--fs-body,13px)] leading-none text-muted-foreground transition-[font-variation-settings] duration-100",
         "tabular-nums"
       )}
       style={{
@@ -357,7 +357,7 @@ function TooltipValue({ value, formatValue, motionX }: TooltipValueProps) {
       transition={spring.fast}
     >
       <span
-        className={cn("text-[12px] text-background tabular-nums whitespace-nowrap bg-foreground px-2 py-1", shape.bg)}
+        className={cn("text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)] text-background tabular-nums whitespace-nowrap bg-foreground px-2 py-1", shape.bg)}
         style={{ fontVariationSettings: fontWeights.medium }}
       >
         {formatValue(value)}
@@ -1095,7 +1095,7 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
                   }}
                 >
                   <span
-                    className={cn("text-[12px] text-background tabular-nums whitespace-nowrap bg-foreground px-2 py-1", shape.bg)}
+                    className={cn("text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)] text-background tabular-nums whitespace-nowrap bg-foreground px-2 py-1", shape.bg)}
                     style={{ fontVariationSettings: fontWeights.medium }}
                   >
                     {formatValue(hoverPreview.snappedValue)}
@@ -1577,7 +1577,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
               }}
             >
               <span
-                className={cn("text-[12px] text-background tabular-nums whitespace-nowrap bg-foreground px-2 py-1", shape.bg)}
+                className={cn("text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)] text-background tabular-nums whitespace-nowrap bg-foreground px-2 py-1", shape.bg)}
                 style={{ fontVariationSettings: fontWeights.medium }}
               >
                 {formatValue(hoverPreview.snappedValue)}
@@ -1691,12 +1691,12 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         {variant === "pips" && (
           <div className="absolute inset-0 flex items-center px-2 z-[2] pointer-events-none" aria-hidden>
             {label && (
-              <span className="text-[13px] px-2 bg-background text-transparent select-none">
+              <span className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] px-2 bg-background text-transparent select-none">
                 {label}
               </span>
             )}
             <span
-              className="text-[13px] tabular-nums ml-auto px-2 bg-background text-transparent select-none"
+              className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] tabular-nums ml-auto px-2 bg-background text-transparent select-none"
               style={{ minWidth: `${String(formatValue(max)).length}ch` }}
             >
               {formatValue(value)}
@@ -1745,7 +1745,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
           <div className="absolute inset-0 flex items-center px-2 z-[4] pointer-events-none">
             {label && (
               <motion.span
-                className="text-[13px] px-2"
+                className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] px-2"
                 initial={false}
                 animate={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
                 transition={spring.fast}
@@ -1756,7 +1756,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
             {/* minWidth reserves formatValue(max)'s length in ch, so the value
                 slot keeps its width as the number changes. */}
             <motion.span
-              className="text-[13px] tabular-nums ml-auto px-2"
+              className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] tabular-nums ml-auto px-2"
               initial={false}
               animate={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
               transition={spring.fast}
@@ -1805,7 +1805,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         {/* Scrubber: label */}
         {variant === "scrubber" && label && (
           <motion.span
-            className="text-[13px] shrink-0 z-10"
+            className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] shrink-0 z-10"
             initial={false}
             animate={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
             transition={spring.fast}
@@ -1819,7 +1819,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
           <>
             <div className="flex-1" />
             <motion.span
-              className="text-[13px] shrink-0 tabular-nums text-right z-10"
+              className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] shrink-0 tabular-nums text-right z-10"
               initial={false}
               animate={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
               transition={spring.fast}

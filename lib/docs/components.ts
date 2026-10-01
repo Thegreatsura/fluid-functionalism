@@ -25,6 +25,7 @@ export const systemList: SystemEntry[] = [
   { slug: "scrollbars", name: "Scrollbars", description: "A scrollbar that stays out of the way but never disappears, over shadcn's scroll-fade baseline — restyled to the shape system, native scroll on touch." },
   { slug: "sizes", name: "Sizes", description: "A two-step size ladder — a 36px default and a 28px compact — shared by buttons, inputs, selects, tabs, and rows." },
   { slug: "surfaces", name: "Surfaces", description: "Eight-level surface and shadow ladder for elevation in light and dark mode." },
+  { slug: "typography", name: "Typography", description: "Six roles, each a size and a leading, shared by every component and the prose stylesheet.", isNew: true },
 ];
 
 export const componentList: ComponentEntry[] = [

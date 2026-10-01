@@ -24,7 +24,7 @@ import type { IconName } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
-import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
+import { SizeProvider, useSize, typeClass, type SizeVariant } from "@/lib/size-context";
 import { Badge } from "@/registry/default/badge";
 import type { BadgeColor } from "@/registry/default/badge";
 
@@ -229,7 +229,7 @@ function CollapsePanel({ open, children }: CollapsePanelProps) {
                 ref={measureRef}
                 className={cn(
                   "px-3 pb-3 pt-1 text-muted-foreground",
-                  compactStep ? "text-[12px]" : "text-[13px]"
+                  typeClass("body", compactStep ? "compact" : "default")
                 )}
               >
                 {children}
@@ -432,7 +432,7 @@ function ThinkingStep({
               <span
                 className={cn(
                   sizeClasses.text,
-                  "leading-tight text-foreground",
+                  "text-foreground",
                   isActive && "shimmer-text"
                 )}
                 style={{ fontVariationSettings: fontWeights.medium }}
@@ -441,7 +441,7 @@ function ThinkingStep({
                 {isActive && "…"}
               </span>
               {description && (
-                <span className={cn(sizeClasses.text, "text-muted-foreground leading-snug")}>
+                <span className={cn(sizeClasses.text, "text-muted-foreground")}>
                   {description}
                 </span>
               )}
@@ -488,8 +488,8 @@ function ThinkingStepDetails({
             <span
               key={i}
               className={cn(
-                "text-muted-foreground leading-snug",
-                compactStep ? "text-[11px]" : "text-[12px]"
+                "text-muted-foreground",
+                typeClass("caption", compactStep ? "compact" : "default")
               )}
             >
               {item}
@@ -588,7 +588,7 @@ function ThinkingStepImage({ src, alt = "", caption, delay = 0, className }: Thi
       {caption && (
         <span
           className={cn(
-            compact ? "text-[11px]" : "text-[12px]",
+            typeClass("caption", compact ? "compact" : "default"),
             "text-muted-foreground mt-1 block"
           )}
         >

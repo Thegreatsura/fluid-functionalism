@@ -22,18 +22,18 @@ const EXAMPLES = [
 export function SkillExamples() {
   return (
     <DocSection title="Examples">
-      <p className="text-body leading-relaxed text-muted-foreground">
+      <p className="text-site-body text-muted-foreground">
         What your agent writes on its own, next to what it writes with the skill.
       </p>
       {EXAMPLES.map(({ label, caption, Example }, i) => (
         <div key={label} className={cn("flex flex-col gap-4", i === 0 ? "mt-2" : "mt-6")}>
           <h3
-            className="-mb-2 text-[15px] text-foreground leading-none"
+            className="-mb-2 text-site-subtitle text-foreground leading-none"
             style={{ fontVariationSettings: fontWeights.semibold }}
           >
             {label}
           </h3>
-          <p className="text-body leading-relaxed text-muted-foreground">{caption}</p>
+          <p className="text-site-body text-muted-foreground">{caption}</p>
           <ComponentPreview hideHeader inspectable={false}>
             <div className="flex w-full justify-center">
               <Example />

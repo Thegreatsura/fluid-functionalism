@@ -17,7 +17,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
-import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
+import { SizeProvider, useSize, typeClass, type SizeVariant } from "@/lib/size-context";
 import { useIcon, type IconComponent } from "@/lib/icon-context";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
@@ -577,8 +577,8 @@ const CardTitle = forwardRef<HTMLSpanElement, HTMLAttributes<HTMLSpanElement>>(
         ref={ref}
         data-slot="card-title"
         className={cn(
-          "inline-grid grid-cols-[minmax(0,1fr)] leading-snug",
-          compact ? "text-[13px]" : "text-[14px]",
+          "inline-grid grid-cols-[minmax(0,1fr)]",
+          typeClass("subtitle", compact ? "compact" : "default"),
           className
         )}
         {...props}
@@ -625,8 +625,8 @@ const CardDescription = forwardRef<
       ref={ref}
       data-slot="card-description"
       className={cn(
-        "leading-normal text-muted-foreground",
-        compact ? "text-[13px]" : "text-[14px]",
+        "text-muted-foreground",
+        typeClass("subtitle", compact ? "compact" : "default"),
         className
       )}
       {...props}
@@ -836,7 +836,7 @@ const CardEyebrow = forwardRef<HTMLSpanElement, HTMLAttributes<HTMLSpanElement>>
         ref={ref}
         data-slot="card-eyebrow"
         className={cn(
-          compact ? "text-[11px]" : "text-[12px]",
+          typeClass("caption", compact ? "compact" : "default"),
           "uppercase tracking-wide text-muted-foreground",
           className
         )}
@@ -887,8 +887,8 @@ function CardFeature({ icon: Icon, title, description }: CardFeatureProps) {
         {description && (
           <span
             className={cn(
-              "leading-relaxed text-muted-foreground",
-              compact ? "text-[11px]" : "text-[12px]"
+              "text-muted-foreground",
+              typeClass("caption", compact ? "compact" : "default")
             )}
           >
             {description}
@@ -966,7 +966,7 @@ function CardButton({
 
   const classes = cn(
     "group/action relative z-30 inline-flex items-center justify-center gap-1.5 h-7 px-2.5 cursor-pointer outline-none",
-    compact ? "text-[11px]" : "text-[12px]",
+    typeClass("caption", compact ? "compact" : "default"),
     "transition-colors duration-80",
     "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
     "disabled:opacity-50 disabled:pointer-events-none",

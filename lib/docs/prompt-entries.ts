@@ -124,7 +124,7 @@ import { spring } from "@/lib/springs";
       "One `control` height token by design for BOTH bounded controls (buttons, inputs, select triggers) AND list/menu rows: a popup row lines up with the trigger that opened it because they share this height.",
       "Segmented tabs are sized so `segmentPad` + `segmentItem` adds back up to the control height (28px item + 4px pad = 36px default; 24 + 2 = 28 compact) \u2014 the segmented control's outer box stays on the same ladder as its neighbours.",
       "The compact step halves the `gap` token (8px \u2192 4px) because \"density is spacing as much as control height\" \u2014 control-to-control spacing comes from the ladder, not from layout code.",
-      "Type follows the ladder: compact drops each role one notch (display 28\u219224, title 16\u219215, subtitle 14\u219213, body 13\u219212, caption 12\u219211) so a dense region reads as \"a smaller sibling of the same hierarchy, not a squeezed copy\".",
+      "Type follows the ladder: compact drops each of the six roles one notch, size and leading together (body 13/18px \u2192 12/16px, caption 12/16px \u2192 11/14px), so a dense region reads as \"a smaller sibling of the same hierarchy, not a squeezed copy\". The scale itself is its own system: see Typography.",
       "Resolution order is explicit component `size` prop > surrounding `SizeProvider` > `\"default\"`; ~20 components accept the per-component override and it wins over the provider.",
       "Density is a region decision, not a per-control one: wrap the region in one `SizeProvider` and everything follows \u2014 menus opened from it included, since React context crosses portals.",
     ],
@@ -144,11 +144,51 @@ function Toolbar() {
     props: [
       "SizeProvider size: \"default\" | \"compact\". Controlled variant; pins every control in the subtree to one step.",
       "SizeProvider defaultSize: \"default\" | \"compact\" (default \"default\"). Uncontrolled initial variant, switchable via useSizeContext().setSize.",
-      "useSize(override?): SizeClasses. Returns { variant, control, controlHeight, segmentItem, segmentPad, text, px, itemPx, gap, icon } for the current step.",
+      "useSize(override?): SizeClasses. Returns { variant, control, controlHeight, segmentItem, segmentPad, text, type, px, itemPx, gap, icon } (type = one size + leading class per role) for the current step.",
       "useSizeVariant(override?): \"default\" | \"compact\". The resolved step, honoring a per-component override over the provider.",
       "useSizeContext(): { size, setSize }. Read or switch the step from inside a SizeProvider.",
-      "useTypeScale(override?): Record<TypeScaleRole, number>. Font sizes per role (display, title, body, caption and so on) for the current step.",
+      "useTypeScale(override?): Record<TypeScaleRole, { size: number; leading: number }>. Font size and line height in px per role (display, title, subtitle, body, caption, micro) for the current step. Changed from plain numbers: read typeScale.body[step].size where you read typeScale.body[step].",
       "size (on components): \"default\" | \"compact\" (default from provider). Per-component override on Button, Badge, Select, Tabs, Dropdown, Accordion, Card and most others.",
+    ],
+  },
+  typography: {
+    craft: [
+      "Six roles, each a size and a line height at both ladder steps: display 28/34px (compact 24/30), title 16/22 (15/20), subtitle 14/20 (13/18), body 13/18 (12/16), caption 12/16 (11/14), micro 11/14 (10/12). Pairing the leading with the size puts a caption in a menu and a caption in a table on the same rhythm.",
+      "Pick the role by purpose, then check its default/compact pair: a 14/13px chat bubble is `subtitle` at both steps, not `body` when compact; an 11px error inside a compact control is compact `caption`. `micro` is only for keyboard caps, counters, and tiny badges, single line, so its leading is tight on purpose.",
+      "Components never write `text-[13px]`: they use `typeClass(role, variant)` or `useSize().type.<role>`, which emit `text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]`. Stock tailwind-merge reads a bare `text-caption` as a color and drops it next to `text-muted-foreground` inside `cn()`; the arbitrary form survives, and its px fallbacks render even without the `type-scale` tokens.",
+      "A deliberate line-height override (a `leading-none` key cap, a `leading-5` input whose line box sets the caret height) keeps only the size half of the role class: two leadings in one plain class string resolve by stylesheet order, not by the order you wrote them.",
+      "Weights carry an optical size (`fontWeights`: 400 with opsz 14, 450/15, 550/18, 700/25) so a label that turns bold holds its width: medium and semibold stay within \u00b10.4px across a corpus of real labels and bold within \u00b10.7px, where weight alone widens a 25-character label by about 7px.",
+      "`.typeset` styles plain markdown elements from four values: size (`1em` inherits the surroundings), leading, flow, and heading ratio (h3 = ratio, h2 = ratio\u00b2, h1 = ratio\u00b3 of the base, so headings always outgrow body text). Presets: `.typeset-docs` (15px, 1.65) and `.typeset-chat` (inherits the bubble, 1.5, tighter flow).",
+      "`.typeset-scale` pins every level to a type role instead of the ratio, so markdown's six heading levels show all six roles: h1 display, h2 title, h3 subtitle, h4 and paragraphs body, h5 caption, h6 micro, code caption, each with its role's leading. A single ratio can't produce 28/16/14/13, so each level has its own `--typeset-h1` \u2026 `--typeset-h6` size and leading variable.",
+      "`.typeset-compact` steps any preset one notch down, the way compact steps the roles: 1px off a px base (an inheriting base already follows its compact context), 0.05 off the leading, a fifth off the rhythm. Under `.typeset-scale` it switches to the compact roles (12/16 body, 24/30 display).",
+      "The prose sheet sits in `@layer components` with every selector inside `:where()`, so it has zero specificity and any utility on an element wins without `!important`. `.not-typeset` skips a subtree but keeps its outer spacing, so a component dropped into prose still sits in the rhythm.",
+      "It styles editors as well as rendered markdown: GFM task lists (remark-gfm classes) and Tiptap's markup (a `li[data-type=taskItem]` with a checkbox label and a content div, tables in `.tableWrapper`) both work as is. A to-do's checkbox centers on its first line, and a checked item fades and strikes through, as in Notion.",
+      "Space only goes above an element (no `:last-child`, no `:has()`, no `margin-bottom`), so text streamed in at the end of a chat reply never moves what is already on screen.",
+    ],
+    usage: `import { typeClass, useSize } from "@/lib/size-context";
+
+// Six roles (display, title, subtitle, body, caption, micro), each a size and
+// a leading, at the default and compact steps of the size ladder.
+<p className={typeClass("caption")}>Last updated 4 minutes ago</p>
+<p className={typeClass("caption", "compact")}>In a dense toolbar</p>
+// Or follow the surrounding SizeProvider:
+const { type } = useSize(); // type.caption, type.body, ...
+
+// Theme utilities from the tokens: text-caption, text-caption-compact, ...
+// Stock tailwind-merge reads a bare text-caption as a color, so prefer
+// typeClass() inside cn().
+
+// Prose (rendered markdown, chat replies, editors), a separate install:
+// npx shadcn@latest add https://www.fluidfunctionalism.com/r/typography.json
+<article className="typeset typeset-docs">{markdown}</article>
+// Headings set in the type roles, one notch down in a compact region:
+<article className={cn("typeset typeset-scale", compact && "typeset-compact")}>{markdown}</article>`,
+    props: [
+      "typeClass(role, variant = \"default\"): string. Size + leading classes with px fallbacks for one role at one step.",
+      "useSize().type: Record<TypeScaleRole, string>. The same classes for the resolved step.",
+      "useTypeScale(override?): Record<TypeScaleRole, { size: number; leading: number }>. Raw px per role for the resolved step.",
+      ".typeset: prose styles for plain elements. Presets .typeset-docs, .typeset-chat, and .typeset-scale (h1 to h6 in the six type roles); .typeset-compact steps any of them down; .not-typeset opts a subtree out; .typeset-scroll wraps wide tables.",
+      "--typeset-size (default 1em, inherit), --typeset-leading (1.6), --typeset-flow (1), --typeset-ratio (1.2): the four values the whole sheet derives from.",
     ],
   },
   surfaces: {

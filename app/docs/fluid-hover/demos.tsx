@@ -139,7 +139,7 @@ useFluidHover(containerRef, { axis: "xy" });`;
 // ---------------------------------------------------------------------------
 
 const rowClass =
-  "relative z-10 flex h-9 w-full shrink-0 items-center px-3 text-left text-body text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]";
+  "relative z-10 flex h-9 w-full shrink-0 items-center px-3 text-left text-site-body text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]";
 
 function FluidRow({
   index,
@@ -361,7 +361,7 @@ function PlainVsFluidPreview({ paused }: { paused: boolean }) {
 
   const frame = cn("w-full border border-border/60", shape.container);
   const labelClass =
-    "flex items-center justify-center gap-2 text-caption text-muted-foreground";
+    "flex items-center justify-center gap-2 text-site-caption text-muted-foreground";
   const cursor = scripted ? y : null;
   return (
     <div
@@ -571,12 +571,12 @@ function AxisBlock({
     <div className="flex flex-col gap-3">
       <div className="flex items-baseline gap-2">
         <code
-          className="font-mono text-caption text-foreground"
+          className="font-mono text-site-caption text-foreground"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           axis=&quot;{axis}&quot;
         </code>
-        <span className="text-caption text-muted-foreground">{hint}</span>
+        <span className="text-site-caption text-muted-foreground">{hint}</span>
       </div>
       {children}
     </div>
@@ -837,8 +837,8 @@ function CostList({ onMeter }: { onMeter: (m: CostMeter) => void }) {
 function Stat({ value, label, hint }: { value: string; label: string; hint: string }) {
   return (
     <div className="flex flex-col items-center gap-0.5 text-center">
-      <span className="font-mono text-body tabular-nums text-foreground">{value}</span>
-      <span className="text-caption text-muted-foreground">{label}</span>
+      <span className="font-mono text-site-body tabular-nums text-foreground">{value}</span>
+      <span className="text-site-caption text-muted-foreground">{label}</span>
       <span className="text-[11px] leading-snug text-muted-foreground/60">{hint}</span>
     </div>
   );
@@ -1225,7 +1225,7 @@ function ListsCallouts({ canvasRef }: { canvasRef: React.RefObject<HTMLDivElemen
           }}
         >
           <span
-            className="text-caption leading-tight"
+            className="text-site-caption leading-tight"
             style={{ color: c.color, fontVariationSettings: fontWeights.semibold }}
           >
             {c.title}

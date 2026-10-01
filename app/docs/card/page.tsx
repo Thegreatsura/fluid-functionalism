@@ -317,7 +317,7 @@ function PromoDemo() {
       <button
         type="button"
         onClick={() => setDismissed(false)}
-        className="text-body text-muted-foreground hover:text-foreground underline underline-offset-4 cursor-pointer"
+        className="text-site-body text-muted-foreground hover:text-foreground underline underline-offset-4 cursor-pointer"
       >
         Restore card
       </button>

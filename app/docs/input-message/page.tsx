@@ -437,7 +437,7 @@ const removeQueued = (item: QueuedMessage) =>
                   // Compact step: gap-1.5, pl-3 (pl-1.5 with files), pr-1.
                   className={\`group/qm absolute bottom-0 left-10 right-10 flex select-none items-center gap-2 \${
                     item.files.length > 0 ? "pl-2" : "pl-3.5"
-                  } pr-1.5 rounded-[20px] bg-[color-mix(in_oklab,var(--accent),var(--background)_68%)] text-subtitle text-muted-foreground shadow-surface-3 active:cursor-grabbing\`}
+                  } pr-1.5 rounded-[20px] bg-[color-mix(in_oklab,var(--accent),var(--background)_68%)] text-site-subtitle text-muted-foreground shadow-surface-3 active:cursor-grabbing\`}
                 >
                   {/* Attachments: small thumbnails (28px; 24 at the compact
                       step), then a +N chip past 3. */}

@@ -129,6 +129,380 @@
       ]
     },
     {
+      "name": "type-scale",
+      "type": "registry:theme",
+      "title": "Type Scale",
+      "description": "Six type roles (display, title, subtitle, body, caption, micro), each a font size and a line height, at the default and compact steps of the size ladder. Adds text-<role> and text-<role>-compact utilities and the --fs-* / --lh-* variables components read.",
+      "cssVars": {
+        "theme": {
+          "text-display": "var(--fs-display)",
+          "text-display--line-height": "var(--lh-display)",
+          "text-display-compact": "var(--fs-display-compact)",
+          "text-display-compact--line-height": "var(--lh-display-compact)",
+          "text-title": "var(--fs-title)",
+          "text-title--line-height": "var(--lh-title)",
+          "text-title-compact": "var(--fs-title-compact)",
+          "text-title-compact--line-height": "var(--lh-title-compact)",
+          "text-subtitle": "var(--fs-subtitle)",
+          "text-subtitle--line-height": "var(--lh-subtitle)",
+          "text-subtitle-compact": "var(--fs-subtitle-compact)",
+          "text-subtitle-compact--line-height": "var(--lh-subtitle-compact)",
+          "text-body": "var(--fs-body)",
+          "text-body--line-height": "var(--lh-body)",
+          "text-body-compact": "var(--fs-body-compact)",
+          "text-body-compact--line-height": "var(--lh-body-compact)",
+          "text-caption": "var(--fs-caption)",
+          "text-caption--line-height": "var(--lh-caption)",
+          "text-caption-compact": "var(--fs-caption-compact)",
+          "text-caption-compact--line-height": "var(--lh-caption-compact)",
+          "text-micro": "var(--fs-micro)",
+          "text-micro--line-height": "var(--lh-micro)",
+          "text-micro-compact": "var(--fs-micro-compact)",
+          "text-micro-compact--line-height": "var(--lh-micro-compact)"
+        },
+        "light": {
+          "fs-display": "28px",
+          "lh-display": "34px",
+          "fs-display-compact": "24px",
+          "lh-display-compact": "30px",
+          "fs-title": "16px",
+          "lh-title": "22px",
+          "fs-title-compact": "15px",
+          "lh-title-compact": "20px",
+          "fs-subtitle": "14px",
+          "lh-subtitle": "20px",
+          "fs-subtitle-compact": "13px",
+          "lh-subtitle-compact": "18px",
+          "fs-body": "13px",
+          "lh-body": "18px",
+          "fs-body-compact": "12px",
+          "lh-body-compact": "16px",
+          "fs-caption": "12px",
+          "lh-caption": "16px",
+          "fs-caption-compact": "11px",
+          "lh-caption-compact": "14px",
+          "fs-micro": "11px",
+          "lh-micro": "14px",
+          "fs-micro-compact": "10px",
+          "lh-micro-compact": "12px"
+        }
+      },
+      "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/typography.",
+      "categories": [
+        "theme"
+      ]
+    },
+    {
+      "name": "typography",
+      "type": "registry:theme",
+      "title": "Typography",
+      "description": "Prose styles for rendered markdown and rich-text editors (Tiptap works as is): wrap content in .typeset. Four variables (size, leading, flow, ratio) drive everything else. Zero specificity inside @layer components, so any utility wins; .not-typeset opts a subtree out; spacing only above elements, so streamed content never reflows. Presets: .typeset-docs, .typeset-chat, and .typeset-scale (every heading level set in a type role). Add .typeset-compact to step any of them down with the size ladder.",
+      "css": {
+        "@layer components": {
+          ":where(.typeset)": {
+            "--typeset-size": "1em",
+            "--typeset-leading": "1.6",
+            "--typeset-flow": "1",
+            "--typeset-ratio": "1.2",
+            "--typeset-h1": "calc(var(--typeset-ratio) * var(--typeset-ratio) * var(--typeset-ratio))",
+            "--typeset-h2": "calc(var(--typeset-ratio) * var(--typeset-ratio))",
+            "--typeset-h3": "var(--typeset-ratio)",
+            "--typeset-h4": "1",
+            "--typeset-h5": "1",
+            "--typeset-h6": "0.875",
+            "--typeset-h1-leading": "1.2",
+            "--typeset-h2-leading": "1.25",
+            "--typeset-h3-leading": "1.3",
+            "--typeset-h4-leading": "var(--typeset-leading)",
+            "--typeset-h5-leading": "var(--typeset-leading)",
+            "--typeset-h6-leading": "var(--typeset-leading)",
+            "--typeset-code": "0.875",
+            "--typeset-code-leading": "1.6",
+            "font-size": "var(--typeset-size)",
+            "line-height": "var(--typeset-leading)",
+            "overflow-wrap": "break-word"
+          },
+          ":where(.typeset-docs)": {
+            "--typeset-size": "15px",
+            "--typeset-leading": "1.65",
+            "--typeset-flow": "1.1",
+            "--typeset-ratio": "1.2"
+          },
+          ":where(.typeset-chat)": {
+            "--typeset-size": "1em",
+            "--typeset-leading": "1.5",
+            "--typeset-flow": "0.75",
+            "--typeset-ratio": "1.1"
+          },
+          ":where(.typeset-scale)": {
+            "--typeset-size": "var(--fs-body, 13px)",
+            "--typeset-leading": "1.385",
+            "--typeset-flow": "1",
+            "--typeset-h1": "2.154",
+            "--typeset-h1-leading": "1.214",
+            "--typeset-h2": "1.231",
+            "--typeset-h2-leading": "1.375",
+            "--typeset-h3": "1.077",
+            "--typeset-h3-leading": "1.429",
+            "--typeset-h4": "1",
+            "--typeset-h4-leading": "1.385",
+            "--typeset-h5": "0.923",
+            "--typeset-h5-leading": "1.333",
+            "--typeset-h6": "0.846",
+            "--typeset-h6-leading": "1.273",
+            "--typeset-code": "0.923",
+            "--typeset-code-leading": "1.333"
+          },
+          ":where(.typeset-compact)": {
+            "--typeset-leading": "1.55",
+            "--typeset-flow": "0.8"
+          },
+          ":where(.typeset-docs.typeset-compact)": {
+            "--typeset-size": "14px",
+            "--typeset-leading": "1.6",
+            "--typeset-flow": "0.88"
+          },
+          ":where(.typeset-chat.typeset-compact)": {
+            "--typeset-leading": "1.45",
+            "--typeset-flow": "0.6"
+          },
+          ":where(.typeset-scale.typeset-compact)": {
+            "--typeset-size": "var(--fs-body-compact, 12px)",
+            "--typeset-leading": "1.333",
+            "--typeset-flow": "0.8",
+            "--typeset-h1": "2",
+            "--typeset-h1-leading": "1.25",
+            "--typeset-h2": "1.25",
+            "--typeset-h2-leading": "1.333",
+            "--typeset-h3": "1.083",
+            "--typeset-h3-leading": "1.385",
+            "--typeset-h4": "1",
+            "--typeset-h4-leading": "1.333",
+            "--typeset-h5": "0.917",
+            "--typeset-h5-leading": "1.273",
+            "--typeset-h6": "0.833",
+            "--typeset-h6-leading": "1.2",
+            "--typeset-code": "0.917",
+            "--typeset-code-leading": "1.273"
+          },
+          ":where(.typeset) :where(p, ul, ol, pre, blockquote, figure, table, .typeset-scroll, div, img, video, h1, h2, h3, h4, h5, h6, li):not(:where(.not-typeset, .not-typeset *))": {
+            "margin": "0"
+          },
+          ":where(.typeset) :where(* + :is(p, ul, ol, pre, blockquote, figure, table, .typeset-scroll, div, img, video, .not-typeset)):not(:where(.not-typeset *))": {
+            "margin-top": "calc(var(--typeset-flow) * 1em)"
+          },
+          ":where(.typeset) :where(p):not(:where(.not-typeset, .not-typeset *))": {
+            "text-wrap": "pretty"
+          },
+          ":where(.typeset) :where(h1, h2, h3, h4, h5, h6):not(:where(.not-typeset, .not-typeset *))": {
+            "color": "var(--foreground, currentColor)",
+            "text-wrap": "balance",
+            "font-variation-settings": "'wght' 550, 'opsz' 18"
+          },
+          ":where(.typeset) :where(h1):not(:where(.not-typeset, .not-typeset *))": {
+            "font-size": "calc(1em * var(--typeset-h1))",
+            "line-height": "var(--typeset-h1-leading)"
+          },
+          ":where(.typeset) :where(h2):not(:where(.not-typeset, .not-typeset *))": {
+            "font-size": "calc(1em * var(--typeset-h2))",
+            "line-height": "var(--typeset-h2-leading)"
+          },
+          ":where(.typeset) :where(h3):not(:where(.not-typeset, .not-typeset *))": {
+            "font-size": "calc(1em * var(--typeset-h3))",
+            "line-height": "var(--typeset-h3-leading)"
+          },
+          ":where(.typeset) :where(h4):not(:where(.not-typeset, .not-typeset *))": {
+            "font-size": "calc(1em * var(--typeset-h4))",
+            "line-height": "var(--typeset-h4-leading)"
+          },
+          ":where(.typeset) :where(h5):not(:where(.not-typeset, .not-typeset *))": {
+            "font-size": "calc(1em * var(--typeset-h5))",
+            "line-height": "var(--typeset-h5-leading)"
+          },
+          ":where(.typeset) :where(h6):not(:where(.not-typeset, .not-typeset *))": {
+            "font-size": "calc(1em * var(--typeset-h6))",
+            "line-height": "var(--typeset-h6-leading)"
+          },
+          ":where(.typeset) :where(* + h1):not(:where(.not-typeset, .not-typeset *))": {
+            "margin-top": "calc(var(--typeset-flow) * 2em / (var(--typeset-h1)))"
+          },
+          ":where(.typeset) :where(* + h2):not(:where(.not-typeset, .not-typeset *))": {
+            "margin-top": "calc(var(--typeset-flow) * 2em / (var(--typeset-h2)))"
+          },
+          ":where(.typeset) :where(* + h3):not(:where(.not-typeset, .not-typeset *))": {
+            "margin-top": "calc(var(--typeset-flow) * 1.5em / (var(--typeset-h3)))"
+          },
+          ":where(.typeset) :where(* + h4):not(:where(.not-typeset, .not-typeset *))": {
+            "margin-top": "calc(var(--typeset-flow) * 1.5em / (var(--typeset-h4)))"
+          },
+          ":where(.typeset) :where(* + h5):not(:where(.not-typeset, .not-typeset *))": {
+            "margin-top": "calc(var(--typeset-flow) * 1.5em / (var(--typeset-h5)))"
+          },
+          ":where(.typeset) :where(* + h6):not(:where(.not-typeset, .not-typeset *))": {
+            "margin-top": "calc(var(--typeset-flow) * 1.5em / (var(--typeset-h6)))"
+          },
+          ":where(.typeset) :where(h1 + *, h2 + *, h3 + *, h4 + *, h5 + *, h6 + *):not(:where(.not-typeset, .not-typeset *))": {
+            "margin-top": "calc(var(--typeset-flow) * 0.5em)"
+          },
+          ":where(.typeset) :where(strong, b):not(:where(.not-typeset, .not-typeset *))": {
+            "font-variation-settings": "'wght' 550, 'opsz' 18"
+          },
+          ":where(.typeset) :where(a):not(:where(.not-typeset, .not-typeset *))": {
+            "color": "var(--foreground, currentColor)",
+            "text-decoration-line": "underline",
+            "text-decoration-color": "color-mix(in oklab, currentColor 35%, transparent)",
+            "text-underline-offset": "0.2em",
+            "transition": "text-decoration-color 80ms ease-out"
+          },
+          ":where(.typeset) :where(a:hover):not(:where(.not-typeset, .not-typeset *))": {
+            "text-decoration-color": "currentColor"
+          },
+          ":where(.typeset) :where(ul, ol):not(:where(.not-typeset, .not-typeset *))": {
+            "padding-left": "1.25em"
+          },
+          ":where(.typeset) :where(ul):not(:where(.not-typeset, .not-typeset *))": {
+            "list-style-type": "disc"
+          },
+          ":where(.typeset) :where(ol):not(:where(.not-typeset, .not-typeset *))": {
+            "list-style-type": "decimal"
+          },
+          ":where(.typeset) :where(ul ul):not(:where(.not-typeset, .not-typeset *))": {
+            "list-style-type": "circle"
+          },
+          ":where(.typeset) :where(li):not(:where(.not-typeset, .not-typeset *))::marker": {
+            "color": "var(--muted-foreground, color-mix(in oklab, currentColor 65%, transparent))"
+          },
+          ":where(.typeset) :where(li + li, li > ul, li > ol, li > p + p):not(:where(.not-typeset, .not-typeset *))": {
+            "margin-top": "calc(var(--typeset-flow) * 0.25em)"
+          },
+          ":where(.typeset) :where(.contains-task-list, ul[data-type=\"taskList\"]):not(:where(.not-typeset, .not-typeset *))": {
+            "list-style-type": "none",
+            "padding-left": "0"
+          },
+          ":where(.typeset) :where(.contains-task-list .contains-task-list):not(:where(.not-typeset, .not-typeset *))": {
+            "padding-left": "1.5em"
+          },
+          ":where(.typeset) :where(input[type=checkbox]):not(:where(.not-typeset, .not-typeset *))": {
+            "margin": "0",
+            "accent-color": "var(--foreground, currentColor)"
+          },
+          ":where(.typeset) :where(.task-list-item > input[type=checkbox]):not(:where(.not-typeset, .not-typeset *))": {
+            "margin-right": "0.5em",
+            "vertical-align": "-0.125em"
+          },
+          ":where(.typeset) :where(ul[data-type=\"taskList\"] > li):not(:where(.not-typeset, .not-typeset *))": {
+            "display": "flex",
+            "gap": "0.5em",
+            "align-items": "flex-start"
+          },
+          ":where(.typeset) :where(ul[data-type=\"taskList\"] > li > label):not(:where(.not-typeset, .not-typeset *))": {
+            "flex": "none",
+            "display": "flex",
+            "align-items": "center",
+            "height": "calc(var(--typeset-leading) * 1em)",
+            "user-select": "none"
+          },
+          ":where(.typeset) :where(ul[data-type=\"taskList\"] > li > div):not(:where(.not-typeset, .not-typeset *))": {
+            "flex": "1 1 auto",
+            "min-width": "0",
+            "margin-top": "0"
+          },
+          ":where(.typeset) :where(ul[data-type=\"taskList\"] > li[data-checked=\"true\"] > div):not(:where(.not-typeset, .not-typeset *))": {
+            "color": "var(--muted-foreground, color-mix(in oklab, currentColor 65%, transparent))",
+            "text-decoration-line": "line-through",
+            "text-decoration-color": "color-mix(in oklab, currentColor 50%, transparent)"
+          },
+          ":where(.typeset) :where(blockquote):not(:where(.not-typeset, .not-typeset *))": {
+            "padding-left": "1em",
+            "border-left": "2px solid var(--border, color-mix(in oklab, currentColor 14%, transparent))",
+            "color": "var(--muted-foreground, color-mix(in oklab, currentColor 65%, transparent))"
+          },
+          ":where(.typeset) :where(hr):not(:where(.not-typeset, .not-typeset *))": {
+            "border": "0",
+            "border-top": "1px solid var(--border, color-mix(in oklab, currentColor 14%, transparent))",
+            "margin-top": "calc(var(--typeset-flow) * 2em)"
+          },
+          ":where(.typeset) :where(hr + *):not(:where(.not-typeset, .not-typeset *))": {
+            "margin-top": "calc(var(--typeset-flow) * 2em)"
+          },
+          ":where(.typeset) :where(code):not(:where(.not-typeset, .not-typeset *))": {
+            "font-size": "calc(1em * var(--typeset-code))",
+            "font-family": "var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)"
+          },
+          ":where(.typeset) :where(:not(pre) > code):not(:where(.not-typeset, .not-typeset *))": {
+            "background-color": "color-mix(in oklab, currentColor 7%, transparent)",
+            "border-radius": "4px",
+            "padding": "0.1em 0.3em"
+          },
+          ":where(.typeset) :where(pre):not(:where(.not-typeset, .not-typeset *))": {
+            "font-size": "calc(1em * var(--typeset-code))",
+            "line-height": "var(--typeset-code-leading)",
+            "background-color": "color-mix(in oklab, currentColor 7%, transparent)",
+            "border-radius": "8px",
+            "padding": "0.75em 1em",
+            "overflow-x": "auto"
+          },
+          ":where(.typeset) :where(* + pre):not(:where(.not-typeset, .not-typeset *))": {
+            "margin-top": "calc(var(--typeset-flow) * 1em / (var(--typeset-code)))"
+          },
+          ":where(.typeset) :where(pre code):not(:where(.not-typeset, .not-typeset *))": {
+            "font-size": "1em",
+            "background": "none",
+            "padding": "0"
+          },
+          ":where(.typeset) :where(kbd):not(:where(.not-typeset, .not-typeset *))": {
+            "font-family": "inherit",
+            "font-size": "0.85em",
+            "padding": "0.1em 0.35em",
+            "border-radius": "4px",
+            "border": "1px solid var(--border, color-mix(in oklab, currentColor 14%, transparent))",
+            "box-shadow": "0 1px 0 var(--border, color-mix(in oklab, currentColor 14%, transparent))"
+          },
+          ":where(.typeset) :where(table):not(:where(.not-typeset, .not-typeset *))": {
+            "width": "100%",
+            "border-collapse": "collapse",
+            "font-variant-numeric": "tabular-nums"
+          },
+          ":where(.typeset) :where(th, td):not(:where(.not-typeset, .not-typeset *))": {
+            "text-align": "left",
+            "vertical-align": "top",
+            "padding": "0.5em 0.75em",
+            "border-bottom": "1px solid var(--border, color-mix(in oklab, currentColor 14%, transparent))"
+          },
+          ":where(.typeset) :where(th:first-child, td:first-child):not(:where(.not-typeset, .not-typeset *))": {
+            "padding-left": "0"
+          },
+          ":where(.typeset) :where(th code, td code):not(:where(.not-typeset, .not-typeset *))": {
+            "white-space": "nowrap"
+          },
+          ":where(.typeset) :where(th):not(:where(.not-typeset, .not-typeset *))": {
+            "color": "var(--foreground, currentColor)",
+            "font-variation-settings": "'wght' 550, 'opsz' 18"
+          },
+          ":where(.typeset) :where(.typeset-scroll, .tableWrapper):not(:where(.not-typeset, .not-typeset *))": {
+            "overflow-x": "auto"
+          },
+          ":where(.typeset) :where(.typeset-scroll > table):not(:where(.not-typeset, .not-typeset *))": {
+            "min-width": "max-content"
+          },
+          ":where(.typeset) :where(img, video):not(:where(.not-typeset, .not-typeset *))": {
+            "max-width": "100%",
+            "height": "auto",
+            "border-radius": "8px"
+          },
+          ":where(.typeset) :where(figcaption):not(:where(.not-typeset, .not-typeset *))": {
+            "margin-top": "calc(var(--typeset-flow) * 0.5em)",
+            "font-size": "0.875em",
+            "color": "var(--muted-foreground, color-mix(in oklab, currentColor 65%, transparent))"
+          }
+        }
+      },
+      "docs": "Docs & builder: https://www.fluidfunctionalism.com/docs/typography.",
+      "categories": [
+        "theme"
+      ]
+    },
+    {
       "name": "utils",
       "type": "registry:lib",
       "title": "Utilities",
@@ -278,16 +652,23 @@
       "name": "size-context",
       "type": "registry:lib",
       "title": "Size Context",
-      "description": "React context provider for the two-step size ladder (36px default, 28px compact). Controls control heights, text, icon, and padding scale across all Fluid Functionalism components, and exports the role-based typography scale.",
+      "description": "React context provider for the two-step size ladder (36px default, 28px compact). Controls control heights, text, icon, and padding scale across all Fluid Functionalism components, and ships the six-role type scale (size + leading per role) with its class map.",
       "files": [
         {
           "path": "registry/default/lib/size-context.tsx",
+          "type": "registry:lib"
+        },
+        {
+          "path": "registry/default/lib/type-scale.ts",
           "type": "registry:lib"
         }
       ],
       "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/sizes. Craft notes, the color, layout and motion decisions to keep when you change it: https://github.com/mickadesign/fluid-functionalism/blob/main/skills/fluid-functionalism/references/craft.md#sizes.",
       "categories": [
         "lib"
+      ],
+      "registryDependencies": [
+        "type-scale"
       ]
     },
     {
@@ -298,7 +679,6 @@
       "dependencies": [
         "lucide-react"
       ],
-      "registryDependencies": [],
       "files": [
         {
           "path": "registry/default/lib/icon-context.tsx",
@@ -475,7 +855,8 @@
         "use-merge-split",
         "button",
         "size-context",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -499,7 +880,8 @@
       "registryDependencies": [
         "utils",
         "shape-context",
-        "size-context"
+        "size-context",
+        "type-scale"
       ],
       "files": [
         {
@@ -570,7 +952,8 @@
         "shape-context",
         "icon-context",
         "size-context",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -616,7 +999,8 @@
         "shape-context",
         "icon-context",
         "size-context",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -668,7 +1052,8 @@
         "scroll-area",
         "popup",
         "size-context",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -715,7 +1100,8 @@
         "scroll-area",
         "popup",
         "size-context",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -879,7 +1265,8 @@
         "surface-classes",
         "icon-context",
         "button",
-        "size-context"
+        "size-context",
+        "type-scale"
       ],
       "files": [
         {
@@ -911,7 +1298,8 @@
         "surface-classes",
         "icon-context",
         "button",
-        "size-context"
+        "size-context",
+        "type-scale"
       ],
       "files": [
         {
@@ -1023,7 +1411,8 @@
         "icon-context",
         "use-fluid-hover",
         "size-context",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -1057,7 +1446,8 @@
         "use-fluid-hover",
         "button",
         "tooltip",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -1109,7 +1499,8 @@
         "icon-context",
         "tooltip",
         "file-thumbnail",
-        "input-message"
+        "input-message",
+        "type-scale"
       ],
       "files": [
         {
@@ -1137,7 +1528,8 @@
         "shape-context",
         "use-touch-primary",
         "file-thumbnail",
-        "size-context"
+        "size-context",
+        "type-scale"
       ],
       "files": [
         {
@@ -1354,7 +1746,8 @@
         "icon-context",
         "use-fluid-hover",
         "size-context",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -1391,7 +1784,8 @@
         "tooltip",
         "scroll-area",
         "button",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -1439,7 +1833,8 @@
         "tooltip",
         "scroll-area",
         "button",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -1492,7 +1887,8 @@
         "font-weight",
         "sidebar-menu-grid",
         "sidebar",
-        "dropdown"
+        "dropdown",
+        "type-scale"
       ],
       "files": [
         {
@@ -1517,7 +1913,8 @@
         "icon-context",
         "sidebar-menu-grid",
         "sidebar",
-        "dropdown"
+        "dropdown",
+        "type-scale"
       ],
       "files": [
         {
@@ -1539,7 +1936,8 @@
       "registryDependencies": [
         "size-context",
         "icon-context",
-        "sidebar"
+        "sidebar",
+        "type-scale"
       ],
       "files": [
         {
@@ -1581,7 +1979,8 @@
         "sidebar-workspace-header",
         "sidebar-user-footer",
         "sidebar-search-field",
-        "sidebar-inset-topbar"
+        "sidebar-inset-topbar",
+        "type-scale"
       ],
       "files": [
         {
@@ -1620,7 +2019,8 @@
         "button",
         "switch",
         "select",
-        "input-group"
+        "input-group",
+        "type-scale"
       ],
       "files": [
         {
@@ -1649,7 +2049,8 @@
         "font-weight",
         "shape-context",
         "size-context",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -1678,7 +2079,8 @@
         "font-weight",
         "shape-context",
         "size-context",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -1767,7 +2169,8 @@
       "registryDependencies": [
         "utils",
         "font-weight",
-        "size-context"
+        "size-context",
+        "type-scale"
       ],
       "files": [
         {
@@ -2142,7 +2545,8 @@
         "use-keyboard-nav-gate",
         "popup",
         "size-context",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -2180,7 +2584,8 @@
         "use-keyboard-nav-gate",
         "popup",
         "size-context",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -2219,7 +2624,8 @@
         "use-keyboard-nav-gate",
         "popup",
         "size-context",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -2258,7 +2664,8 @@
         "use-keyboard-nav-gate",
         "popup",
         "size-context",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -2295,7 +2702,8 @@
         "scroll-area",
         "dialog",
         "tabs-subtle",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -2321,7 +2729,8 @@
         "utils",
         "springs",
         "font-weight",
-        "shape-context"
+        "shape-context",
+        "type-scale"
       ],
       "files": [
         {
@@ -2348,7 +2757,8 @@
         "utils",
         "springs",
         "font-weight",
-        "shape-context"
+        "shape-context",
+        "type-scale"
       ],
       "files": [
         {
@@ -2380,7 +2790,8 @@
         "size-context",
         "icon-context",
         "badge",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -2430,7 +2841,8 @@
         "size-context",
         "icon-context",
         "badge",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {
@@ -2484,7 +2896,8 @@
         "slider",
         "size-context",
         "tooltip",
-        "tokens"
+        "tokens",
+        "type-scale"
       ],
       "files": [
         {

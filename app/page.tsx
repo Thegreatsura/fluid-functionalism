@@ -21,12 +21,12 @@ export default function Page() {
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-2">
             <h1
-              className="text-display text-foreground leading-none"
+              className="text-site-display text-foreground leading-none"
               style={{ fontVariationSettings: fontWeights.bold }}
             >
               Fluid Functionalism
             </h1>
-            <p className="text-subtitle text-muted-foreground">
+            <p className="text-site-subtitle text-muted-foreground">
               Refined UI components with satisfying hover.
             </p>
             <div className="flex items-center gap-2 mt-2">

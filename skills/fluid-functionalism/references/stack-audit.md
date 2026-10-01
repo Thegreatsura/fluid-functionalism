@@ -191,7 +191,7 @@ entry, as the reason its effort is L.)
 
 **Systems before components.** Work through the FF system pages
 (fluidfunctionalism.com/docs — Motion, Fluid Hover, Surfaces, Sizes,
-Scrollbars) before individual components: one system adopted lifts every
+Typography, Scrollbars) before individual components: one system adopted lifts every
 surface at once, and components installed afterwards land on rails that
 already exist. Candidates in that order:
 
@@ -206,7 +206,11 @@ already exist. Candidates in that order:
    ad-hoc backgrounds and shadows that break at depth or in dark mode.
 4. **Sizes** (`size-context`) — three-plus control heights in the wild →
    the 36/28 ladder shared by buttons, inputs, selects, tabs, rows.
-5. **Scrollbars** (`scroll-area`) — default scrollbars inside panels and
+5. **Typography** (`type-scale`, `typography`): five-plus text sizes or
+   line heights in the wild, or chat replies and docs rendering markdown
+   with stock or plugin prose styles → six roles with paired leading, and
+   `.typeset` for the markdown.
+6. **Scrollbars** (`scroll-area`) — default scrollbars inside panels and
    popups.
 
 Then components, picked by the same felt-difference test: the card grid that

@@ -19,7 +19,7 @@
       "type": "registry:ui"
     }
   ],
-  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/carousel-dots.",
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/carousel-dots. Craft notes, the color, layout and motion decisions to keep when you change it: https://github.com/mickadesign/fluid-functionalism/blob/main/skills/fluid-functionalism/references/craft.md#carousel-dots.",
   "categories": [
     "components"
   ],

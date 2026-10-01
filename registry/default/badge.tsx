@@ -6,6 +6,16 @@ import { cn } from "@/lib/utils";
 import { useShape } from "@/lib/shape-context";
 import { useSizeVariant } from "@/lib/size-context";
 
+// ---------------------------------------------------------------------------
+// Badge is a short label for status, category or metadata, in 2 variants:
+//   solid: a light tint of the color behind foreground text.
+//   dot:   a neutral outline and foreground text; only the dot is colored.
+// Each color is a single hex. The solid tint is mixed against the page
+// background at render time, so the same hex works in light and dark themes.
+// ---------------------------------------------------------------------------
+
+// Tailwind's 500 step for each hue (400 for gray). Text never takes the hue:
+// it stays on the foreground color, so it keeps its contrast on every color.
 const badgeColors = {
   gray: "#a3a3a3",
   red: "#ef4444",
@@ -36,7 +46,9 @@ const badgeVariants = cva(
         solid: "",
         dot: "border border-border text-foreground",
       },
-      // The two-step size ladder shared by every control — see /docs/sizes.
+      // The two-step size ladder shared by every control: 24px tall by
+      // default, 20px compact. The height is fixed rather than padded so the
+      // trimmed label below can't shrink the badge.
       size: {
         default: "h-6 px-2.5 text-[12px] gap-1.5",
         compact: "h-5 px-2 text-[11px] gap-1",
@@ -84,6 +96,8 @@ const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
     },
     ref
   ) => {
+    // Corner radius comes from the shape context (pill or rounded), so
+    // badges follow the rest of the app instead of hard-coding a radius.
     const shape = useShape();
     // Resolve the size: explicit prop (legacy aliases mapped onto the
     // canonical ladder) > surrounding SizeProvider > default.
@@ -97,6 +111,10 @@ const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
     const isSolid = variant === "solid";
     const dotSize = size === "compact" ? 6 : 7;
 
+    // 15% of the hue mixed into the page background: a tint that sits at the
+    // right depth in either theme, under plain foreground text. Gray skips
+    // the mix and takes the theme's neutral fill (`--accent`), so a gray
+    // badge matches the other neutral fills around it.
     const colorStyle = isSolid
       ? color === "gray"
         ? { backgroundColor: "var(--accent)", color: "var(--foreground)" }
@@ -106,6 +124,8 @@ const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
           }
       : {};
 
+    // The dot carries the full-strength hex. Gray uses the theme's muted text
+    // color instead, so the neutral dot stays visible in both themes.
     const dotColor = color === "gray" ? "var(--muted-foreground)" : colorValue;
 
     return (
@@ -125,7 +145,7 @@ const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
             }}
           />
         )}
-        {/* text-box needs a block container — the badge root is a flex
+        {/* text-box needs a block container. The badge root is a flex
             container, so the label gets its own span. Height is fixed (h-*),
             so trimming only recenters the letterforms. */}
         <span className="[text-box:trim-both_cap_alphabetic]">{children}</span>

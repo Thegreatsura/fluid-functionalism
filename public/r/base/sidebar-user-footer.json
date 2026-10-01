@@ -19,7 +19,7 @@
       "target": "components/sidebar-app/user-footer.tsx"
     }
   ],
-  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/sidebar.",
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/sidebar. Craft notes, the color, layout and motion decisions to keep when you change it: https://github.com/mickadesign/fluid-functionalism/blob/main/skills/fluid-functionalism/references/craft.md#sidebar.",
   "categories": [
     "blocks"
   ],

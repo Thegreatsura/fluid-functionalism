@@ -6,6 +6,11 @@ import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
 import { useSize, type SizeVariant } from "@/lib/size-context";
 
+// The glyph is one path morphing circle → infinity → circle → infinity →
+// circle. All 3 shapes share the same commands (a move, 4 curves, a close),
+// so the morph interpolates point for point. circleA and circleB trace the
+// same circle in opposite directions: each pass through the infinity sign
+// keeps flowing the same way instead of unwinding.
 const circleA =
   "M 12 8 C 14.21 8 16 9.79 16 12 C 16 14.21 14.21 16 12 16 C 9.79 16 8 14.21 8 12 C 8 9.79 9.79 8 12 8 Z";
 
@@ -15,6 +20,7 @@ const infinity =
 const circleB =
   "M 12 16 C 14.21 16 16 14.21 16 12 C 16 9.79 14.21 8 12 8 C 9.79 8 8 9.79 8 12 C 8 14.21 9.79 16 12 16 Z";
 
+// The label moves to the next word every 4000ms.
 const words = ["Thinking", "Moonwalking", "Planning", "Refining"];
 
 interface ThinkingIndicatorProps extends HTMLAttributes<HTMLDivElement> {
@@ -65,6 +71,7 @@ const ThinkingIndicator = forwardRef<HTMLDivElement, ThinkingIndicatorProps>(
           strokeLinejoin="round"
           className="text-muted-foreground shrink-0"
         >
+          {/* 4 equal quarters over 6s, easeInOut, forever. */}
           {reduceMotion ? (
             <path d={infinity} />
           ) : (
@@ -86,6 +93,8 @@ const ThinkingIndicator = forwardRef<HTMLDivElement, ThinkingIndicatorProps>(
           )}
         </motion.svg>
       )}
+      {/* Every word sits in the same grid cell. overflow-hidden clips them
+          as they roll in from below and out the top, like a slot. */}
       <span
         aria-hidden="true"
         className={cn(
@@ -94,6 +103,12 @@ const ThinkingIndicator = forwardRef<HTMLDivElement, ThinkingIndicatorProps>(
         )}
         style={{ fontVariationSettings: fontWeights.medium }}
       >
+        {/* An invisible copy of the longest word reserves the width, so the
+            cycle never shifts what sits next to the indicator.
+            `shimmer-text` ships with this component's CSS: transparent text
+            over a 300%-wide gradient clipped to the letters, sweeping every
+            1.5s. Its colors are light-dark() pairs, so the bright band
+            inverts per theme. */}
         <span className="col-start-1 row-start-1 invisible shimmer-text">
           {words.reduce((a, b) => (a.length >= b.length ? a : b))}
         </span>
@@ -102,6 +117,10 @@ const ThinkingIndicator = forwardRef<HTMLDivElement, ThinkingIndicatorProps>(
             {words[0]}
           </span>
         ) : (
+          // popLayout lets the outgoing word leave layout at once, so both
+          // words overlap in the cell. The exit (0.16s) is quicker than the
+          // entrance (0.24s): the old word clears before the new one lands.
+          // initial={false}: the first word is already there on mount.
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span
               key={words[index]}

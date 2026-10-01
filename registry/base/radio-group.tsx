@@ -23,6 +23,16 @@ import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
+// ---------------------------------------------------------------------------
+// RadioGroup is a vertical list of RadioItem rows sharing one fluid hover
+// scope. The group paints everything that spans rows: one selected background
+// that springs from the old row to the new one, the hover highlight, and one
+// focus ring that springs between rows. Each row is the focusable
+// role="radio" element. Selection takes one of three APIs: `value` +
+// `onValueChange` on the group, `selectedIndex` on the group, or `selected` +
+// `onSelect` per item.
+// ---------------------------------------------------------------------------
+
 // True only while a row's mousedown handler moves focus onto the row. Chrome
 // reports a focus() call from script as :focus-visible, so without this flag
 // every click would draw the keyboard focus ring. focus() fires its focus
@@ -55,7 +65,7 @@ interface RadioGroupProps extends Omit<HTMLAttributes<HTMLDivElement>, "onSelect
   value?: string;
   onValueChange?: (value: string) => void;
   /** Pins the group's rows to one step of the size ladder (default 36px,
-   *  compact 28px — see /docs/sizes). Omitted, it follows the surrounding
+   *  compact 28px). Omitted, it follows the surrounding
    *  SizeProvider. */
   size?: SizeVariant;
 }
@@ -63,6 +73,8 @@ interface RadioGroupProps extends Omit<HTMLAttributes<HTMLDivElement>, "onSelect
 const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
   ({ children, selectedIndex, value, onValueChange, size, className, ...props }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    // Each child's `value`, in order, so a `value`-controlled group can find
+    // the row index its selected background sits on.
     const childValues = Children.toArray(children)
       .filter(isValidElement)
       .map((child) => (child.props as { value?: string }).value);
@@ -76,6 +88,7 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
     } = hover;
 
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+    // -1 when nothing matches, which hides the selected background.
     const resolvedSelectedIndex =
       value !== undefined
         ? childValues.findIndex((childValue) => childValue === value)
@@ -103,6 +116,9 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
         onMouseMove={handlers.onMouseMove}
         onMouseLeave={handlers.onMouseLeave}
         onClick={handlers.onClick}
+        // Focus drives the same activeIndex as hover, so the highlight, the
+        // border and the label color follow the keyboard too. The focus ring
+        // shows for keyboard focus only, never after a click.
         onFocus={(e) => {
           const indexAttr = (e.target as HTMLElement)
             .closest("[data-fluid-hover-index]")
@@ -121,6 +137,7 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
           }
         }}
         onBlur={(e) => {
+          // Don't clear hover when focus moves to another item within the group
           if (containerRef.current?.contains(e.relatedTarget as Node)) return;
           setFocusedIndex(null);
           setActiveIndex(null);
@@ -142,6 +159,10 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
             e as unknown as { preventBaseUIHandler?: () => void }
           ).preventBaseUIHandler;
 
+          // All four arrows move focus AND select, as native radios do, wrapping
+          // at both ends; Home/End jump to the first or last row and select it.
+          // Selecting goes through the row's click, so it runs the same handler
+          // as a pointer press.
           if (["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft"].includes(e.key)) {
             e.preventDefault();
             preventBaseUI?.();
@@ -163,6 +184,7 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
           }
         }}
         role="radiogroup"
+        // select-none keeps rapid clicks on rows from selecting the label text.
         className={cn(
           "relative flex flex-col w-72 max-w-full select-none",
           className
@@ -170,6 +192,9 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
         {...props}
       >
         {/* Selected background */}
+        {/* One shared background springs (spring.moderate) from the old row to
+            the new one instead of each row fading its own in and out.
+            initial={false} places it without animating on first render. */}
         {selectedRect && (
           <motion.div
             className={`absolute ${shape.bg} bg-active pointer-events-none`}
@@ -195,6 +220,9 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
         />
 
         {/* Focus ring */}
+        {/* One shared ring springs between rows on spring.fast. It sits 2px
+            outside the row and shape.focusRing is the row radius + 2px, so
+            the corners stay concentric; z-20 lifts it above the rows. */}
         <AnimatePresence>
           {focusRect && (
             <motion.div
@@ -241,6 +269,9 @@ const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
             hasSelection,
           }}
         >
+          {/* render merges the primitive's props and handlers onto the
+              container itself, so no wrapper div sits between the group and
+              its rows. */}
           <RadioGroupPrimitive
             value={value}
             onValueChange={(v) => onValueChange?.(v as string)}
@@ -290,6 +321,8 @@ const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(
 
     useRegisterFluidHoverItem(registerItem, index, internalRef);
 
+    // Rows selected at mount show the dot at full size instead of popping it
+    // in, so default selections don't animate on page load.
     useEffect(() => {
       hasMounted.current = true;
     }, []);
@@ -299,11 +332,15 @@ const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(
     const shape = useShape();
     const sizeClasses = useSize();
     const compact = sizeClasses.variant === "compact";
+    // Value equality decides when both the item and the group have a value;
+    // otherwise the item's own `selected` wins over the group's selectedIndex.
     const isSelected =
       value !== undefined && selectedValue !== undefined
         ? selectedValue === value
         : selected ?? selectedIndex === index;
 
+    // Value mode reports through the group's onValueChange, index and per-item
+    // modes through onSelect; both fire when both are wired.
     const handleSelect = () => {
       if (value !== undefined) {
         onValueChange?.(value);
@@ -322,17 +359,18 @@ const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(
         // Roving tabindex: selected item is the tab stop; with no selection the
         // first item takes it so the group stays keyboard-reachable.
         tabIndex={isSelected ? 0 : !hasSelection && index === 0 ? 0 : -1}
+        // The row, not the primitive, carries the role, state and name: it is
+        // the element that takes focus.
         role="radio"
         aria-checked={isSelected}
         aria-label={label}
         onClick={handleSelect}
         onMouseDown={(e) => {
-          // Clicking the 15px radio circle would natively focus the hidden
-          // primitive (nearest focusable ancestor of the click target), after
-          // which arrow-key nav dead-zones: the group keydown handler can't
-          // find the target among the row wrappers. Prevent the native focus
-          // move (click still fires) and land focus on the row instead. Skip
-          // genuinely interactive children so we don't hijack their focus.
+          // Pin focus to the row wrapper on press: the group keydown handler
+          // only finds targets among the row wrappers, so focus anywhere else
+          // dead-zones arrow-key nav. Prevent the native focus move (click
+          // still fires) and land focus on the row instead. Skip genuinely
+          // interactive children so we don't hijack their focus.
           const interactive = (e.target as HTMLElement).closest(
             'button:not([tabindex="-1"]), a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
           );
@@ -345,6 +383,8 @@ const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(
             pointerFocusRedirect = false;
           }
         }}
+        // The row is a div, so it handles Space and Enter itself;
+        // preventDefault keeps Space from scrolling the page.
         onKeyDown={(e) => {
           if (e.key === " " || e.key === "Enter") {
             e.preventDefault();
@@ -367,6 +407,9 @@ const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(
           )}
         >
           {/* Border */}
+          {/* Selected: the border turns transparent and the dot alone marks
+              the state. Unselected: hover or focus darkens it from border to
+              neutral-400 (neutral-500 dark) over 80ms. */}
           <div
             className={cn(
               "absolute inset-0 rounded-full border-solid transition-all duration-80",
@@ -378,6 +421,8 @@ const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(
             )}
           />
           {/* Dot */}
+          {/* Pops in on spring.fast from scale 0.3 and opacity 0, and shrinks
+              back out over 0.04s. */}
           <AnimatePresence>
             {isSelected && (
               <motion.div
@@ -405,6 +450,8 @@ const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(
         {/* Both stacked spans carry the text-box trim so the invisible bold
             sizer and the visible label keep identical boxes. */}
         <span className={cn("inline-grid", sizeClasses.text)}>
+          {/* Always semibold, so the grid cell is sized for the heaviest
+              weight and the row never shifts when the label gains weight. */}
           <span
             className="col-start-1 row-start-1 invisible [text-box:trim-both_cap_alphabetic]"
             style={{ fontVariationSettings: fontWeights.semibold }}
@@ -412,6 +459,9 @@ const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(
           >
             {label}
           </span>
+          {/* Weight changes only when selected ('wght' 400 → 550), so weight
+              marks state; color goes muted → foreground when selected, hovered
+              or focused. Both transition over 80ms. */}
           <span
             className={cn(
               "col-start-1 row-start-1 transition-[color,font-variation-settings] duration-80 [text-box:trim-both_cap_alphabetic]",
@@ -430,6 +480,9 @@ const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(
         </span>
 
         {/* Hidden Base UI Radio input for accessibility */}
+        {/* Value mode only. Out of the tab order and hidden from assistive
+            tech: the row already is the radio, so exposing the primitive too
+            would announce every option twice. */}
         {value !== undefined && (
           <RadioPrimitive.Root
             value={value}

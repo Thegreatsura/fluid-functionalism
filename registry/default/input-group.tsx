@@ -19,6 +19,14 @@ import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 
+// ---------------------------------------------------------------------------
+// InputGroup stacks labelled text fields that share one fluid hover scope.
+// At rest a field has no fill and no visible ring. The field nearest the
+// pointer shows a faint fill and its ring; the focused field lifts to the
+// card surface. There is no separate highlight element: each field draws its
+// own state.
+// ---------------------------------------------------------------------------
+
 interface InputGroupContextValue {
   registerItem: (index: number, element: HTMLElement | null) => void;
   activeIndex: number | null;
@@ -36,8 +44,7 @@ function useInputGroup() {
 interface InputGroupProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   /** Pins the group's fields to one step of the size ladder (default 36px,
-   *  compact 28px — see /docs/sizes). Omitted, they follow the surrounding
-   *  SizeProvider. */
+   *  compact 28px). Omitted, they follow the surrounding SizeProvider. */
   size?: SizeVariant;
 }
 
@@ -126,6 +133,8 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
 
     useRegisterFluidHoverItem(registerItem, index, internalRef);
 
+    // Lit when nearest the pointer OR focused, so tabbing through the form
+    // shows the same cue as hovering it.
     const isActive = activeIndex === index;
     const labelActive = isActive || isFocused;
 
@@ -137,7 +146,10 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
       setIsFocused(false);
     };
 
-    // Input container classes
+    // Input container classes. The first match wins: disabled, error,
+    // focused, hovered, rest. An error stays frameless at rest (the red label
+    // and message already carry it) and shows its red ring on hover or focus.
+    // Focus lifts the field to the card surface; hover only tints it.
     let bgClass: string;
     let ringClass: string;
 
@@ -187,6 +199,8 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
             !labelHidden && (compact ? "pl-2" : "pl-2.5")
           )}
         >
+          {/* An invisible semibold copy shares the grid cell and reserves the
+              bold width, so a heavier label never shifts the layout. */}
           <span
             className="col-start-1 row-start-1 invisible"
             style={{ fontVariationSettings: fontWeights.semibold }}
@@ -227,6 +241,8 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
             ringClass
           )}
         >
+          {/* The icon wakes with the field: muted → foreground and stroke
+              1.5 → 2 over 80ms. */}
           {Icon && (
             <Icon
               size={sizeClasses.icon}
@@ -256,8 +272,8 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
           />
         </div>
 
-        {/* Error message — `match` pins it visible while our controlled
-            `error` prop is standing. */}
+        {/* Error message: `match` pins it visible while the controlled
+            `error` prop stands. Same inset as the label above. */}
         {error && (
           <Field.Error
             match

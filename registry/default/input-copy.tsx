@@ -10,6 +10,15 @@ import { useSize, type SizeVariant } from "@/lib/size-context";
 import { spring } from "@/lib/springs";
 import { Tooltip } from "@/registry/radix/tooltip";
 
+// ---------------------------------------------------------------------------
+// InputCopy shows a value and copies it on click. The whole row is one
+// <button>: hovering it tints the value and thickens the icon, so the full
+// value reads as the click target, not just the icon. 2 variants: "icon"
+// (copy icon with a tooltip) and "button" (icon plus a Copy label). Either
+// way the result shows in place for 2000ms: a check that draws itself, or a
+// red × when the copy fails.
+// ---------------------------------------------------------------------------
+
 type InputCopyVariant = "icon" | "button";
 type InputCopyAlign = "right" | "left";
 
@@ -27,8 +36,7 @@ interface InputCopyProps extends Omit<HTMLAttributes<HTMLDivElement>, "children"
   /** Position of the copy action relative to the value. */
   align?: InputCopyAlign;
   /** Pins the field to one step of the size ladder (default 36px, compact
-   *  28px — see /docs/sizes). Omitted, it follows the surrounding
-   *  SizeProvider. */
+   *  28px). Omitted, it follows the surrounding SizeProvider. */
   size?: SizeVariant;
 }
 
@@ -37,6 +45,8 @@ const InputCopy = forwardRef<HTMLDivElement, InputCopyProps>(
     const CopyIcon = useIcon("copy");
     // "copied" and "error" both occupy the same animation slot on the button
     const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
+    // Keys the check and × glyphs. Copying again while "Copied" still shows
+    // mounts a fresh glyph, so the draw replays instead of nothing happening.
     const [copyCount, setCopyCount] = useState(0);
     // "idle" = normal tooltip behavior, "copied" = force open, "suppressed" = force closed
     const [tooltipState, setTooltipState] = useState<"idle" | "copied" | "suppressed">("idle");
@@ -91,8 +101,14 @@ const InputCopy = forwardRef<HTMLDivElement, InputCopyProps>(
       }
       setStatus(ok ? "copied" : "error");
       setCopyCount((c) => c + 1);
+      // The tooltip says "Copied" only if it was already showing when the
+      // press began. Otherwise it stays shut: a click never summons a tooltip
+      // the user wasn't reading.
       setTooltipState(tooltipWasVisibleRef.current ? "copied" : "suppressed");
       if (ok) onCopy?.();
+      // A new copy restarts the 2000ms window. When it ends, the tooltip
+      // stays suppressed until the pointer leaves and comes back, so it
+      // doesn't reopen as "Copy to clipboard" right under a resting cursor.
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
         setStatus("idle");
@@ -110,6 +126,8 @@ const InputCopy = forwardRef<HTMLDivElement, InputCopyProps>(
       };
     }, []);
 
+    // Re-entering the row re-arms the normal 500ms hover tooltip; leaving it
+    // closes a "Copied" tooltip with the pointer.
     const handleMouseEnter = useCallback(() => {
       setTooltipState((prev) => prev === "suppressed" ? "idle" : prev);
     }, []);
@@ -118,6 +136,10 @@ const InputCopy = forwardRef<HTMLDivElement, InputCopyProps>(
       setTooltipState((prev) => prev === "copied" ? "suppressed" : prev);
     }, []);
 
+    // A wait-mode swap on spring.fast: the copy icon shrinks out to 0.8
+    // before the result grows in from 0.6, then the check or × strokes draw
+    // themselves (pathLength 0 → 1 in 0.08s). Strokes go 1.5 → 2 on hover
+    // over 80ms, with the rest of the row.
     const iconSwitch = (
       <AnimatePresence mode="wait" initial={false}>
         {status === "error" ? (
@@ -232,6 +254,9 @@ const InputCopy = forwardRef<HTMLDivElement, InputCopyProps>(
                   />
                 </svg>
               </span>
+              {/* The invisible "Copied" shares the grid cell with every label
+                  (Copy, Copied, Failed), so the swap never changes the row's
+                  width. */}
               <span className="select-none inline-grid text-left">
                 <span className="col-start-1 row-start-1 invisible" aria-hidden="true">Copied</span>
                 <span className="col-start-1 row-start-1">Failed</span>
@@ -304,6 +329,8 @@ const InputCopy = forwardRef<HTMLDivElement, InputCopyProps>(
       </span>
     );
 
+    // select-none: a press copies instead of starting a text selection. On
+    // hover a <mark> tints the whole value, so it reads as what gets copied.
     const valueElement = (
       <span
         className={cn(
@@ -333,6 +360,7 @@ const InputCopy = forwardRef<HTMLDivElement, InputCopyProps>(
         onPointerDown={handlePointerDown}
         onClick={handleCopy}
         disabled={disabled}
+        // The name follows the state, so a screen reader hears the result.
         aria-label={
           status === "copied"
             ? "Copied"

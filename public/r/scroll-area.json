@@ -162,7 +162,7 @@
       }
     }
   },
-  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/scrollbars.",
+  "docs": "Docs & live playground: https://www.fluidfunctionalism.com/docs/scrollbars. Craft notes, the color, layout and motion decisions to keep when you change it: https://github.com/mickadesign/fluid-functionalism/blob/main/skills/fluid-functionalism/references/craft.md#scrollbars.",
   "categories": [
     "components"
   ],

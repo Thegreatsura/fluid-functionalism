@@ -13,7 +13,7 @@ import {
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
-import { PlaygroundLayout } from "@/lib/docs/playground";
+import { PlaygroundLayout, PlaygroundOverlay } from "@/lib/docs/playground";
 import { BannerPlayground, MockPage } from "@/lib/docs/playgrounds/banner";
 
 const STATUSES: BannerStatus[] = ["default", "info", "success", "warning", "error"];
@@ -109,12 +109,13 @@ const actionProps: PropDef[] = [
 function BannerPlaygroundSection() {
   return (
     <BannerPlayground>
-      {({ preview, controls, code, onReplay }) => (
+      {({ preview, controls, code, onReplay, overlay }) => (
         <PlaygroundLayout
           controls={controls}
           preview={
             <ComponentPreview code={code} onReplay={onReplay} minHeightClass="min-h-[340px]">
               {preview}
+              <PlaygroundOverlay>{overlay}</PlaygroundOverlay>
             </ComponentPreview>
           }
         />

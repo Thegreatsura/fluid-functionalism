@@ -9,6 +9,7 @@ import { previewMap } from "@/app/components/bento-previews";
 import { playgroundMap } from "@/lib/docs/playgrounds";
 import { BentoCard } from "@/app/components/bento-card";
 import { PlaygroundMenu } from "@/app/components/playground-menu";
+import { PlaygroundOverlay } from "@/lib/docs/playground";
 import { SettingsContent } from "@/app/components/right-panel";
 import { Button } from "@/registry/radix/button";
 import { fontWeights } from "@/registry/default/lib/font-weight";
@@ -69,10 +70,10 @@ function DemoPageInner() {
     "tabs-subtle",
     "thinking-indicator",
     "thinking-steps",
+    "banner",
     "__settings__",
     "input-copy",
     "carousel-dots",
-    "banner",
     // Any component with a registered playground gets a slide automatically
     // (see lib/docs/playgrounds) — a playground on the doc page always shows
     // up here too, under the pen menu. Curate the position by naming the slug
@@ -293,12 +294,15 @@ function DemoPageInner() {
             </BentoCard>
           ) : Playground ? (
             <Playground key={current.slug}>
-              {({ demoPreview, demoMaxWidth, controls }) => (
+              {({ demoPreview, demoMaxWidth, controls, overlay }) => (
                 <BentoCard
                   slug={current.slug}
                   name={current.name}
                   isNew={"isNew" in current ? current.isNew : undefined}
                   style={{ height: "100%" }}
+                  // Anchors the playground overlay to the preview area,
+                  // above the footer and outside the stage's scaling.
+                  previewClassName="relative"
                   action={cardActions(
                     <PlaygroundMenu label={`Customize ${current.name}`}>
                       {controls}
@@ -306,6 +310,7 @@ function DemoPageInner() {
                   )}
                 >
                   {stage(demoPreview, demoMaxWidth)}
+                  <PlaygroundOverlay>{overlay}</PlaygroundOverlay>
                 </BentoCard>
               )}
             </Playground>

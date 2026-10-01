@@ -1,7 +1,27 @@
 "use client";
 
-import { forwardRef, useState, type CSSProperties, type HTMLAttributes } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  forwardRef,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type HTMLAttributes,
+  type ReactNode,
+} from "react";
+import {
+  AnimatePresence,
+  PresenceContext,
+  animate,
+  motion,
+  useMotionValue,
+  usePresence,
+  useReducedMotion,
+  useTransform,
+  type ValueAnimationTransition,
+} from "framer-motion";
 import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
@@ -16,11 +36,12 @@ import { Button, type ButtonProps } from "@/components/ui/button";
 // BannerDescription and BannerActions fill the text column.
 //
 // One status color per banner, and it lands in one place at a time:
-//   contrast="low"  — a neutral overlay behind the text; only the icon is
-//                     colored.
-//   contrast="high" — a light wash of the status color behind the text.
-// Text stays on the foreground ramp in both, so it reads the same on every
-// status.
+//   contrast="low":  a neutral overlay behind the text; only the icon is
+//                    colored.
+//   contrast="high": a light wash of the status color behind the text.
+// There is no solid fill: the status color never sits behind the text at
+// full strength. Text stays on the foreground ramp in both, so it reads the
+// same on every status.
 //
 // The parts sit on one grid, so their placement is pure CSS: actions trail
 // the title on a title-only banner, and drop under the text when there is a
@@ -33,6 +54,10 @@ type BannerVariant = "inline" | "fixed";
 
 // The status color: the icon's fill, and the wash behind a high-contrast
 // banner. Default is the foreground, so a neutral banner reads as ink.
+// --info, --success and --warning ship with the component: Tailwind 500s in
+// light mode, where they carry the light mark cut into a filled glyph, and
+// 300s in dark mode, where the mark turns dark. Error reuses --destructive,
+// so it matches the app's other error states.
 const TONE: Record<BannerStatus, string> = {
   default: "var(--foreground)",
   info: "var(--info)",
@@ -100,6 +125,176 @@ function StatusGlyph({ status, size }: { status: ColoredStatus; size: number }) 
   );
 }
 
+// ── Motion ───────────────────────────────────────────────
+// The space a banner takes (a one-row grid whose track runs between 0fr and
+// 1fr) and the banner itself move separately.
+//
+// Appearing, the row starts opening, and a fast tier later the banner fades
+// in while growing from 40% on the slow tier, bounce included. Dismissing,
+// the row starts closing at once and the banner rides it: while the row
+// closes to 60% of its height, the banner shrinks from 100% to 60% from its
+// top edge and fades out, so its visible height always equals the row's and
+// the closing row never cuts it. The rest of the close happens with the
+// banner already gone. A full-bleed bar can't shrink without pulling its ends
+// in from the window edges, so it rides its row instead: it slides down into
+// the opening row while fading in, and up out of the closing one while
+// fading out, both on the row's curve. Reduced motion keeps the fades and
+// snaps the row.
+//
+// At rest the row is exactly the content height, so rewrapping text never
+// waits on a measurement, and fr resolves from layout, so a scaled ancestor
+// can't skew it the way it skews a framer "auto" target. In a flex column
+// with a gap, the row also takes back one gap, so nothing jumps when the
+// banner mounts or unmounts.
+
+/** Every value in the appear and dismiss, in one place. Each is a motion
+ *  token or derived from one, and each is read when an animation starts, so
+ *  changing one retunes the next appear or dismiss of every banner. */
+const bannerMotion: {
+  appear: {
+    row: ValueAnimationTransition<number>;
+    banner: ValueAnimationTransition<number>;
+    fromScale: number;
+  };
+  dismiss: { row: ValueAnimationTransition<number>; shrinkTo: number };
+} = {
+  appear: {
+    /** The row opening: twice the moderate tier, no bounce. */
+    row: { type: "spring" as const, duration: spring.moderate.duration * 2, bounce: 0 },
+    /** The banner fading in and growing: the slow tier, bounce included,
+     *  starting a fast tier after the row. */
+    banner: {
+      type: "spring" as const,
+      duration: spring.slow.duration,
+      bounce: spring.slow.bounce,
+      delay: spring.fast.duration,
+    },
+    /** The scale the banner grows from. */
+    fromScale: 0.4,
+  },
+  dismiss: {
+    /** The row closing (easeInOut, twice the moderate exit). The banner
+     *  rides it. */
+    row: { duration: spring.moderate.exit.duration * 2, ease: "easeInOut" },
+    /** The scale the banner shrinks to, which is also how open the row is
+     *  when the banner is gone. One number, so the banner's visible height
+     *  always equals the row's and the row never cuts it. */
+    shrinkTo: 0.6,
+  },
+};
+
+interface BannerMotionProps {
+  fixed: boolean;
+  reduceMotion: boolean;
+  /** The parent flex column's gap, taken back as the row closes. */
+  gap: number;
+  measureGap: (el: HTMLDivElement | null) => void;
+  children: ReactNode;
+}
+
+function BannerMotion({ fixed, reduceMotion, gap, measureGap, children }: BannerMotionProps) {
+  // A banner that is open on first render arrives already in place.
+  const appear = useContext(PresenceContext)?.initial !== false;
+  const [isPresent, safeToRemove] = usePresence();
+  const scaled = !fixed && !reduceMotion;
+
+  // Two progress values, 0 to 1: how open the row is (as a share of the
+  // banner's height), and how shown the banner is. Every style below is
+  // derived from them, so the row and the banner render from the same frame.
+  const row = useMotionValue(appear ? 0 : 1);
+  const shown = useMotionValue(appear ? 0 : 1);
+  const gapRef = useRef(gap);
+  const leaving = useRef(false);
+  useEffect(() => {
+    gapRef.current = gap;
+  }, [gap]);
+
+  const gridTemplateRows = useTransform(row, (v) => `${v}fr`);
+  // The row clips only while it has to. Appearing inline, the banner's
+  // slow-tier bounce takes it a touch past full size; the row lets that show
+  // rather than cutting its edges. Leaving, the banner's height equals the
+  // row's, so clipping costs nothing; a fixed bar slides out of it.
+  const overflow = useMotionValue(fixed ? "hidden" : "visible");
+  const marginBottom = useTransform(row, (v) => (v - 1) * gapRef.current);
+  const opacity = shown;
+  const scale = useTransform(shown, (v) => {
+    if (!scaled) return 1;
+    const from = leaving.current ? bannerMotion.dismiss.shrinkTo : bannerMotion.appear.fromScale;
+    return from + v * (1 - from);
+  });
+  // A fixed bar rides its row both ways: its bottom edge sits on the row's,
+  // so it slides down into an opening row and up out of a closing one.
+  const slides = fixed && !reduceMotion;
+  const y = useTransform(row, (v) => (slides ? `${(v - 1) * 100}%` : "0%"));
+
+  useEffect(() => {
+    if (isPresent) {
+      // Appearing: the row opens. Inline, the banner fades in and grows from
+      // `fromScale` just behind it; a fixed bar slides down into the row and
+      // fades in with it, on the row's spring.
+      leaving.current = false;
+      overflow.set(fixed ? "hidden" : "visible");
+      const open = animate(row, 1, reduceMotion ? { duration: 0 } : bannerMotion.appear.row);
+      if (slides) {
+        const follow = row.on("change", (v) => shown.set(v));
+        return () => {
+          follow();
+          open.stop();
+        };
+      }
+      const show = animate(shown, 1, reduceMotion ? spring.fast : bannerMotion.appear.banner);
+      return () => {
+        open.stop();
+        show.stop();
+      };
+    }
+
+    if (reduceMotion) {
+      const hide = animate(shown, 0, spring.fast.exit);
+      hide.then(() => safeToRemove?.());
+      return () => hide.stop();
+    }
+
+    // Dismissing: the row closes from the start, and the banner rides it.
+    // Inline, while the row closes from 1 to `shrinkTo` the banner shrinks
+    // to `shrinkTo` and fades out, so its visible height equals the row's on
+    // every frame. A fixed bar slides up and fades over the whole close, both
+    // on the row's curve.
+    leaving.current = true;
+    overflow.set("hidden");
+    const end = fixed ? 0 : Math.min(bannerMotion.dismiss.shrinkTo, 0.99);
+    const unfollow = row.on("change", (v) =>
+      shown.set(Math.min(1, Math.max(0, (v - end) / (1 - end))))
+    );
+    const close = animate(row, 0, bannerMotion.dismiss.row);
+    close.then(() => safeToRemove?.());
+    return () => {
+      unfollow();
+      close.stop();
+    };
+  }, [isPresent, reduceMotion, fixed, slides, row, shown, overflow, safeToRemove]);
+
+  return (
+    <motion.div
+      ref={measureGap}
+      style={{ gridTemplateRows, marginBottom, overflow }}
+      // w-full: the banner is a container (for its narrow layout), so it
+      // can't size to its content and has to take the full row.
+      //
+      // The clip sits on the grid, not on the track's item: below 1fr,
+      // Chrome sizes the grid to f of the content but the track itself to
+      // f² (0.5fr renders a quarter). The grid's height is the space the
+      // banner takes, so clipping there keeps what is shown and what is
+      // pushed down the same box.
+      className={cn("grid w-full", fixed && "sticky top-0 z-40")}
+    >
+      <div className="min-h-0">
+        <motion.div style={{ opacity, scale, y, transformOrigin: "top" }}>{children}</motion.div>
+      </div>
+    </motion.div>
+  );
+}
+
 // ── Banner ───────────────────────────────────────────────
 
 interface BannerProps extends HTMLAttributes<HTMLDivElement> {
@@ -159,6 +354,18 @@ const Banner = forwardRef<HTMLDivElement, BannerProps>(
     const [openState, setOpenState] = useState(true);
     const open = openProp ?? openState;
 
+    // The gap a flex-column parent puts next to the banner, read whenever the
+    // banner mounts and kept for the next time it opens.
+    const [gap, setGap] = useState(0);
+    const measureGap = useCallback((el: HTMLDivElement | null) => {
+      const parent = el?.parentElement;
+      if (!parent || parent.children.length < 2) return;
+      const style = getComputedStyle(parent);
+      const column =
+        style.display.endsWith("flex") && style.flexDirection.startsWith("column");
+      setGap(column ? parseFloat(style.rowGap) || 0 : 0);
+    }, []);
+
     const handleDismiss = () => {
       onDismiss?.();
       if (openProp === undefined) setOpenState(false);
@@ -173,6 +380,8 @@ const Banner = forwardRef<HTMLDivElement, BannerProps>(
     const body = (
       <div
         ref={ref}
+        // Errors and warnings interrupt a screen reader; the rest wait their
+        // turn.
         role={role ?? (status === "error" || status === "warning" ? "alert" : "status")}
         data-slot="banner"
         data-status={status}
@@ -183,7 +392,8 @@ const Banner = forwardRef<HTMLDivElement, BannerProps>(
           // With a description the icon and ✕ hold to the title line instead
           // of centring on the whole block.
           "has-data-[slot=banner-description]:items-start",
-          compact ? "px-3 py-2.5" : "px-4 py-3.5",
+          // Even inset on all 4 sides: 16px, 12px compact.
+          compact ? "p-3" : "p-4",
           // A fixed bar runs edge to edge: square corners, no frame.
           !fixed && shape.container,
           className
@@ -238,30 +448,18 @@ const Banner = forwardRef<HTMLDivElement, BannerProps>(
       </div>
     );
 
-    // The height opens and closes on a one-row grid whose track springs
-    // between 0fr and 1fr. At rest the row is exactly the content height, so
-    // rewrapping text never waits on a measurement, and fr resolves from
-    // layout, so a scaled ancestor can't skew it the way it skews a framer
-    // "auto" target.
     const banner = (
       <AnimatePresence initial={false}>
         {open && (
-          <motion.div
+          <BannerMotion
             key="banner"
-            initial={{ gridTemplateRows: "0fr", opacity: 0 }}
-            animate={{ gridTemplateRows: "1fr", opacity: 1 }}
-            exit={{
-              gridTemplateRows: "0fr",
-              opacity: 0,
-              transition: reduceMotion ? { duration: 0 } : spring.moderate.exit,
-            }}
-            transition={reduceMotion ? { duration: 0 } : spring.moderate}
-            // w-full: the banner is a container (for its narrow layout), so it
-            // can't size to its content and has to take the full row.
-            className={cn("grid w-full", fixed && "sticky top-0 z-40")}
+            fixed={fixed}
+            reduceMotion={reduceMotion}
+            gap={gap}
+            measureGap={measureGap}
           >
-            <div className="min-h-0 overflow-hidden">{body}</div>
-          </motion.div>
+            {body}
+          </BannerMotion>
         )}
       </AnimatePresence>
     );
@@ -434,7 +632,7 @@ const BannerAction = forwardRef<HTMLButtonElement, BannerActionProps>(
 
 BannerAction.displayName = "BannerAction";
 
-export { Banner, BannerTitle, BannerDescription, BannerActions, BannerAction };
+export { Banner, BannerTitle, BannerDescription, BannerActions, BannerAction, bannerMotion };
 export type {
   BannerProps,
   BannerStatus,

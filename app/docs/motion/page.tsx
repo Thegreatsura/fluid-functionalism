@@ -82,6 +82,7 @@ const REFERENCE_TIERS = [
       { label: "Dropdown",                slug: "/docs/dropdown" },
       { label: "Tabs indicator",          slug: "/docs/tabs" },
       { label: "Carousel dots",           slug: "/docs/carousel-dots" },
+      { label: "Banner dismiss",          slug: "/docs/banner" },
       { label: "Switch thumb",            slug: "/docs/switch" },
       { label: "Chat bubbles",            slug: "/docs/chat-message" },
       { label: "Mobile drawer",           slug: null },

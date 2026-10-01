@@ -84,6 +84,14 @@ interface ButtonProps
    *  compact 28px). Legacy sm/md/lg values still resolve. */
   size?: ButtonSize;
   asChild?: boolean;
+  /** Base UI's spelling of `asChild`: the element to render as, with the
+   *  button's children as its label. Accepted so code written either way
+   *  works, including the shadcn CLI's asChild-to-render rewrite in Base UI
+   *  projects. */
+  render?: ReactElement;
+  /** Accepted for Base UI parity and ignored: the button already knows
+   *  whether it renders a native button. */
+  nativeButton?: boolean;
   loading?: boolean;
   leadingIcon?: IconComponent;
   trailingIcon?: IconComponent;
@@ -97,13 +105,15 @@ interface ButtonProps
    same-color box-shadow spread fills it back out to the full bounds.
    Pressing collapses the spread, shrinking the surface by exactly 1px per
    side at any width — a scale would warp (2% of a 400px button is 8px
-   sideways but under 1px vertically). Fill colors are opaque color-mix()es
-   rather than alpha so the fill and its spread ring never seam. */
+   sideways but under 1px vertically). Primary's fills are opaque
+   color-mix()es. Secondary's are see-through (--tint), so it takes on the
+   surface or tinted banner under it; its fill and spread ring still never
+   double up, since an outer shadow renders only outside the surface box. */
 const bgVariants: Record<string, string> = {
   primary:
     "[--btn-bg:var(--foreground)] group-hover:[--btn-bg:color-mix(in_oklab,var(--foreground)_90%,var(--background))] group-active:[--btn-bg:color-mix(in_oklab,var(--foreground)_80%,var(--background))] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
   secondary:
-    "[--btn-bg:var(--accent)] group-hover:[--btn-bg:color-mix(in_oklab,var(--accent)_80%,var(--background))] group-active:[--btn-bg:var(--accent)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
+    "[--btn-bg:var(--tint)] group-hover:[--btn-bg:var(--tint-hover)] group-active:[--btn-bg:var(--tint)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
   // The border ring is an outer 1px shadow at rest that hands off to an
   // inset 1px shadow when pressed, so the ring moves inward with the
   // surface. The translucent fill only ever reaches the ring's inner edge
@@ -122,7 +132,7 @@ const activeBgVariants: Record<string, string> = {
   primary:
     "[--btn-bg:color-mix(in_oklab,var(--foreground)_80%,var(--background))] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
   secondary:
-    "[--btn-bg:var(--accent)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
+    "[--btn-bg:var(--tint)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
   tertiary:
     "bg-active shadow-[0_0_0_1px_var(--border),inset_0_0_0_0px_var(--border)] group-active:shadow-[0_0_0_0px_var(--border),inset_0_0_0_1px_var(--border)]",
   ghost:
@@ -136,6 +146,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       variant,
       size,
       asChild = false,
+      render,
+      nativeButton: _nativeButton,
       loading = false,
       leadingIcon: LeadingIcon,
       trailingIcon: TrailingIcon,
@@ -152,10 +164,17 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     // requires exactly one child, so instead of Slottable we clone the user's
     // element with our internals as its children — the element's own children
     // become the label inside the content wrapper.
+    // `render` is the same thing written the Base UI way: its element is the
+    // root and the children, when given, are the label (otherwise the
+    // element keeps its own).
     const asChildElement =
-      asChild && isValidElement(children)
-        ? (children as ReactElement<{ children?: ReactNode }>)
-        : null;
+      render && isValidElement(render)
+        ? children === undefined
+          ? (render as ReactElement<{ children?: ReactNode }>)
+          : cloneElement(render as ReactElement<{ children?: ReactNode }>, undefined, children)
+        : asChild && isValidElement(children)
+          ? (children as ReactElement<{ children?: ReactNode }>)
+          : null;
     const Comp = asChildElement ? Slot : "button";
     const label = asChildElement ? asChildElement.props.children : children;
     // Resolve the size: explicit prop (legacy aliases mapped onto the

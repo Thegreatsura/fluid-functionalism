@@ -22,6 +22,7 @@ Systems first — their craft applies across every component below.
 - [Accordion](#accordion)
 - [AskUserQuestions](#ask-user-questions)
 - [Badge](#badge)
+- [Banner](#banner)
 - [Button](#button)
 - [Card](#card)
 - [CarouselDots](#carousel-dots)
@@ -145,16 +146,45 @@ Systems first — their craft applies across every component below.
 - The label sits in its own span with `text-box: trim-both cap alphabetic`; the badge height is fixed, so trimming only recenters the letterforms vertically.
 - Corner radius comes from the shape context (`shape.item`), so badges follow the app's pill/rounded shape system rather than hardcoding a radius.
 
+<a id="banner"></a>
+## Banner
+
+- Contrast puts the status color in one place at a time. `low` sets every status on the same neutral `var(--hover)` fill and colors only the icon; `high` washes the banner in `color-mix(in oklab, <status> 12%, transparent)`, 8% for the neutral default because grey reads darker than a hue at the same mix. There is no solid fill: the status color never sits behind the text at full strength.
+- Both fills are translucent, so an inline banner takes on the surface under it. The fixed bar paints the same fill over an opaque `var(--background)`, so the page scrolling under it never shows through.
+- Status colors ship as the component's own `--info`, `--success` and `--warning` tokens: Tailwind 500s in light mode and 300s in dark mode, where the mark cut into the glyph turns dark. Error reuses `--destructive`, so it matches the app's other error states.
+- The 4 colored statuses get filled glyphs drawn in the component (a circle or triangle in the status color, the mark stroked in the page color with `stroke-background`), so they stay filled whatever icon library the app uses. The neutral default uses the icon set's outline `info` icon at the usual 1.5 stroke, and the `icon` prop draws any icon as an outline in the status color.
+- The title is medium weight on the foreground. The description is 70% foreground, not muted-foreground, which drops under 4.5:1 on the tinted and neutral fills; ghost actions get the same 70% for the same reason.
+- Every part sits on one 4-column grid (icon, text, actions, ✕), so layout is pure CSS: actions trail a title-only banner and drop under the text when a BannerDescription is present (`:has()`) or the banner is under 24rem (container query). Margins space the columns, not grid gaps, so a missing part leaves no gap.
+- The icon box is one title line tall (20px, 18px compact). A title-only banner centres the icon, actions and ✕ on the text; a description switches the grid to `items-start` so they hold the first line.
+- The inset is even on all 4 sides (16px, 12px compact). Trailing actions and the ✕ are 28px targets pulled into the padding with negative margins, so a one-line banner is 52px tall with or without actions.
+- BannerAction is the library Button at its compact size, so it presses like every other button, and its secondary is the see-through `--tint`, which darkens (or, in dark mode, lightens) whatever fill the banner has. Each action orders itself by variant with CSS `order`: trailing the title, ghost, secondary, primary, the strongest at the edge; under the text, primary first. Tab order follows the markup, so write primary first.
+- The fixed variant is `position: sticky; top: 0`, not `fixed`: it takes its own height and pushes the content down instead of covering it, and it goes between the header and the content that scrolls. It runs edge to edge with square corners and no border.
+- The space and the banner move separately. Two progress values drive everything (how open the row is, how shown the banner is) and every style is a `useTransform` of them, so the row and the banner render from the same frame. A change listener in their place lagged by a frame and cut 24px off the banner.
+- Appear: the row opens on a spring twice the moderate tier (0.32s, no bounce). A fast tier later (0.08s) the banner fades in and grows from 40%, from its top edge, on `spring.slow` (0.24s, bounce 0.12).
+- Dismiss: the row starts closing on the first frame (easeInOut, twice the moderate exit, 0.24s) and the banner rides it. While the row closes to 60% of its height, the banner shrinks to 60% and fades out, so its visible height equals the row's on every frame. `shrinkTo` is one number for both, or the closing row would cut the banner.
+- A fixed bar can't shrink without pulling its ends in from the window edges, so it rides its row both ways: its offset is `(row - 1) * 100%` and its opacity is the row. It slides down into the opening row while fading in, and up out of the closing one while fading out, on the row's own curve.
+- The row is a one-row grid whose track runs between `0fr` and `1fr`. At rest it is exactly the content height, so a text rewrap never waits on a measurement, and fr resolves from layout, so a scaled parent can't skew it the way it skews a framer `"auto"` target.
+- The clip goes on the grid container, not on the `min-h-0` track item: below 1fr, Chrome sizes the container to f of the content but the track to f² (0.5fr renders a quarter). The container's height is the space pushed down, so clipping there keeps what is shown and what is pushed the same box.
+- The row clips only while it has to: `overflow: visible` while an inline banner appears, so the slow bounce's small overshoot isn't cut; `hidden` while leaving, where the banner matches the row and nothing is lost, and always for the fixed bar.
+- In a flex column with a gap, `margin-bottom` follows the row down to minus that gap (read from the parent's `row-gap` as the banner mounts, before it paints, and 0 when it is the only child), so the content below never jumps when the banner mounts or unmounts, the first open included.
+- A banner open on first render arrives already in place (`PresenceContext.initial`). Reduced motion keeps the fades on the fast tier, drops the scale and the slide, and snaps the row once the fade is done.
+- The defaults live in the exported `bannerMotion` object, each value derived from a motion token; the `motion` prop overrides them for one banner (spread `bannerMotion` to change one value). Values are read when an animation starts, so changing them never restarts one in flight.
+- Presence is hand-rolled with `usePresence`, and `safeToRemove` is read through a ref: AnimatePresence hands out a new one on every render while a child leaves, so depending on it would restart the close on every parent re-render and a page that re-renders often would never finish a dismiss.
+- Appear and dismiss start from wherever the banner is: re-opening mid-dismiss continues the scale and fade instead of snapping, and a dismiss mid-appear fades from the current opacity and never lets the banner outgrow the closing row.
+- A banner that is mostly faded (under 50%) takes no clicks, so one appearing can't catch clicks meant for what's under it and one leaving can't be clicked twice. When a banner closes with keyboard focus inside, focus moves to the next focusable element after it (else the one before), not back to the top of the page.
+- Errors and warnings get `role="alert"` and interrupt a screen reader; the rest get `role="status"`. Uncontrolled, the ✕ hides the banner on its own; pass `open` to bring a dismissed banner back.
+
 <a id="button"></a>
 ## Button
 
-- Press effect: the surface layer sits 1px inside the button (inset-px) and a same-color 1px box-shadow spread fills it back to full bounds; pressing collapses the spread so the surface shrinks exactly 1px per side at any width — a scale would warp (2% of a 400px button is 8px sideways but under 1px vertically). Fill colors are opaque color-mix()es rather than alpha so fill and spread ring never seam.
+- Press effect: the surface layer sits 1px inside the button (inset-px) and a same-color 1px box-shadow spread fills it back to full bounds; pressing collapses the spread so the surface shrinks exactly 1px per side at any width — a scale would warp (2% of a 400px button is 8px sideways but under 1px vertically). Primary's fills are opaque color-mix()es; secondary's are see-through (`--tint`, black 8% / white 25%, lighter on hover), so it takes on whatever surface or tinted banner it sits on, and still never seams because an outer shadow renders only outside the surface box.
 - The press geometry releases slowly, presses fast: box-shadow transitions at 180ms cubic-bezier(0.23,1,0.32,1) at rest, dropping to 80ms while :active; background-color always runs 80ms ease.
 - Tertiary's border is an outer 1px shadow at rest that hands off to an inset 1px shadow when pressed, so the ring moves inward with the shrinking surface.
 - Icons thicken on hover instead of the label changing: strokeWidth animates 1.5 → 2 over 80ms; icons also sit 4px closer to their edge than text (12px default / 8px compact vs 16px / 12px base padding).
 - Loading keeps label and icons mounted at opacity-0 so the button's width never changes; the spinner overlays them, its box tracking the button height (h-9 / h-7). The spinner is a figure-eight SVG path with a 15/85 dash driven by two loops: 2s linear movement + 4s ease-in-out dash.
 - `active` prop forces the pressed colors at full size — for a button holding a dropdown/popover open — and the geometric press-collapse still reacts on top.
 - Size ladder: default h-9 (36px) px-4 13px text, compact h-7 (28px) px-3 12px text; unset size follows the surrounding SizeProvider, legacy sm/md/lg resolve as aliases. asChild clones the user's element with the button's internals as children and drops `disabled` on non-button roots.
+- `render` is accepted as a second spelling of `asChild` (and `nativeButton` is accepted and ignored), on the same clone path, so a link stays a plain link with no `role="button"`. The shadcn CLI rewrites `asChild` into `render` plus `nativeButton={false}` when it installs into a Base UI project, so components that hand Button a link keep working there.
 
 <a id="card"></a>
 ## Card

@@ -26,6 +26,10 @@ export interface PlaygroundParts {
   /** Restart the live preview from its initial state (e.g. stepped flows).
    *  The doc page wires this to ComponentPreview's playback (replay) button. */
   onReplay?: () => void;
+  /** A control pinned to the bottom centre of the preview area, outside the
+   *  /demo stage's scaling (e.g. Banner's "Show banner" once dismissed).
+   *  Hosts render it through PlaygroundOverlay. */
+  overlay?: ReactNode;
 }
 
 export interface PlaygroundProps {

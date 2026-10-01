@@ -85,6 +85,17 @@ export function PlaySection({ label }: { label: string }) {
   );
 }
 
+/** Pins a playground's `overlay` to the bottom centre of the preview area.
+ *  The host's preview area must be the nearest positioned ancestor. */
+export function PlaygroundOverlay({ children }: { children: ReactNode }) {
+  if (!children) return null;
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center [&>*]:pointer-events-auto">
+      {children}
+    </div>
+  );
+}
+
 /** Hairline between two control groups — full bleed across the panel. */
 export function PlayDivider() {
   return <div className="my-2 -mx-3 border-t border-border/60" />;

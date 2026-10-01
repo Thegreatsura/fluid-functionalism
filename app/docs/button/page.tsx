@@ -52,6 +52,7 @@ const buttonProps: PropDef[] = [
   { name: "leadingIcon", type: "IconComponent", description: "Icon displayed before the label." },
   { name: "trailingIcon", type: "IconComponent", description: "Icon displayed after the label." },
   { name: "asChild", type: "boolean", default: "false", description: "Merge props onto the child element instead of rendering a <button>." },
+  { name: "render", type: "ReactElement", description: "Base UI's spelling of asChild: renders as this element, with the children as its label. Also what the shadcn CLI writes in Base UI projects." },
   { name: "disabled", type: "boolean", default: "false", description: "Disables the button." },
 ];
 

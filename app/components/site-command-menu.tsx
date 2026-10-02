@@ -28,7 +28,7 @@ import {
   SidebarMenuButton,
   SidebarMenuBadge,
 } from "@/components/flavored/sidebar";
-import { componentList, systemList } from "@/lib/docs/components";
+import { componentList, systemNavList } from "@/lib/docs/components";
 import { useIcons, type IconName } from "@/lib/icon-context";
 import { useThemeContext, type Theme } from "@/registry/default/lib/theme-context";
 import { useShapeContext, type ShapeVariant } from "@/lib/shape-context";
@@ -97,7 +97,7 @@ const PAGES: { href: string; label: string; icon: IconName; keywords: string[] }
 const PAGE_ORDER = [
   "/",
   "/docs",
-  ...systemList.map((s) => `/docs/${s.slug}`),
+  ...systemNavList.map((s) => `/docs/${s.slug}`),
   ...componentList.map((c) => `/docs/${c.slug}`),
 ];
 
@@ -203,7 +203,7 @@ export function SiteCommandMenu() {
         group: "Pages",
         onSelect: () => go(p.href),
       })),
-      ...systemList.map((s) => ({
+      ...systemNavList.map((s) => ({
         kind: "page" as const,
         value: `/docs/${s.slug}`,
         label: s.name,

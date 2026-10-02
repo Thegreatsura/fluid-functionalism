@@ -106,15 +106,18 @@ describe("docs pages", () => {
     }
   });
 
-  it("every public docs page is listed; the skill beta stays unlisted", async () => {
-    const { componentList, systemList } = await import("../lib/docs/components.ts");
+  it("every public docs page is listed; the skill page is navigation only", async () => {
+    const { componentList, systemList, systemNavList } = await import("../lib/docs/components.ts");
     const listed = new Set([...componentList, ...systemList].map((e) => e.slug));
     const pages = readdirSync(join(ROOT, "app/docs"), { withFileTypes: true })
       .filter((e) => e.isDirectory() && existsSync(join(ROOT, "app/docs", e.name, "page.tsx")))
       .map((e) => e.name);
-    // The skill beta is deliberately reachable only by direct link.
+    // The skill page sits in the sidebar's System group but is not a
+    // registry item, so it stays out of systemList (which feeds the README
+    // install table and the install prompts).
     expect(pages).toContain("skill");
     expect(listed.has("skill")).toBe(false);
+    expect(systemNavList.some((e) => e.slug === "skill")).toBe(true);
     for (const page of pages.filter((slug) => slug !== "skill")) {
       expect(listed.has(page), `app/docs/${page} is not in componentList/systemList`).toBe(true);
     }

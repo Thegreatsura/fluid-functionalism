@@ -44,6 +44,8 @@ import { SURFACE_BG } from "@/lib/surface-classes";
 
 interface SearchHandle {
   input: HTMLInputElement | null;
+  /** Whether the field takes focus when the popup opens. */
+  autoFocus: boolean;
   append: (text: string) => void;
   deleteBackward: () => void;
 }
@@ -63,6 +65,14 @@ const ROW_SELECTOR = [
   '[role="menuitemradio"]:not([aria-disabled="true"])',
   '[role="menuitemcheckbox"]:not([aria-disabled="true"])',
 ].join(", ");
+
+const ANY_ROW =
+  '[role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"]';
+
+/** Whether `a` comes before `b` in the document. */
+function precedes(a: Node, b: Node) {
+  return (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+}
 
 function menuRows(from: HTMLElement | null): HTMLElement[] {
   const menu = from?.closest<HTMLElement>('[role="menu"]');
@@ -121,16 +131,24 @@ export function useDropdownSearchHost(open: boolean) {
     if (e.target === handle.input) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-      const rows = menuRows(e.target instanceof HTMLElement ? e.target : null);
-      const edge = e.key === "ArrowUp" ? rows[0] : rows[rows.length - 1];
-      if (edge && e.target === edge) {
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      if (!target?.matches(ANY_ROW)) return;
+      const up = e.key === "ArrowUp";
+      const rows = menuRows(target);
+      const edge = up ? rows[0] : rows[rows.length - 1];
+      // At or past the first / last enabled row. Base UI lets arrows land on
+      // a disabled row (Radix skips them), so a disabled row beyond the edge
+      // leads back to the field too.
+      const pastEdge =
+        !edge || edge === target || (up ? precedes(target, edge) : precedes(edge, target));
+      if (pastEdge) {
         e.preventDefault();
         e.stopPropagation();
         handle.input.focus();
         // The field sits before the first row, so coming back to it from the
         // bottom of a long list returns the list to its top, where the next
         // ↓ lands.
-        scrollToTop(rows[0]);
+        scrollToTop(target);
       }
     } else if (e.key.length === 1 && e.key !== " ") {
       e.preventDefault();
@@ -148,9 +166,17 @@ export function useDropdownSearchHost(open: boolean) {
   /** Whether a search field is mounted in the popup right now. */
   const hasSearch = useCallback(() => handleRef.current !== null, []);
 
+  /** Whether a mounted field takes focus when the popup opens, a frame after
+   *  the primitive's own open autofocus. */
+  const searchTakesFocus = useCallback(
+    () => handleRef.current?.autoFocus ?? false,
+    []
+  );
+
   return {
     host,
     hasSearch,
+    searchTakesFocus,
     searchMounted,
     onKeyDownCapture,
   };
@@ -210,12 +236,17 @@ const DropdownSearch = forwardRef<HTMLInputElement, DropdownSearchProps>(
     onValueChangeRef.current = onValueChange;
     const clearOnCloseRef = useRef(clearOnClose);
     clearOnCloseRef.current = clearOnClose;
+    const autoFocusRef = useRef(autoFocus);
+    autoFocusRef.current = autoFocus;
 
     useEffect(() => {
       if (!host) return;
       return host.register({
         get input() {
           return inputRef.current;
+        },
+        get autoFocus() {
+          return autoFocusRef.current;
         },
         append: (text) => onValueChangeRef.current(valueRef.current + text),
         deleteBackward: () =>

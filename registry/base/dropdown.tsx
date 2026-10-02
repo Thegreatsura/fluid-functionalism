@@ -403,6 +403,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
     const {
       host: searchHost,
       hasSearch,
+      searchTakesFocus,
       searchMounted,
       onKeyDownCapture: redirectTypingToSearch,
     } = useDropdownSearchHost(open);
@@ -591,10 +592,10 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                   // Keyboard navigation moves the hover background only — no
                   // ring: in a menu the highlighted row is the focus indicator.
                   if (indexAttr != null) {
-                    // With a search field, the primitive's open autofocus
-                    // lands on the first row a frame before the field takes
-                    // over: that row stays unlit.
-                    if (litByRef.current === "open" && hasSearch()) return;
+                    // With an autofocusing search field, the primitive's open
+                    // autofocus lands on the first row a frame before the
+                    // field takes over: that row stays unlit.
+                    if (litByRef.current === "open" && searchTakesFocus()) return;
                     setActiveIndex(Number(indexAttr));
                   } else if (e.target !== e.currentTarget) {
                     // Focus moved to a non-row inside the popup, such as the

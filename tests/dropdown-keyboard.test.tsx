@@ -108,13 +108,25 @@ describe.each(flavors)("%s dropdown popup", (_name, F) => {
 });
 
 describe.each(flavors)("%s dropdown search", (_name, F) => {
-  function Searchable({ onSelect }: { onSelect?: (label: string) => void }) {
+  function Searchable({
+    onSelect,
+    autoFocus,
+    disabled,
+  }: {
+    onSelect?: (label: string) => void;
+    autoFocus?: boolean;
+    disabled?: string;
+  }) {
     const [query, setQuery] = useState("");
     return (
       <F.DropdownMenu defaultOpen>
         <F.DropdownTrigger>Open</F.DropdownTrigger>
         <F.DropdownContent>
-          <F.DropdownSearch value={query} onValueChange={setQuery} />
+          <F.DropdownSearch
+            value={query}
+            onValueChange={setQuery}
+            autoFocus={autoFocus}
+          />
           {labels
             .filter((label) => label.toLowerCase().includes(query.toLowerCase()))
             .map((label, index) => (
@@ -122,6 +134,7 @@ describe.each(flavors)("%s dropdown search", (_name, F) => {
                 key={label}
                 index={index}
                 label={label}
+                disabled={label === disabled}
                 onSelect={() => onSelect?.(label)}
               />
             ))}
@@ -130,9 +143,9 @@ describe.each(flavors)("%s dropdown search", (_name, F) => {
     );
   }
 
-  function setup() {
+  function setup(props: { autoFocus?: boolean; disabled?: string } = {}) {
     const onSelect = vi.fn();
-    const view = render(<Searchable onSelect={onSelect} />);
+    const view = render(<Searchable onSelect={onSelect} {...props} />);
     const field = view.getByRole("searchbox");
     const row = (name: string) => view.getByRole("menuitem", { name });
     const lit = () =>
@@ -165,6 +178,25 @@ describe.each(flavors)("%s dropdown search", (_name, F) => {
     const { row, lit } = setup();
     act(() => row("Teamspaces").focus());
     expect(lit()).toBeNull();
+  });
+
+  it("lights the row the open focuses when the field doesn't autofocus", () => {
+    const { row, lit } = setup({ autoFocus: false });
+    act(() => row("Teamspaces").focus());
+    expect(lit()).toBe("Teamspaces");
+  });
+
+  it("returns to the field from a disabled row past either end", () => {
+    // Base UI lets arrows land on disabled rows; Radix skips them.
+    const first = setup({ disabled: "Teamspaces" });
+    act(() => first.row("Teamspaces").focus());
+    fireEvent.keyDown(first.row("Teamspaces"), { key: "ArrowUp" });
+    expect(document.activeElement).toBe(first.field);
+    cleanup();
+    const last = setup({ disabled: "Favorites" });
+    act(() => last.row("Favorites").focus());
+    fireEvent.keyDown(last.row("Favorites"), { key: "ArrowDown" });
+    expect(document.activeElement).toBe(last.field);
   });
 
   it("highlights a row arrowed onto, and no row while the field has focus", () => {

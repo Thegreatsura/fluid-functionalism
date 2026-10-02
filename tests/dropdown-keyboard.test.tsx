@@ -5,9 +5,13 @@
  * the item primitive's own onClick prop and dispatch no DOM click, so a
  * handler living on the row div only heard the mouse (issue #33). Radix
  * clicks the row on Enter/Space, so its keyboard path already worked.
+ *
+ * With a DropdownSearch, the field is one stop in the ring of rows: arrowing
+ * off the first or last row returns to it, as its own ↓ / ↑ leave it.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
+import { useState } from "react";
 import * as Base from "@/registry/base/dropdown";
 import * as Radix from "@/registry/radix/dropdown";
 import { MenuItem } from "@/registry/default/menu-item";
@@ -100,4 +104,61 @@ describe.each(flavors)("%s dropdown popup", (_name, F) => {
       expect(onSelect).toHaveBeenCalledWith(1);
     });
   }
+});
+
+describe.each(flavors)("%s dropdown search", (_name, F) => {
+  function Searchable() {
+    const [query, setQuery] = useState("");
+    return (
+      <F.DropdownMenu defaultOpen>
+        <F.DropdownTrigger>Open</F.DropdownTrigger>
+        <F.DropdownContent>
+          <F.DropdownSearch value={query} onValueChange={setQuery} />
+          {labels
+            .filter((label) => label.toLowerCase().includes(query.toLowerCase()))
+            .map((label, index) => (
+              <MenuItem key={label} index={index} label={label} />
+            ))}
+        </F.DropdownContent>
+      </F.DropdownMenu>
+    );
+  }
+
+  function setup() {
+    const view = render(<Searchable />);
+    const field = view.getByRole("searchbox");
+    const row = (name: string) => view.getByRole("menuitem", { name });
+    return { field, row };
+  }
+
+  it("returns to the field with ArrowUp on the first row", () => {
+    const { field, row } = setup();
+    act(() => row("Teamspaces").focus());
+    fireEvent.keyDown(row("Teamspaces"), { key: "ArrowUp" });
+    expect(document.activeElement).toBe(field);
+  });
+
+  it("returns to the field with ArrowDown on the last row", () => {
+    const { field, row } = setup();
+    act(() => row("Favorites").focus());
+    fireEvent.keyDown(row("Favorites"), { key: "ArrowDown" });
+    expect(document.activeElement).toBe(field);
+  });
+
+  it("leaves arrows between rows to the menu", () => {
+    const { field, row } = setup();
+    act(() => row("Recents").focus());
+    fireEvent.keyDown(row("Recents"), { key: "ArrowUp" });
+    expect(document.activeElement).not.toBe(field);
+  });
+
+  it("leaves the field for the first and last row", () => {
+    const { field, row } = setup();
+    act(() => field.focus());
+    fireEvent.keyDown(field, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(row("Teamspaces"));
+    act(() => field.focus());
+    fireEvent.keyDown(field, { key: "ArrowUp" });
+    expect(document.activeElement).toBe(row("Favorites"));
+  });
 });

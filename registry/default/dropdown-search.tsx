@@ -35,8 +35,10 @@ import { SURFACE_BG } from "@/lib/surface-classes";
 //      hosts a capture-phase keydown handler (useDropdownSearchHost) that
 //      refocuses the input and appends the character.
 //
-// Arrow keys leave the field for the list (first / last row), Enter picks
-// the first row, Escape closes the menu as usual. While the field has focus
+// Arrow keys leave the field for the list (first / last row) and arrowing
+// off either end of the list comes back to it, so the field is one stop in
+// the ring of rows. Enter picks the first row, Escape closes the menu as
+// usual. While the field has focus
 // the first row carries the hover background, so what Enter will pick is
 // always in view; it follows the query as the rows re-filter.
 // ---------------------------------------------------------------------------
@@ -68,6 +70,22 @@ const ROW_SELECTOR = [
 function menuRows(from: HTMLElement | null): HTMLElement[] {
   const menu = from?.closest<HTMLElement>('[role="menu"]');
   return menu ? Array.from(menu.querySelectorAll<HTMLElement>(ROW_SELECTOR)) : [];
+}
+
+/** Scroll the menu's scrolling list back to its top. The walk stops at the
+ *  menu, so a list that fits never scrolls the page. */
+function scrollToTop(row: HTMLElement) {
+  const menu = row.closest<HTMLElement>('[role="menu"]');
+  for (let el = row.parentElement; el && menu?.contains(el); el = el.parentElement) {
+    const { overflowY } = getComputedStyle(el);
+    if (
+      (overflowY === "auto" || overflowY === "scroll") &&
+      el.scrollHeight > el.clientHeight
+    ) {
+      el.scrollTop = 0;
+      return;
+    }
+  }
 }
 
 interface DropdownSearchHostOptions {
@@ -127,14 +145,28 @@ export function useDropdownSearchHost(
   );
 
   // Typing on a focused row: redirect the character (or Backspace) into the
-  // field. Space is left alone — on a row it activates the item, which is
-  // what a menu user expects once they have arrowed down.
+  // field. Space is left alone: on a row it activates the item, which is
+  // what a menu user expects once they have arrowed down. Arrowing off the
+  // first or last row returns to the field instead of stopping (Radix) or
+  // wrapping past it (Base UI), mirroring the field's own ↓ / ↑.
   const onKeyDownCapture = useCallback((e: ReactKeyboardEvent<HTMLElement>) => {
     const handle = handleRef.current;
     if (!handle?.input) return;
     if (e.target === handle.input) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.key.length === 1 && e.key !== " ") {
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      const rows = menuRows(e.target instanceof HTMLElement ? e.target : null);
+      const edge = e.key === "ArrowUp" ? rows[0] : rows[rows.length - 1];
+      if (edge && e.target === edge) {
+        e.preventDefault();
+        e.stopPropagation();
+        handle.input.focus();
+        // Back at the field, the first row carries the highlight (what Enter
+        // picks). Coming from the bottom of a long list it is scrolled out of
+        // sight, so return the list to its top.
+        scrollToTop(rows[0]);
+      }
+    } else if (e.key.length === 1 && e.key !== " ") {
       e.preventDefault();
       e.stopPropagation();
       handle.input.focus();

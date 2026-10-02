@@ -17,8 +17,8 @@
 //
 // No dependencies: plain Node 18+.
 
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { basename, dirname, extname, join, relative, resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
+import { basename, dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** Modules only FF ships. A file that is one of these, or imports one, is FF
@@ -39,9 +39,12 @@ export const FF_MODULES = [
   "use-merge-split",
 ];
 
-/** Files that install under their own names as parts of a catalog item
- *  (dropdown brings menu-item, the sidebar blocks bring their pieces). */
+/** Files that install under their own names beside the catalog items: parts
+ *  of an item (dropdown brings menu-item, the sidebar blocks bring their
+ *  pieces, one folder down) and shared modules too generic a name to
+ *  fingerprint FF code by (popup). */
 export const FF_PARTS = [
+  "popup",
   "menu-item",
   "dropdown-search",
   "sidebar-core",
@@ -55,6 +58,11 @@ export const FF_PARTS = [
   "nav-data",
   "settings-dialog",
 ];
+
+/** Single-source items that import @base-ui/react under both flavors, so a
+ *  Radix project that installs one gets Base UI code that says nothing
+ *  about its flavor. Never flavor evidence. */
+export const SHARED_BASE_UI = ["ask-user-questions", "color-picker", "input-group"];
 
 /** Lowest major each requirement accepts. */
 export const REQUIRED_MAJOR = { react: 19, tailwindcss: 4, "framer-motion": 12 };
@@ -95,8 +103,10 @@ export const isFluidFile = (name, imports) =>
  *  installed (they are what every later install has to match), then the
  *  primitives package.json depends on, then which side the app's own code
  *  imports more. The same project always gets the same verdict, which is
- *  what keeps flavors from mixing across sessions without a cached one. */
-export function flavorVerdict({ deps, fluid, app }) {
+ *  what keeps flavors from mixing across sessions without a cached one.
+ *  `shared` lists installed SHARED_BASE_UI files: they bring @base-ui/react
+ *  into Radix projects too, so neither they nor that dependency count. */
+export function flavorVerdict({ deps, fluid, app, shared = [] }) {
   const list = (files) => files.slice(0, 3).join(", ") + (files.length > 3 ? ` (+${files.length - 3})` : "");
   if (fluid.base.length && fluid.radix.length)
     return {
@@ -109,10 +119,16 @@ export function flavorVerdict({ deps, fluid, app }) {
   if (fluid.radix.length)
     return { flavor: "radix", open: false, reason: `installed FF components import Radix: ${list(fluid.radix)}` };
 
-  const hasBase = deps.some((d) => BASE_IMPORT.test(d));
+  const baseDep = deps.some((d) => BASE_IMPORT.test(d));
+  // With no app code importing it, a Base UI dependency beside a shared item
+  // may be there only because that item brought it.
+  const sharedOnly = baseDep && !app.base.length && shared.length > 0;
+  const hasBase = baseDep && !sharedOnly;
   const hasRadix = deps.some((d) => RADIX_IMPORT.test(d));
+  const sharedNote = `@base-ui/react is only imported by ${list(shared)}, which ${shared.length === 1 ? "ships" : "ship"} it under both flavors`;
   if (hasBase && !hasRadix) return { flavor: "base", open: false, reason: "package.json depends on @base-ui/react" };
-  if (hasRadix && !hasBase) return { flavor: "radix", open: false, reason: "package.json depends on Radix" };
+  if (hasRadix && !hasBase)
+    return { flavor: "radix", open: false, reason: `package.json depends on Radix${sharedOnly ? `; ${sharedNote}` : ""}` };
   if (hasBase && hasRadix) {
     const lean = app.base.length > app.radix.length ? "base" : "radix";
     return {
@@ -122,6 +138,8 @@ export function flavorVerdict({ deps, fluid, app }) {
       reason: `package.json has both; app code imports Base UI in ${app.base.length} file(s), Radix in ${app.radix.length}, so ${lean}. Worth consolidating`,
     };
   }
+  if (sharedOnly)
+    return { flavor: "radix", open: true, reason: `${sharedNote}: Radix by default, but ask the user before the first flavored install` };
   return { flavor: "radix", open: true, reason: "no primitives yet: Radix by default, open until the first one lands" };
 }
 
@@ -199,13 +217,31 @@ function walk(root) {
   return files;
 }
 
+const isFile = (path) => {
+  try {
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
+};
+
+/** `dir` and the directories above it, up to the repository root (the one
+ *  holding .git) or, outside a repository, the filesystem root. */
+function ancestors(dir) {
+  const dirs = [];
+  for (let d = dir; ; d = dirname(d)) {
+    dirs.push(d);
+    if (existsSync(join(d, ".git")) || dirname(d) === d) return dirs;
+  }
+}
+
 /** Where a node_modules package resolved, walking up for hoisted workspaces. */
 function installedVersion(root, name) {
-  for (let dir = root; ; dir = dirname(dir)) {
+  for (const dir of ancestors(root)) {
     const pkg = readJsonc(join(dir, "node_modules", name, "package.json"));
     if (pkg?.version) return pkg.version;
-    if (existsSync(join(dir, ".git")) || dirname(dir) === dir) return null;
   }
+  return null;
 }
 
 function packageManager(root, pkg) {
@@ -217,11 +253,43 @@ function packageManager(root, pkg) {
     ["yarn.lock", "yarn"],
     ["package-lock.json", "npm"],
   ];
-  for (let dir = root; ; dir = dirname(dir)) {
+  for (const dir of ancestors(root)) {
     const hit = locks.find(([file]) => existsSync(join(dir, file)));
     if (hit) return hit[1];
-    if (existsSync(join(dir, ".git")) || dirname(dir) === dir) return null;
   }
+  return null;
+}
+
+/** Where a tsconfig `extends` entry points: a file beside it, or one inside
+ *  a package (a shared monorepo config). */
+function tsconfigFile(dir, spec) {
+  const candidates = (path) => [path, `${path}.json`, join(path, "tsconfig.json")];
+  if (spec.startsWith(".") || isAbsolute(spec)) return candidates(resolve(dir, spec)).find(isFile) ?? null;
+  for (const d of ancestors(dir)) {
+    const hit = candidates(join(d, "node_modules", spec)).find(isFile);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/** A tsconfig's compilerOptions with its `extends` chain applied, the way
+ *  tsc reads them: the nearer file's keys win, baseUrl resolves against the
+ *  file that sets it, and paths without a baseUrl against the file that
+ *  declares them. */
+function tsconfigOptions(file, chain = []) {
+  if (chain.includes(file)) return null;
+  const json = readJsonc(file);
+  if (!json) return null;
+  const dir = dirname(file);
+  const merged = {};
+  for (const spec of [json.extends ?? []].flat()) {
+    const parent = typeof spec === "string" ? tsconfigFile(dir, spec) : null;
+    Object.assign(merged, parent && tsconfigOptions(parent, [...chain, file]));
+  }
+  const own = json.compilerOptions ?? {};
+  if (own.baseUrl) merged.baseUrl = resolve(dir, own.baseUrl);
+  if (own.paths) Object.assign(merged, { paths: own.paths, pathsDir: dir });
+  return merged;
 }
 
 /** Resolves components.json aliases ("@/components/ui") and import
@@ -229,9 +297,9 @@ function packageManager(root, pkg) {
 function resolvers(root) {
   const paths = [];
   for (const name of ["tsconfig.json", "tsconfig.app.json", "jsconfig.json"]) {
-    const options = readJsonc(join(root, name))?.compilerOptions;
+    const options = tsconfigOptions(join(root, name));
     if (!options?.paths) continue;
-    const base = resolve(root, options.baseUrl ?? ".");
+    const base = options.baseUrl ?? options.pathsDir;
     for (const [key, targets] of Object.entries(options.paths)) {
       if (key.endsWith("/*") && targets?.[0])
         paths.push({ prefix: key.slice(0, -1), target: resolve(base, targets[0].replace(/\*$/, "")) });
@@ -254,20 +322,23 @@ function resolvers(root) {
       const base = spec.startsWith(".") ? resolve(dirname(from), spec) : viaPaths(spec);
       if (!base) return null;
       const exts = [".tsx", ".ts", ".jsx", ".js", ".mjs"];
-      return [base, ...exts.map((e) => base + e), ...exts.map((e) => join(base, "index" + e))].find(
-        (p) => existsSync(p) && statSync(p).isFile(),
-      ) ?? null;
+      return [base, ...exts.map((e) => base + e), ...exts.map((e) => join(base, "index" + e))].find(isFile) ?? null;
     },
   };
 }
 
+/** Entry files where an app's providers live, in every extension a
+ *  framework accepts for them. */
+const ROOT_FILES = [
+  ...["app/layout", "src/app/layout", "pages/_app", "src/pages/_app", "app/root", "src/main", "src/App"].flatMap(
+    (base) => [".tsx", ".jsx", ".ts", ".js"].map((ext) => base + ext),
+  ),
+  "index.html",
+];
+
 function framework(root, deps) {
   const found = (...paths) => paths.filter((p) => existsSync(join(root, p)));
-  const roots = found(
-    "app/layout.tsx", "app/layout.jsx", "app/layout.js", "src/app/layout.tsx", "src/app/layout.jsx",
-    "pages/_app.tsx", "pages/_app.jsx", "src/pages/_app.tsx", "app/root.tsx", "app/root.jsx",
-    "src/main.tsx", "src/main.jsx", "src/App.tsx", "src/App.jsx", "index.html",
-  );
+  const roots = found(...ROOT_FILES);
   let name = "unknown framework";
   if (deps.includes("next")) {
     const app = found("app", "src/app").some((d) => statSync(join(root, d)).isDirectory());
@@ -279,6 +350,36 @@ function framework(root, deps) {
   return { name, roots };
 }
 
+const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** The names a module's export is called by in this file: `Inter`,
+ *  `FontSans` for `{ Inter as FontSans }`, `fonts.Inter` for `* as fonts`.
+ *  `name` "default" reads the default import (`import localFont from`). */
+export function importedAs(text, module, name) {
+  const from = `\\s*from\\s*["']${escapeRegExp(module)}["']`;
+  const names = [];
+  if (name === "default") {
+    for (const m of text.matchAll(new RegExp(`\\bimport\\s+([\\w$]+)\\s*(?:,\\s*{[^}]*})?${from}`, "g"))) names.push(m[1]);
+    return names;
+  }
+  for (const m of text.matchAll(new RegExp(`\\bimport\\s*(?:type\\s+)?{([^}]*)}${from}`, "g"))) {
+    for (const spec of m[1].split(",")) {
+      const [imported, local] = spec.trim().replace(/^type\s+/, "").split(/\s+as\s+/);
+      if (imported === name) names.push(local ?? imported);
+    }
+  }
+  for (const m of text.matchAll(new RegExp(`\\bimport\\s*\\*\\s*as\\s+([\\w$]+)${from}`, "g"))) names.push(`${m[1]}.${name}`);
+  return names;
+}
+
+/** Every call of `callee` in the text, with the text between its parens. */
+function callsOf(text, callee) {
+  return [...text.matchAll(new RegExp(`(?<![\\w$.])${escapeRegExp(callee)}\\s*\\(`, "g"))].map((m) => ({
+    index: m.index,
+    args: callArgs(text, m.index + m[0].length - 1),
+  }));
+}
+
 /** How Inter is loaded, wherever it is loaded. Statuses: opsz (variable,
  *  optical size addressable), no-opsz (variable, no opsz axis requested),
  *  weight-range (local variable file; opsz depends on the file), static,
@@ -287,17 +388,14 @@ function framework(root, deps) {
 export function interFindings(file, text) {
   const out = [];
   const add = (index, via, status) => out.push({ file, line: lineOf(text, index), via, status });
-  if (/["']next\/font\/google["']/.test(text)) {
-    for (const m of text.matchAll(/\bInter\s*\(/g)) {
-      const args = callArgs(text, m.index + m[0].length - 1);
-      add(m.index, "next/font/google", /axes\s*:\s*\[[^\]]*["']opsz["']/.test(args) ? "opsz" : "no-opsz");
-    }
+  for (const callee of importedAs(text, "next/font/google", "Inter")) {
+    for (const { index, args } of callsOf(text, callee))
+      add(index, "next/font/google", /axes\s*:\s*\[[^\]]*["']opsz["']/.test(args) ? "opsz" : "no-opsz");
   }
-  if (/["']next\/font\/local["']/.test(text)) {
-    for (const m of text.matchAll(/\blocalFont\s*\(/g)) {
-      const args = callArgs(text, m.index + m[0].length - 1);
+  for (const callee of importedAs(text, "next/font/local", "default")) {
+    for (const { index, args } of callsOf(text, callee)) {
       if (!/inter/i.test(args)) continue;
-      add(m.index, "next/font/local", /weight\s*:\s*["']\s*\d+\s+\d+\s*["']/.test(args) ? "weight-range" : "no-weight-range");
+      add(index, "next/font/local", /weight\s*:\s*["']\s*\d+\s+\d+\s*["']/.test(args) ? "weight-range" : "no-weight-range");
     }
   }
   for (const m of text.matchAll(/["'](@fontsource(?:-variable)?\/inter)(\/[^"']*)?["']/g)) {
@@ -319,12 +417,16 @@ export function interFindings(file, text) {
 
 /** Every name FF installs a file under: the catalog shipped beside this
  *  script (so the list moves with the skill version reading it), the shared
- *  modules, and the parts. A stray word from the catalog's prose costs
- *  nothing; the names only label files already read as FF code. */
+ *  modules, and the parts. Only the catalog tables' registry-name column
+ *  counts: these names also flag a project's own same-named files as
+ *  collisions, so a word from a description must never become one. */
 export function registryNames() {
   const md = readText(fileURLToPath(new URL("../references/components.md", import.meta.url))) ?? "";
   const names = new Set([...FF_MODULES, ...FF_PARTS]);
-  for (const m of md.matchAll(/`((?:base\/)?[a-z][a-z0-9-]*)`/g)) names.add(m[1].replace(/^base\//, ""));
+  for (const row of md.split("\n").filter((line) => line.startsWith("|"))) {
+    const column = row.split("|")[2] ?? "";
+    for (const m of column.matchAll(/`((?:base\/)?[a-z][a-z0-9-]*)`/g)) names.add(m[1].replace(/^base\//, ""));
+  }
   return names;
 }
 
@@ -357,17 +459,65 @@ export function readStack(input = ".") {
     entryCss = files.find((f) => f.endsWith(".css") && /@import\s+["']tailwindcss["']|@tailwind\s+base/.test(texts.get(f))) ?? null;
   const css = entryCss ? readText(entryCss) ?? "" : "";
 
-  // Primitive imports, split by whether the importing file is FF code.
+  // Inventory of the shadcn target dirs, one level deep, plus the parts a
+  // block installs one folder down (components/sidebar-app/…).
+  const sources = (dir) => {
+    try {
+      return readdirSync(dir)
+        .filter((n) => /\.(tsx?|jsx?)$/.test(n) && !NOT_PRODUCT.test(n))
+        .map((n) => join(dir, n));
+    } catch {
+      return [];
+    }
+  };
+  const subdirs = (dir) => {
+    try {
+      return readdirSync(dir, { withFileTypes: true })
+        .filter((e) => e.isDirectory())
+        .map((e) => join(dir, e.name));
+    } catch {
+      return [];
+    }
+  };
+  const catalog = registryNames();
+  const installed = { fluid: [], builtOnFluid: [], collisions: [], other: [] };
+  const ffFiles = new Map(); // installed FF item → its imports
+  const seen = new Set();
+  for (const [kind, dir] of Object.entries(dirs)) {
+    const parts = kind === "components" ? subdirs(dir).flatMap(sources) : [];
+    for (const path of [...sources(dir), ...parts.filter((p) => FF_PARTS.includes(basename(p, extname(p))))]) {
+      if (seen.has(path)) continue;
+      seen.add(path);
+      const name = basename(path, extname(path));
+      const imports = importsOf(texts.get(path) ?? readText(path) ?? "");
+      if (isFluidFile(name, imports)) {
+        if (!catalog.has(name)) installed.builtOnFluid.push(name);
+        else {
+          installed.fluid.push(name);
+          ffFiles.set(path, imports);
+        }
+      } else if (kind === "ui" && catalog.has(name)) installed.collisions.push(rel(path));
+      else if (kind === "ui") installed.other.push(name);
+    }
+  }
+
+  // Primitive imports. Installed FF items are flavor evidence, minus the
+  // shared ones that import Base UI under both flavors; every other file,
+  // code built on FF included, is the app's own.
   const fluid = { base: [], radix: [] };
   const app = { base: [], radix: [] };
+  const shared = [];
+  const split = (file, imports, side) => {
+    if (imports.some((s) => BASE_IMPORT.test(s))) side.base.push(rel(file));
+    if (imports.some((s) => RADIX_IMPORT.test(s))) side.radix.push(rel(file));
+  };
+  for (const [file, imports] of ffFiles)
+    split(file, imports, SHARED_BASE_UI.includes(basename(file, extname(file))) ? { base: shared, radix: [] } : fluid);
   const motionConfig = [];
   const inter = [];
   for (const [file, text] of texts) {
     const r = rel(file);
-    const imports = importsOf(text);
-    const side = isFluidFile(basename(file, extname(file)), imports) ? fluid : app;
-    if (imports.some((s) => BASE_IMPORT.test(s))) side.base.push(r);
-    if (imports.some((s) => RADIX_IMPORT.test(s))) side.radix.push(r);
+    if (!ffFiles.has(file)) split(file, importsOf(text), app);
     for (const m of text.matchAll(/<MotionConfig\b([^>]*)>/g)) {
       const value = m[1].match(/reducedMotion\s*=\s*{?\s*["'](\w+)["']/);
       motionConfig.push({ file: r, line: lineOf(text, m.index), reducedMotion: value?.[1] ?? null });
@@ -375,31 +525,11 @@ export function readStack(input = ".") {
     inter.push(...interFindings(r, text));
   }
 
-  // Inventory of the shadcn target dirs, one level deep.
-  const catalog = registryNames();
-  const installed = { fluid: [], builtOnFluid: [], collisions: [], other: [] };
-  const seen = new Set();
-  for (const [kind, dir] of Object.entries(dirs)) {
-    let entries = [];
-    try {
-      entries = readdirSync(dir).filter((n) => /\.(tsx?|jsx?)$/.test(n) && !NOT_PRODUCT.test(n));
-    } catch {}
-    for (const n of entries) {
-      const path = join(dir, n);
-      if (seen.has(path)) continue;
-      seen.add(path);
-      const name = basename(n, extname(n));
-      const text = texts.get(path) ?? readText(path) ?? "";
-      if (isFluidFile(name, importsOf(text))) (catalog.has(name) ? installed.fluid : installed.builtOnFluid).push(name);
-      else if (kind === "ui" && catalog.has(name)) installed.collisions.push(rel(path));
-      else if (kind === "ui") installed.other.push(name);
-    }
-  }
-
   const react = version("react");
   const tailwind = version("tailwindcss");
   const fm = version("framer-motion");
-  const motion = version("motion");
+  // Declared only: a copy some dependency pulled in is not the project's pick.
+  const motion = declared.motion ? version("motion") : null;
   const v4Import = /@import\s+["']tailwindcss["']/.test(css);
   const check = (ok, text) => ({ ok, text });
   const requirements = [
@@ -468,20 +598,28 @@ export function readStack(input = ".") {
 
   // Decisions are the one thing code cannot show; the skill keeps them, with
   // consent, under a "Fluid Functionalism" heading in the project's agent notes.
+  // In a monorepo those notes (and an earlier audit file) usually sit at the
+  // repository root, above the app directory this reads.
+  const above = ancestors(root);
+  const noteDirs = existsSync(join(above.at(-1), ".git")) ? above : [root];
   const decisions = [];
-  for (const name of ["AGENTS.md", "CLAUDE.md", ".github/copilot-instructions.md"]) {
-    const text = readText(join(root, name));
-    const m = text?.match(/^#+\s*Fluid Functionalism\b.*$/m);
-    if (m) decisions.push(`${name}:${lineOf(text, m.index)}`);
+  const legacy = [];
+  for (const dir of noteDirs) {
+    for (const name of ["AGENTS.md", "CLAUDE.md", ".github/copilot-instructions.md"]) {
+      const text = readText(join(dir, name));
+      const m = text?.match(/^#+\s*Fluid Functionalism\b.*$/m);
+      if (m) decisions.push(`${rel(join(dir, name))}:${lineOf(text, m.index)}`);
+    }
+    for (const name of [".agents/fluid-functionalism.md", ".claude/fluid-functionalism.md"])
+      if (existsSync(join(dir, name))) legacy.push(rel(join(dir, name)));
   }
-  const legacy = [".agents/fluid-functionalism.md", ".claude/fluid-functionalism.md"].filter((p) => existsSync(join(root, p)));
 
   return {
     root,
     framework: fw,
     packageManager: packageManager(root, pkg),
     typescript: existsSync(join(root, "tsconfig.json")),
-    flavor: flavorVerdict({ deps, fluid, app }),
+    flavor: flavorVerdict({ deps, fluid, app, shared }),
     requirements,
     wiring,
     motionConfig,
@@ -518,7 +656,18 @@ function report(s) {
   return lines.join("\n");
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+/** Whether Node was started on this file. Both sides go through realpath: a
+ *  skill installed globally is usually a symlink (~/.claude/skills/… →
+ *  ~/.agents/skills/…), and Node reports the main module by its real path. */
+function isMain() {
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (process.argv[1] && isMain()) {
   const args = process.argv.slice(2);
   try {
     const stack = readStack(args.find((a) => !a.startsWith("--")) ?? ".");

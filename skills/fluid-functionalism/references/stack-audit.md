@@ -17,9 +17,12 @@ where most of the skill's *advice* comes from.
 node <skill>/scripts/stack.mjs [app dir] [--json]
 ```
 
-It reads `package.json`, `components.json`, tsconfig paths, the Tailwind
-entry CSS, the root layout and the providers it imports, and the shadcn
-`ui/`, `lib/`, and `hooks/` dirs. Without Node, read those same files by
+Point it at the app's directory (in a monorepo, `apps/web` or wherever
+`components.json` lives). It reads `package.json`, `components.json`,
+tsconfig paths (following `extends`), the Tailwind entry CSS, the root layout
+and the providers it imports, the shadcn `ui/`, `lib/`, `hooks/`, and
+`components/` dirs (block parts one folder down), and the agent notes from
+there up to the repository root. Without Node, read those same files by
 hand. The tables below say what each fact means.
 
 ### 1. Flavor verdict (decides every future install)
@@ -28,10 +31,11 @@ Checked in this order; the first row that applies decides.
 
 | Found | Verdict |
 |---|---|
-| Installed FF components import one flavor's primitives | **that flavor**: every later install has to match what is already there |
+| Installed FF components import one flavor's primitives | **that flavor**: every later install has to match what is already there. `input-group`, `color-picker`, and `ask-user-questions` import Base UI under both flavors, so they never count here |
 | Installed FF components import both | **mixed**: ask the user which side to consolidate on before installing more |
-| `@base-ui/react` in package.json | **base**: every flavored install uses the `base/` prefix |
-| any `@radix-ui/react-*`, or `radix-ui` | **radix**: bare names |
+| `@base-ui/react` in package.json, but no app code imports it and a shared item above is installed | The shared item brought it, so it doesn't count: read the rows below without it. If that leaves neither, the choice is **open**: Radix by default, but ask the user before the first flavored install, since a project that chose Base UI looks the same from its files |
+| only `@base-ui/react` in package.json | **base**: every flavored install uses the `base/` prefix |
+| only Radix: any `@radix-ui/react-*`, or `radix-ui` | **radix**: bare names |
 | both in package.json | Mixed primitives. Pick the side the app's own code imports more; flag the other as advice ("consider consolidating") |
 | neither | **radix** by default (bare names), but note it's an open choice until the first primitive lands |
 
@@ -386,7 +390,8 @@ only when the user makes it, and only with their OK:
 - **Project-wide** (fluid hover declined, a local alias of a system piece):
   one line under a `## Fluid Functionalism` heading in the agent notes the
   project already keeps (`AGENTS.md`, `CLAUDE.md`). `stack.mjs` finds that
-  heading and prints it under `DECISIONS`.
+  heading, in the app's directory or any directory above it up to the
+  repository root, and prints it under `DECISIONS`.
 
   ```markdown
   ## Fluid Functionalism

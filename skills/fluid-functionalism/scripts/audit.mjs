@@ -20,7 +20,7 @@
 // Needs playwright-core (`npm install` in this folder) and a Chromium: the
 // Playwright download, a local Chrome, or one named by CHROME_PATH.
 
-import { existsSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -522,7 +522,17 @@ async function main() {
   console.log(report(args.url, results));
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+/** Whether Node was started on this file, through a symlinked skill folder
+ *  too (Node reports the main module by its real path). */
+function isMain() {
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (process.argv[1] && isMain()) {
   main().catch((error) => {
     console.error(error.message);
     process.exit(1);

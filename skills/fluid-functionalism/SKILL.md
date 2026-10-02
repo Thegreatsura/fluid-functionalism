@@ -50,11 +50,12 @@ Three jobs this skill covers:
 
 ## Every run: read the stack
 
-Before installing, composing, or advising, run the stack script from the
-project root:
+Before installing, composing, or advising, run the stack script on the app's
+directory, the one holding its `package.json` and `components.json`. That is
+the current directory in most projects; in a monorepo, pass it:
 
 ```bash
-node <skill>/scripts/stack.mjs
+node <skill>/scripts/stack.mjs [apps/web]
 ```
 
 It needs only Node, finishes in under a second, and writes nothing. It reads
@@ -75,7 +76,8 @@ results into the project; they go in your reply.
 
 **Decisions are the exception.** The code cannot show what the user decided:
 fluid hover declined, a stillness or an off-token duration kept on purpose.
-The script's `DECISIONS` line points at where earlier ones live. Read them,
+The script's `DECISIONS` line points at where earlier ones live, from the
+app's directory up to the repository root. Read them,
 honor them, and never re-raise what they settle. Recording a new one is
 opt-in and goes where the project already keeps intent; see
 [decisions](references/stack-audit.md#decisions). If the script reports a
@@ -140,7 +142,9 @@ The stack read tells you which of these are already done. Skip those.
    flavor; prefix `base/` for Base UI. The stack script settles the verdict
    from what the project already uses: installed FF components first, then
    `@base-ui/react` in `package.json` → `base/` names everywhere;
-   `@radix-ui/react-*` (or nothing yet) → bare names. Never mix flavors in
+   `@radix-ui/react-*` (or nothing yet) → bare names. `input-group`,
+   `color-picker`, and `ask-user-questions` import Base UI under both
+   flavors, so they never count as evidence. Never mix flavors in
    one project — dependencies follow the flavor you pick, so a Base UI
    dialog pulls in the Base UI button.
 

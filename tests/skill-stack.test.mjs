@@ -4,15 +4,16 @@
 // get the same flavor verdict, the quality checks must cite where they looked,
 // and the script must never write. The drift guards below fail when the
 // registry grows a component the script would not recognize once installed.
-import { describe, it, expect } from "vitest";
+import { afterAll, describe, it, expect } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   FF_MODULES,
   REQUIRED_MAJOR,
+  SHARED_BASE_UI,
   flavorVerdict,
   importsOf,
   interFindings,
@@ -25,9 +26,15 @@ import {
 const root = fileURLToPath(new URL("..", import.meta.url));
 const script = join(root, "skills/fluid-functionalism/scripts/stack.mjs");
 
+const created = [];
+afterAll(() => {
+  for (const dir of created) rmSync(dir, { recursive: true, force: true });
+});
+
 /** Writes a throwaway project; keys are paths, values file contents. */
 function project(files) {
   const dir = mkdtempSync(join(tmpdir(), "ff-stack-"));
+  created.push(dir);
   for (const [path, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
     writeFileSync(join(dir, path), typeof content === "string" ? content : JSON.stringify(content, null, 2));
@@ -91,6 +98,23 @@ describe("flavor verdict", () => {
     expect(v).toMatchObject({ flavor: "base", mixedPrimitives: true });
   });
 
+  it("never reads a shared Base UI item as the project's flavor", () => {
+    const shared = ["components/ui/input-group.tsx"];
+    // Radix in package.json; Base UI arrived with the shared item.
+    const radix = flavorVerdict({
+      deps: ["@radix-ui/react-dialog", "@base-ui/react"],
+      fluid: none,
+      app: { base: [], radix: ["a.tsx"] },
+      shared,
+    });
+    expect(radix).toMatchObject({ flavor: "radix", open: false });
+    expect(radix.mixedPrimitives).toBeUndefined();
+    // The shared item's Base UI alone settles nothing.
+    expect(flavorVerdict({ deps: ["@base-ui/react"], fluid: none, app: none, shared })).toMatchObject({ flavor: "radix", open: true });
+    // App code importing Base UI makes the dependency the app's own.
+    expect(flavorVerdict({ deps: ["@base-ui/react"], fluid: none, app: { base: ["a.tsx"], radix: [] }, shared }).flavor).toBe("base");
+  });
+
   it("defaults to Radix and says the choice is still open", () => {
     expect(flavorVerdict({ deps: [], fluid: none, app: none })).toMatchObject({ flavor: "radix", open: true });
   });
@@ -109,6 +133,16 @@ describe("Inter detection", () => {
     expect(interFindings("a.tsx", text)[0].status).toBe("no-weight-range");
     const ranged = text.replace(`" }`, `", weight: "100 900" }`);
     expect(interFindings("a.tsx", ranged)[0].status).toBe("weight-range");
+  });
+
+  it("follows next/font imports under any local name", () => {
+    const aliased = `import { Inter as FontSans } from "next/font/google";\nconst fontSans = FontSans({ subsets: ["latin"] });`;
+    expect(interFindings("a.tsx", aliased)).toEqual([{ file: "a.tsx", line: 2, via: "next/font/google", status: "no-opsz" }]);
+    const namespaced = `import * as fonts from "next/font/google";\nconst i = fonts.Inter({ axes: ["opsz"] });`;
+    expect(interFindings("a.tsx", namespaced)[0].status).toBe("opsz");
+    const local = `import myFont from "next/font/local";\nconst f = myFont({ src: "./InterVariable.woff2", weight: "100 900" });`;
+    expect(interFindings("a.tsx", local)[0].status).toBe("weight-range");
+    expect(interFindings("a.tsx", `import { Inter, Roboto } from "next/font/google";\nRoboto({});`)).toEqual([]);
   });
 
   it("reads fontsource, Google Fonts links, and @font-face", () => {
@@ -226,8 +260,91 @@ describe("readStack on a project", () => {
     expect(s.legacy).toEqual([".agents/fluid-functionalism.md"]);
   });
 
+  it("runs through a symlinked skill folder, the way global installs link it", () => {
+    const link = join(project({}), "fluid-functionalism");
+    symlinkSync(join(root, "skills/fluid-functionalism"), link, "dir");
+    const out = execFileSync(process.execPath, [join(link, "scripts/stack.mjs"), ready()], { encoding: "utf8" });
+    expect(out).toContain("FLAVOR    base");
+  });
+
+  it("takes flavor evidence from installed FF items only", () => {
+    // A Radix project. The shared input-group imports Base UI under both
+    // flavors, and an app page built on FF imports Base UI on its own.
+    const files = {
+      "package.json": { dependencies: { react: "^19.1.0", "@radix-ui/react-dialog": "^1.1.0", "@base-ui/react": "^1.4.1" } },
+      "components.json": { aliases: { ui: "@/components/ui" } },
+      "tsconfig.json": { compilerOptions: { paths: { "@/*": ["./*"] } } },
+      "components/ui/input-group.tsx": `import { Field } from "@base-ui/react/field";\nimport { fontWeights } from "@/lib/font-weight";`,
+      "components/app-dialog.tsx": `import * as Dialog from "@radix-ui/react-dialog";`,
+    };
+    const alone = readStack(project(files));
+    expect(alone.flavor).toMatchObject({ flavor: "radix", open: false });
+    expect(alone.flavor.reason).toContain("only imported by components/ui/input-group.tsx");
+    expect(alone.installed.fluid).toContain("input-group");
+
+    const s = readStack(
+      project({
+        ...files,
+        "components/ui/dialog.tsx": `import * as D from "@radix-ui/react-dialog";\nimport { spring } from "@/lib/springs";`,
+        "app/settings/page.tsx": `import { Menu } from "@base-ui/react/menu";\nimport { useFluidHover } from "@/hooks/use-fluid-hover";`,
+      }),
+    );
+    expect(s.flavor).toMatchObject({ flavor: "radix", open: false });
+    expect(s.flavor.reason).toBe("installed FF components import Radix: components/ui/dialog.tsx");
+  });
+
+  it("finds decisions and an earlier audit file at the repository root", () => {
+    const dir = project({
+      ".git/HEAD": "ref: refs/heads/main\n",
+      "AGENTS.md": `# Agents\n\n## Fluid Functionalism\n- Fluid hover: declined\n`,
+      ".agents/fluid-functionalism.md": "# old audit\n",
+      "apps/web/package.json": { dependencies: { react: "^19.1.0" } },
+      "apps/web/CLAUDE.md": `## Fluid Functionalism\n- 150ms on the sheet is deliberate\n`,
+    });
+    const s = readStack(join(dir, "apps/web"));
+    expect(s.decisions).toEqual(["CLAUDE.md:1", "../../AGENTS.md:3"]);
+    expect(s.legacy).toEqual(["../../.agents/fluid-functionalism.md"]);
+  });
+
+  it("follows tsconfig extends to the paths a shared config declares", () => {
+    const dir = ready();
+    writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({ extends: ["@repo/missing-config", "./tsconfig.base.json"] }));
+    writeFileSync(join(dir, "tsconfig.base.json"), JSON.stringify({ compilerOptions: { paths: { "@/*": ["./src/*"] } } }));
+    const s = readStack(dir);
+    expect(s.requirements.map((r) => r.ok)).toEqual([true, true, true, true, true]);
+    expect(s.wiring[0].text).toContain("src/components/providers.tsx:3");
+  });
+
+  it("ignores a motion copy the project does not declare", () => {
+    const dir = ready();
+    mkdirSync(join(dir, "node_modules/motion"), { recursive: true });
+    writeFileSync(join(dir, "node_modules/motion/package.json"), JSON.stringify({ name: "motion", version: "12.0.0" }));
+    expect(readStack(dir).requirements.some((r) => r.text.startsWith("motion "))).toBe(false);
+  });
+
+  it("lists the parts a block installs one folder down", () => {
+    const dir = ready();
+    mkdirSync(join(dir, "src/components/sidebar-app"));
+    writeFileSync(join(dir, "src/components/sidebar-app/workspace-header.tsx"), `import { spring } from "@/lib/springs";`);
+    writeFileSync(join(dir, "src/components/sidebar-app/helpers.tsx"), `import { spring } from "@/lib/springs";`);
+    const s = readStack(dir);
+    expect(s.installed.fluid).toContain("workspace-header");
+    expect(s.installed.builtOnFluid).not.toContain("helpers");
+  });
+
+  it("finds the root layout of a JavaScript project", () => {
+    const s = readStack(
+      project({
+        "package.json": { dependencies: { next: "15.5.0", react: "^19.1.0" } },
+        "src/app/layout.js": `import { MotionConfig } from "framer-motion";\nexport default function L({ children }) {\n  return <MotionConfig reducedMotion="user">{children}</MotionConfig>;\n}`,
+      }),
+    );
+    expect(s.framework.roots).toEqual(["src/app/layout.js"]);
+    expect(s.wiring[0]).toMatchObject({ ok: true });
+  });
+
   it("fails loudly outside a project", () => {
-    expect(() => readStack(mkdtempSync(join(tmpdir(), "ff-empty-")))).toThrow(/package\.json/);
+    expect(() => readStack(project({}))).toThrow(/package\.json/);
   });
 });
 
@@ -249,6 +366,20 @@ describe("the stack script keeps up with the registry", () => {
       .map((f) => basename(f.target ?? f.path, extname(f.target ?? f.path)))
       .filter((name) => !["utils", "page"].includes(name) && !known.has(name));
     expect([...new Set(unknown)], "add the catalog row, or the part to FF_PARTS in stack.mjs").toEqual([]);
+  });
+
+  it("takes catalog names from the registry-name column, never from descriptions", () => {
+    const known = registryNames();
+    expect(known.has("dropdown")).toBe(true);
+    for (const word of ["contrast", "autoplay", "bg-hover", "bg-active"]) expect(known.has(word), word).toBe(false);
+  });
+
+  it("lists every single-source item that imports Base UI under both flavors", () => {
+    const sharedBase = files
+      .filter((f) => f.path.startsWith("registry/default/") && /\.tsx?$/.test(f.path))
+      .filter((f) => importsOf(readFileSync(join(root, f.path), "utf8")).some((s) => s.startsWith("@base-ui/")))
+      .map((f) => basename(f.path, extname(f.path)));
+    expect([...new Set(sharedBase)].sort(), "update SHARED_BASE_UI in stack.mjs").toEqual([...SHARED_BASE_UI].sort());
   });
 
   it("only fingerprints modules the registry actually ships", () => {

@@ -12,10 +12,9 @@ description: >-
   installed, or asks to review/audit existing UI motion against the system.
   Also use before hand-writing animation code (hover highlights, icon swaps,
   weight changes, enter/exit transitions) there, so custom code follows the
-  system instead of inventing timings. On first use in a
-  project it audits the stack (deps, Radix vs Base UI flavor, MotionConfig,
-  Inter opsz axis) and records verdicts in .agents/fluid-functionalism.md
-  for later runs.
+  system instead of inventing timings. Each run, a bundled script reads the
+  stack fresh (deps, Radix vs Base UI flavor, MotionConfig, Inter opsz axis),
+  so the skill leaves no audit file in the project.
 ---
 
 # Fluid Functionalism
@@ -32,9 +31,9 @@ self-contained brief (install command, usage snippet, props, docs URL).
 
 Three jobs this skill covers:
 
-1. **Know the project** — the first time this skill runs in a project, audit
-   the stack and record it (next section). Every later run reads that record
-   instead of re-guessing.
+1. **Know the project** — read the stack at the start of every run (next
+   section). The read is fast and exact, so nothing is cached and nothing
+   can go stale.
 2. **Install and compose the components** — pick the right registry item and
    flavor, wire it in, and compose around what's already built in. The
    catalog is [references/components.md](references/components.md); the craft
@@ -49,33 +48,56 @@ Three jobs this skill covers:
    [references/custom-motion.md](references/custom-motion.md) before writing
    any animation, hover, or state-change styling by hand.
 
-## First run in a project: the stack audit
+## Every run: read the stack
 
-Use `.agents/fluid-functionalism.md` as the shared project record for any
-coding agent. If only the legacy `.claude/fluid-functionalism.md` exists,
-carry its decisions forward as described in the
-[audit reference](references/stack-audit.md#the-audit-file).
+Before installing, composing, or advising, run the stack script on the app's
+directory, the one holding its `package.json` and `components.json`. That is
+the current directory in most projects; in a monorepo, pass it:
 
-Check for `.agents/fluid-functionalism.md`. If it exists and `package.json`
-hasn't changed since it was written, read it and trust its stable verdicts —
-flavor and stack requirements — without re-deriving them; surface any still-
-open advice items only when the current task touches what they affect. Treat
-its installed-item inventory and stock/customized notes as leads, not current
-truth: files can be added or edited without changing `package.json`. Before
-every install, verify the target's current files and diff any same-named file;
-only pass `--overwrite` when that check shows the targets are still stock. If
-the audit doesn't exist (or its stable verdicts are stale), run the audit in
-[references/stack-audit.md](references/stack-audit.md) first: it checks the
-dependencies FF needs (React 19, Tailwind v4, framer-motion, shadcn wiring),
-settles the flavor verdict from what the project already depends on, catches
-the two silent quality killers (`MotionConfig reducedMotion="user"` missing,
-Inter without the `opsz` axis), inventories what's already installed, and
-picks the 2–5 UI upgrades that would help most — systems first (motion
-tokens, fluid hover, surfaces, sizes), then components — each rated
-impact / effort and ranked by impact-per-effort. UI and design system only:
-infrastructure findings are recorded as facts, never pitched as
-recommendations. Three rules decide how those land, and they are what
-separates advice from a lint report:
+```bash
+node <skill>/scripts/stack.mjs [apps/web]
+```
+
+It needs only Node, finishes in under a second, and writes nothing. It reads
+the dependencies FF needs (React 19, Tailwind v4, framer-motion, shadcn
+wiring), settles the flavor verdict, checks the two silent quality killers
+(`MotionConfig reducedMotion="user"` around the app, Inter without the `opsz`
+axis), and lists which FF pieces are installed and which same-named files are
+stock or local. Every line cites the `file:line` it came from. Without Node,
+read the same files by hand:
+[what to check](references/stack-audit.md#what-to-check).
+
+**Facts are read, never remembered.** Every stack fact can be read again
+faster than a cached copy can be verified, and a cached verdict that drifts
+from the code misleads every session after it. The flavor verdict stays
+stable without a record because it is derived the same way each time:
+installed FF components first, then `package.json`. So don't write audit
+results into the project; they go in your reply.
+
+**Decisions are the exception.** The code cannot show what the user decided:
+fluid hover declined, a stillness or an off-token duration kept on purpose.
+The script's `DECISIONS` line points at where earlier ones live, from the
+app's directory up to the repository root. Read them,
+honor them, and never re-raise what they settle. Recording a new one is
+opt-in and goes where the project already keeps intent; see
+[decisions](references/stack-audit.md#decisions). If the script reports a
+legacy audit file from an earlier version of this skill, honor its decisions
+and ignore its facts
+([earlier audit files](references/stack-audit.md#earlier-audit-files)).
+
+Before every install, verify the target's current files and diff any
+same-named file; only pass `--overwrite` when that check shows the targets
+are still stock.
+
+## When asked to audit or advise
+
+Run the full audit in [references/stack-audit.md](references/stack-audit.md):
+on top of the stack read, it picks the 2–5 UI upgrades that would help
+most. Systems come first (motion tokens, fluid hover, surfaces, sizes), then
+components, each rated impact / effort and ranked by impact-per-effort. UI
+and design system only: infrastructure findings are stated as facts, never
+pitched as recommendations. Three rules decide how those land, and they are
+what separates advice from a lint report:
 
 - **Write each one from the interface**, not from the code that causes it:
   what someone using the product sees now, on which surface, how often they
@@ -102,11 +124,13 @@ correction — and a falsification pass that deletes whatever doesn't hold.
 "No changes recommended" is a valid outcome; an audit that always finds
 something teaches people to ignore it.
 
-It writes the results to that file so the project remembers.
+The shortlist goes in your reply. Because every entry cites its evidence,
+the next audit rebuilds it from the code as it is then: fixed items drop out
+on their own, and only declined ones need a decision to stay settled.
 
 ## One-time project setup
 
-The audit above tells you which of these are already done — skip those.
+The stack read tells you which of these are already done. Skip those.
 
 1. **Add the registry** (or install per-URL, next section):
 
@@ -115,12 +139,14 @@ The audit above tells you which of these are already done — skip those.
    ```
 
 2. **Pick the flavor once, per project.** The bare name installs the Radix
-   flavor; prefix `base/` for Base UI. The audit records the verdict: decide
-   by what the project already depends on — `@base-ui/react` in
-   `package.json` → use `base/` names everywhere; `@radix-ui/react-*` (or
-   nothing yet) → bare names. Never mix flavors in one project —
-   dependencies follow the flavor you pick, so a Base UI dialog pulls in the
-   Base UI button.
+   flavor; prefix `base/` for Base UI. The stack script settles the verdict
+   from what the project already uses: installed FF components first, then
+   `@base-ui/react` in `package.json` → `base/` names everywhere;
+   `@radix-ui/react-*` (or nothing yet) → bare names. `input-group`,
+   `color-picker`, and `ask-user-questions` import Base UI under both
+   flavors, so they never count as evidence. Never mix flavors in
+   one project — dependencies follow the flavor you pick, so a Base UI
+   dialog pulls in the Base UI button.
 
 3. **Enable reduced motion at the root.** One line in the app layout, like a
    ThemeProvider:
@@ -160,7 +186,7 @@ resolve on their own — install the component you want, not its plumbing.
 library installs under the same names (`button.tsx`, `dialog.tsx`, …), and
 without the flag the CLI asks per file — a non-interactive shell (you) exits
 at the first question. But if those files carry local customizations or
-colocated stories/tests (the audit records which), `--overwrite` destroys
+colocated stories/tests (diff each target to find out), `--overwrite` destroys
 that work — review or diff instead of a blind pass.
 
 ```bash

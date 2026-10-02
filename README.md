@@ -91,7 +91,7 @@ For a whole project rather than one component, install the [/fluid-functionalism
 npx skills add mickadesign/fluid-functionalism
 ```
 
-The source lives in [skills/fluid-functionalism](skills/fluid-functionalism). It audits the stack the first time it runs and records the flavor verdict, so later runs install without re-deriving it. Alongside it sit the component catalog, the interaction-design decisions built into each component, and the rules for writing custom motion next to them.
+The source lives in [skills/fluid-functionalism](skills/fluid-functionalism). It reads the stack fresh on every run with a bundled script, so it installs the right flavor and leaves no audit file in your project. Alongside it sit the component catalog, the interaction-design decisions built into each component, and the rules for writing custom motion next to them.
 
 ## Components
 

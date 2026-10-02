@@ -58,10 +58,26 @@ export const componentList: ComponentEntry[] = [
   { slug: "tooltip", name: "Tooltip", description: "Floating tooltip with spring-based animations and configurable placement.", gridSize: "small" },
 ];
 
+/** The skill page. It sits with the systems in navigation but stays out of
+ *  `systemList`: it is not a registry item, and `systemList` feeds the
+ *  README's install table and the install prompts. */
+export const skillEntry: SystemEntry = {
+  slug: "skill",
+  name: "Skill",
+  description: "Gives your coding agent the components and the craft behind them, then puts both to work on your project.",
+  isNew: true,
+};
+
+/** The sidebar's System group, in its order: the systems plus the skill
+ *  page, alphabetical like the rest of the list. */
+export const systemNavList: SystemEntry[] = [...systemList, skillEntry].sort((a, b) =>
+  a.name.localeCompare(b.name)
+);
+
 /** Combined prev/next navigation order for doc pages.
  *  Used by DocPage's arrow nav. Keep in sync with the sidebar order in
- *  `app/components/sidebar.tsx` (Introduction → systemList → componentList). */
+ *  `app/components/sidebar.tsx` (Introduction → systemNavList → componentList). */
 export const docOrder: Array<{ slug: string; name: string }> = [
-  ...systemList.map((s) => ({ slug: s.slug, name: s.name })),
+  ...systemNavList.map((s) => ({ slug: s.slug, name: s.name })),
   ...componentList.map((c) => ({ slug: c.slug, name: c.name })),
 ];

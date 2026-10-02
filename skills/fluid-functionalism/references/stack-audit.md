@@ -1,32 +1,47 @@
 # Fluid Functionalism — project stack audit
 
-Run this the first time the skill fires in a project, before installing or
-writing anything. It takes under a minute, produces the audit file the skill
-reads on every later run, and is where most of the skill's *advice* comes
-from: every check below maps to a concrete consequence you can explain to the
-user. Skip the audit entirely when `.agents/fluid-functionalism.md` exists
-and `package.json` has not changed since it was written — just read the file
-and act on it.
+The stack read runs at the start of every session that installs, composes,
+or advises. The full audit (the stack read, measurements, and a shortlist)
+runs when the user asks for one. Neither writes into the project: facts are
+read again each time, results go in the reply, and only the user's own
+decisions are kept, with their OK ([decisions](#decisions)). Every check
+below maps to a concrete consequence you can explain to the user, which is
+where most of the skill's *advice* comes from.
 
 ## What to check
 
-Read these files (all cheap, none require running anything):
-`package.json`, `components.json`, the Tailwind entry CSS (e.g.
-`app/globals.css`), the root layout (`app/layout.tsx` or the app's
-equivalent), and a directory listing of the shadcn components dir (usually
-`components/ui/`) plus `lib/` and `hooks/`.
+`scripts/stack.mjs` reads all of it in under a second and cites the
+`file:line` behind each fact:
+
+```bash
+node <skill>/scripts/stack.mjs [app dir] [--json]
+```
+
+Point it at the app's directory (in a monorepo, `apps/web` or wherever
+`components.json` lives). It reads `package.json`, `components.json`,
+tsconfig paths (following `extends`), the Tailwind entry CSS, the root layout
+and the providers it imports, the shadcn `ui/`, `lib/`, `hooks/`, and
+`components/` dirs (block parts one folder down), and the agent notes from
+there up to the repository root. Without Node, read those same files by
+hand. The tables below say what each fact means.
 
 ### 1. Flavor verdict (decides every future install)
 
-| Found in package.json | Verdict |
+Checked in this order; the first row that applies decides.
+
+| Found | Verdict |
 |---|---|
-| `@base-ui/react` | **base** — every flavored install uses the `base/` prefix |
-| any `@radix-ui/react-*` | **radix** — bare names |
-| both | Mixed primitives. Pick the side the app's own code imports more; flag the other as advice ("consider consolidating") |
+| Installed FF components import one flavor's primitives | **that flavor**: every later install has to match what is already there. `input-group`, `color-picker`, and `ask-user-questions` import Base UI under both flavors, so they never count here |
+| Installed FF components import both | **mixed**: ask the user which side to consolidate on before installing more |
+| `@base-ui/react` in package.json, but no app code imports it and a shared item above is installed | The shared item brought it, so it doesn't count: read the rows below without it. If that leaves neither, the choice is **open**: Radix by default, but ask the user before the first flavored install, since a project that chose Base UI looks the same from its files |
+| only `@base-ui/react` in package.json | **base**: every flavored install uses the `base/` prefix |
+| only Radix: any `@radix-ui/react-*`, or `radix-ui` | **radix**: bare names |
+| both in package.json | Mixed primitives. Pick the side the app's own code imports more; flag the other as advice ("consider consolidating") |
 | neither | **radix** by default (bare names), but note it's an open choice until the first primitive lands |
 
-Record the verdict explicitly. Later runs must not re-derive it — that is how
-flavor mixing happens.
+The script derives it the same way every run, so the same project always
+gets the same answer. Don't override it from memory of an earlier session:
+that is how flavor mixing happens.
 
 ### 2. Hard requirements (installs break or misbehave without these)
 
@@ -45,15 +60,21 @@ flavor mixing happens.
 | `MotionConfig reducedMotion="user"` wraps the app | grep the root layout | OS reduced-motion is ignored for transform/layout animations — an accessibility gap, one line to fix |
 | Inter loaded as a variable font **with the `opsz` axis** | `next/font/google`: `Inter({ axes: ["opsz"] })`; `next/font/local`: the call declares `weight: "100 900"` (without a range the variable axis isn't addressable at all); plain CSS: `@font-face` with `font-weight: 100 900` on a variable file | Weight animations still run but labels widen on hover/selection — the "weight without reflow" promise silently breaks. A `localFont` with no weight range breaks harder: `fontVariationSettings` has nothing to move. If the font is static, note the ghost-span machinery is inert — and **cross-check what the code animates**: components animating `font-variation-settings` over static font files are a live site-wide no-op, worth flagging on its own. The fallback there is honest: remap the pattern to plain `font-weight` steps between the shipped weights — the ghost span still prevents reflow, the weight change just snaps instead of animating |
 | Interaction-state tokens (`bg-hover`, `bg-active`) available | entry CSS (installed by `@fluid/tokens`, arrives with components) | Custom code can't use the shared hover/active fills; ad-hoc grays creep in |
-| `--overwrite` situation | stock shadcn files present in `components/ui/`? Are they actually stock, or customized (local edits, colocated stories/tests)? | Stock files: every `@fluid` install needs `--overwrite`, one explicit heads-up before the first install. Customized files: `--overwrite` would destroy local work — install to review (or diff the registry source against the local file) instead of a blind pass, and record which files carry customizations |
+| `--overwrite` situation | stock shadcn files present in `components/ui/`? Are they actually stock, or customized (local edits, colocated stories/tests)? | Stock files: every `@fluid` install needs `--overwrite`, one explicit heads-up before the first install. Customized files: `--overwrite` would destroy local work — install to review (or diff the registry source against the local file) instead of a blind pass, and name the customized files in the reply |
 
 ### 4. Inventory (context for suggestions, not warnings)
 
 - **Installed @fluid items**: presence of `lib/springs.ts`,
   `hooks/use-fluid-hover.ts`, `components/ui/fluid-hover-highlight.tsx`,
   `lib/font-weight.ts`, `lib/icon-context.tsx`, and which `components/ui/*`
-  files match registry items. This tells later runs what can be imported
-  right now versus what needs an install.
+  files match registry items. The script lists them, and separates
+  same-named files that are stock or local (diff those before any
+  `--overwrite`). This tells you what can be imported right now versus what
+  needs an install. It can't see a hand-rolled stand-in for a system piece (a
+  local `use-proximity-hover` that is this project's `use-fluid-hover`, a
+  `motion.ts` that is its `springs`); look for those, and offer to record one
+  as a [decision](#decisions) so later sessions extend it instead of
+  installing beside it.
 - **Framework**: Next.js (app router?), Vite, Remix — decides where the root
   layout and font loading live.
 - **Icon library**: `lucide-react` is the default and arrives automatically.
@@ -135,15 +156,18 @@ written, and it is what lets the audit be trusted on the next run:
 Then try to break each survivor. Re-open what it cites and delete it when:
 
 - the measurement or the file does not match what the entry claims;
-- the difference is a documented exception or a recorded verdict (a
-  deliberate stillness, an off-token duration someone chose on purpose);
+- the difference is a documented exception or a recorded decision (a
+  deliberate stillness, an off-token duration someone chose on purpose,
+  explained by a comment beside the code or a line in the project's agent
+  notes);
 - the surface is depicted UI rather than the app's own chrome;
 - another entry has the same root cause — merge them into one;
 - it is infrastructure, which the shortlist never carries.
 
 Evidence is the footnote, not the headline: the interface-first rule below
 still decides how an entry reads. It sits on its own `evidence:` line in the
-audit file so the next session can re-check it instead of trusting it.
+reply, so the user, or the next session, can re-check it instead of trusting
+it.
 
 If fewer than two entries survive, say so rather than pad. If none survive,
 that is a result, not a failure — write *"No changes recommended: nothing
@@ -160,8 +184,8 @@ pad.
 
 **UI and design system only.** Every slot goes to something the user sees or
 feels. Infrastructure findings — dead dependencies, package-manager notes,
-framework or Tailwind migrations, icon-library consolidation — are recorded
-as verdicts or inventory facts, but they never occupy a shortlist slot and
+framework or Tailwind migrations, icon-library consolidation — are stated
+as stack facts, but they never occupy a shortlist slot and
 never lead the conversation. (An infra blocker can still appear *inside* an
 entry, as the reason its effort is L.)
 
@@ -204,8 +228,9 @@ takes a slot: name where it would land first, what it would feel like there,
 and what it would cost. "Nothing glides on hover" is an observation about
 their code. "Do you want hover in these menus to follow the cursor the way
 the rest of the library does, or is the stillness deliberate?" is the
-question behind it, and it is the one worth asking. Record the answer as a
-verdict so no later run re-opens a settled question.
+question behind it, and it is the one worth asking. Offer to record the
+answer as a [decision](#decisions) so no later run re-opens a settled
+question.
 
 **Write every entry from the interface, not from the code.** The reader is
 looking at their own product, so an entry opens on what someone using it sees
@@ -281,10 +306,10 @@ using it honestly:
   belong in the entry as a named trade-off, not a surprise.
 
 Rank by impact-per-effort within the systems-then-components order — a
-medium-impact S usually belongs above a high-impact L. Record the shortlist
-in the audit file (template below): done items move to the installed
-inventory, declined ones to done/declined, and refreshes re-rank what's
-left instead of re-pitching from scratch.
+medium-impact S usually belongs above a high-impact L. The shortlist goes in
+the reply ([format below](#where-the-results-go)). A later audit rebuilds it
+from fresh evidence: a done item has no evidence left and drops out, and a
+declined one is settled by its decision.
 
 ## When installs are blocked
 
@@ -302,10 +327,10 @@ is rarely the advice the user came for. Instead:
   here — the "never hand-roll" rule exists to prevent drift *beside installed
   components*, and there are none), `bg-hover`/`bg-active`-style state
   tokens, transform/opacity only.
-- **Record the blocker and the caveats in the audit file** — which
-  requirement fails, and what a future migration must watch for (the
-  `--overwrite` review list, the animation-package pick) — so the day the
-  project migrates, the path is already written down.
+- **State the blocker and its caveats once**: which requirement fails, and
+  what a future migration must watch for (the `--overwrite` review list, the
+  animation-package pick). `stack.mjs` reports both on every run, so the day
+  the project migrates, the path is read from what is there then.
 - **Advise the migration question once, deliberately**, as its own decision
   with its costs, not as a prerequisite smuggled into every suggestion.
 - **Never present the block as a gate on the list.** A blocked CLI blocks
@@ -319,102 +344,101 @@ is rarely the advice the user came for. Instead:
   a migration they never asked for, which is discouraging and, on every item
   above it, untrue.
 
-## The audit file
+## Where the results go
 
-Write the results to `.agents/fluid-functionalism.md` in the project root,
-creating `.agents/` if needed. This is one shared record for any coding agent;
-read it explicitly when the skill runs rather than relying on a tool's
-implicit memory loading.
-
-For existing projects, if the shared record is missing but
-`.claude/fluid-functionalism.md` exists, read it and copy its decisions,
-inventory, and open/done/declined advice into the shared record. Preserve its
-original audit date and refresh stale facts using the usual checks. Leave the
-legacy file intact, but use and update only the shared record from then on.
-If both exist, the shared record takes precedence; do not overwrite it with
-the legacy copy.
-
-It's plain markdown on purpose: the user can read it, correct a wrong
-verdict, or delete it to force a re-audit — say so when you create it. Ask
-before writing anywhere else, and if the project forbids new files, keep the
-results in your reply instead.
-
-**Verdict hygiene — a wrong verdict poisons every later session.** The file
-outlives your run and later sessions trust it, so hold verdicts to a higher
-bar than advice:
-
-- Record *observations*, not extrapolations: "GET /r/select-base.json → 404"
-  is a fact; "the registry serves Radix only" is a conclusion the fact
-  doesn't support. Before recording any verdict about what the registry
-  serves, try the documented forms (`@fluid/base/<name>`,
-  `/r/base/<name>.json` — see components.md); a guessed URL failing proves
-  only that the guess was wrong.
-- A claim you couldn't verify goes in as a question ("check: …"), not a
-  verdict — later sessions treat verdicts as settled.
-- In the inventory, record **local aliases of system pieces** — a
-  hand-rolled `use-proximity-hover` that is this project's
-  `use-fluid-hover`, a `motion.ts` that is its `springs` — so later
-  sessions don't treat the local copy and the registry item as unrelated.
-
-Template (fill every section; keep it under ~40 lines):
+In the reply, not a file. Lead with the shortlist; the stack facts are
+context, one or two lines. Keep it under ~40 lines:
 
 ```markdown
-# Fluid Functionalism — project audit
-<!-- Written by the fluid-functionalism skill. Edit freely; delete to force a re-audit. -->
+**Stack**: Next.js app router, pnpm. Flavor base (installed select imports
+@base-ui/react). Requirements met; stock shadcn card.tsx and tabs.tsx need a
+diff before any --overwrite.
 
-- audited: 2026-09-14
-- package.json: react 19.2, tailwindcss 4.1, framer-motion 12.34, next 15.5
-
-## Verdicts
-- flavor: base (@base-ui/react 1.4.1 present) — all flavored installs use base/<name>
-- framework: Next.js app router; root layout at app/layout.tsx
-- stock shadcn files present at audit time → recheck each install target before
-  passing --overwrite; never cache overwrite safety
-- fluid hover: asked 2026-09-14, wanted — menus first, then the sidebar
-  (a declined answer is recorded the same way, and stops being pitched)
-
-## Ready
-- shadcn wired (components.json, @/ aliases), theme tokens in app/globals.css
-- installed @fluid items: springs, use-fluid-hover, button, dialog
-
-## Advice (open)
-- [ ] MotionConfig reducedMotion="user" missing from app/layout.tsx — one line,
-      restores OS reduced-motion support
-      evidence: app/layout.tsx:12 renders <ThemeProvider> with no MotionConfig above it
-- [ ] Selecting a tab on /settings shoves the tabs beside it, so the row jumps
-      each time the section changes; the label needs a ghost span
-      evidence: audit.mjs /settings @1280 — SELECT "General / Billing / Team":
-      selecting tab 2 moved tab 3 by 2.8px
-
-## Replacement shortlist
+**Shortlist**
 | Now | Replace with | Impact | Effort | Why | Evidence |
 |---|---|---|---|---|---|
 | durations hand-written in 6 files | springs (motion tokens) | high | S | exits reuse the entrance spring today, so dismissals drag; tokens pair every tier with a one-tier-quicker exit tween | components/panel.tsx:44, dock.tsx:18 (+4) |
 | nav + table per-row :hover | use-fluid-hover | high | S | hover blinks off between rows; the highlight glides to the nearest row and a gap click still lands on what's lit | audit.mjs / @1280: per-row, dark in the 4px gap |
-| static card grid (projects.tsx), the landing surface | card | med | M | the grid is the first thing anyone sees and nothing answers the cursor on it; the highlight tracks the nearest card in both axes and dividers drop beside the active one — local markup to carry over | audit.mjs / @1280: none on 9 cards |
-| hand-rolled command palette (cmd-k.tsx) | base/command-menu | med | M | keyboard scroll keeps the row centered and travels with the highlight; ⌘K resolves per-platform with a Dvorak-safe fallback — both missing locally | cmd-k.tsx:88 scrollIntoView, :31 metaKey only |
+| static card grid (projects.tsx), the landing surface | card | med | M | the grid is the first thing anyone sees and nothing answers the cursor on it; the highlight tracks the nearest card in both axes and dividers drop beside the active one, with local markup to carry over | audit.mjs / @1280: none on 9 cards |
+| hand-rolled command palette (cmd-k.tsx) | base/command-menu | med | M | keyboard scroll keeps the row centered and travels with the highlight; ⌘K resolves per-platform with a Dvorak-safe fallback, both missing locally | cmd-k.tsx:88 scrollIntoView, :31 metaKey only |
 
-## Advice (done / declined)
-- (move items here instead of deleting, so they aren't re-raised)
+**Also worth fixing**
+- Selecting a tab on /settings shoves the tabs beside it, so the row jumps
+  each time the section changes; the label needs a ghost span.
+  evidence: audit.mjs /settings @1280 — SELECT "General / Billing / Team":
+  selecting tab 2 moved tab 3 by 2.8px
 ```
 
-## Using it on later runs
+## Decisions
 
-- **Read it first**; trust stable verdicts such as flavor without re-deriving
-  them. Installed-item and stock/customized notes are only a starting point:
-  files can change without `package.json` changing.
-- **Refresh when stale**: if `package.json` changed since the audit date or
-  a check obviously no longer matches reality, re-run the relevant checks
-  and update the file — don't start over.
-- **Before every install**, inspect or diff every same-named target file. Pass
-  `--overwrite` only when that current check shows the targets are still stock;
-  a cached audit verdict never authorizes overwriting a file.
-- **Keep the inventory current**: after you install components, add them to
-  the installed list in the same edit session.
+The only thing worth carrying between sessions is what the user decided,
+because nothing in the code shows it: fluid hover declined, a stillness kept
+on purpose, an off-token duration chosen deliberately, a hand-rolled hook
+that stands in for `use-fluid-hover`. A decision is intent, not a snapshot
+of the code, so it stays true until the user changes their mind. Record one
+only when the user makes it, and only with their OK:
+
+- **Tied to one place** (a duration, one still list): a one-line comment
+  beside the code saying what was kept and why. The falsification pass
+  re-opens the cited code and finds it, and the note goes away with the code
+  it explains.
+
+  ```tsx
+  // 150ms on purpose: matches the OS sheet it sits on, not an FF token.
+  ```
+
+- **Project-wide** (fluid hover declined, a local alias of a system piece):
+  one line under a `## Fluid Functionalism` heading in the agent notes the
+  project already keeps (`AGENTS.md`, `CLAUDE.md`). `stack.mjs` finds that
+  heading, in the app's directory or any directory above it up to the
+  repository root, and prints it under `DECISIONS`.
+
+  ```markdown
+  ## Fluid Functionalism
+  - Fluid hover: declined 2026-09-14, menus stay still on purpose.
+  - hooks/use-proximity-hover.ts is this project's use-fluid-hover: extend
+    it, don't install beside it.
+  ```
+
+Never create a new file for decisions. If the project keeps no agent notes,
+or the user would rather not write any, keep the decision in your own memory
+if you have one, or just in the reply. A lost decision costs one repeated
+question, never a wrong install.
+
+A written decision outlives your session and later sessions trust it, so
+hold it to a higher bar than advice:
+
+- Record what the user said or what you observed, not what you concluded
+  from it: "GET /r/select-base.json → 404" is a fact; "the registry serves
+  Radix only" is a conclusion the fact doesn't support. Before stating
+  anything about what the registry serves, try the documented forms
+  (`@fluid/base/<name>`, `/r/base/<name>.json`; see components.md).
+- A claim you couldn't verify is a question for the user, not a decision.
+
+## Earlier audit files
+
+Earlier versions of this skill wrote `.agents/fluid-functionalism.md` (or
+`.claude/fluid-functionalism.md`). When `stack.mjs` reports one, read it for
+decisions only (answered questions, the done/declined list, local aliases of
+system pieces) and honor them. Ignore its versions, inventory, verdicts, and
+open advice: the script and a fresh measurement replace those. Don't update
+it. Mention once that the skill no longer needs it, and offer to move its
+decisions into the project's agent notes and delete it. Never delete it
+unasked.
+
+## Later runs
+
+- **Run `stack.mjs` again**; it is the record. Trust what it prints over
+  anything remembered from an earlier session.
+- **Read the decisions it points at** before suggesting anything, and don't
+  re-raise what they settle.
+- **Before every install**, inspect or diff every same-named target file.
+  Pass `--overwrite` only when that current check shows the targets are
+  still stock.
 - **Confirm with one more measurement**: after a change lands, re-run
-  `audit.mjs` on the route it touched and move the item to done only when the
+  `audit.mjs` on the route it touched and call the item done only when the
   line that justified it is gone. One confirming run, not a loop.
-- **Surface open advice at natural moments**, once: when a task touches the
-  affected area (mention the missing `opsz` axis when a task involves
-  selected/active labels, not on every run). If the user declines, move the
-  item to "done / declined" so it stays visible but stops being raised.
+- **Surface stack-level advice at natural moments**: a missing `opsz` axis
+  when a task involves selected or active labels, a missing `MotionConfig`
+  when it adds motion, not on every run. If the user declines, offer to
+  record it as a decision so it stops being raised.

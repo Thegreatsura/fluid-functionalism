@@ -15,12 +15,12 @@ import { SiteCommandMenu, SiteCommandMenuProvider } from "@/app/components/site-
 import { RightPanel } from "@/app/components/right-panel";
 import { RightRailProvider } from "@/lib/right-rail";
 import { showShortcutToast } from "@/lib/docs/settings-toast";
-import { systemList, componentList } from "@/lib/docs/components";
+import { systemNavList, componentList } from "@/lib/docs/components";
 
 const pageOrder = [
   "/",
   "/docs",
-  ...systemList.map((s) => `/docs/${s.slug}`),
+  ...systemNavList.map((s) => `/docs/${s.slug}`),
   ...componentList.map((c) => `/docs/${c.slug}`),
 ];
 

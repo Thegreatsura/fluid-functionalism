@@ -1,86 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { track } from "@vercel/analytics";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
-import { InputCopy } from "@/registry/default/input-copy";
-import { SkillHero } from "./hero";
+import { SkillExamples } from "./hero";
 import { Timeline } from "./timeline";
 
-const SKILLS_SH_URL = "https://skills.sh/mickadesign/fluid-functionalism/fluid-functionalism";
-const INSTALL_COMMAND = "npx skills add mickadesign/fluid-functionalism";
+/** Installation: a prompt rather than the bare command, so the agent goes
+ *  on to run the skill once on the project. It names the skill, so an agent
+ *  that already has it skips the install. Global (-g) keeps the skill out of
+ *  the user's repo; -y skips the CLI's prompts, which an agent shell can't
+ *  answer. */
+const INSTALL_PROMPT =
+  "Install the fluid-functionalism skill with `npx skills add mickadesign/fluid-functionalism -g -y` (skip this if you already have it). Then read its SKILL.md and use it to audit this project.";
 
 /** What it does: 1 line per job. The detail lives in SKILL.md. */
 const JOBS: Array<{ title: string; body: string }> = [
-  { title: "Reads your stack once", body: "Checked on the first run, remembered after." },
+  { title: "Read your stack", body: "To understand your project." },
   { title: "Suggests 2 to 5 upgrades", body: "Ranked by what your users will notice." },
-  { title: "Installs the right piece", body: "Right name, right flavor. Your edits survive." },
-  { title: "Reviews the motion you have", body: "Flags hand-written timings and layout shifts." },
+  { title: "Aligns your UI", body: "Installs what fits, matches the rest." },
 ];
-
-/** Try it: prompts to paste as-is. Each names the skill so it triggers. */
-const PROMPTS = [
-  "Audit this project with the fluid-functionalism skill",
-  "Add a settings dialog with a sidebar from Fluid Functionalism",
-  "Replace our dropdowns with the Fluid Functionalism ones",
-  "Make this list hover like the Fluid Functionalism menus",
-  "Review the motion in this app against the fluid-functionalism skill",
-];
-
-/** Live install count from skills.sh, via our cached route. Renders nothing
- *  until a number arrives, so a failed lookup never shows a wrong zero. */
-function InstallCount() {
-  const [installs, setInstalls] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/skill-installs")
-      .then((res) => res.json())
-      .then((data: { installs: number | null }) => {
-        if (!cancelled && typeof data.installs === "number") setInstalls(data.installs);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (installs === null) return null;
-  return (
-    <p className="text-caption text-muted-foreground">
-      <a
-        href={SKILLS_SH_URL}
-        target="_blank"
-        rel="noreferrer"
-        className="underline decoration-muted-foreground/40 underline-offset-2 hover:text-foreground"
-      >
-        {new Intl.NumberFormat("en", { notation: "compact" }).format(installs)}{" "}
-        {installs === 1 ? "install" : "installs"} on skills.sh
-      </a>
-    </p>
-  );
-}
 
 export default function FluidSkillDoc() {
   return (
     <DocPage
       title="/fluid-functionalism skill"
       slug="skill"
-      showInstall={false}
-      description="Teaches your coding agent the components, the motion rules, and the reasons behind them."
+      installNote="One prompt for your coding agent: it installs the skill, then audits your project with it."
+      installPrompt={INSTALL_PROMPT}
+      onInstallCopy={() => track("Skill install copied", { method: "prompt" })}
+      description="Gives your coding agent the components and the craft behind them, then puts both to work on your project."
     >
-      {/* No section title: the command sits straight under the page intro. */}
-      <div className="flex flex-col gap-4">
-        <InputCopy
-          value={INSTALL_COMMAND}
-          align="left"
-          onCopy={() => track("Skill install copied", { method: "skills-cli" })}
-        />
-        <InstallCount />
-      </div>
-
-      <SkillHero />
-
       <DocSection title="What it does">
         <Timeline steps={JOBS} />
       </DocSection>
@@ -95,18 +44,7 @@ export default function FluidSkillDoc() {
         </p>
       </DocSection>
 
-      <DocSection title="Try it">
-        <div className="flex flex-col gap-2">
-          {PROMPTS.map((prompt, i) => (
-            <InputCopy
-              key={prompt}
-              value={prompt}
-              align="left"
-              onCopy={() => track("Skill prompt copied", { prompt: i + 1 })}
-            />
-          ))}
-        </div>
-      </DocSection>
+      <SkillExamples />
     </DocPage>
   );
 }

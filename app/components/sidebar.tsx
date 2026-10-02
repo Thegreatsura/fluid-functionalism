@@ -13,7 +13,7 @@ import {
   SidebarMenuButton,
   useSidebar,
 } from "@/components/flavored/sidebar";
-import { componentList, systemList } from "@/lib/docs/components";
+import { componentList, systemNavList } from "@/lib/docs/components";
 import { GitHubStarButton, SettingsContent } from "@/app/components/right-panel";
 import { SiteCommandMenuTrigger } from "@/app/components/site-command-menu";
 
@@ -107,7 +107,7 @@ export function SiteSidebar() {
 
         <NavGroup
           label="System"
-          entries={systemList}
+          entries={systemNavList}
           pathname={pathname}
           ariaLabel="System navigation"
         />

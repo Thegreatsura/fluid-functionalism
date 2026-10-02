@@ -149,7 +149,8 @@ function dropdownDemoFile(p: DropdownPreset): string {
     l.push(`      {rows.map(renderRow)}`);
   }
   if (d.creatable) {
-    // Last, so Enter in the field picks a real match while one exists.
+    // Last, after the real matches, so ↑ from the search field reaches it
+    // in one press.
     const created = [
       ...(p.icons ? [`icon: ${JSON.stringify(DROPDOWN_CREATED_ICON)}`] : []),
       "label: q",

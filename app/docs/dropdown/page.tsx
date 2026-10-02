@@ -203,8 +203,8 @@ const matches = components.filter((c) => c.toLowerCase().includes(query.toLowerC
 const toggle = (c: string) =>
   setUsed((u) => (u.includes(c) ? u.filter((x) => x !== c) : [...u, c]));
 
-// A create row while the query matches no label exactly. Last, so Enter
-// (which picks the first row) takes a real match while one exists.
+// A create row while the query matches no label exactly. Last, after the
+// real matches, so ↑ from the search field reaches it in one press.
 const q = query.trim();
 const canCreate = q !== "" && !components.some((c) => c.toLowerCase() === q.toLowerCase());
 
@@ -542,7 +542,7 @@ export default function DropdownDoc() {
       <DocSection title="Searchable menu">
         <p className="text-subtitle text-muted-foreground">
           Put a <code>DropdownSearch</code> first and filter the rows you
-          render. Type to filter, press Enter to pick the first match.
+          render. Type to filter, arrow down to a row, press Enter.
         </p>
         <ComponentPreview code={searchableCode} minHeightClass="min-h-[160px]">
           <DropdownMenu>
@@ -579,7 +579,7 @@ export default function DropdownDoc() {
       <DocSection title="Searchable multiple selection">
         <p className="text-subtitle text-muted-foreground">
           Both at once. Compute <code>checkedIndices</code> against the
-          filtered rows; Enter toggles the first match and the menu stays open.
+          filtered rows; Enter toggles the focused row and the menu stays open.
         </p>
         <ComponentPreview code={searchableMultipleCode} minHeightClass="min-h-[160px]">
           <DropdownMenu>
@@ -618,7 +618,7 @@ export default function DropdownDoc() {
       <DocSection title="Create from the query">
         <p className="text-subtitle text-muted-foreground">
           1 extra row when nothing matches. Type a component that is not
-          there, then press Enter.
+          there, press ↑ to reach it, then Enter.
         </p>
         <ComponentPreview code={creatableCode} minHeightClass="min-h-[160px]">
           <DropdownMenu>

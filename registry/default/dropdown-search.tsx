@@ -36,9 +36,10 @@ import { SURFACE_BG } from "@/lib/surface-classes";
 //
 // Arrow keys leave the field for the list (first / last row) and arrowing
 // off either end of the list comes back to it, so the field is one stop in
-// the ring of rows. Enter picks the first row, Escape closes the menu as
-// usual. While the field has focus no row is highlighted: the field is the
-// active stop, like a row, it just draws no background of its own.
+// the ring of rows. While the field has focus no row is highlighted: the
+// field is the active stop, like a row, it just draws no background of its
+// own. So Enter in the field picks nothing (only a row you arrowed onto
+// activates), and Escape closes the menu as usual.
 // ---------------------------------------------------------------------------
 
 interface SearchHandle {
@@ -127,8 +128,8 @@ export function useDropdownSearchHost(open: boolean) {
         e.stopPropagation();
         handle.input.focus();
         // The field sits before the first row, so coming back to it from the
-        // bottom of a long list returns the list to its top: the next ↓ and
-        // Enter both act on the first row, now in view.
+        // bottom of a long list returns the list to its top, where the next
+        // ↓ lands.
         scrollToTop(rows[0]);
       }
     } else if (e.key.length === 1 && e.key !== " ") {
@@ -268,8 +269,9 @@ const DropdownSearch = forwardRef<HTMLInputElement, DropdownSearchProps>(
         e.preventDefault();
         (e.key === "ArrowDown" ? rows[0] : rows[rows.length - 1]).focus();
       } else if (e.key === "Enter") {
+        // No row has focus, so there is nothing to pick. preventDefault
+        // keeps a surrounding form from submitting.
         e.preventDefault();
-        menuRows(e.currentTarget)[0]?.click();
       }
     };
 

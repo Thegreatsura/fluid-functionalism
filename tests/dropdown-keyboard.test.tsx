@@ -7,8 +7,8 @@
  * clicks the row on Enter/Space, so its keyboard path already worked.
  *
  * With a DropdownSearch, the field is one stop in the ring of rows: arrowing
- * off the first or last row returns to it, as its own ↓ / ↑ leave it, and
- * while it has focus no row is highlighted.
+ * off the first or last row returns to it, as its own ↓ / ↑ leave it.
+ * While it has focus no row is highlighted, and Enter there picks nothing.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
@@ -108,7 +108,7 @@ describe.each(flavors)("%s dropdown popup", (_name, F) => {
 });
 
 describe.each(flavors)("%s dropdown search", (_name, F) => {
-  function Searchable() {
+  function Searchable({ onSelect }: { onSelect?: (label: string) => void }) {
     const [query, setQuery] = useState("");
     return (
       <F.DropdownMenu defaultOpen>
@@ -118,7 +118,12 @@ describe.each(flavors)("%s dropdown search", (_name, F) => {
           {labels
             .filter((label) => label.toLowerCase().includes(query.toLowerCase()))
             .map((label, index) => (
-              <MenuItem key={label} index={index} label={label} />
+              <MenuItem
+                key={label}
+                index={index}
+                label={label}
+                onSelect={() => onSelect?.(label)}
+              />
             ))}
         </F.DropdownContent>
       </F.DropdownMenu>
@@ -126,14 +131,33 @@ describe.each(flavors)("%s dropdown search", (_name, F) => {
   }
 
   function setup() {
-    const view = render(<Searchable />);
+    const onSelect = vi.fn();
+    const view = render(<Searchable onSelect={onSelect} />);
     const field = view.getByRole("searchbox");
     const row = (name: string) => view.getByRole("menuitem", { name });
     const lit = () =>
       view.baseElement.querySelector<HTMLElement>("[data-fluid-hover-active]")
         ?.getAttribute("aria-label") ?? null;
-    return { field, row, lit };
+    return { view, field, row, lit, onSelect };
   }
+
+  it("picks nothing with Enter in the field", () => {
+    const { view, field, onSelect } = setup();
+    act(() => field.focus());
+    fireEvent.change(field, { target: { value: "re" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(view.queryByRole("searchbox")).not.toBeNull();
+  });
+
+  it("picks the row arrowed onto from the field", () => {
+    const { field, onSelect } = setup();
+    act(() => field.focus());
+    fireEvent.keyDown(field, { key: "ArrowDown" });
+    fireEvent.keyDown(document.activeElement!, { key: "Enter" });
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith("Teamspaces");
+  });
 
   it("highlights the focused row, and no row while the field has focus", () => {
     const { field, row, lit } = setup();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject, type SyntheticEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FocusEvent, type ReactNode, type RefObject, type SyntheticEvent } from "react";
 import { animate, motion, useInView, useMotionValue, useReducedMotion, type MotionValue } from "framer-motion";
 import { cn } from "@/registry/default/lib/utils";
 import { useShape } from "@/registry/default/lib/shape-context";
@@ -15,19 +15,27 @@ const scriptedEvents = new WeakSet<Event>();
 const fromVisitor = (e: SyntheticEvent) => !scriptedEvents.has(e.nativeEvent);
 
 /** Whether an example should play its script: on screen, motion allowed,
- *  and no real pointer inside (a visitor takes over until they leave). */
+ *  and no visitor inside. A real pointer takes over until it leaves, and
+ *  keyboard focus until it moves out, so the script never changes what
+ *  someone is tabbing through. Only :focus-visible counts: a mouse click
+ *  leaves focus on its button after the pointer has gone. */
 export function usePlayback() {
   const rootRef = useRef<HTMLDivElement>(null);
   const inView = useInView(rootRef, { amount: 0.35 });
   const reduced = useReducedMotion();
-  const [userInside, setUserInside] = useState(false);
+  const [pointerInside, setPointerInside] = useState(false);
+  const [keyboardInside, setKeyboardInside] = useState(false);
   const bind = {
-    onMouseEnter: (e: SyntheticEvent) => fromVisitor(e) && setUserInside(true),
-    onMouseMove: (e: SyntheticEvent) => fromVisitor(e) && setUserInside(true),
-    onPointerDown: (e: SyntheticEvent) => fromVisitor(e) && setUserInside(true),
-    onMouseLeave: (e: SyntheticEvent) => fromVisitor(e) && setUserInside(false),
+    onMouseEnter: (e: SyntheticEvent) => fromVisitor(e) && setPointerInside(true),
+    onMouseMove: (e: SyntheticEvent) => fromVisitor(e) && setPointerInside(true),
+    onPointerDown: (e: SyntheticEvent) => fromVisitor(e) && setPointerInside(true),
+    onMouseLeave: (e: SyntheticEvent) => fromVisitor(e) && setPointerInside(false),
+    onFocus: (e: FocusEvent) => setKeyboardInside(e.target.matches(":focus-visible")),
+    onBlur: (e: FocusEvent) => {
+      if (!rootRef.current?.contains(e.relatedTarget)) setKeyboardInside(false);
+    },
   };
-  return { rootRef, playing: inView && !reduced && !userInside, bind };
+  return { rootRef, playing: inView && !reduced && !pointerInside && !keyboardInside, bind };
 }
 
 export type Side = "generic" | "skill";
@@ -37,11 +45,15 @@ const FIRST_STEP_MS = 400;
 
 /** Loops `steps` while `playing`: each step fires its action, then waits its
  *  ms. Every script ends where it began, so the next pass starts clean.
- *  Pausing keeps the position, so the script resumes in place. */
-export function useLoop(playing: boolean, steps: Array<{ ms: number; run: () => void }>) {
+ *  Pausing keeps the position, so the script resumes in place; `reset` then
+ *  undoes whatever a step left mid-gesture (a button held down, a "Copied!"
+ *  waiting to revert), so a visitor taking over finds the example at rest. */
+export function useLoop(playing: boolean, steps: Array<{ ms: number; run: () => void }>, reset?: () => void) {
   const indexRef = useRef(0);
   const stepsRef = useRef(steps);
   stepsRef.current = steps;
+  const resetRef = useRef(reset);
+  resetRef.current = reset;
 
   useEffect(() => {
     if (!playing) return;
@@ -54,22 +66,25 @@ export function useLoop(playing: boolean, steps: Array<{ ms: number; run: () => 
       timer = setTimeout(tick, step.ms);
     };
     timer = setTimeout(tick, FIRST_STEP_MS);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      resetRef.current?.();
+    };
   }, [playing]);
 }
 
 /** The scripted pointer: an arrow whose tip sits at (x, y), shrinking on a
  *  click. Shared by every example so they all point the same way. */
-export function FakeCursor({
+function FakeCursor({
   x,
   y,
   scale,
   opacity,
 }: {
-  x: MotionValue<number> | number;
+  x: MotionValue<number>;
   y: MotionValue<number>;
   scale: MotionValue<number>;
-  opacity?: MotionValue<number>;
+  opacity: MotionValue<number>;
 }) {
   return (
     <motion.span
@@ -215,11 +230,17 @@ export function useScriptCursor(rootRef: RefObject<HTMLDivElement | null>, playi
   );
 }
 
+/** One scripted glide: to the target, then a rest of `restMs` on it before
+ *  the next step. */
+export function glideStep(cursor: Cursor, selector: string, index: number, restMs = HOVER_MS) {
+  return { ms: GLIDE_MS + restMs, run: () => cursor.goto(selector, index) };
+}
+
 /** Two steps for one scripted click: glide to the target and rest on it,
  *  then press it and run `act`, then wait `holdMs` before the next step. */
 export function clickStep(cursor: Cursor, selector: string, index: number, act: () => void, holdMs: number) {
   return [
-    { ms: GLIDE_MS + HOVER_MS, run: () => cursor.goto(selector, index) },
+    glideStep(cursor, selector, index),
     {
       ms: holdMs,
       run: () => {

@@ -1,17 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import {
-  AnimatePresence,
-  animate,
-  motion,
-  useMotionValue,
-  useMotionValueEvent,
-  type AnimationPlaybackControls,
-  type MotionValue,
-} from "framer-motion";
+import { useRef, useState, type RefObject } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Check } from "lucide-react";
-import { Compare, FakeCursor, usePlayback, type Side } from "./hero-shared";
+import {
+  Compare,
+  clickStep,
+  glideStep,
+  turns,
+  useLoop,
+  usePlayback,
+  useScriptCursor,
+  type Side,
+} from "./hero-shared";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { spring } from "@/registry/default/lib/springs";
 import { cn } from "@/registry/default/lib/utils";
@@ -27,9 +28,11 @@ import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 // an agent writes on its own: a per-row :hover that snaps on and off, a
 // selected background that jumps, and a bold label that pushes its count. Right is
 // what it writes with the skill: fluid hover, a selection that springs to the
-// picked row, and a weight change that moves nothing. One scripted cursor
-// plays the generic list, then the skill list, turn by turn; a real pointer
-// takes over while it is inside.
+// picked row, and a weight change that moves nothing. The scripted cursor
+// the other examples share plays the generic list, then the skill list, turn
+// by turn. It hovers like a real pointer, so the left list's :hover and the
+// right list's fluid hover both answer it; a real pointer takes over while
+// it is inside.
 // ---------------------------------------------------------------------------
 
 const ROWS = [
@@ -43,32 +46,18 @@ const ROWS = [
 /* Rows are h-9 (36px) stacked with no gap inside p-2 (8px), the same on
    both sides so the only difference is behavior. */
 const ROW_H = 36;
-const ROW_GAP = 0;
 const LIST_PAD = 8;
-const CURSOR_X = 150;
-const rowTop = (i: number) => LIST_PAD + i * (ROW_H + ROW_GAP);
-const rowCenter = (i: number) => rowTop(i) + ROW_H / 2;
+const rowTop = (i: number) => LIST_PAD + i * ROW_H;
 
 /** One turn: glide to a row, sometimes click it. The generic side plays it,
- *  then the skill side plays the same turn. Durations in seconds. */
-const TURN: Array<{ row: number; duration: number; click?: boolean }> = [
-  { row: 3, duration: 1.1, click: true },
-  { row: 0, duration: 0.9, click: true },
-  { row: 4, duration: 0.5 },
-  { row: 1, duration: 0.6, click: true },
+ *  then the skill side plays the same turn. */
+const TURN: Array<{ row: number; click?: boolean }> = [
+  { row: 3, click: true },
+  { row: 0, click: true },
+  { row: 4 },
+  { row: 1, click: true },
 ];
 const HOLD_MS = 600;
-/** Where the cursor enters each turn: just inside the top padding. */
-const CURSOR_START = 2;
-
-/** Which row a y (in list coordinates) is inside, or null in a gap or the
- *  padding. This is what plain :hover reports. */
-function rowUnder(y: number): number | null {
-  if (y < LIST_PAD) return null;
-  const i = Math.floor((y - LIST_PAD) / (ROW_H + ROW_GAP));
-  const within = y - rowTop(i) < ROW_H;
-  return i < ROWS.length && within ? i : null;
-}
 
 const rowBase =
   "relative z-10 flex h-9 w-full shrink-0 items-center gap-2 px-3 text-left text-body text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]";
@@ -79,17 +68,7 @@ function Count({ n }: { n: number }) {
 
 /** Generic: :hover per row with no transition, font-weight bold that
  *  widens the label, and a selected background that jumps. */
-function GenericList({
-  fakeHover,
-  selected,
-  onSelect,
-  cursor,
-}: {
-  fakeHover: number | null;
-  selected: number;
-  onSelect: (i: number) => void;
-  cursor: { y: MotionValue<number>; scale: MotionValue<number> } | null;
-}) {
+function GenericList({ selected, onSelect }: { selected: number; onSelect: (i: number) => void }) {
   const shape = useShape();
   return (
     <div className="relative flex w-full flex-col p-2">
@@ -101,10 +80,9 @@ function GenericList({
           className={cn(
             rowBase,
             // Hover louder than the selection: the cursor, not the pick,
-            // is what the eye lands on.
-            "hover:bg-selected",
+            // is what the eye lands on. Scripted hover counts as hover.
+            "[&:is(:hover,[data-script-hover])]:bg-selected dark:[&:is(:hover,[data-script-hover])]:bg-selected",
             selected === i && "bg-selected/50 font-bold dark:bg-accent/40",
-            fakeHover === i && "bg-selected dark:bg-selected",
             shape.item
           )}
         >
@@ -114,7 +92,6 @@ function GenericList({
           {selected === i && <Check className="ml-auto size-4 shrink-0" strokeWidth={2} />}
         </button>
       ))}
-      {cursor && <FakeCursor x={CURSOR_X} {...cursor} />}
     </div>
   );
 }
@@ -195,13 +172,11 @@ function SkillList({
   hover,
   selected,
   onSelect,
-  cursor,
 }: {
   containerRef: RefObject<HTMLDivElement | null>;
   hover: ReturnType<typeof useFluidHover>;
   selected: number;
   onSelect: (i: number) => void;
-  cursor: { y: MotionValue<number>; scale: MotionValue<number> } | null;
 }) {
   const shape = useShape();
   return (
@@ -228,119 +203,40 @@ function SkillList({
           count={count}
         />
       ))}
-      {cursor && <FakeCursor x={CURSOR_X} {...cursor} />}
     </div>
   );
 }
 
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export function MenuExample() {
   const skillRef = useRef<HTMLDivElement>(null);
   const hover = useFluidHover(skillRef);
-  const { rootRef, playing: scripted, bind } = usePlayback();
-
-  const [genericSelected, setGenericSelected] = useState(0);
-  const [skillSelected, setSkillSelected] = useState(0);
-  const [fakeHover, setFakeHover] = useState<number | null>(null);
-
-  const y = useMotionValue(CURSOR_START);
-  const scale = useMotionValue(1);
-  const stepRef = useRef(0);
-  const [side, setSide] = useState<Side>("generic");
-  const sideRef = useRef<Side>("generic");
-
-  // The fluid list sees the cursor enter at the start of its turn and leave
-  // at the end, like a real pointer, so its highlight fades in fresh.
-  // Handlers are a fresh object each render; the script reads them through a
-  // ref so a re-render never restarts it mid-glide.
-  const { handlers } = hover;
-  const handlersRef = useRef(handlers);
-  handlersRef.current = handlers;
-  const handoff = useCallback((next: Side) => {
-    if (sideRef.current === "skill" && next !== "skill") handlersRef.current.onMouseLeave();
-    if (next === "skill") handlersRef.current.onMouseEnter();
-    sideRef.current = next;
-    setSide(next);
-    setFakeHover(null);
-  }, []);
-
-  // The script: an async loop over TURN, alternating sides, that resumes at
-  // the step it left.
-  useEffect(() => {
-    if (!scripted) return;
-    let cancelled = false;
-    let current: AnimationPlaybackControls | null = null;
-    handoff(sideRef.current);
-    (async () => {
-      while (!cancelled) {
-        const step = TURN[stepRef.current];
-        current = animate(y, rowCenter(step.row), { duration: step.duration, ease: "easeInOut" });
-        await current;
-        if (cancelled) return;
-        if (step.click) {
-          current = animate(scale, [1, 0.8, 1], { duration: 0.2 });
-          (sideRef.current === "generic" ? setGenericSelected : setSkillSelected)(step.row);
-          await current;
-        }
-        await wait(HOLD_MS);
-        if (cancelled) return;
-        stepRef.current = (stepRef.current + 1) % TURN.length;
-        if (stepRef.current === 0) {
-          // A turn played: the other side takes the next one, so after the
-          // skill's turn the generic side starts over.
-          handoff(sideRef.current === "skill" ? "generic" : "skill");
-          y.set(CURSOR_START);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-      current?.stop();
-      if (sideRef.current === "skill") handlersRef.current.onMouseLeave();
-      setFakeHover(null);
-    };
-  }, [scripted, y, scale, handoff]);
-
-  // Every frame of the cursor goes to the side whose turn it is: the generic
-  // list gets what :hover would say, the fluid list a real mouse move.
-  useMotionValueEvent(y, "change", (value) => {
-    if (!scripted) return;
-    if (sideRef.current === "generic") {
-      setFakeHover(rowUnder(value));
-      return;
-    }
-    const box = skillRef.current?.getBoundingClientRect();
-    if (!box) return;
-    handlers.onMouseMove({ clientX: box.left + CURSOR_X, clientY: box.top + value } as React.MouseEvent);
-  });
-
-  const cursor = scripted ? { y, scale } : null;
-  const active = scripted ? side : null;
+  const { rootRef, playing, bind } = usePlayback();
+  const cursor = useScriptCursor(rootRef, playing);
+  const [generic, setGeneric] = useState(0);
+  const [skill, setSkill] = useState(0);
+  const [active, setActive] = useState<Side | null>(null);
+  const select = (side: Side) => (side === "generic" ? setGeneric : setSkill);
+  const row = (side: Side) => `[data-side="${side}"] button`;
+  useLoop(
+    playing,
+    turns(setActive, (side) =>
+      TURN.flatMap(({ row: i, click }) =>
+        click
+          ? clickStep(cursor, row(side), i, () => select(side)(i), HOLD_MS)
+          : [glideStep(cursor, row(side), i, HOLD_MS)]
+      )
+    )
+  );
 
   return (
     <Compare
       rootRef={rootRef}
       bind={bind}
       bare
-      active={active}
-      generic={
-        <GenericList
-          fakeHover={scripted ? fakeHover : null}
-          selected={genericSelected}
-          onSelect={setGenericSelected}
-          cursor={active === "generic" ? cursor : null}
-        />
-      }
-      skill={
-        <SkillList
-          containerRef={skillRef}
-          hover={hover}
-          selected={skillSelected}
-          onSelect={setSkillSelected}
-          cursor={active === "skill" ? cursor : null}
-        />
-      }
+      active={playing ? active : null}
+      cursor={playing ? cursor : null}
+      generic={<GenericList selected={generic} onSelect={setGeneric} />}
+      skill={<SkillList containerRef={skillRef} hover={hover} selected={skill} onSelect={setSkill} />}
     />
   );
 }

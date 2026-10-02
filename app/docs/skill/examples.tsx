@@ -127,20 +127,30 @@ function GenericCopy({ copied, onCopy }: { copied: boolean; onCopy: () => void }
 }
 
 /** Clicks the real InputCopy so it plays its own feedback, without touching
- *  the visitor's clipboard: the component reads `writeText` synchronously
- *  inside the click, so a no-op stands in for exactly that long. */
-function clickWithoutClipboard(button: HTMLElement | null) {
+ *  the visitor's clipboard. A stand-in `writeText` swallows the one write of
+ *  `value` this click makes, whenever InputCopy gets to it, and passes any
+ *  other write through; it steps aside after that write, or after 1s. With
+ *  no async Clipboard API, InputCopy would fall back to execCommand, which
+ *  nothing can intercept, so the click is skipped. */
+function clickWithoutClipboard(button: HTMLElement | null, value: string) {
   const clipboard = navigator.clipboard;
   if (!button || !clipboard) return;
   const own = Object.prototype.hasOwnProperty.call(clipboard, "writeText");
   const writeText = clipboard.writeText;
-  clipboard.writeText = () => Promise.resolve();
-  try {
-    button.click();
-  } finally {
+  let restored = false;
+  const restore = () => {
+    if (restored) return;
+    restored = true;
     if (own) clipboard.writeText = writeText;
     else Reflect.deleteProperty(clipboard, "writeText");
-  }
+  };
+  clipboard.writeText = (text: string) => {
+    if (text !== value) return writeText.call(clipboard, text);
+    restore();
+    return Promise.resolve();
+  };
+  window.setTimeout(restore, 1000);
+  button.click();
 }
 
 export function CopyExample() {
@@ -159,9 +169,11 @@ export function CopyExample() {
           ]
         : // Click the command itself: the whole field copies.
           clickStep(cursor, '[data-side="skill"] mark', 0, () => {
-            clickWithoutClipboard(rootRef.current?.querySelector<HTMLElement>('[data-side="skill"] button') ?? null);
+            clickWithoutClipboard(rootRef.current?.querySelector<HTMLElement>('[data-side="skill"] button') ?? null, COMMAND);
           }, 2300)
-    )
+    ),
+    // InputCopy reverts on its own timer; the generic "Copied!" waits on the script.
+    () => setGeneric(false)
   );
 
   return (
@@ -296,7 +308,12 @@ export function PressExample() {
       { ms: 400, run: () => set(side)(null) },
       ...clickStep(cursor, target(side), 1, () => set(side)(1), 260),
       { ms: 800, run: () => set(side)(null) },
-    ])
+    ]),
+    // Never leave a button held down for the visitor taking over.
+    () => {
+      setGeneric(null);
+      setSkill(null);
+    }
   );
 
   return (

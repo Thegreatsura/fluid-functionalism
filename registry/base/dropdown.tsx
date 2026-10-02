@@ -403,11 +403,10 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
     const {
       host: searchHost,
       hasSearch,
+      searchTakesFocus,
       searchMounted,
       onKeyDownCapture: redirectTypingToSearch,
-      isSearchField,
-      highlightFirst,
-    } = useDropdownSearchHost(open, { containerRef, setActiveIndex });
+    } = useDropdownSearchHost(open);
 
     // Open ready to act: focus the first enabled row (a mounted search field
     // takes focus itself instead). A frame after the primitive's own open
@@ -456,14 +455,25 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
     const multiple = checkedIndices != null;
     const checkedRect =
       !multiple && checkedIndex != null ? itemRects[checkedIndex] : null;
+    // What lights the highlight: the open itself (its first-row focus), the
+    // pointer, or the keyboard. A highlight that appears from nothing fades
+    // in at `from` and glides to its row. That suits the pointer entering the
+    // list (it rises from the checked row toward the cursor), not a row lit
+    // by the open or by arrowing in from the search field: those would slide
+    // over from the checked row, so they fade in where they are.
+    const litByRef = useRef<"open" | "pointer" | "keyboard">("open");
+    useEffect(() => {
+      if (open) litByRef.current = "open";
+    }, [open]);
     // Multiple: one merged block per contiguous run of checked rows.
     const runs = useSelectionRuns(checkedIndices ?? []);
     const blocks = useMergeSplitBlocks(runs, open ? itemRects : [], shape.bgRadius);
     // Inside the popup, Base UI's Menu.Item / Menu.RadioItem own the role,
     // aria-checked, tabIndex, roving highlight, typeahead, and Enter/Space/
-    // click activation (activation synthesizes a click, so the row div's
-    // onClick also fires for keyboard). The render div carries the Fluid
-    // Functionalism visuals and the fluid-hover registration.
+    // click activation. The row's handler goes on the primitive as onClick:
+    // Enter/Space call that prop directly and dispatch no DOM click, so an
+    // onClick on the render div would only hear the mouse. The render div
+    // carries the Fluid Functionalism visuals and the fluid-hover registration.
     const renderMenuItem = useCallback(
       ({
         radio,
@@ -473,17 +483,19 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
         disabled,
         label,
         closeOnClick,
+        onActivate,
         element,
         children,
       }: MenuItemRenderOptions) =>
         checkbox ? (
-          // The row's own onClick toggles the consumer state; the primitive
-          // only owns the role, aria-checked, and keyboard activation.
+          // onActivate toggles the consumer state; the primitive only owns
+          // the role, aria-checked, and keyboard activation.
           <Menu.CheckboxItem
             checked={!!checked}
             disabled={disabled}
             label={label}
             closeOnClick={closeOnClick}
+            onClick={onActivate}
             render={element}
           >
             {children}
@@ -494,6 +506,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
             disabled={disabled}
             label={label}
             closeOnClick={closeOnClick}
+            onClick={onActivate}
             render={element}
           >
             {children}
@@ -503,6 +516,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
             disabled={disabled}
             label={label}
             closeOnClick={closeOnClick}
+            onClick={onActivate}
             render={element}
           >
             {children}
@@ -557,16 +571,20 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                     ref={ref}
                   />
                 }
-                onKeyDownCapture={redirectTypingToSearch}
-                onMouseEnter={handlers.onMouseEnter}
-                onMouseMove={handlers.onMouseMove}
-                onClick={handlers.onClick}
-                onMouseLeave={() => {
-                  handlers.onMouseLeave();
-                  // The pointer's session is over; a focused search field
-                  // gets its first-row highlight back.
-                  if (isSearchField(document.activeElement)) highlightFirst();
+                onKeyDownCapture={(e) => {
+                  litByRef.current = "keyboard";
+                  redirectTypingToSearch(e);
                 }}
+                onMouseEnter={() => {
+                  litByRef.current = "pointer";
+                  handlers.onMouseEnter();
+                }}
+                onMouseMove={(e) => {
+                  litByRef.current = "pointer";
+                  handlers.onMouseMove(e);
+                }}
+                onClick={handlers.onClick}
+                onMouseLeave={handlers.onMouseLeave}
                 onFocus={(e) => {
                   const indexAttr = (e.target as HTMLElement)
                     .closest("[data-fluid-hover-index]")
@@ -574,15 +592,17 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                   // Keyboard navigation moves the hover background only — no
                   // ring: in a menu the highlighted row is the focus indicator.
                   if (indexAttr != null) {
+                    // With an autofocusing search field, the primitive's open
+                    // autofocus lands on the first row a frame before the
+                    // field takes over: that row stays unlit.
+                    if (litByRef.current === "open" && searchTakesFocus()) return;
                     setActiveIndex(Number(indexAttr));
-                  } else if (isSearchField(e.target)) {
-                    // The search field: the first row (what Enter picks)
-                    // carries the highlight while it has focus.
-                    highlightFirst();
                   } else if (e.target !== e.currentTarget) {
-                    // Focus moved to some other non-row inside the popup: no
-                    // row is highlighted any more. The popup focusing itself
-                    // (pointer leaving a row) doesn't count.
+                    // Focus moved to a non-row inside the popup, such as the
+                    // search field: no row is highlighted any more. The field
+                    // is a stop like a row, it just draws no background. The
+                    // popup focusing itself (pointer leaving a row) doesn't
+                    // count.
                     setActiveIndex(null);
                   }
                 }}
@@ -635,7 +655,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                 {/* Hover background */}
                 <FluidHoverHighlight
                   hover={hover}
-                  from={checkedRect}
+                  from={litByRef.current === "pointer" ? checkedRect : null}
                   className={shape.bg}
                 />
 

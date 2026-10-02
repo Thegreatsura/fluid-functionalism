@@ -114,7 +114,8 @@ function buildPlaygroundCode(o: {
       ? ""
       : "const rows = ITEMS;\n";
   const indent = (s: string, n: number) => " ".repeat(n) + s;
-  // The create row is last, so Enter picks a real match while one exists.
+  // The create row is last, after the real matches, so ↑ from the search
+  // field reaches it in one press.
   const createRow = o.creatable
     ? [
         "{canCreate && (",
@@ -236,8 +237,8 @@ export function DropdownPlayground({ children }: PlaygroundProps) {
   const checkedIndex = rows.findIndex((item) => item.label === selected);
   const checkedIndices = rows.flatMap((item, i) => (picked.includes(item.label) ? [i] : []));
 
-  // A create row while the query matches no label exactly. Last, so Enter
-  // in the field picks a real match while one exists.
+  // A create row while the query matches no label exactly. Last, after the
+  // real matches, so ↑ from the search field reaches it in one press.
   const q = query.trim();
   const canCreate =
     d.creatable && q !== "" && !items.some((item) => item.label.toLowerCase() === q.toLowerCase());

@@ -95,8 +95,7 @@ export function PlaygroundMenu({
   // height, because the ScrollArea viewport is `size-full` (height: 100%) and
   // would resolve to auto against a max-height-only parent, clipping the
   // overflow instead of scrolling it. The scroll-fade mask follows the same
-  // measurement: its static fallback would otherwise dim the first and last
-  // row of a panel that fits fine.
+  // measurement, so a panel that fits never carries one.
   const contentRef = useRef<HTMLDivElement>(null);
   const [contentHeight, setContentHeight] = useState<number | null>(null);
   useEffect(() => {

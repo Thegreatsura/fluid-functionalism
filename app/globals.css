@@ -632,9 +632,9 @@ html.transitioning *::after {
    (https://ui.shadcn.com/docs/utils/scroll-fade). A mask-image dissolves the
    content toward the edges that have more to scroll. CSS scroll-driven
    animations make it scroll-aware: the true start/end edge stays crisp until
-   you scroll past it. Browsers without scroll-driven animations fall back to a
-   static fade on both edges. Apply to a scroll container, or to a ScrollArea
-   via `viewportClassName`. */
+   you scroll past it. Browsers without scroll-driven animations (Firefox) get
+   no fade: a static one would sit on edges with nothing past them. Apply to a
+   scroll container, or to a ScrollArea via `viewportClassName`. */
 
 @property --sf-start {
   syntax: "<number>";
@@ -669,47 +669,13 @@ html.transitioning *::after {
   --scroll-fade-size: 48px;
 }
 
-/* Static fallback: fade both edges. */
-.scroll-fade {
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    #000 var(--scroll-fade-size),
-    #000 calc(100% - var(--scroll-fade-size)),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    #000 var(--scroll-fade-size),
-    #000 calc(100% - var(--scroll-fade-size)),
-    transparent 100%
-  );
-}
-.scroll-fade-x {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 var(--scroll-fade-size),
-    #000 calc(100% - var(--scroll-fade-size)),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 var(--scroll-fade-size),
-    #000 calc(100% - var(--scroll-fade-size)),
-    transparent 100%
-  );
-}
-
 /* ── scroll-divider — a hairline marking a scroll edge ──────────────────────
    Pairs with .scroll-fade on a descendant viewport: where the fade dissolves
    content, this draws the line that says "the region continues". The line
    can't live inside the scroller — the fade's own mask would erase it at
    exactly the edge it belongs on — so it rides the parent's pseudo-elements
    and borrows the scroller's timeline by name. Browsers without scroll-driven
-   timelines simply get the fade, as before. */
+   timelines get neither the line nor the fade. */
 @keyframes sf-divider-start {
   from {
     opacity: 0;

@@ -50,6 +50,11 @@ export interface MenuItemRenderOptions {
   disabled?: boolean;
   label: string;
   closeOnClick: boolean;
+  /** The row's activation (consumer onClick, then onSelect). The dropdown
+   *  hands it to its primitive item as `onClick`, never to `element`: Base
+   *  UI's Enter/Space runs the item's own onClick prop without dispatching a
+   *  DOM click, so a handler on the rendered div would only hear the mouse. */
+  onActivate?: (e: React.MouseEvent<HTMLDivElement>) => void;
   element: ReactElement;
   children: ReactNode;
 }
@@ -247,10 +252,10 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
       // Inside DropdownContent, the menu-item primitive (supplied by the
       // surrounding DropdownContent through context) owns the role,
       // aria-checked, tabIndex, roving highlight, typeahead, and Enter/Space/
-      // click activation (activation synthesizes a click, so handleActivate
-      // also fires for keyboard). The styled div carries the Fluid
-      // Functionalism visuals and the fluid-hover registration; MenuItem
-      // itself imports no primitive.
+      // click activation. handleActivate rides on the primitive as onActivate,
+      // not on the div: that is the handler keyboard activation calls. The
+      // styled div carries the Fluid Functionalism visuals and the
+      // fluid-hover registration; MenuItem itself imports no primitive.
       return renderMenuItem({
         radio: !isCheckbox && typeof checked === "boolean",
         checkbox: isCheckbox,
@@ -260,12 +265,12 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
         label,
         // Toggling one of several stays open; picking one of one closes.
         closeOnClick: closeOnClick ?? !multiple,
+        onActivate: handleActivate,
         element: (
           <div
             ref={mergeRef}
             data-fluid-hover-index={index}
             aria-label={label}
-            onClick={handleActivate}
             className={itemClassName}
             {...props}
           />

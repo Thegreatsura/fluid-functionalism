@@ -500,7 +500,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
     const blocks = useMergeSplitBlocks(runs, open ? itemRects : [], shape.bgRadius);
     // Inside the popup, Radix's Item / RadioItem own the role, aria-checked,
     // tabIndex, roving highlight, typeahead, and Enter/Space/click activation
-    // (keyboard activation synthesizes a click, so the row div's onClick also
+    // (keyboard activation synthesizes a click, so onActivate on the item also
     // fires for keyboard). The styled div composes via asChild, with the row
     // content cloned back in as its children.
     const renderMenuItem = useCallback(
@@ -512,6 +512,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
         disabled,
         label,
         closeOnClick,
+        onActivate,
         element,
         children,
       }: MenuItemRenderOptions) => {
@@ -519,6 +520,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
           asChild: true,
           disabled,
           textValue: label,
+          onClick: onActivate,
           // Radix closes the menu on select by default; preventing the select
           // event keeps it open — Base UI's closeOnClick={false} parity.
           onSelect: closeOnClick
@@ -527,8 +529,8 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
         };
         const item = cloneElement(element, {}, children);
         if (checkbox) {
-          // The row's own onClick toggles the consumer state; the primitive
-          // only owns the role, aria-checked, and keyboard activation.
+          // onActivate toggles the consumer state; the primitive only owns
+          // the role, aria-checked, and keyboard activation.
           return (
             <DropdownMenuPrimitive.CheckboxItem checked={!!checked} {...commonProps}>
               {item}

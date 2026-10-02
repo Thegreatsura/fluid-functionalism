@@ -461,9 +461,10 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
     const blocks = useMergeSplitBlocks(runs, open ? itemRects : [], shape.bgRadius);
     // Inside the popup, Base UI's Menu.Item / Menu.RadioItem own the role,
     // aria-checked, tabIndex, roving highlight, typeahead, and Enter/Space/
-    // click activation (activation synthesizes a click, so the row div's
-    // onClick also fires for keyboard). The render div carries the Fluid
-    // Functionalism visuals and the fluid-hover registration.
+    // click activation. The row's handler goes on the primitive as onClick:
+    // Enter/Space call that prop directly and dispatch no DOM click, so an
+    // onClick on the render div would only hear the mouse. The render div
+    // carries the Fluid Functionalism visuals and the fluid-hover registration.
     const renderMenuItem = useCallback(
       ({
         radio,
@@ -473,17 +474,19 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
         disabled,
         label,
         closeOnClick,
+        onActivate,
         element,
         children,
       }: MenuItemRenderOptions) =>
         checkbox ? (
-          // The row's own onClick toggles the consumer state; the primitive
-          // only owns the role, aria-checked, and keyboard activation.
+          // onActivate toggles the consumer state; the primitive only owns
+          // the role, aria-checked, and keyboard activation.
           <Menu.CheckboxItem
             checked={!!checked}
             disabled={disabled}
             label={label}
             closeOnClick={closeOnClick}
+            onClick={onActivate}
             render={element}
           >
             {children}
@@ -494,6 +497,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
             disabled={disabled}
             label={label}
             closeOnClick={closeOnClick}
+            onClick={onActivate}
             render={element}
           >
             {children}
@@ -503,6 +507,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
             disabled={disabled}
             label={label}
             closeOnClick={closeOnClick}
+            onClick={onActivate}
             render={element}
           >
             {children}

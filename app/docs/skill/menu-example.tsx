@@ -11,8 +11,7 @@ import {
   type MotionValue,
 } from "framer-motion";
 import { Check } from "lucide-react";
-import { Compare, useCycle, usePlayback, type Side } from "./hero-shared";
-import { useSpeedRef } from "./slow-motion";
+import { Compare, FakeCursor, usePlayback, type Side } from "./hero-shared";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { spring } from "@/registry/default/lib/springs";
 import { cn } from "@/registry/default/lib/utils";
@@ -24,7 +23,7 @@ import {
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
 // ---------------------------------------------------------------------------
-// Menu example for the /docs/skill hero: the same menu twice. Left is what
+// Menu example for /docs/skill: the same menu twice. Left is what
 // an agent writes on its own: a per-row :hover that snaps on and off, a
 // selected background that jumps, and a bold label that pushes its count. Right is
 // what it writes with the skill: fluid hover, a selection that springs to the
@@ -59,9 +58,6 @@ const TURN: Array<{ row: number; duration: number; click?: boolean }> = [
   { row: 1, duration: 0.6, click: true },
 ];
 const HOLD_MS = 600;
-/** Both turns at 1x: each step's glide, its click, and its hold. */
-const TOTAL_MS =
-  2 * TURN.reduce((sum, step) => sum + step.duration * 1000 + (step.click ? 200 : 0) + HOLD_MS, 0);
 /** Where the cursor enters each turn: just inside the top padding. */
 const CURSOR_START = 2;
 
@@ -72,26 +68,6 @@ function rowUnder(y: number): number | null {
   const i = Math.floor((y - LIST_PAD) / (ROW_H + ROW_GAP));
   const within = y - rowTop(i) < ROW_H;
   return i < ROWS.length && within ? i : null;
-}
-
-function FakeCursor({ y, scale }: { y: MotionValue<number>; scale: MotionValue<number> }) {
-  return (
-    <motion.span
-      aria-hidden
-      // The arrow's tip sits 3px in from the SVG's corner.
-      className="pointer-events-none absolute -left-[3px] -top-[3px] z-30 origin-top-left"
-      style={{ x: CURSOR_X, y, scale }}
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24">
-        <path
-          d="m4 4 7.07 17 2.51-7.39L21 11.07z"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-          className="fill-foreground stroke-background"
-        />
-      </svg>
-    </motion.span>
-  );
 }
 
 const rowBase =
@@ -138,7 +114,7 @@ function GenericList({
           {selected === i && <Check className="ml-auto size-4 shrink-0" strokeWidth={2} />}
         </button>
       ))}
-      {cursor && <FakeCursor {...cursor} />}
+      {cursor && <FakeCursor x={CURSOR_X} {...cursor} />}
     </div>
   );
 }
@@ -252,7 +228,7 @@ function SkillList({
           count={count}
         />
       ))}
-      {cursor && <FakeCursor {...cursor} />}
+      {cursor && <FakeCursor x={CURSOR_X} {...cursor} />}
     </div>
   );
 }
@@ -271,8 +247,6 @@ export function MenuExample() {
   const y = useMotionValue(CURSOR_START);
   const scale = useMotionValue(1);
   const stepRef = useRef(0);
-  const speedRef = useSpeedRef();
-  const cycleRef = useCycle(TOTAL_MS, scripted);
   const [side, setSide] = useState<Side>("generic");
   const sideRef = useRef<Side>("generic");
 
@@ -292,8 +266,7 @@ export function MenuExample() {
   }, []);
 
   // The script: an async loop over TURN, alternating sides, that resumes at
-  // the step it left. Holds stretch with the hero's slow-motion rate; the
-  // glides slow on their own because they run on framer's clock.
+  // the step it left.
   useEffect(() => {
     if (!scripted) return;
     let cancelled = false;
@@ -310,16 +283,13 @@ export function MenuExample() {
           (sideRef.current === "generic" ? setGenericSelected : setSkillSelected)(step.row);
           await current;
         }
-        await wait(HOLD_MS / speedRef.current);
+        await wait(HOLD_MS);
         if (cancelled) return;
         stepRef.current = (stepRef.current + 1) % TURN.length;
         if (stepRef.current === 0) {
-          // Both turns played: hand over to the next example.
-          if (sideRef.current === "skill") {
-            cycleRef.current.done();
-            return;
-          }
-          handoff("skill");
+          // A turn played: the other side takes the next one, so after the
+          // skill's turn the generic side starts over.
+          handoff(sideRef.current === "skill" ? "generic" : "skill");
           y.set(CURSOR_START);
         }
       }
@@ -330,7 +300,7 @@ export function MenuExample() {
       if (sideRef.current === "skill") handlersRef.current.onMouseLeave();
       setFakeHover(null);
     };
-  }, [scripted, y, scale, speedRef, cycleRef, handoff]);
+  }, [scripted, y, scale, handoff]);
 
   // Every frame of the cursor goes to the side whose turn it is: the generic
   // list gets what :hover would say, the fluid list a real mouse move.

@@ -27,6 +27,11 @@ interface DocPageProps {
    *  description of what the command actually adds — for system pages,
    *  where "which primitive flavor" is the wrong question. */
   installNote?: string;
+  /** Replaces the generated install brief, for a page whose install is not a
+   *  registry item (the skill page installs an agent skill). */
+  installPrompt?: string;
+  /** Runs after the install prompt is copied, e.g. for analytics. */
+  onInstallCopy?: () => void;
   children: ReactNode;
 }
 
@@ -37,6 +42,8 @@ export function DocPage({
   installSlug,
   showInstall = true,
   installNote,
+  installPrompt,
+  onInstallCopy,
   children,
 }: DocPageProps) {
   const ArrowRight = useIcon("arrow-right");
@@ -131,7 +138,8 @@ export function DocPage({
             )}
           </div>
           <CopyPromptButton
-            prompt={buildInstallPrompt({ slug, installSlug, base })}
+            prompt={installPrompt ?? buildInstallPrompt({ slug, installSlug, base })}
+            onCopy={onInstallCopy}
           />
         </div>
       )}

@@ -571,9 +571,9 @@ BannerDescription.displayName = "BannerDescription";
 // ── BannerActions ────────────────────────────────────────
 // Trailing on the title row by default (pulled into the padding so a 28px
 // button doesn't grow a one-line banner). Under the text, aligned with the
-// title, when the banner has a description or is narrower than 24rem. Each
-// BannerAction places itself by variant, so the order flips with the layout
-// (see BANNER_ACTION_ORDER).
+// title and 8px below it (6px compact), when the banner has a description or
+// is narrower than 24rem. Each BannerAction places itself by variant, so the
+// order flips with the layout (see BANNER_ACTION_ORDER).
 
 const BannerActions = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => {
@@ -588,11 +588,11 @@ const BannerActions = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>
           // With a description
           "group-has-data-[slot=banner-description]/banner:col-start-2 group-has-data-[slot=banner-description]/banner:row-start-3 group-has-data-[slot=banner-description]/banner:my-0 group-has-data-[slot=banner-description]/banner:ml-0",
           compact
-            ? "group-has-data-[slot=banner-description]/banner:mt-2.5"
-            : "group-has-data-[slot=banner-description]/banner:mt-3",
+            ? "group-has-data-[slot=banner-description]/banner:mt-1.5"
+            : "group-has-data-[slot=banner-description]/banner:mt-2",
           // Narrow banner
           "@max-sm/banner:col-start-2 @max-sm/banner:row-start-3 @max-sm/banner:my-0 @max-sm/banner:ml-0",
-          compact ? "@max-sm/banner:mt-2.5" : "@max-sm/banner:mt-3",
+          compact ? "@max-sm/banner:mt-1.5" : "@max-sm/banner:mt-2",
           className
         )}
         {...props}

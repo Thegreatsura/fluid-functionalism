@@ -12,7 +12,6 @@ import {
   type HTMLAttributes,
   type InputHTMLAttributes,
   type KeyboardEvent as ReactKeyboardEvent,
-  type RefObject,
 } from "react";
 import { cn } from "@/lib/utils";
 import { useIcon } from "@/lib/icon-context";
@@ -38,9 +37,8 @@ import { SURFACE_BG } from "@/lib/surface-classes";
 // Arrow keys leave the field for the list (first / last row) and arrowing
 // off either end of the list comes back to it, so the field is one stop in
 // the ring of rows. Enter picks the first row, Escape closes the menu as
-// usual. While the field has focus
-// the first row carries the hover background, so what Enter will pick is
-// always in view; it follows the query as the rows re-filter.
+// usual. While the field has focus no row is highlighted: the field is the
+// active stop, like a row, it just draws no background of its own.
 // ---------------------------------------------------------------------------
 
 interface SearchHandle {
@@ -54,8 +52,6 @@ interface DropdownSearchHostValue {
   /** Whether the popup is open. Popups stay mounted through their exit
    *  animation, so the field watches this rather than its own mount. */
   open: boolean;
-  /** Move the hover background to the first enabled row (what Enter picks). */
-  highlightFirst: () => void;
 }
 
 export const DropdownSearchHostContext =
@@ -88,25 +84,13 @@ function scrollToTop(row: HTMLElement) {
   }
 }
 
-interface DropdownSearchHostOptions {
-  /** The rows' container: where the first enabled row is looked up. */
-  containerRef: RefObject<HTMLElement | null>;
-  /** The popup's fluid-hover setter, for the first-row highlight. */
-  setActiveIndex: (index: number | null) => void;
-}
-
 /**
  * Hosts a DropdownSearch inside a popup. Returns the context value to
- * provide, a capture-phase keydown handler for the popup element,
+ * provide, a capture-phase keydown handler for the popup element, and
  * `hasSearch()` / `searchMounted` for decisions that depend on a field
- * being present, and the first-row highlight the field keeps while it has
- * focus (`isSearchField` / `highlightFirst`, for the popup's focus and
- * mouse-leave handlers).
+ * being present.
  */
-export function useDropdownSearchHost(
-  open: boolean,
-  { containerRef, setActiveIndex }: DropdownSearchHostOptions
-) {
+export function useDropdownSearchHost(open: boolean) {
   const handleRef = useRef<SearchHandle | null>(null);
   // Reactive twin of the ref, for render-time decisions (the popup drops its
   // scroll fade while a field is pinned at the top).
@@ -123,26 +107,7 @@ export function useDropdownSearchHost(
     };
   }, []);
 
-  // The row Enter will pick carries the hover background while the field
-  // has focus. Rows re-index from 0 on every filter, so this is looked up
-  // in the DOM each time rather than remembered.
-  const highlightFirst = useCallback(() => {
-    const first = containerRef.current?.querySelector<HTMLElement>(ROW_SELECTOR);
-    const index = first?.getAttribute("data-fluid-hover-index");
-    setActiveIndex(index != null ? Number(index) : null);
-  }, [containerRef, setActiveIndex]);
-
-  /** Whether `target` is the mounted search field. */
-  const isSearchField = useCallback(
-    (target: EventTarget | null) =>
-      target !== null && target === handleRef.current?.input,
-    []
-  );
-
-  const host = useMemo(
-    () => ({ register, open, highlightFirst }),
-    [register, open, highlightFirst]
-  );
+  const host = useMemo(() => ({ register, open }), [register, open]);
 
   // Typing on a focused row: redirect the character (or Backspace) into the
   // field. Space is left alone: on a row it activates the item, which is
@@ -161,9 +126,9 @@ export function useDropdownSearchHost(
         e.preventDefault();
         e.stopPropagation();
         handle.input.focus();
-        // Back at the field, the first row carries the highlight (what Enter
-        // picks). Coming from the bottom of a long list it is scrolled out of
-        // sight, so return the list to its top.
+        // The field sits before the first row, so coming back to it from the
+        // bottom of a long list returns the list to its top: the next ↓ and
+        // Enter both act on the first row, now in view.
         scrollToTop(rows[0]);
       }
     } else if (e.key.length === 1 && e.key !== " ") {
@@ -187,8 +152,6 @@ export function useDropdownSearchHost(
     hasSearch,
     searchMounted,
     onKeyDownCapture,
-    isSearchField,
-    highlightFirst,
   };
 }
 
@@ -279,15 +242,6 @@ const DropdownSearch = forwardRef<HTMLInputElement, DropdownSearchProps>(
         if (inner !== undefined) cancelAnimationFrame(inner);
       };
     }, [open, autoFocus]);
-
-    // The rows re-filter in the same commit as the query, so after it the
-    // first enabled row is whatever Enter would pick now: highlight it while
-    // the field has focus. (Focus arriving at the field is the popup's
-    // onFocus; this covers the query moving under a focused field.)
-    useEffect(() => {
-      if (!host || document.activeElement !== inputRef.current) return;
-      host.highlightFirst();
-    }, [host, value]);
 
     // Unmount (the popup finished closing): reset the query so the next
     // open shows the full list.

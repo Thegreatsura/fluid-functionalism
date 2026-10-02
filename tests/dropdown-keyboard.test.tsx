@@ -7,7 +7,8 @@
  * clicks the row on Enter/Space, so its keyboard path already worked.
  *
  * With a DropdownSearch, the field is one stop in the ring of rows: arrowing
- * off the first or last row returns to it, as its own ↓ / ↑ leave it.
+ * off the first or last row returns to it, as its own ↓ / ↑ leave it, and
+ * while it has focus no row is highlighted.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
@@ -128,8 +129,30 @@ describe.each(flavors)("%s dropdown search", (_name, F) => {
     const view = render(<Searchable />);
     const field = view.getByRole("searchbox");
     const row = (name: string) => view.getByRole("menuitem", { name });
-    return { field, row };
+    const lit = () =>
+      view.baseElement.querySelector<HTMLElement>("[data-fluid-hover-active]")
+        ?.getAttribute("aria-label") ?? null;
+    return { field, row, lit };
   }
+
+  it("highlights the focused row, and no row while the field has focus", () => {
+    const { field, row, lit } = setup();
+    act(() => row("Recents").focus());
+    expect(lit()).toBe("Recents");
+    act(() => field.focus());
+    expect(lit()).toBeNull();
+    fireEvent.change(field, { target: { value: "e" } });
+    expect(lit()).toBeNull();
+  });
+
+  it("clears the highlight when ArrowUp returns to the field", () => {
+    const { field, row, lit } = setup();
+    act(() => row("Teamspaces").focus());
+    expect(lit()).toBe("Teamspaces");
+    fireEvent.keyDown(row("Teamspaces"), { key: "ArrowUp" });
+    expect(document.activeElement).toBe(field);
+    expect(lit()).toBeNull();
+  });
 
   it("returns to the field with ArrowUp on the first row", () => {
     const { field, row } = setup();

@@ -405,9 +405,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
       hasSearch,
       searchMounted,
       onKeyDownCapture: redirectTypingToSearch,
-      isSearchField,
-      highlightFirst,
-    } = useDropdownSearchHost(open, { containerRef, setActiveIndex });
+    } = useDropdownSearchHost(open);
 
     // Open ready to act: focus the first enabled row (a mounted search field
     // takes focus itself instead). A frame after the primitive's own open
@@ -566,12 +564,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                 onMouseEnter={handlers.onMouseEnter}
                 onMouseMove={handlers.onMouseMove}
                 onClick={handlers.onClick}
-                onMouseLeave={() => {
-                  handlers.onMouseLeave();
-                  // The pointer's session is over; a focused search field
-                  // gets its first-row highlight back.
-                  if (isSearchField(document.activeElement)) highlightFirst();
-                }}
+                onMouseLeave={handlers.onMouseLeave}
                 onFocus={(e) => {
                   const indexAttr = (e.target as HTMLElement)
                     .closest("[data-fluid-hover-index]")
@@ -580,14 +573,12 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                   // ring: in a menu the highlighted row is the focus indicator.
                   if (indexAttr != null) {
                     setActiveIndex(Number(indexAttr));
-                  } else if (isSearchField(e.target)) {
-                    // The search field: the first row (what Enter picks)
-                    // carries the highlight while it has focus.
-                    highlightFirst();
                   } else if (e.target !== e.currentTarget) {
-                    // Focus moved to some other non-row inside the popup: no
-                    // row is highlighted any more. The popup focusing itself
-                    // (pointer leaving a row) doesn't count.
+                    // Focus moved to a non-row inside the popup, such as the
+                    // search field: no row is highlighted any more. The field
+                    // is a stop like a row, it just draws no background. The
+                    // popup focusing itself (pointer leaving a row) doesn't
+                    // count.
                     setActiveIndex(null);
                   }
                 }}

@@ -159,10 +159,20 @@ describe.each(flavors)("%s dropdown search", (_name, F) => {
     expect(onSelect).toHaveBeenCalledWith("Teamspaces");
   });
 
-  it("highlights the focused row, and no row while the field has focus", () => {
+  it("leaves the row the open focuses unlit", () => {
+    // The primitive's open autofocus lands on the first row a frame before
+    // the field takes over; no key or pointer has acted yet.
+    const { row, lit } = setup();
+    act(() => row("Teamspaces").focus());
+    expect(lit()).toBeNull();
+  });
+
+  it("highlights a row arrowed onto, and no row while the field has focus", () => {
     const { field, row, lit } = setup();
-    act(() => row("Recents").focus());
-    expect(lit()).toBe("Recents");
+    act(() => field.focus());
+    fireEvent.keyDown(field, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(row("Teamspaces"));
+    expect(lit()).toBe("Teamspaces");
     act(() => field.focus());
     expect(lit()).toBeNull();
     fireEvent.change(field, { target: { value: "e" } });
@@ -171,7 +181,8 @@ describe.each(flavors)("%s dropdown search", (_name, F) => {
 
   it("clears the highlight when ArrowUp returns to the field", () => {
     const { field, row, lit } = setup();
-    act(() => row("Teamspaces").focus());
+    act(() => field.focus());
+    fireEvent.keyDown(field, { key: "ArrowDown" });
     expect(lit()).toBe("Teamspaces");
     fireEvent.keyDown(row("Teamspaces"), { key: "ArrowUp" });
     expect(document.activeElement).toBe(field);

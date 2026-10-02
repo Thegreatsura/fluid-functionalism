@@ -42,7 +42,7 @@ const hookReturn: PropDef[] = [
 const highlightProps: PropDef[] = [
   { name: "hover", type: "ReturnType<typeof useFluidHover>", description: "The hook. The highlight reads what it needs from it." },
   { name: "hidden", type: "boolean", default: "false", description: "Show nothing, keep the state. A closed popup." },
-  { name: "from", type: "ItemRect | null", description: "Where a fresh entry fades in from. Dropdowns pass the checked row." },
+  { name: "from", type: "ItemRect | null", description: "Where a fresh entry fades in from. Dropdowns pass the checked row when the pointer enters." },
   { name: "className", type: "string", description: "Radius and z-index. The container must be position: relative." },
   { name: "transition", type: "Transition | false", default: "spring.fast", description: "The travel. false snaps in place after a reflow." },
 ];

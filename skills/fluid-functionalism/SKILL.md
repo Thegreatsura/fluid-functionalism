@@ -233,8 +233,8 @@ system:
   subtitle, body, caption, micro; each a size and a line height); a server
   component imports `typeClass` from `@/lib/type-scale`. Text uses 3 weights:
   `fontWeights.normal` for text, `fontWeights.semibold` for headings and
-  selected items, `fontWeights.bold` only for the display style; never
-  `medium` or a Tailwind `font-*`. 2 text colors, foreground and muted, never
+  selected items, `fontWeights.bold` only for the display style; never a
+  Tailwind `font-*`. 2 text colors, foreground and muted, never
   an opacity step of them; no uppercase, no letter-spacing, no eyebrows. Never a raw
   `text-[13px]`, and never a bare `text-caption` inside `cn()`: stock
   tailwind-merge reads it as a color and drops it. Rendered markdown goes in

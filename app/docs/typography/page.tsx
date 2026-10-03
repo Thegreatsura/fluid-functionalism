@@ -3,8 +3,7 @@
 import { type ReactNode } from "react";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
 import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
-import { PlaygroundLayout } from "@/lib/docs/playground";
-import { TypographyPlayground } from "@/lib/docs/playgrounds/typography";
+import { TYPESET_SAMPLES, TypesetEditor } from "@/lib/docs/typeset-sample";
 import { TYPESET_SPACE } from "@/lib/typeset/generate";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { BalanceDemo, PrettyDemo, WeightOpszDemo } from "./demos";
@@ -67,29 +66,16 @@ function GapTable() {
 }
 
 const classRows: PropDef[] = [
-  { name: ".typeset", type: "class", description: "Sets every element inside like the site: h1 display in bold, h2 title, h3 to h6 subtitle, paragraphs body in the muted color, figcaption and code caption. Works on rendered markdown and on Tiptap editors as is." },
-  { name: ".typeset-compact", type: "class", description: "Next to .typeset: the compact styles and tighter spacing." },
-  { name: ".not-typeset", type: "class", description: "Opts a subtree out. The sheet skips it and everything inside." },
-  { name: ".typeset-scroll", type: "class", description: "Wrap a wide table in it to scroll sideways instead of squeezing columns." },
+  { name: ".typeset", type: "class", description: "Sets everything inside in the 5 styles, like the rest of the site." },
+  { name: ".typeset-compact", type: "class", description: "The compact step: one notch smaller, with tighter spacing." },
+  { name: ".not-typeset", type: "class", description: "Leaves a part alone, like a component inside a chat reply." },
 ];
 
 const apiRows: PropDef[] = [
-  { name: "typeClass(role, variant?)", type: "string", description: "Size and leading classes for one role at one step, with px fallbacks. What every component uses. In a server component, import it from @/lib/type-scale: size-context is a client module." },
-  { name: "typeSize(role, variant?)", type: "string", description: "The size half alone, for text whose line box is set elsewhere: a fixed-height control, a key cap with leading-none." },
-  { name: "useSize().type", type: "Record<TypeScaleRole, string>", description: "The same classes for the step the surrounding SizeProvider (or a size prop) resolves to." },
-  { name: "useTypeScale(override?)", type: "Record<TypeScaleRole, { size, leading }>", description: "Raw px per role for the current step. Changed from plain numbers: read typeScale.body[step].size where you read typeScale.body[step]." },
-  { name: "text-<role>, text-<role>-compact", type: "utility", description: "Tailwind theme utilities from the type-scale tokens. Size and leading; a later leading-* wins." },
+  { name: "typeClass(role, variant?)", type: "string", description: "Puts your own text in one of the styles, like every component. In a server component, import it from @/lib/type-scale." },
+  { name: "useSize().type", type: "Record<TypeScaleRole, string>", description: "The same, at the size step of the region it's in." },
+  { name: "text-<role>", type: "utility", description: "The same styles as Tailwind classes, like text-caption." },
 ];
-
-/** The doc and its controls: the editor stays in the column, the Typeset
- *  panel parks in the right rail on wide screens. */
-function TypesetPlayground() {
-  return (
-    <TypographyPlayground>
-      {({ preview, controls }) => <PlaygroundLayout controls={controls} preview={preview} />}
-    </TypographyPlayground>
-  );
-}
 
 export default function TypographyDoc() {
   return (
@@ -97,7 +83,7 @@ export default function TypographyDoc() {
       title="Typography"
       slug="typography"
       installSlug="size-context"
-      installNote="The styles as variables and utilities, plus typeClass(). Every component already pulls them in."
+      installNote="The 5 styles for your own text, already in every component."
       description="Bold rules that create consistency across the whole component library."
     >
       <DocSection title="4 rules">
@@ -122,10 +108,14 @@ export default function TypographyDoc() {
       <DocSection title="The scale">
         <P>
           The 5 styles, called roles in code, each a size and a line height. Edit the page below like
-          a Notion doc, switch documents in the Typeset panel, and press<Code>S</Code>to drop
-          every style a notch for compact.
+          a Notion doc, and press<Code>S</Code>to drop every style a notch for compact.
         </P>
-        <TypesetPlayground />
+        <TypesetEditor content={TYPESET_SAMPLES.scale} label="Type scale sample" />
+      </DocSection>
+
+      <DocSection title="Markdown">
+        <P>Markdown gets the same 5 styles, to-dos and tables included.</P>
+        <TypesetEditor content={TYPESET_SAMPLES.notion} label="Notion doc sample" />
       </DocSection>
 
       <DocSection title="Spacing">
@@ -159,7 +149,7 @@ export default function TypographyDoc() {
         <PrettyDemo />
       </DocSection>
 
-      <div id="typeset-reference" className="flex flex-col gap-8">
+      <div className="flex flex-col gap-8">
         <DocSection title="Classes">
           <PropsTable props={classRows} />
         </DocSection>

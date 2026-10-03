@@ -10,19 +10,18 @@ import {
 } from "react";
 import { Fragment, useMemo } from "react";
 import { fontWeights } from "@/registry/default/lib/font-weight";
-import { EditorContent, Node, createDocument, mergeAttributes, useEditor } from "@tiptap/react";
-import { EditorState } from "@tiptap/pm/state";
+import { EditorContent, Node, mergeAttributes, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { TableKit } from "@tiptap/extension-table";
 import { Placeholder } from "@tiptap/extensions";
 import { cn } from "@/lib/utils";
 import { useShape } from "@/registry/default/lib/shape-context";
+import { useSizeVariant } from "@/lib/size-context";
 import { useThemeContext } from "@/registry/default/lib/theme-context";
-import { Button } from "@/registry/radix/button";
 import { Switch } from "@/registry/radix/switch";
 import { Tooltip } from "@/registry/radix/tooltip";
-import { typeScale } from "@/lib/type-scale";
+import { typeStyles } from "@/lib/type-scale";
 import { selectorList, typesetRules } from "@/lib/typeset/generate";
 
 // The Type scale document: each style the way the site uses it. Display
@@ -39,45 +38,35 @@ const SCALE_SAMPLES: Array<[tag: string, text: string]> = [
   ["figcaption", "This is a caption, for descriptions and meta rows"],
 ];
 
-/** Starting HTML of each document on /docs/typography. Between them, every
- *  element the sheet styles appears. */
+/** Starting HTML of the two documents on /docs/typography: the type scale,
+ *  and a Notion doc with most of what markdown writes: 3 heading levels,
+ *  bold, italic, strikethrough, inline code, a link, nested bullets,
+ *  numbers, and to-dos, a quote, a table, a code block, and a rule. */
 export const TYPESET_SAMPLES = {
   scale: SCALE_SAMPLES.map(([tag, text]) => `<${tag}>${text}</${tag}>`).join(""),
-  release: [
-    "<h1>Release notes</h1>",
-    '<p>Version 2.4 ships <strong>paired leading</strong> for every type role and a prose sheet for rendered markdown. Read the <a href="#typeset-reference">reference</a> or run <code>npx shadcn add</code> to install it.</p>',
-    "<h2>What changed</h2>",
-    "<p>Each role is now a size and a line height, so a caption in a menu and a caption in a table sit on the same rhythm.</p>",
-    "<ul>",
-    "<li><p>Five styles, from display to caption</p></li>",
-    "<li><p>Two steps per style</p><ul><li><p>Default for most screens</p></li><li><p>Compact for dense tools</p></li></ul></li>",
-    "<li><p>One source file generates every copy</p></li>",
-    "</ul>",
-    "<h3>Install order</h3>",
-    "<ol><li><p>Add the type scale tokens</p></li><li><p>Add the prose sheet</p></li><li><p>Wrap your content in <code>.typeset</code></p></li></ol>",
-    "<blockquote><p>Spacing only goes above an element, so streamed text never moves what is already on screen.</p></blockquote>",
-    '<pre><code class="language-tsx">&lt;article className="typeset"&gt;\n  {content}\n&lt;/article&gt;</code></pre>',
-    "<table><tbody>",
-    "<tr><th><p>Role</p></th><th><p>Default</p></th><th><p>Compact</p></th></tr>",
-    "<tr><td><p>Body</p></td><td><p>13 / 20</p></td><td><p>12 / 18</p></td></tr>",
-    "<tr><td><p>Caption</p></td><td><p>12 / 16</p></td><td><p>11 / 14</p></td></tr>",
-    "</tbody></table>",
-    "<hr>",
-    "<p>Questions go to the changelog thread.</p>",
-  ].join(""),
   notion: [
     "<h1>Q3 design system audit</h1>",
     "<p><strong>Owner</strong> Design systems · <strong>Status</strong> In progress · <strong>Due</strong> October 14</p>",
     "<h2>Goals</h2>",
     '<ul data-type="taskList">',
     '<li data-type="taskItem" data-checked="true"><p>List every text size in the product</p></li>',
-    '<li data-type="taskItem" data-checked="true"><p>Map each one to a type role</p></li>',
-    '<li data-type="taskItem" data-checked="false"><p>Replace hard-coded sizes on the settings pages</p></li>',
+    '<li data-type="taskItem" data-checked="true"><p>Map each one to a type style</p></li>',
+    '<li data-type="taskItem" data-checked="false"><p>Replace hard-coded sizes on the settings pages</p>',
+    '<ul data-type="taskList">',
+    '<li data-type="taskItem" data-checked="true"><p>Billing</p></li>',
+    '<li data-type="taskItem" data-checked="false"><p>Notifications</p></li>',
+    "</ul></li>",
     '<li data-type="taskItem" data-checked="false"><p>Ship compact mode for the data tables</p></li>',
     "</ul>",
     "<h2>Findings</h2>",
-    "<p>We found <strong>23 distinct font sizes</strong> across 140 screens. Most are one-offs: a 13.5px label here, a 15px caption there.</p>",
+    '<p>We found <strong>23 distinct font sizes</strong> across 140 screens. Most are <em>one-offs</em>: a <code>13.5px</code> label here, a <code>15px</code> caption there. The <a href="/docs/typography">type scale</a> covers all of them with 5 styles.</p>',
     "<blockquote><p>The fix is not fewer screens. It is fewer decisions.</p></blockquote>",
+    "<h3>Where they live</h3>",
+    "<ul>",
+    "<li><p>Settings pages</p><ul><li><p>Labels at 13.5px</p></li><li><p>Help text at 11.5px</p></li></ul></li>",
+    "<li><p>Data tables</p></li>",
+    "<li><p>Marketing pages</p></li>",
+    "</ul>",
     "<h3>Sizes in the wild</h3>",
     "<table><tbody>",
     "<tr><th><p>Size</p></th><th><p>Screens</p></th><th><p>Maps to</p></th></tr>",
@@ -86,12 +75,19 @@ export const TYPESET_SAMPLES = {
     "<tr><td><p>14px</p></td><td><p>41</p></td><td><p>subtitle</p></td></tr>",
     "<tr><td><p>16px</p></td><td><p>22</p></td><td><p>title</p></td></tr>",
     "</tbody></table>",
+    "<h2>The fix</h2>",
+    "<p>We planned to <s>rename every token</s> keep the names and change the values, so nothing breaks. A codemod swaps each one-off for its style:</p>",
+    '<pre><code class="language-tsx">// Before\n&lt;span className="text-[13.5px]"&gt;Billing&lt;/span&gt;\n\n// After\n&lt;span className={typeClass("body")}&gt;Billing&lt;/span&gt;</code></pre>',
     "<h3>Next steps</h3>",
-    "<ol><li><p>Agree on the five styles with engineering</p></li><li><p>Run the codemod on one surface</p></li><li><p>Review the diff together on Friday</p></li></ol>",
+    "<ol>",
+    "<li><p>Agree on the 5 styles with engineering</p></li>",
+    "<li><p>Run the codemod on one surface</p><ol><li><p>Settings first</p></li><li><p>Then the data tables</p></li></ol></li>",
+    "<li><p>Review the diff together on Friday</p></li>",
+    "</ol>",
+    "<hr>",
+    "<p>Questions go in the <strong>#design-systems</strong> channel.</p>",
   ].join(""),
 } as const;
-
-export type TypesetSampleName = keyof typeof TYPESET_SAMPLES;
 
 // Tiptap's markdown shortcuts format as you type: "# " heading, "- " list,
 // "1. " numbered, "[] " to-do, "> " quote, "```" code, "---" rule, and
@@ -128,18 +124,18 @@ const EXTENSIONS = [
   }),
 ];
 
-// A constant, so useEditor doesn't re-apply it on every render. Its
-// setProps would drop the role Tiptap adds on create, so the role is set
+// Made once per editor, so useEditor doesn't re-apply it on every render.
+// Its setProps would drop the role Tiptap adds on create, so the role is set
 // here too. `relative` keeps the editor above the inspect bands (both
 // positioned, painted in tree order).
-const EDITOR_PROPS = {
+const editorPropsFor = (label: string) => ({
   attributes: {
     class: "relative outline-none",
     role: "textbox",
     "aria-multiline": "true",
-    "aria-label": "Sample document",
+    "aria-label": label,
   },
-};
+});
 
 // Tiptap marks the empty line with data-placeholder; show it as a ghost.
 const PLACEHOLDER =
@@ -246,7 +242,7 @@ interface SpaceMark {
 
 // The sheet's own rules (the ones generateTypesetCss writes), to trace a
 // margin or padding back to its selector. Values don't change selectors.
-const SHEET_RULES = typesetRules(typeScale);
+const SHEET_RULES = typesetRules(typeStyles);
 
 /** The selector list a sheet rule opens with, `:where(.typeset p, …)`,
  *  split at its top-level commas. */
@@ -393,33 +389,12 @@ function spacingOf(el: HTMLElement, frame: HTMLElement): SpaceMark[] {
 }
 
 /** An editable `.typeset` document, like a Notion page: no source pane,
- *  markdown shortcuts format in place. `contentKey` + `version` decide when
- *  `content` is (re)loaded: another document's draft, or a reset. */
-export function TypesetEditor({
-  content,
-  contentKey,
-  version,
-  onChange,
-  onReset,
-  canReset,
-  typesetClassName,
-  maxWidth,
-}: {
-  content: string;
-  contentKey: string;
-  version: number;
-  onChange: (html: string) => void;
-  onReset: () => void;
-  canReset: boolean;
-  /** The step class on the `.typeset` element. */
-  typesetClassName?: string;
-  /** Width of the document, in px. */
-  maxWidth?: number;
-}) {
+ *  markdown shortcuts format in place. It follows the page's size step (S). */
+export function TypesetEditor({ content, label }: { content: string; label: string }) {
   const shape = useShape();
   const inverse = useInverseTheme();
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+  const typesetClassName = useSizeVariant() === "compact" ? "typeset-compact" : undefined;
+  const [editorProps] = useState(() => editorPropsFor(label));
   const [inspect, setInspect] = useState(false);
   const [marks, setMarks] = useState<InspectMark[]>([]);
   const [hovered, setHovered] = useState<number | null>(null);
@@ -430,25 +405,10 @@ export function TypesetEditor({
     content,
     // Rendered on the client only; the static copy below covers SSR.
     immediatelyRender: false,
-    editorProps: EDITOR_PROPS,
-    onUpdate: ({ editor, transaction }) => {
-      if (transaction.docChanged) onChangeRef.current(editor.getHTML());
-    },
+    editorProps,
   });
 
-  // Swap documents without counting the swap as an edit, in a fresh state so
-  // undo can't step back into the previous document. A layout effect ahead
-  // of the inspect one below, which then measures the new document.
-  const loaded = useRef({ contentKey, version });
-  useLayoutEffect(() => {
-    if (!editor) return;
-    if (loaded.current.contentKey === contentKey && loaded.current.version === version) return;
-    loaded.current = { contentKey, version };
-    const doc = createDocument(content, editor.schema);
-    editor.view.updateState(EditorState.create({ doc, plugins: editor.state.plugins }));
-  }, [editor, content, contentKey, version]);
-
-  // Re-measure on every edit, document swap, resize, and change of step.
+  // Re-measure on every edit, resize, and change of step.
   useLayoutEffect(() => {
     const frame = frameRef.current;
     if (!inspect || !frame || !editor) return;
@@ -461,7 +421,7 @@ export function TypesetEditor({
       ro.disconnect();
       editor.off("update", measure);
     };
-  }, [inspect, editor, typesetClassName, maxWidth, contentKey, version]);
+  }, [inspect, editor, typesetClassName]);
 
   // The block under the pointer, or the nearest one from a gap.
   const pick = (e: PointerEvent<HTMLDivElement>) => {
@@ -497,7 +457,7 @@ export function TypesetEditor({
         shape.container
       )}
     >
-      <div className="flex items-center justify-between gap-3 border-b border-border/60 py-1.5 pl-4 pr-1.5">
+      <div className="flex items-center justify-between gap-3 border-b border-border/60 py-1.5 pl-4 pr-2">
         <p className="hidden min-w-0 text-site-caption text-muted-foreground sm:block">
           Type <code>#</code> for a heading, <code>-</code> for a list, <code>[]</code> for a to-do,{" "}
           <code>&gt;</code> for a quote.
@@ -512,9 +472,6 @@ export function TypesetEditor({
             }}
             className="h-8 px-2 rounded-md"
           />
-          <Button variant="ghost" size="compact" disabled={!canReset} onClick={onReset}>
-            Reset
-          </Button>
         </div>
       </div>
       <div
@@ -525,8 +482,7 @@ export function TypesetEditor({
           ref={frameRef}
           onPointerMove={pick}
           onPointerLeave={() => setHovered(null)}
-          className="relative mx-auto w-full text-foreground"
-          style={{ maxWidth }}
+          className="relative w-full text-foreground"
         >
           {/* The bands paint under the text (the editor root is positioned
               and comes later). None of the overlay takes the pointer. */}

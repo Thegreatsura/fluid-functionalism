@@ -12,7 +12,7 @@
 export const SEMIBOLD = "'wght' 550, 'opsz' 18";
 export const BOLD = "'wght' 700, 'opsz' 25";
 
-/** The shape of `typeScale` in registry/default/lib/type-scale.ts. */
+/** The shape of `typeStyles` in registry/default/lib/type-scale.ts. */
 export type TypeScaleData = Record<
   string,
   Record<"default" | "compact", { size: number; leading: number }>
@@ -45,6 +45,19 @@ export const TYPESET_SPACE = {
   /** Between list items, and inside an item. */
   item: { default: 4, compact: 4 },
 } as const;
+
+/** The to-do checkbox, drawn like the library's CheckboxItem: a 16px box
+ *  (14px compact) with 5px corners (4px), 4px from its text. Lists indent by
+ *  the box and its gap, so bullet text and to-do text start at the same edge. */
+export const TYPESET_CHECK = {
+  box: { default: 16, compact: 14 },
+  radius: { default: 5, compact: 4 },
+  gap: 4,
+} as const;
+
+/** The CheckboxItem tick (24px grid), drawn 2px wider than the box as the
+ *  library draws it. tests/type-scale.test.mjs keeps it equal to theirs. */
+export const TICK_PATH = "M6 12L10 16L18 8";
 
 /** Split a selector list at its top-level commas (not the ones inside
  *  `:is(…)`). Also used by the docs inspector to name the rule it traced. */
@@ -103,6 +116,9 @@ function stepDecls(scale: TypeScaleData, step: Step): Decls {
   for (const [name, px] of Object.entries(TYPESET_SPACE)) {
     d[`--typeset-space-${name}`] = `${px[step]}px`;
   }
+  d["--typeset-check"] = `${TYPESET_CHECK.box[step]}px`;
+  d["--typeset-check-radius"] = `${TYPESET_CHECK.radius[step]}px`;
+  d["--typeset-indent"] = `${TYPESET_CHECK.box[step] + TYPESET_CHECK.gap}px`;
   return d;
 }
 
@@ -110,6 +126,12 @@ const FOREGROUND = "var(--foreground, currentColor)";
 const MUTED = "var(--muted-foreground, color-mix(in oklab, currentColor 65%, transparent))";
 const BORDER = "var(--border, color-mix(in oklab, currentColor 14%, transparent))";
 const WASH = "color-mix(in oklab, currentColor 7%, transparent)";
+// The unchecked box's border on hover, as dark as the library's
+// (neutral-400 light, neutral-500 dark).
+const BORDER_HOVER = "color-mix(in oklab, var(--foreground, currentColor) 40%, transparent)";
+// The tick as a mask: the text color shows through it, so it follows the
+// theme and never fills the box.
+const TICK = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='${TICK_PATH}'/%3E%3C/svg%3E") center / calc(var(--typeset-check) + 2px) no-repeat`;
 
 export function typesetRules(scale: TypeScaleData): Rule[] {
   return [
@@ -173,7 +195,7 @@ export function typesetRules(scale: TypeScaleData): Rule[] {
     ],
     [el("a:hover"), { "text-decoration-color": "currentColor" }],
 
-    [el("ul, ol"), { "padding-left": "1.25em" }],
+    [el("ul, ol"), { "padding-left": v("indent") }],
     // Bullets as text with one space after, the same as a number's ". ":
     // the built-in disc gets a wider gap, so it sat further from its text.
     [el("ul"), { "list-style-type": '"• "' }],
@@ -199,15 +221,47 @@ export function typesetRules(scale: TypeScaleData): Rule[] {
     // puts the checkbox in a label next to a content div. Its editor view
     // drops data-type from the items, so they're matched through the list.
     [el('.contains-task-list, ul[data-type="taskList"]'), { "list-style-type": "none", "padding-left": "0" }],
-    [el(".contains-task-list .contains-task-list"), { "padding-left": "1.5em" }],
-    // A 1em box plus a 0.25em gap lands to-do text on the list indent
-    // (1.25em) at every size, and the box scales with the text.
+    [el(".contains-task-list .contains-task-list"), { "padding-left": v("indent") }],
+    // The checkbox, as the library draws it: an outline that steps aside for
+    // the tick alone when checked, never a filled box.
     [
       el("input[type=checkbox]"),
-      { margin: "0", width: "1em", height: "1em", "accent-color": FOREGROUND },
+      {
+        appearance: "none",
+        position: "relative",
+        margin: "0",
+        width: v("check"),
+        height: v("check"),
+        border: `1.5px solid ${BORDER}`,
+        "border-radius": v("check-radius"),
+        background: "none",
+        cursor: "pointer",
+        transition: "border-color 80ms ease-out",
+      },
     ],
-    [el(".task-list-item > input[type=checkbox]"), { "margin-right": "0.25em", "vertical-align": "-0.125em" }],
-    [el('ul[data-type="taskList"] > li'), { display: "flex", gap: "0.25em", "align-items": "flex-start" }],
+    [el("input[type=checkbox]:not(:disabled):hover"), { "border-color": BORDER_HOVER }],
+    [el("input[type=checkbox]:checked"), { "border-color": "transparent" }],
+    // Read-only markdown renders disabled boxes: no pointer, no fading.
+    [el("input[type=checkbox]:disabled"), { cursor: "default" }],
+    // On a pseudo-element, not the box: a mask on the box would hide its
+    // focus ring too. Pseudo-elements can't sit inside :where().
+    [
+      `${el("input[type=checkbox]:checked")}::before`,
+      {
+        content: '""',
+        position: "absolute",
+        inset: "0",
+        "background-color": FOREGROUND,
+        "-webkit-mask": TICK,
+        mask: TICK,
+      },
+    ],
+    // GFM puts the box inline, centered on the first line, straight in the
+    // item or, in a loose list, in its paragraph. Its renderers (remark-gfm,
+    // GitHub) write a space after the box, and that space is the gap: about
+    // the 4px Tiptap gets, so the text lands on the indent.
+    [el(".task-list-item input[type=checkbox]"), { "vertical-align": "-0.25em" }],
+    [el('ul[data-type="taskList"] > li'), { display: "flex", gap: `${TYPESET_CHECK.gap}px`, "align-items": "flex-start" }],
     // One line box tall, so the box centers on the first line of the item.
     [
       el('ul[data-type="taskList"] > li > label'),
@@ -301,25 +355,44 @@ export function typesetRules(scale: TypeScaleData): Rule[] {
   ];
 }
 
-/** The sheet as CSS text, wrapped in @layer components. */
-export function generateTypesetCss(scale: TypeScaleData): string {
-  const body = typesetRules(scale)
+/** Forced colors (Windows high contrast) repaint backgrounds with the page
+ *  color and show transparent borders: the masked tick would vanish and a
+ *  checked box would look unchecked. There, the box goes back to the
+ *  browser's own, which those modes draw. */
+export const FORCED_COLORS = "@media (forced-colors: active)";
+export function forcedColorsRules(): Rule[] {
+  return [
+    [el("input[type=checkbox]"), { appearance: "auto" }],
+    [`${el("input[type=checkbox]:checked")}::before`, { display: "none" }],
+  ];
+}
+
+const cssBlock = (rules: Rule[], indent: string) =>
+  rules
     .map(([sel, decls]) => {
-      const lines = Object.entries(decls).map(([k, val]) => `    ${k}: ${val};`);
-      return `  ${sel} {\n${lines.join("\n")}\n  }`;
+      const lines = Object.entries(decls).map(([k, val]) => `${indent}  ${k}: ${val};`);
+      return `${indent}${sel} {\n${lines.join("\n")}\n${indent}}`;
     })
     .join("\n\n");
+
+/** The sheet as CSS text, wrapped in @layer components. */
+export function generateTypesetCss(scale: TypeScaleData): string {
+  const body = cssBlock(typesetRules(scale), "  ");
+  const forced = cssBlock(forcedColorsRules(), "    ");
   return (
     "/* Fluid Functionalism typeset: https://www.fluidfunctionalism.com/docs/typography */\n" +
-    `@layer components {\n${body}\n}\n`
+    `@layer components {\n${body}\n\n  ${FORCED_COLORS} {\n${forced}\n  }\n}\n`
   );
 }
 
 /** The sheet as a shadcn registry `css` object. */
-export function typesetRegistryCss(scale: TypeScaleData): Record<string, Record<string, Decls>> {
-  const layer: Record<string, Decls> = {};
+export function typesetRegistryCss(
+  scale: TypeScaleData
+): Record<string, Record<string, Decls | Record<string, Decls>>> {
+  const layer: Record<string, Decls | Record<string, Decls>> = {};
   for (const [sel, decls] of typesetRules(scale)) {
-    layer[sel] = { ...(layer[sel] ?? {}), ...decls };
+    layer[sel] = { ...((layer[sel] as Decls | undefined) ?? {}), ...decls };
   }
+  layer[FORCED_COLORS] = Object.fromEntries(forcedColorsRules());
   return { "@layer components": layer };
 }

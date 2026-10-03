@@ -101,15 +101,14 @@ export function PlayDivider() {
   return <div className="my-2 -mx-3 border-t border-border/60" />;
 }
 
-/** The muted controls card: title row with a shuffle button, fields below.
- *  No `onShuffle`, no button: a panel with nothing to randomize. */
+/** The muted controls card: title row with a shuffle button, fields below. */
 export function PlaygroundPanel({
   title = "Playground variant",
   onShuffle,
   children,
 }: {
   title?: string;
-  onShuffle?: () => void;
+  onShuffle: () => void;
   children: ReactNode;
 }) {
   return (
@@ -122,21 +121,15 @@ export function PlaygroundPanel({
           >
             {title}
           </h2>
-          {onShuffle ? (
-            <button
-              type="button"
-              onClick={onShuffle}
-              aria-label="Randomize properties"
-              title="Randomize"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors duration-80 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]"
-            >
-              <Shuffle size={15} strokeWidth={1.5} />
-            </button>
-          ) : (
-            // Holds the row at the button's height, so the fields start
-            // where every other panel's do.
-            <span aria-hidden className="h-7" />
-          )}
+          <button
+            type="button"
+            onClick={onShuffle}
+            aria-label="Randomize properties"
+            title="Randomize"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors duration-80 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]"
+          >
+            <Shuffle size={15} strokeWidth={1.5} />
+          </button>
         </div>
         {children}
       </div>

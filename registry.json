@@ -132,33 +132,21 @@
       "name": "type-scale",
       "type": "registry:item",
       "title": "Type Scale",
-      "description": "Six type roles (display, title, subtitle, body, caption, micro), each a font size and a line height, at the default and compact steps of the size ladder. Adds text-<role> and text-<role>-compact utilities and the --fs-* / --lh-* variables components read.",
+      "description": "Six type roles (display, title, subtitle, body, caption, micro), each a font size and a line height, at the default and compact steps of the size ladder. Adds text-<role> utilities and the --fs-* / --lh-* variables components read.",
       "cssVars": {
         "theme": {
           "text-display": "var(--fs-display)",
           "text-display--line-height": "var(--lh-display)",
-          "text-display-compact": "var(--fs-display-compact)",
-          "text-display-compact--line-height": "var(--lh-display-compact)",
           "text-title": "var(--fs-title)",
           "text-title--line-height": "var(--lh-title)",
-          "text-title-compact": "var(--fs-title-compact)",
-          "text-title-compact--line-height": "var(--lh-title-compact)",
           "text-subtitle": "var(--fs-subtitle)",
           "text-subtitle--line-height": "var(--lh-subtitle)",
-          "text-subtitle-compact": "var(--fs-subtitle-compact)",
-          "text-subtitle-compact--line-height": "var(--lh-subtitle-compact)",
           "text-body": "var(--fs-body)",
           "text-body--line-height": "var(--lh-body)",
-          "text-body-compact": "var(--fs-body-compact)",
-          "text-body-compact--line-height": "var(--lh-body-compact)",
           "text-caption": "var(--fs-caption)",
           "text-caption--line-height": "var(--lh-caption)",
-          "text-caption-compact": "var(--fs-caption-compact)",
-          "text-caption-compact--line-height": "var(--lh-caption-compact)",
           "text-micro": "var(--fs-micro)",
-          "text-micro--line-height": "var(--lh-micro)",
-          "text-micro-compact": "var(--fs-micro-compact)",
-          "text-micro-compact--line-height": "var(--lh-micro-compact)"
+          "text-micro--line-height": "var(--lh-micro)"
         },
         "light": {
           "fs-display": "28px",
@@ -216,6 +204,9 @@
             "--typeset-space-subsection": "20px",
             "--typeset-space-rule": "24px",
             "--typeset-space-item": "4px",
+            "--typeset-check": "16px",
+            "--typeset-check-radius": "5px",
+            "--typeset-indent": "20px",
             "font-size": "var(--typeset-body)",
             "line-height": "var(--typeset-body-leading)",
             "color": "var(--muted-foreground, color-mix(in oklab, currentColor 65%, transparent))",
@@ -238,7 +229,10 @@
             "--typeset-space-section": "16px",
             "--typeset-space-subsection": "12px",
             "--typeset-space-rule": "16px",
-            "--typeset-space-item": "4px"
+            "--typeset-space-item": "4px",
+            "--typeset-check": "14px",
+            "--typeset-check-radius": "4px",
+            "--typeset-indent": "18px"
           },
           ":where(.typeset p, .typeset ul, .typeset ol, .typeset pre, .typeset blockquote, .typeset figure, .typeset table, .typeset .typeset-scroll, .typeset .tableWrapper, .typeset img, .typeset video, .typeset h1, .typeset h2, .typeset h3, .typeset h4, .typeset h5, .typeset h6, .typeset li):not(:where(.typeset .not-typeset, .typeset .not-typeset *))": {
             "margin": "0"
@@ -297,7 +291,7 @@
             "text-decoration-color": "currentColor"
           },
           ":where(.typeset ul, .typeset ol):not(:where(.typeset .not-typeset, .typeset .not-typeset *))": {
-            "padding-left": "1.25em"
+            "padding-left": "var(--typeset-indent)"
           },
           ":where(.typeset ul):not(:where(.typeset .not-typeset, .typeset .not-typeset *))": {
             "list-style-type": "\"• \""
@@ -334,21 +328,43 @@
             "padding-left": "0"
           },
           ":where(.typeset .contains-task-list .contains-task-list):not(:where(.typeset .not-typeset, .typeset .not-typeset *))": {
-            "padding-left": "1.5em"
+            "padding-left": "var(--typeset-indent)"
           },
           ":where(.typeset input[type=checkbox]):not(:where(.typeset .not-typeset, .typeset .not-typeset *))": {
+            "appearance": "none",
+            "position": "relative",
             "margin": "0",
-            "width": "1em",
-            "height": "1em",
-            "accent-color": "var(--foreground, currentColor)"
+            "width": "var(--typeset-check)",
+            "height": "var(--typeset-check)",
+            "border": "1.5px solid var(--border, color-mix(in oklab, currentColor 14%, transparent))",
+            "border-radius": "var(--typeset-check-radius)",
+            "background": "none",
+            "cursor": "pointer",
+            "transition": "border-color 80ms ease-out"
           },
-          ":where(.typeset .task-list-item > input[type=checkbox]):not(:where(.typeset .not-typeset, .typeset .not-typeset *))": {
-            "margin-right": "0.25em",
-            "vertical-align": "-0.125em"
+          ":where(.typeset input[type=checkbox]:not(:disabled):hover):not(:where(.typeset .not-typeset, .typeset .not-typeset *))": {
+            "border-color": "color-mix(in oklab, var(--foreground, currentColor) 40%, transparent)"
+          },
+          ":where(.typeset input[type=checkbox]:checked):not(:where(.typeset .not-typeset, .typeset .not-typeset *))": {
+            "border-color": "transparent"
+          },
+          ":where(.typeset input[type=checkbox]:disabled):not(:where(.typeset .not-typeset, .typeset .not-typeset *))": {
+            "cursor": "default"
+          },
+          ":where(.typeset input[type=checkbox]:checked):not(:where(.typeset .not-typeset, .typeset .not-typeset *))::before": {
+            "content": "\"\"",
+            "position": "absolute",
+            "inset": "0",
+            "background-color": "var(--foreground, currentColor)",
+            "-webkit-mask": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12L10 16L18 8'/%3E%3C/svg%3E\") center / calc(var(--typeset-check) + 2px) no-repeat",
+            "mask": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12L10 16L18 8'/%3E%3C/svg%3E\") center / calc(var(--typeset-check) + 2px) no-repeat"
+          },
+          ":where(.typeset .task-list-item input[type=checkbox]):not(:where(.typeset .not-typeset, .typeset .not-typeset *))": {
+            "vertical-align": "-0.25em"
           },
           ":where(.typeset ul[data-type=\"taskList\"] > li):not(:where(.typeset .not-typeset, .typeset .not-typeset *))": {
             "display": "flex",
-            "gap": "0.25em",
+            "gap": "4px",
             "align-items": "flex-start"
           },
           ":where(.typeset ul[data-type=\"taskList\"] > li > label):not(:where(.typeset .not-typeset, .typeset .not-typeset *))": {
@@ -440,6 +456,14 @@
             "font-size": "var(--typeset-caption)",
             "line-height": "var(--typeset-caption-leading)",
             "color": "var(--muted-foreground, color-mix(in oklab, currentColor 65%, transparent))"
+          },
+          "@media (forced-colors: active)": {
+            ":where(.typeset input[type=checkbox]):not(:where(.typeset .not-typeset, .typeset .not-typeset *))": {
+              "appearance": "auto"
+            },
+            ":where(.typeset input[type=checkbox]:checked):not(:where(.typeset .not-typeset, .typeset .not-typeset *))::before": {
+              "display": "none"
+            }
           }
         }
       },

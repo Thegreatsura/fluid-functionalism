@@ -11,17 +11,11 @@ const twMerge = extendTailwindMerge({
       "font-size": [
         // <generated:type-scale>
         "text-display",
-        "text-display-compact",
         "text-title",
-        "text-title-compact",
         "text-subtitle",
-        "text-subtitle-compact",
         "text-body",
-        "text-body-compact",
         "text-caption",
-        "text-caption-compact",
         "text-micro",
-        "text-micro-compact",
         "text-site-display",
         "text-site-title",
         "text-site-subtitle",

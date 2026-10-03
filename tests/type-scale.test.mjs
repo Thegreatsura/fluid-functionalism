@@ -7,16 +7,20 @@
 import { describe, expect, it } from "vitest";
 import { twMerge } from "tailwind-merge";
 import { generate } from "../scripts/generate-type-scale.mjs";
-import { typeScale, typeClasses, typeSizes } from "../registry/default/lib/type-scale.ts";
+import { typeStyles, typeScale, typeClasses } from "../registry/default/lib/type-scale.ts";
 import { cn } from "../registry/default/lib/utils.ts";
 import { fontWeights } from "../registry/default/lib/font-weight.ts";
 import {
   BOLD,
   SEMIBOLD,
+  TICK_PATH,
+  TYPESET_CHECK,
   TYPESET_ROLES,
   TYPESET_SPACE,
+  FORCED_COLORS,
   generateTypesetCss,
   selectorList,
+  typesetRegistryCss,
   typesetRules,
 } from "../lib/typeset/generate.ts";
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -32,7 +36,7 @@ describe("type scale generation", () => {
   });
 
   it("class map carries each role's px values as fallbacks", () => {
-    for (const [role, step] of Object.entries(typeScale)) {
+    for (const [role, step] of Object.entries(typeStyles)) {
       for (const v of ["default", "compact"]) {
         expect(typeClasses[v][role]).toContain(`,${step[v].size}px)]`);
         expect(typeClasses[v][role]).toContain(`,${step[v].leading}px)]`);
@@ -40,13 +44,11 @@ describe("type scale generation", () => {
     }
   });
 
-  it("the size map is the size half of the class map", () => {
-    for (const role of Object.keys(typeScale)) {
-      for (const v of ["default", "compact"]) {
-        expect(typeClasses[v][role].startsWith(`${typeSizes[v][role]} leading-`)).toBe(true);
-        expect(typeSizes[v][role]).not.toContain("leading-");
-      }
+  it("typeScale keeps its plain-number shape: font sizes per role and step", () => {
+    for (const [role, step] of Object.entries(typeStyles)) {
+      expect(typeScale[role]).toEqual({ default: step.default.size, compact: step.compact.size });
     }
+    expect(typeScale.body).toEqual({ default: 13, compact: 12 });
   });
 });
 
@@ -74,7 +76,7 @@ describe.each([
 });
 
 describe("FF cn with theme utilities", () => {
-  it.each(["text-caption", "text-caption-compact", "text-micro", "text-site-body"])(
+  it.each(["text-caption", "text-micro", "text-site-body"])(
     "%s is a font size, not a color",
     (cls) => {
       expect(cn(cls, "text-muted-foreground")).toBe(`${cls} text-muted-foreground`);
@@ -91,8 +93,8 @@ describe("FF cn with theme utilities", () => {
 });
 
 describe("typeset sheet", () => {
-  const rules = typesetRules(typeScale);
-  const css = generateTypesetCss(typeScale);
+  const rules = typesetRules(typeStyles);
+  const css = generateTypesetCss(typeStyles);
   const block = (sel) => css.split(`${sel} {`)[1].split("}")[0];
   // The element list a rule opens with: `:where(.typeset p, .typeset li)`.
   const firstWhere = (sel) => {
@@ -126,7 +128,7 @@ describe("typeset sheet", () => {
     ]) {
       const decls = block(sel);
       for (const role of TYPESET_ROLES) {
-        const { size, leading } = typeScale[role][step];
+        const { size, leading } = typeStyles[role][step];
         expect(decls).toContain(`--typeset-${role}: var(--fs-${role}${suffix}, ${size}px);`);
         expect(decls).toContain(`--typeset-${role}-leading: var(--lh-${role}${suffix}, ${leading}px);`);
       }
@@ -163,6 +165,41 @@ describe("typeset sheet", () => {
       "line-height": "var(--typeset-caption-leading)",
     });
     expect(declsFor("figcaption").color).toMatch(/^var\(--muted-foreground/);
+  });
+
+  it("draws to-dos like the library checkbox, never a filled box", () => {
+    // The tick is the CheckboxItem's own, in both flavors.
+    for (const flavor of ["radix", "base"]) {
+      const src = readFileSync(new URL(`../registry/${flavor}/checkbox-group.tsx`, import.meta.url), "utf-8");
+      expect(src, flavor).toContain(`d="${TICK_PATH}"`);
+    }
+    // Box, corners, and the list indent (box + gap) at both steps.
+    for (const [sel, step] of [
+      [":where(.typeset)", "default"],
+      [":where(.typeset.typeset-compact)", "compact"],
+    ]) {
+      const decls = block(sel);
+      expect(decls).toContain(`--typeset-check: ${TYPESET_CHECK.box[step]}px;`);
+      expect(decls).toContain(`--typeset-check-radius: ${TYPESET_CHECK.radius[step]}px;`);
+      expect(decls).toContain(`--typeset-indent: ${TYPESET_CHECK.box[step] + TYPESET_CHECK.gap}px;`);
+    }
+    expect(declsFor("ul, ol")["padding-left"]).toBe("var(--typeset-indent)");
+    expect(declsFor("input[type=checkbox]")).toMatchObject({ appearance: "none", background: "none" });
+    // The checked tick is the text color through a mask: no fill anywhere.
+    const tick = rules.find(([sel]) => sel.includes("input[type=checkbox]:checked") && sel.endsWith("::before"))[1];
+    expect(tick.mask).toContain(TICK_PATH);
+    expect(tick["-webkit-mask"]).toBe(tick.mask);
+    expect(css).not.toContain("accent-color");
+    // In forced colors, the browser's own box, since a masked tick vanishes.
+    const forced = css.split(`${FORCED_COLORS} {`)[1];
+    expect(forced).toContain("appearance: auto;");
+    expect(forced).toMatch(/:checked\)[^{]*::before \{\s*display: none;/);
+    expect(typesetRegistryCss(typeStyles)["@layer components"][FORCED_COLORS]).toBeDefined();
+  });
+
+  it("aligns GFM boxes in tight and loose lists alike", () => {
+    // A loose list puts the box in the item's paragraph, not straight in it.
+    expect(declsFor(".task-list-item input[type=checkbox]")["vertical-align"]).toBe("-0.25em");
   });
 
   it("never relies on selectors or wrapping that reflow streamed content", () => {
@@ -224,7 +261,7 @@ describe("role class literals in registry sources", () => {
     const src = readFileSync(file, "utf-8");
     for (const m of src.matchAll(/var\(--(fs|lh)-([a-z]+)(-compact)?,(\d+)px\)/g)) {
       const [, kind, role, compact, px] = m;
-      const pair = typeScale[role]?.[compact ? "compact" : "default"];
+      const pair = typeStyles[role]?.[compact ? "compact" : "default"];
       expect(pair, `unknown role ${role}`).toBeDefined();
       expect(Number(px), m[0]).toBe(kind === "fs" ? pair.size : pair.leading);
     }

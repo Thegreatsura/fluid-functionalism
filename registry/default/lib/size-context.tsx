@@ -9,11 +9,10 @@ import {
   type ReactNode,
 } from "react";
 import {
+  typeStyles,
   typeScale,
   typeClasses,
-  typeSizes,
   typeClass,
-  typeSize,
   type TypeScaleRole,
   type TypeScalePair,
   type TypeScaleStep,
@@ -92,12 +91,12 @@ const sizeMap: Record<SizeVariant, SizeClasses> = {
   },
 };
 
-/** The type scale resolved for the active ladder step (size and leading in
- *  px per role): explicit override > surrounding SizeProvider > "default".
- *  The scale itself lives in lib/type-scale.ts. */
+/** The type scale resolved for the active ladder step (font size in px per
+ *  role): explicit override > surrounding SizeProvider > "default". Line
+ *  heights live in `typeStyles` and the --lh-* tokens. */
 function useTypeScale(
   override?: SizeVariant | null
-): Record<TypeScaleRole, TypeScalePair> {
+): Record<TypeScaleRole, number> {
   const variant = useSizeVariant(override);
   return {
     display: typeScale.display[variant],
@@ -175,11 +174,10 @@ export {
   useSizeContext,
   useTypeScale,
   sizeMap,
+  typeStyles,
   typeScale,
   typeClasses,
-  typeSizes,
   typeClass,
-  typeSize,
 };
 export type {
   SizeVariant,

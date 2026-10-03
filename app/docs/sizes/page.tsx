@@ -420,7 +420,7 @@ function tokenReadout(raw: InspectRaw, step: SizeVariant) {
   const px = step === "default" ? 12 : 10;
   const itemPx = step === "default" ? 8 : 6;
   const gap = step === "default" ? 8 : 4;
-  const text = typeScale.body[step].size;
+  const text = typeScale.body[step];
 
   const rows: Array<[string, string]> = [];
   if (eq(raw.height, t.controlHeight))

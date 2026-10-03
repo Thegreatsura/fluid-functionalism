@@ -147,7 +147,7 @@ function Toolbar() {
       "useSize(override?): SizeClasses. Returns { variant, control, controlHeight, segmentItem, segmentPad, text, type, px, itemPx, gap, icon } (type = one size + leading class per role) for the current step.",
       "useSizeVariant(override?): \"default\" | \"compact\". The resolved step, honoring a per-component override over the provider.",
       "useSizeContext(): { size, setSize }. Read or switch the step from inside a SizeProvider.",
-      "useTypeScale(override?): Record<TypeScaleRole, { size: number; leading: number }>. Font size and line height in px per role (display, title, subtitle, body, caption, micro) for the current step. Changed from plain numbers: read typeScale.body[step].size where you read typeScale.body[step].",
+      "useTypeScale(override?): Record<TypeScaleRole, number>. Font size in px per role (display, title, subtitle, body, caption, micro) for the current step. Line heights are in typeStyles and the --lh-* tokens.",
       "size (on components): \"default\" | \"compact\" (default from provider). Per-component override on Button, Badge, Select, Tabs, Dropdown, Accordion, Card and most others.",
     ],
   },
@@ -156,14 +156,14 @@ function Toolbar() {
       "Six roles, each a size and a whole-pixel line height at both ladder steps: display 28/34px (compact 24/30), title 16/22 (15/20), subtitle 14/20 (13/18), body 13/20 (12/18), caption 12/16 (11/14), micro 11/14 (10/12). Body's 20px is also the paragraph line height, and puts a padded row on the ladder: 8 + 20 + 8 = 36px, 5 + 18 + 5 = 28px. Pairing the leading with the size puts a caption in a menu and a caption in a table on the same rhythm.",
       "Pick the role by purpose, then check its default/compact pair: a 14/13px chat bubble is `subtitle` at both steps, not `body` when compact; an 11px error inside a compact control is compact `caption`. `micro` is only for keyboard caps, counters, and tiny badges, single line, so its leading is tight on purpose.",
       "Components never write `text-[13px]`: they use `typeClass(role, variant)` or `useSize().type.<role>`, which emit `text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]`. Stock tailwind-merge reads a bare `text-caption` as a color and drops it next to `text-muted-foreground` inside `cn()`; the arbitrary form survives, and its px fallbacks render even without the `type-scale` tokens.",
-      "A deliberate line-height override (a `leading-none` key cap, a `leading-5` input whose line box sets the caret height) keeps only the size half, `typeSize(role, variant)`: two leadings in one plain class string resolve by stylesheet order, not by the order you wrote them. `useSize().text` is that size half for body, so a row built from `py` and the inherited line box stays on the 36/28px ladder.",
-      "`typeClass` and `typeSize` live in `@/lib/type-scale`, which has no \"use client\" directive; `@/lib/size-context` re-exports them for client components. Import from `type-scale` in a server component, where a function from a client module can't be called.",
+      "To override a role's line height (a `leading-none` key cap, a `leading-5` input whose line box sets the caret height), put the `leading-*` after `typeClass()` inside `cn()`: tailwind-merge drops the role's own leading. In a plain class string, two leadings resolve by stylesheet order, not by the order you wrote them.",
+      "`typeClass` lives in `@/lib/type-scale`, which has no \"use client\" directive; `@/lib/size-context` re-exports it for client components. Import from `type-scale` in a server component, where a function from a client module can't be called.",
       "Text uses 2 colors, `text-foreground` and `text-muted-foreground` (`text-background` on a dark fill), and red only for errors: never an opacity step like `text-muted-foreground/60`. No uppercase, no letter-spacing, and no eyebrow labels above titles: hierarchy comes from size and weight. Lint enforces the colors, case, and spacing.",
-      "Text uses 3 weights: `fontWeights.normal` (400, opsz 14) for text, `fontWeights.semibold` (550, opsz 18) for headings and selected items, and `fontWeights.bold` (700, opsz 25) only for the display style, the page title. The paired optical size holds a label's width when it turns semibold, within \u00b10.4px across a corpus of real labels, where weight alone widens a 25-character label by about 3.4px. `medium` stays exported for existing code, but nothing in the library uses it.",
+      "Text uses 3 weights: `fontWeights.normal` (400, opsz 14) for text, `fontWeights.semibold` (550, opsz 18) for headings and selected items, and `fontWeights.bold` (700, opsz 25) only for the display style, the page title. The paired optical size holds a label's width when it turns semibold, within \u00b10.4px across a corpus of real labels, where weight alone widens a 25-character label by about 3.4px.",
       "`.typeset` sets markdown the way the site sets its pages, with nothing to tune: h1 display in bold, h2 title, h3 to h6 subtitle, paragraphs body in the muted color, figcaption and code caption, each with its role's line height. It reads the `--fs-*` and `--lh-*` tokens (px fallbacks), so a tuned scale reaches prose too. Micro stays out of prose: it sizes key caps, counters, and initials inside components, never reading text.",
       "Prose spacing is fixed in whole pixels: 12px between blocks and 8px below a heading, as on the site's doc pages, 24px above h1 and h2, 20px above h3 to h6, 24px on both sides of a rule, 4px between list items. `.typeset-compact`, next to `.typeset`, switches to the compact roles (12/18 body, 24/30 display) and steps the spacing down to 8, 4, 16, 12, 16, and 4.",
       "The prose sheet sits in `@layer components` with every selector inside `:where()`, so it has zero specificity and any utility on an element wins without `!important`. Each selector is scoped whole to `.typeset`, so a list or a `.not-typeset` around the prose changes nothing inside it. `.not-typeset` skips a subtree but keeps its outer spacing, so a component dropped into prose still sits in the rhythm, and plain divs take no rhythm at all, so an embedded component spaces itself.",
-      "It styles editors as well as rendered markdown: GFM task lists (remark-gfm classes) and Tiptap's markup (a `li[data-type=taskItem]` with a checkbox label and a content div, tables in `.tableWrapper`) both work as is. A to-do's checkbox centers on its first line, and a checked item fades and strikes through, as in Notion; its nested sub-tasks keep their own state.",
+      "It styles editors as well as rendered markdown: GFM task lists (remark-gfm classes) and Tiptap's markup (a `li[data-type=taskItem]` with a checkbox label and a content div, tables in `.tableWrapper`) both work as is. A to-do's checkbox is drawn like the library's CheckboxItem: a 16px outline (14px compact) with 5px corners that steps aside for the tick alone when checked, never a filled box. It centers on its first line, and lists indent by the box and its 4px gap (20px, 18px compact), so bullet text and to-do text start at the same edge. A checked item strikes through, as in Notion; its nested sub-tasks keep their own state.",
       "Space only goes above an element (no `:last-child`, no `:has()`, no `margin-bottom`) and lines wrap plainly (no `text-wrap: pretty` or `balance`, which re-wrap earlier lines as words arrive), so text streamed in at the end of a chat reply never moves what is already on screen. The root also resets `white-space`, so markdown's newlines between blocks don't turn into blank lines inside a pre-wrap chat bubble.",
     ],
     usage: `import { typeClass } from "@/lib/type-scale"; // no "use client", fine in server components
@@ -176,7 +176,7 @@ import { useSize } from "@/lib/size-context";
 // Or follow the surrounding SizeProvider:
 const { type } = useSize(); // type.caption, type.body, ...
 
-// Theme utilities from the tokens: text-caption, text-caption-compact, ...
+// Theme utilities from the tokens: text-caption, text-body, ...
 // Stock tailwind-merge reads a bare text-caption as a color, so prefer
 // typeClass() inside cn().
 
@@ -187,9 +187,8 @@ const { type } = useSize(); // type.caption, type.body, ...
 <article className={cn("typeset", compact && "typeset-compact")}>{markdown}</article>`,
     props: [
       "typeClass(role, variant = \"default\"): string. Size + leading classes with px fallbacks for one role at one step.",
-      "typeSize(role, variant = \"default\"): string. The size half alone, for text whose line box is set elsewhere.",
       "useSize().type: Record<TypeScaleRole, string>. The same classes for the resolved step.",
-      "useTypeScale(override?): Record<TypeScaleRole, { size: number; leading: number }>. Raw px per role for the resolved step.",
+      "useTypeScale(override?): Record<TypeScaleRole, number>. Font size in px per role for the resolved step.",
       ".typeset: sets plain elements in the type styles, as on the site. .typeset-compact (next to it) steps it down; .not-typeset opts a subtree out; .typeset-scroll wraps wide tables.",
     ],
   },

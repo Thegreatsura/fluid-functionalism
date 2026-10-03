@@ -5,11 +5,10 @@ export {
   useSizeContext,
   useTypeScale,
   sizeMap,
+  typeStyles,
   typeScale,
   typeClasses,
-  typeSizes,
   typeClass,
-  typeSize,
 } from "@/registry/default/lib/size-context";
 export type {
   SizeVariant,

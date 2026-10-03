@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
-import { useSize, SizeProvider, typeClass, typeSize, type SizeVariant } from "@/lib/size-context";
+import { useSize, SizeProvider, typeClass, type SizeVariant } from "@/lib/size-context";
 import { useFluidHover, type ItemRect } from "@/hooks/use-fluid-hover";
 import type { IconComponent } from "@/lib/icon-context";
 import { resolveSlotTemplate, slotElement } from "@/components/ui/sidebar-core";
@@ -923,7 +923,7 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
           : sizeClasses.variant === "compact"
             ? "h-7"
             : "h-8";
-    const textClass = size === "sm" ? typeSize("body", "compact") : sizeClasses.text;
+    const textClass = size === "sm" ? typeClass("body", "compact") : sizeClasses.text;
 
     // Roving tabindex: the active rows' buttons are the menu's tab stops; with
     // no active row, the menu's first row keeps it keyboard-reachable.
@@ -1421,7 +1421,7 @@ const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonP
           content={content}
           lit={lit}
           emphasized={isActive}
-          textClass={size === "sm" ? typeSize("body", "compact") : sizeClasses.text}
+          textClass={size === "sm" ? typeClass("body", "compact") : sizeClasses.text}
         />
       </>
     );

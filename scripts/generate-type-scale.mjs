@@ -35,7 +35,7 @@ const SITE_DISPLAY_MOBILE = {
 /** Node strips the TS types; the data object is plain. */
 export async function loadScale() {
   const mod = await import(`${pathToFileURL(SCALE_PATH).href}?t=${Date.now()}`);
-  return mod.typeScale;
+  return mod.typeStyles;
 }
 
 const suffix = (variant) => (variant === "compact" ? "-compact" : "");
@@ -54,29 +54,17 @@ function replaceBetween(source, start, end, body, file) {
   return source.slice(0, a + start.length) + body + source.slice(b);
 }
 
-export function sizeClassFor(role, variant, pair) {
-  return `text-[length:var(--fs-${role}${suffix(variant)},${pair.size}px)]`;
-}
-
-/** Both maps: size + leading (`typeClasses`) and size only (`typeSizes`). */
+/** The class map: size + leading per role and step (`typeClasses`). */
 export function renderClassMap(scale) {
-  const variants = ["default", "compact"];
-  const lines = [""];
-  for (const [name, pick] of [
-    ["typeClasses", classFor],
-    ["typeSizes", sizeClassFor],
-  ]) {
-    lines.push(`const ${name} = {`);
-    for (const v of variants) {
-      lines.push(`  ${v}: {`);
-      for (const [role, step] of Object.entries(scale)) {
-        lines.push(`    ${role}: "${pick(role, v, step[v])}",`);
-      }
-      lines.push("  },");
+  const lines = ["", "const typeClasses = {"];
+  for (const v of ["default", "compact"]) {
+    lines.push(`  ${v}: {`);
+    for (const [role, step] of Object.entries(scale)) {
+      lines.push(`    ${role}: "${classFor(role, v, step[v])}",`);
     }
-    lines.push("} as const satisfies Record<TypeScaleVariant, Record<TypeScaleRole, string>>;", "");
+    lines.push("  },");
   }
-  lines.push("// ");
+  lines.push("} as const satisfies Record<TypeScaleVariant, Record<TypeScaleRole, string>>;", "", "// ");
   return lines.join("\n");
 }
 
@@ -91,14 +79,13 @@ export function cssVars(scale) {
   return vars;
 }
 
+/** Tailwind's text-<role> utilities, at the default step. Compact is a
+ *  region decision, made in code through typeClass(role, "compact"). */
 export function themeVars(scale) {
   const vars = {};
   for (const role of Object.keys(scale)) {
-    for (const v of ["default", "compact"]) {
-      const s = suffix(v);
-      vars[`text-${role}${s}`] = `var(--fs-${role}${s})`;
-      vars[`text-${role}${s}--line-height`] = `var(--lh-${role}${s})`;
-    }
+    vars[`text-${role}`] = `var(--fs-${role})`;
+    vars[`text-${role}--line-height`] = `var(--lh-${role})`;
   }
   return vars;
 }
@@ -151,7 +138,7 @@ export function renderGlobals(scale) {
 
 export function renderMergeList(scale) {
   const names = [];
-  for (const role of Object.keys(scale)) names.push(`text-${role}`, `text-${role}-compact`);
+  for (const role of Object.keys(scale)) names.push(`text-${role}`);
   for (const role of Object.keys(scale)) names.push(`text-site-${role}`);
   return "\n" + names.map((n) => `        "${n}",`).join("\n") + "\n        // ";
 }
@@ -166,7 +153,7 @@ export function registryItem(scale) {
     type: "registry:item",
     title: "Type Scale",
     description:
-      "Six type roles (display, title, subtitle, body, caption, micro), each a font size and a line height, at the default and compact steps of the size ladder. Adds text-<role> and text-<role>-compact utilities and the --fs-* / --lh-* variables components read.",
+      "Six type roles (display, title, subtitle, body, caption, micro), each a font size and a line height, at the default and compact steps of the size ladder. Adds text-<role> utilities and the --fs-* / --lh-* variables components read.",
     cssVars: {
       theme: themeVars(scale),
       light: cssVars(scale),

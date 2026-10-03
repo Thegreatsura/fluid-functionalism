@@ -48,13 +48,12 @@ const HARDCODED_TYPE_MESSAGE =
 // would end the selector's regex literal.
 const REGISTRY_TYPE_REGEX = "\\btext-\\[[0-9]|\\bleading-\\[(?!var\\(--lh-)|(?:^|[\\s:!])text-(?:site-)?(?:display|title|subtitle|body|caption|micro)(?:-compact)?(?:[\\s!\\x2F]|$)";
 const REGISTRY_TYPE_MESSAGE =
-  "Registry type comes from the type scale: typeClass(role, variant), typeSize(role, variant), or sizeClasses.type.<role> from @/lib/size-context, not a raw text-[Npx], leading-[…], or bare text-<role> class.";
+  "Registry type comes from the type scale: typeClass(role, variant) or sizeClasses.type.<role> from @/lib/size-context, not a raw text-[Npx], leading-[…], or bare text-<role> class.";
 
 // Text uses 3 weights: fontWeights.normal, fontWeights.semibold, and
 // fontWeights.bold for the display style, through fontVariationSettings so
-// each carries its optical size. Bans the deprecated medium token, other raw
-// 'wght' values, and Tailwind weight utilities (font-normal is regular, so it
-// passes).
+// each carries its optical size. Bans other raw 'wght' values and Tailwind
+// weight utilities (font-normal is regular, so it passes).
 const WEIGHT_MESSAGE =
   "Text uses 3 weights: fontWeights.normal for text, fontWeights.semibold for headings and selected items, fontWeights.bold for the display style (via fontVariationSettings).";
 const RAW_WGHT_REGEX = "'wght' (?!400|550|700)[0-9]";
@@ -85,10 +84,6 @@ const shadcnRestrictedRules = {
     "error",
     ...classRules(CASE_TRACKING_REGEX, CASE_TRACKING_MESSAGE),
     ...classRules(FADED_TEXT_REGEX, FADED_TEXT_MESSAGE),
-    {
-      selector: "MemberExpression[object.name='fontWeights'][property.name='medium']",
-      message: WEIGHT_MESSAGE,
-    },
     { selector: `Literal[value=/${RAW_WGHT_REGEX}/]`, message: WEIGHT_MESSAGE },
     { selector: `TemplateElement[value.raw=/${RAW_WGHT_REGEX}/]`, message: WEIGHT_MESSAGE },
     { selector: `Literal[value=/${TW_WEIGHT_REGEX}/]`, message: WEIGHT_MESSAGE },
@@ -193,14 +188,5 @@ export default [
     // The tailwind-merge list names the role utilities on purpose.
     ignores: ["registry/default/lib/utils.ts"],
     rules: registryRestrictedRules,
-  },
-  // The weight tokens themselves, deprecated ones included, are defined here.
-  {
-    files: ["registry/default/lib/font-weight.ts"],
-    rules: {
-      "no-restricted-syntax": registryRestrictedRules["no-restricted-syntax"].filter(
-        (entry) => typeof entry === "string" || entry.message !== WEIGHT_MESSAGE
-      ),
-    },
   },
 ];

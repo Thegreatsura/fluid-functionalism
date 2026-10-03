@@ -6,6 +6,18 @@
   font-family: "Inter";
   src: url("/fonts/InterVariable.ttf") format("truetype");
   font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* The real italic, from the same Inter 4.0 release. Without it, the browser
+   slants the upright letters for <em> and markdown italics. Only pages that
+   set italic text download it. */
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/InterVariable-Italic.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: italic;
   font-display: swap;
 }
 

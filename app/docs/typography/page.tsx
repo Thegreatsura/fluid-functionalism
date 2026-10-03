@@ -6,7 +6,14 @@ import { MARKDOWN_SAMPLE, TypesetEditor } from "@/lib/docs/typeset-sample";
 import { TYPESET_SPACE } from "@/lib/typeset/generate";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { cn } from "@/lib/utils";
-import { BalanceDemo, PrettyDemo, TypeScaleSpecimen, WeightOpszDemo } from "./demos";
+import {
+  BalanceDemo,
+  NumbersDemo,
+  PrettyDemo,
+  TrimDemo,
+  TypeScaleSpecimen,
+  WeightOpszDemo,
+} from "./demos";
 
 /** Inline code chip used throughout the prose. */
 function Code({ children }: { children: ReactNode }) {
@@ -142,8 +149,8 @@ export default function TypographyDoc() {
         <GapTable />
       </DocSection>
 
-      <DocSection title="3 tweaks">
-        <P>Small details that stop text from jumping or wrapping awkwardly.</P>
+      <DocSection title="5 tweaks">
+        <P>Small details that keep text still, snug in its box, and evenly wrapped.</P>
 
         <H3 className="mt-2">Weight without reflow</H3>
         <P>
@@ -155,6 +162,24 @@ export default function TypographyDoc() {
           .
         </P>
         <WeightOpszDemo />
+
+        <H3 className="mt-6">Steady numbers</H3>
+        <P>
+          Changing numbers use<Code>tabular-nums</Code>so every digit is the same width and the
+          words after them hold still.
+        </P>
+        <NumbersDemo />
+
+        <H3 className="mt-6">Trimmed labels</H3>
+        <P>
+          Labels use<Code>text-box: trim-both cap alphabetic</Code>so the padding you set is the
+          space you see. Idea from{" "}
+          <ExternalLink href="https://interfaces.dev/magazine/issues/working-with-type">
+            @jakubkrehel
+          </ExternalLink>
+          .
+        </P>
+        <TrimDemo />
 
         <H3 className="mt-6">Balanced headings</H3>
         <P>

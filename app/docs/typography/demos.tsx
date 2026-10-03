@@ -381,6 +381,277 @@ export function WeightOpszDemo() {
 }
 
 // ---------------------------------------------------------------------------
+// Tabular numbers
+// ---------------------------------------------------------------------------
+
+// Measured at 13px: Inter's default "1" is 5.3px wide and its "0" 8.2px, so
+// the line drifts 6.2px as the count climbs from 10 to 48. Tabular digits are
+// all 8.4px, and the line holds still.
+const COUNT_FROM = 10;
+const COUNT_TO = 48;
+const countLabel = (n: number) => `Installed ${n} of ${COUNT_TO} components`;
+const TICK_MS = 120;
+/** Ticks the finished count holds before the next run. */
+const HOLD_TICKS = 10;
+const CYCLE_TICKS = COUNT_TO - COUNT_FROM + 1 + HOLD_TICKS;
+
+/** A row whose count climbs. The blue line marks the narrowest count's
+ *  width; whatever runs past it is tinted red. */
+function CountRow({
+  numeric,
+  count,
+  onDrift,
+}: {
+  /** `normal-nums` or `tabular-nums`. */
+  numeric: string;
+  count: number;
+  onDrift: (px: number) => void;
+}) {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLSpanElement>(null);
+  // Takes every count's label in turn, out of sight, to measure it.
+  const sizerRef = useRef<HTMLSpanElement>(null);
+  // In px from the frame: the label's left edge, every count's width, and
+  // the label's box.
+  const [marks, setMarks] = useState<{
+    left: number;
+    widths: number[];
+    top: number;
+    height: number;
+  } | null>(null);
+  const onDriftRef = useRef(onDrift);
+  onDriftRef.current = onDrift;
+
+  useLayoutEffect(() => {
+    let cancelled = false;
+    const measure = () => {
+      const frame = frameRef.current;
+      const label = labelRef.current;
+      const sizer = sizerRef.current;
+      if (cancelled || !frame || !label || !sizer) return;
+      const widths: number[] = [];
+      for (let n = COUNT_FROM; n <= COUNT_TO; n++) {
+        sizer.textContent = countLabel(n);
+        widths.push(sizer.getBoundingClientRect().width);
+      }
+      const f = frame.getBoundingClientRect();
+      const l = label.getBoundingClientRect();
+      setMarks({ left: l.left - f.left, widths, top: l.top - f.top, height: l.height });
+      onDriftRef.current(Math.max(...widths) - Math.min(...widths));
+    };
+    // Widths are only right once Inter has loaded.
+    document.fonts.ready.then(measure);
+    const ro = new ResizeObserver(measure);
+    if (frameRef.current) ro.observe(frameRef.current);
+    return () => {
+      cancelled = true;
+      ro.disconnect();
+    };
+  }, []);
+
+  const rest = marks ? Math.min(...marks.widths) : 0;
+  const over = marks ? marks.widths[count - COUNT_FROM] - rest : 0;
+
+  return (
+    <div ref={frameRef} className={cn("relative p-1", numeric)}>
+      {marks && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-2 z-20 w-px bg-[#6B97FF]"
+          style={{ left: marks.left + rest }}
+        />
+      )}
+      {marks && over >= 0.5 && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute z-20 bg-[#F2555A]/45"
+          style={{ left: marks.left + rest, width: over, top: marks.top - 3, height: marks.height + 6 }}
+        />
+      )}
+      <div className={cn("flex h-9 items-center px-2", typeClass("body"))}>
+        <span ref={labelRef} className="whitespace-nowrap text-foreground">
+          {countLabel(count)}
+        </span>
+      </div>
+      <span
+        ref={sizerRef}
+        aria-hidden
+        className={cn("invisible absolute left-0 top-0 whitespace-nowrap", typeClass("body"))}
+      />
+    </div>
+  );
+}
+
+const drift = (px: number | null) =>
+  px === null ? "" : px < 0.25 ? ": holds still" : `: drifts ${px.toFixed(1)}px`;
+
+export function NumbersDemo() {
+  const [proportional, setProportional] = useState<number | null>(null);
+  const [tabular, setTabular] = useState<number | null>(null);
+  // The count climbs in both rows at once while the demo is on screen, and
+  // holds while a pointer is inside so a frame can be read. Reduced motion
+  // shows the last count.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(rootRef, { amount: 0.5 });
+  const reduceMotion = useReducedMotion();
+  const [held, setHeld] = useState(false);
+  const [tick, setTick] = useState(0);
+  const playing = inView && !reduceMotion && !held;
+
+  useEffect(() => {
+    if (!playing) return;
+    const id = setInterval(() => setTick((t) => (t + 1) % CYCLE_TICKS), TICK_MS);
+    return () => clearInterval(id);
+  }, [playing]);
+
+  const count = reduceMotion ? COUNT_TO : Math.min(COUNT_FROM + tick, COUNT_TO);
+
+  return (
+    <ComponentPreview hideHeader>
+      <div
+        ref={rootRef}
+        className="grid w-full max-w-xl gap-5 sm:grid-cols-2"
+        onMouseEnter={() => setHeld(true)}
+        onMouseLeave={() => setHeld(false)}
+      >
+        <Specimen good={false} caption={`Proportional digits${drift(proportional)}`}>
+          <CountRow numeric="normal-nums" count={count} onDrift={setProportional} />
+        </Specimen>
+        <Specimen good caption={`Tabular digits${drift(tabular)}`}>
+          <CountRow numeric="tabular-nums" count={count} onDrift={setTabular} />
+        </Specimen>
+      </div>
+    </ComponentPreview>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Text-box trim
+// ---------------------------------------------------------------------------
+
+// Measured at 13px on a 20px line: the line box reaches 5.3px past the
+// capitals and 5.3px past the baseline (Inter's two are equal), so 8px of
+// padding reads as 13px. Trimmed, the box stops at the capitals and the
+// baseline, and 8px reads as 8px.
+const TRIM = "[text-box:trim-both_cap_alphabetic]";
+const CHIP_LABEL = "Draft saved";
+/** Inter's cap height in ems, from the font's OS/2 table (1490 / 2048). */
+const INTER_CAP_HEIGHT = 1490 / 2048;
+
+/** A chip with 8px of padding on every side. Blue lines mark its label's
+ *  capitals and baseline; what the line box adds past them is tinted red. */
+function TrimChip({ trimmed, onAbove }: { trimmed: boolean; onAbove: (px: number) => void }) {
+  const shape = useShape();
+  const chipRef = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLSpanElement>(null);
+  // An empty inline block on the label's baseline: its bottom is the baseline.
+  const baselineRef = useRef<HTMLSpanElement>(null);
+  // In px from the chip: the label's box, its capitals' top, and its baseline.
+  const [marks, setMarks] = useState<{
+    left: number;
+    width: number;
+    top: number;
+    bottom: number;
+    cap: number;
+    base: number;
+  } | null>(null);
+  const onAboveRef = useRef(onAbove);
+  onAboveRef.current = onAbove;
+
+  useLayoutEffect(() => {
+    let cancelled = false;
+    const measure = () => {
+      const chip = chipRef.current;
+      const label = labelRef.current;
+      const baseline = baselineRef.current;
+      if (cancelled || !chip || !label || !baseline) return;
+      const c = chip.getBoundingClientRect();
+      const l = label.getBoundingClientRect();
+      const base = baseline.getBoundingClientRect().bottom - c.top;
+      const cap = base - parseFloat(getComputedStyle(label).fontSize) * INTER_CAP_HEIGHT;
+      setMarks({ left: l.left - c.left, width: l.width, top: l.top - c.top, bottom: l.bottom - c.top, cap, base });
+      onAboveRef.current(cap);
+    };
+    // Metrics are only right once Inter has loaded.
+    document.fonts.ready.then(measure);
+    const ro = new ResizeObserver(measure);
+    if (chipRef.current) ro.observe(chipRef.current);
+    return () => {
+      cancelled = true;
+      ro.disconnect();
+    };
+  }, []);
+
+  return (
+    <div
+      ref={chipRef}
+      className={cn("relative inline-flex bg-[var(--tint)] p-2 text-foreground", shape.bg, typeClass("body"))}
+    >
+      {marks && marks.cap - marks.top >= 0.5 && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute bg-[#F2555A]/45"
+          style={{ left: marks.left, width: marks.width, top: marks.top, height: marks.cap - marks.top }}
+        />
+      )}
+      {marks && marks.bottom - marks.base >= 0.5 && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute bg-[#F2555A]/45"
+          style={{ left: marks.left, width: marks.width, top: marks.base, height: marks.bottom - marks.base }}
+        />
+      )}
+      {/* text-box needs a block container: the label is a flex item. */}
+      <span ref={labelRef} className={cn("relative z-10 whitespace-nowrap", trimmed && TRIM)}>
+        <span ref={baselineRef} aria-hidden className="inline-block h-0 w-0 align-baseline" />
+        {CHIP_LABEL}
+      </span>
+      {marks &&
+        [marks.cap, marks.base].map((y, i) => (
+          <span
+            key={i}
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 z-20 h-px -translate-y-1/2 bg-[#6B97FF]"
+            style={{ top: y }}
+          />
+        ))}
+    </div>
+  );
+}
+
+const above = (px: number | null) =>
+  px === null ? "" : `: ${Math.round(px)}px above the capitals`;
+
+export function TrimDemo() {
+  const [plain, setPlain] = useState<number | null>(null);
+  const [trimmed, setTrimmed] = useState<number | null>(null);
+  // A browser without text-box sets both chips the same.
+  const [trims, setTrims] = useState(true);
+  return (
+    <ComponentPreview hideHeader>
+      <div className="grid w-full max-w-xl gap-5 sm:grid-cols-2">
+        <Specimen good={false} className="flex h-16 items-center justify-center" caption={`Untrimmed${above(plain)}`}>
+          <TrimChip trimmed={false} onAbove={setPlain} />
+        </Specimen>
+        <Specimen
+          good
+          className="flex h-16 items-center justify-center"
+          caption={`Trimmed${trims ? above(trimmed) : ": not in this browser yet"}`}
+        >
+          <TrimChip
+            trimmed
+            onAbove={(px) => {
+              setTrimmed(px);
+              setTrims(CSS.supports("text-box", "trim-both cap alphabetic"));
+            }}
+          />
+        </Specimen>
+      </div>
+    </ComponentPreview>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Balance and pretty
 // ---------------------------------------------------------------------------
 

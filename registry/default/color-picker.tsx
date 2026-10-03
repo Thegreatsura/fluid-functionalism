@@ -855,6 +855,16 @@ function FormatDropdown({
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : internalOpen;
+  // Open from the first render, the menu loads with the page, and Base UI
+  // focuses a menu as it opens: on mount, and again a frame later (which a
+  // background tab holds until it is shown). Until the reader reaches into
+  // the menu, that focus goes back where it came from, so the page keeps its
+  // keys (arrows, Tab).
+  const openWithPageRef = useRef(open);
+  const releaseFocus = () => {
+    openWithPageRef.current = false;
+  };
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const actionsRef = useRef<{ unmount: () => void; close: () => void } | null>(null);
   const shape = useShape();
   const sizeClasses = useSize();
@@ -906,6 +916,7 @@ function FormatDropdown({
     <Menu.Root
       open={open}
       onOpenChange={(next) => {
+        releaseFocus();
         if (!isControlled) setInternalOpen(next);
       }}
       actionsRef={actionsRef}
@@ -916,6 +927,8 @@ function FormatDropdown({
       {/* The trigger holds bg-active and foreground text while open, so it
           reads as the menu's anchor; the chevron flips 180° over 150ms. */}
       <Menu.Trigger
+        ref={triggerRef}
+        onPointerDown={releaseFocus}
         className={cn(
           "flex items-center justify-between bg-transparent hover:bg-hover hover:text-foreground transition-colors duration-80 outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)] cursor-pointer",
           sizeClasses.gap,
@@ -978,6 +991,7 @@ function FormatDropdown({
                 // moves the highlight too, but shows the ring only for
                 // :focus-visible; blur clears both only once focus leaves the
                 // popup, not when it moves between rows.
+                onPointerDown={releaseFocus}
                 onMouseEnter={() => {
                   handlers.onMouseEnter();
                   setFocusedIndex(null);
@@ -986,6 +1000,20 @@ function FormatDropdown({
                 onMouseLeave={handlers.onMouseLeave}
                 onClick={handlers.onClick}
                 onFocus={(e) => {
+                  // Arriving from the trigger or a row is the reader's own
+                  // move. Anything else is Base UI's: hand it back. Base UI
+                  // keeps the menu open, since focus returns to the element it
+                  // came from, or to none.
+                  if (openWithPageRef.current) {
+                    const from = e.relatedTarget as HTMLElement | null;
+                    if (from === triggerRef.current || e.currentTarget.contains(from)) {
+                      releaseFocus();
+                    } else {
+                      if (from) from.focus({ preventScroll: true });
+                      else (e.target as HTMLElement).blur();
+                      return;
+                    }
+                  }
                   const indexAttr = (e.target as HTMLElement)
                     .closest("[data-fluid-hover-index]")
                     ?.getAttribute("data-fluid-hover-index");

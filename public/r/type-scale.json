@@ -44,9 +44,9 @@
       "fs-subtitle-compact": "13px",
       "lh-subtitle-compact": "18px",
       "fs-body": "13px",
-      "lh-body": "18px",
+      "lh-body": "20px",
       "fs-body-compact": "12px",
-      "lh-body-compact": "16px",
+      "lh-body-compact": "18px",
       "fs-caption": "12px",
       "lh-caption": "16px",
       "fs-caption-compact": "11px",
@@ -61,5 +61,5 @@
   "categories": [
     "theme"
   ],
-  "type": "registry:theme"
+  "type": "registry:item"
 }

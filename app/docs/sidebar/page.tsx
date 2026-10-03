@@ -343,7 +343,7 @@ function tipWithShortcut(label: string, shortcut: string) {
   return (
     <span className="flex items-center gap-2">
       <span className="[text-box:trim-both_cap_alphabetic]">{label}</span>
-      <kbd className="-my-1 flex h-4 min-w-4 items-center justify-center rounded border border-background/30 px-1 font-sans text-[10px] text-background/80">
+      <kbd className="-my-1 flex h-4 min-w-4 items-center justify-center rounded border border-background/30 px-1 font-sans text-[10px] text-background">
         {shortcut}
       </kbd>
     </span>
@@ -880,7 +880,7 @@ function IconRailVsPeekPreview({ paused }: { paused: boolean }) {
           <div className="absolute inset-y-0 left-0 flex w-11 flex-col items-center gap-1 border-r border-border/60 pt-2">
             <span
               aria-hidden
-              className={`mb-1 flex size-6 shrink-0 items-center justify-center bg-foreground text-[11px] text-background ${
+              className={`mb-1 flex size-6 shrink-0 items-center justify-center bg-foreground text-[11px] leading-3.5 text-background ${
                 shape.bgRadius >= 20 ? "rounded-full" : "rounded-md"
               }`}
               style={{ fontVariationSettings: fontWeights.semibold }}
@@ -991,7 +991,7 @@ function IconRailVsPeekPreview({ paused }: { paused: boolean }) {
                 {RAIL_GROUPS.map((group, g) => (
                   <Fragment key={group.label}>
                     {/* Regular SidebarGroupLabel metrics: h-8, px-2, 12px. */}
-                    <span className="flex h-8 shrink-0 items-center px-2 text-[12px] text-muted-foreground/70">
+                    <span className="flex h-8 shrink-0 items-center px-2 text-[12px] text-muted-foreground">
                       {group.label}
                     </span>
                     {group.items.map((item, i) => {
@@ -1695,7 +1695,7 @@ function HeaderFooterPreview({ stack }: { stack: "vertical" | "horizontal" }) {
                     {/* Shortcut chip, revealed on row hover — a labeled row
                         wants no tooltip. */}
                     <span className="ml-auto inline-flex opacity-0 transition-opacity duration-80 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100">
-                      <kbd className="font-sans text-[11px] text-muted-foreground">⇧⌘O</kbd>
+                      <kbd className="font-sans text-[11px] leading-3.5 text-muted-foreground">⇧⌘O</kbd>
                     </span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

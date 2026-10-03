@@ -43,13 +43,56 @@ const HARDCODED_TYPE_MESSAGE =
 // text-[13px] or leading-[18px] is drift the scale can't reach, and a bare
 // text-caption (or site-only text-site-caption) breaks in installs: stock
 // tailwind-merge takes it for a color and drops it inside cn().
-const REGISTRY_TYPE_REGEX = "\\btext-\\[[0-9]|\\bleading-\\[(?!var\\(--lh-)|(?:^|\\s)text-(?:site-)?(?:display|title|subtitle|body|caption|micro)(?:-compact)?(?:\\s|$)";
+// The bare role class is caught behind a variant (`sm:`, `hover:`), an
+// important `!`, or with a `/leading` modifier; `\x2F` is the slash, which
+// would end the selector's regex literal.
+const REGISTRY_TYPE_REGEX = "\\btext-\\[[0-9]|\\bleading-\\[(?!var\\(--lh-)|(?:^|[\\s:!])text-(?:site-)?(?:display|title|subtitle|body|caption|micro)(?:-compact)?(?:[\\s!\\x2F]|$)";
 const REGISTRY_TYPE_MESSAGE =
-  "Registry type comes from the type scale: typeClass(role, variant) / sizeClasses.type.<role> from @/lib/size-context, not a raw text-[Npx], leading-[…], or bare text-<role> class.";
+  "Registry type comes from the type scale: typeClass(role, variant), typeSize(role, variant), or sizeClasses.type.<role> from @/lib/size-context, not a raw text-[Npx], leading-[…], or bare text-<role> class.";
+
+// Text uses 3 weights: fontWeights.normal, fontWeights.semibold, and
+// fontWeights.bold for the display style, through fontVariationSettings so
+// each carries its optical size. Bans the deprecated medium token, other raw
+// 'wght' values, and Tailwind weight utilities (font-normal is regular, so it
+// passes).
+const WEIGHT_MESSAGE =
+  "Text uses 3 weights: fontWeights.normal for text, fontWeights.semibold for headings and selected items, fontWeights.bold for the display style (via fontVariationSettings).";
+const RAW_WGHT_REGEX = "'wght' (?!400|550|700)[0-9]";
+const TW_WEIGHT_REGEX = "(^|[\\s:!])font-(thin|extralight|light|medium|semibold|bold|extrabold|black)($|[\\s!])";
+
+// Hierarchy comes from size and weight: no uppercase, no letter-spacing
+// (tracking-normal is a reset, so it passes). And text uses 2 colors,
+// foreground and muted (text-background on dark fills), never an opacity
+// step of them. Scoped to class strings, so prose naming a class is fine;
+// \x2F is the slash, which would end the selector's regex literal.
+const CASE_TRACKING_REGEX = "(^|[\\s:!])(uppercase($|[\\s!])|tracking-(?!normal)[a-z0-9\\[])";
+const CASE_TRACKING_MESSAGE = "Hierarchy comes from size and weight: no uppercase, no letter-spacing.";
+const FADED_TEXT_REGEX = "(^|[\\s:!])text-(muted-foreground|foreground|background)\\x2F[0-9]";
+const FADED_TEXT_MESSAGE =
+  "Text uses 2 colors: text-foreground or text-muted-foreground (text-background on dark fills), not an opacity step of them.";
+const CLASS_SCOPES = [
+  'JSXAttribute[name.name="className"]',
+  "CallExpression[callee.name=/^(cn|cva|clsx)$/]",
+];
+const classRules = (regex, message) =>
+  CLASS_SCOPES.flatMap((scope) => [
+    { selector: `${scope} Literal[value=/${regex}/]`, message },
+    { selector: `${scope} TemplateElement[value.raw=/${regex}/]`, message },
+  ]);
 
 const shadcnRestrictedRules = {
   "no-restricted-syntax": [
     "error",
+    ...classRules(CASE_TRACKING_REGEX, CASE_TRACKING_MESSAGE),
+    ...classRules(FADED_TEXT_REGEX, FADED_TEXT_MESSAGE),
+    {
+      selector: "MemberExpression[object.name='fontWeights'][property.name='medium']",
+      message: WEIGHT_MESSAGE,
+    },
+    { selector: `Literal[value=/${RAW_WGHT_REGEX}/]`, message: WEIGHT_MESSAGE },
+    { selector: `TemplateElement[value.raw=/${RAW_WGHT_REGEX}/]`, message: WEIGHT_MESSAGE },
+    { selector: `Literal[value=/${TW_WEIGHT_REGEX}/]`, message: WEIGHT_MESSAGE },
+    { selector: `TemplateElement[value.raw=/${TW_WEIGHT_REGEX}/]`, message: WEIGHT_MESSAGE },
     {
       selector: `Literal[value=/${SHADCN_RESERVED_REGEX}/]`,
       message:
@@ -150,5 +193,14 @@ export default [
     // The tailwind-merge list names the role utilities on purpose.
     ignores: ["registry/default/lib/utils.ts"],
     rules: registryRestrictedRules,
+  },
+  // The weight tokens themselves, deprecated ones included, are defined here.
+  {
+    files: ["registry/default/lib/font-weight.ts"],
+    rules: {
+      "no-restricted-syntax": registryRestrictedRules["no-restricted-syntax"].filter(
+        (entry) => typeof entry === "string" || entry.message !== WEIGHT_MESSAGE
+      ),
+    },
   },
 ];

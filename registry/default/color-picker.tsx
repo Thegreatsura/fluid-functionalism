@@ -925,7 +925,7 @@ function FormatDropdown({
           open ? "bg-active text-foreground" : "text-muted-foreground active:bg-active",
           shape.input
         )}
-        style={{ fontVariationSettings: fontWeights.medium }}
+        style={{ fontVariationSettings: fontWeights.normal }}
       >
         <span>{FORMAT_LABELS[value]}</span>
         <ChevronDownIcon
@@ -1249,7 +1249,7 @@ const TextColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
             align === "right" && "text-right",
             inputClassName
           )}
-          style={{ fontVariationSettings: fontWeights.medium }}
+          style={{ fontVariationSettings: fontWeights.normal }}
         />
       </div>
     );
@@ -1489,7 +1489,7 @@ const ScrubColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
               !editing && "pointer-events-none",
               inputClassName
             )}
-            style={{ fontVariationSettings: fontWeights.medium }}
+            style={{ fontVariationSettings: fontWeights.normal }}
           />
         </NumberField.ScrubArea>
       </NumberField.Root>
@@ -2240,7 +2240,7 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
               shape.input,
               triggerClassName
             )}
-            style={{ fontVariationSettings: fontWeights.medium }}
+            style={{ fontVariationSettings: fontWeights.normal }}
           >
             {triggerLabel && triggerLabelPosition === "left" && (
               <span className={cn("text-muted-foreground px-1 select-none", sizeClasses.text)}>

@@ -157,7 +157,7 @@ export function SettingsDialog({
               >
                 {current.label}
               </h3>
-              <p className="hidden text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] text-muted-foreground sm:block">
+              <p className="hidden text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)] text-muted-foreground sm:block">
                 {current.description}
               </p>
             </div>
@@ -202,7 +202,7 @@ function SettingRow({
       )}
     >
       <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] text-foreground">{label}</span>
+        <span className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)] text-foreground">{label}</span>
         {description && (
           <span className="text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)] text-muted-foreground">{description}</span>
         )}

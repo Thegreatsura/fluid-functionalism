@@ -99,7 +99,7 @@ const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
                     // word-by-word stream visibly reflows earlier words to new
                     // lines. Default (normal) wrapping appends left-to-right and
                     // stays put as the text grows.
-                    "text-pretty bg-[color-mix(in_oklab,var(--accent),var(--background)_45%)] text-accent-foreground"
+                    "text-pretty bg-[color-mix(in_oklab,var(--accent),var(--background)_45%)] text-foreground"
                   )
                 : "text-foreground"
             )}

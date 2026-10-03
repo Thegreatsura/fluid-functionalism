@@ -140,7 +140,7 @@ function AIBlock() {
           className={cn("flex gap-2.5 rounded-xl p-3.5", surfaceClasses(2, 2))}
         >
           <Sparkle size={16} className="mt-0.5 shrink-0 text-muted-foreground" />
-          <p className="text-site-subtitle leading-relaxed text-foreground">{b}</p>
+          <p className="text-site-subtitle text-foreground">{b}</p>
         </div>
       ))}
 
@@ -178,7 +178,7 @@ function AIBlock() {
 function DocumentBody() {
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-[15px] leading-relaxed text-muted-foreground">
+      <p className="text-[15px] leading-6 text-muted-foreground">
         The single source of truth for what we&rsquo;re building this quarter, why,
         and who owns each bet. Edit freely — every block here is a Fluid
         Functionalism component.
@@ -187,7 +187,7 @@ function DocumentBody() {
       {/* Callout */}
       <div className={cn("flex gap-3 rounded-xl p-4", surfaceClasses(2, 2))}>
         <span className="text-[18px] leading-none">💡</span>
-        <p className="text-site-subtitle leading-relaxed text-foreground">
+        <p className="text-site-subtitle text-foreground">
           Decisions are final once they land in the Initiatives table. Use
           comments for anything still in debate.
         </p>
@@ -195,7 +195,7 @@ function DocumentBody() {
 
       <h2
         className="pt-2 text-[18px] text-foreground"
-        style={{ fontVariationSettings: fontWeights.bold }}
+        style={{ fontVariationSettings: fontWeights.semibold }}
       >
         Goals
       </h2>
@@ -216,7 +216,7 @@ function DocumentBody() {
 
       <h2
         className="pt-2 text-[18px] text-foreground"
-        style={{ fontVariationSettings: fontWeights.bold }}
+        style={{ fontVariationSettings: fontWeights.semibold }}
       >
         Initiatives
       </h2>
@@ -249,7 +249,7 @@ function DocumentBody() {
 
       <h2
         className="pt-2 text-[18px] text-foreground"
-        style={{ fontVariationSettings: fontWeights.bold }}
+        style={{ fontVariationSettings: fontWeights.semibold }}
       >
         Draft with AI
       </h2>
@@ -273,13 +273,13 @@ export default function QuillPage() {
         <div className="mx-auto max-w-[760px] px-8 py-12">
           <div className="mb-2 text-[40px]">🗓️</div>
           <h1
-            className="text-[34px] leading-tight text-foreground"
+            className="text-[34px] leading-10.5 text-foreground"
             style={{ fontVariationSettings: fontWeights.bold }}
           >
             Q3 Planning
           </h1>
           <div className="mb-6 mt-2 flex items-center gap-2 text-site-caption text-muted-foreground">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-[9px] text-white">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-[9px] text-background">
               DK
             </span>
             Dana Kim · edited just now

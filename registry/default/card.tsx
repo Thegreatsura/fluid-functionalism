@@ -825,9 +825,11 @@ function CardImage({ src, alt, className }: CardImageProps) {
 CardImage.displayName = "CardImage";
 
 // ── CardEyebrow ──────────────────────────────────────────
-// Small uppercase label above the title (e.g. "New Model"). Typographically
-// it's the caption role of the type scale in uppercase — see /docs/sizes.
+// Small label above the title (e.g. "New Model"). Deprecated: Fluid
+// Functionalism doesn't use eyebrows, a card starts with its title. Kept so
+// existing code keeps compiling.
 
+/** @deprecated No eyebrows: a card starts with its title. */
 const CardEyebrow = forwardRef<HTMLSpanElement, HTMLAttributes<HTMLSpanElement>>(
   ({ className, ...props }, ref) => {
     const compact = useSize().variant === "compact";
@@ -837,7 +839,7 @@ const CardEyebrow = forwardRef<HTMLSpanElement, HTMLAttributes<HTMLSpanElement>>
         data-slot="card-eyebrow"
         className={cn(
           typeClass("caption", compact ? "compact" : "default"),
-          "uppercase tracking-wide text-muted-foreground",
+          "text-muted-foreground",
           className
         )}
         style={{ fontVariationSettings: fontWeights.semibold }}
@@ -880,7 +882,7 @@ function CardFeature({ icon: Icon, title, description }: CardFeatureProps) {
             "text-foreground [text-box:trim-both_cap_alphabetic]",
             sizeClasses.text
           )}
-          style={{ fontVariationSettings: fontWeights.medium }}
+          style={{ fontVariationSettings: fontWeights.semibold }}
         >
           {title}
         </span>
@@ -982,7 +984,7 @@ function CardButton({
         target={external ? "_blank" : undefined}
         rel={external ? "noopener noreferrer" : undefined}
         className={classes}
-        style={{ fontVariationSettings: fontWeights.medium }}
+        style={{ fontVariationSettings: fontWeights.normal }}
       >
         {inner}
       </Link>
@@ -995,7 +997,7 @@ function CardButton({
       onClick={onClick}
       disabled={disabled}
       className={classes}
-      style={{ fontVariationSettings: fontWeights.medium }}
+      style={{ fontVariationSettings: fontWeights.normal }}
     >
       {inner}
     </button>

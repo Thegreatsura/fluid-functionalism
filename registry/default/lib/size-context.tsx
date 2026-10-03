@@ -11,7 +11,9 @@ import {
 import {
   typeScale,
   typeClasses,
+  typeSizes,
   typeClass,
+  typeSize,
   type TypeScaleRole,
   type TypeScalePair,
   type TypeScaleStep,
@@ -35,7 +37,9 @@ interface SizeClasses {
   segmentItem: string;
   /** Padding of the segmented list around its tabs. */
   segmentPad: string;
-  /** Body text inside controls (size + leading) — same as `type.body`. */
+  /** Body text inside controls (size + line height), same as `type.body`.
+   *  Its 20px line box (18px compact) is what puts a padded row on the
+   *  ladder: 8 + 20 + 8 = 36, 5 + 18 + 5 = 28. */
   text: string;
   /** One class string per type role at this step (size + leading). */
   type: Record<TypeScaleRole, string>;
@@ -173,7 +177,9 @@ export {
   sizeMap,
   typeScale,
   typeClasses,
+  typeSizes,
   typeClass,
+  typeSize,
 };
 export type {
   SizeVariant,

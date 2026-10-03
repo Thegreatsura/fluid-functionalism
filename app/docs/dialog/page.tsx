@@ -170,7 +170,7 @@ export default function DialogDoc() {
       </DocSection>
 
       <DocSection title="Sizes">
-        <p className="text-site-subtitle text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           3 widths: <code>sm</code> for a confirmation, <code>lg</code> for a
           short form, <code>xl</code> for a layout of its own.
         </p>
@@ -184,7 +184,7 @@ export default function DialogDoc() {
       </DocSection>
 
       <DocSection title="With a sidebar">
-        <p className="text-site-subtitle text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           The <code>dialog-sidebar</code> block: an <code>xl</code> dialog, a
           Sidebar of sections, a scrolling panel. Below <code>sm</code> a
           Select takes over.

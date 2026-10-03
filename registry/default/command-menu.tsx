@@ -74,8 +74,8 @@ export interface CommandMenuItemData {
   /** What the footer names Enter while the row is highlighted, e.g. "Open
    *  Showcase" for a row labelled "Showcase". Defaults to the label. */
   action?: string;
-  /** Secondary text after the label: the label's size, one contrast step
-   *  lower. */
+  /** Secondary text after the label: the label's size, in the muted
+   *  color. */
   description?: string;
   icon?: IconComponent;
   /** Keys shown at the row's trailing edge, e.g. `"mod+p"` or `"⌘⇧P"`.
@@ -1314,14 +1314,11 @@ const CommandMenuItem = memo(forwardRef<HTMLDivElement, CommandMenuItemProps>(
             <span className="truncate [text-box:trim-both_cap_alphabetic] py-1 -my-1">
               {item.label}
             </span>
-            {/* The description shares the label's size and sits one
-                contrast step below it, on both states of the row. */}
+            {/* The description shares the label's size, muted on both
+                states of the row. */}
             {item.description && (
               <span
-                className={cn(
-                  "min-w-0 truncate [text-box:trim-both_cap_alphabetic] py-1 -my-1 transition-[color] duration-80",
-                  isActive ? "text-muted-foreground" : "text-muted-foreground/60"
-                )}
+                className="min-w-0 truncate [text-box:trim-both_cap_alphabetic] py-1 -my-1 text-muted-foreground"
               >
                 {item.description}
               </span>

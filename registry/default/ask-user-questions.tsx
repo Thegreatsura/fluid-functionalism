@@ -739,7 +739,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
           )}
           {...rest}
         >
-          <p className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] text-muted-foreground">No questions.</p>
+          <p className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)] text-muted-foreground">No questions.</p>
         </div>
       );
     }
@@ -1068,7 +1068,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                       style={{
                         fontVariationSettings: isSelected
                           ? fontWeights.semibold
-                          : fontWeights.medium,
+                          : fontWeights.normal,
                       }}
                     >
                       {opt.title}
@@ -1100,7 +1100,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                       style={{
                         fontVariationSettings: isSelected
                           ? fontWeights.semibold
-                          : fontWeights.medium,
+                          : fontWeights.normal,
                       }}
                     >
                       {opt.title}
@@ -1197,9 +1197,9 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                   // resize handle, no scrollbars (height is JS-driven,
                   // see the auto-resize effect above).
                   "col-start-1 row-start-1 block w-full bg-transparent border-0 p-0 m-0 outline-none resize-none overflow-hidden text-foreground placeholder:text-muted-foreground",
-                  sizeClasses.text
+                  sizeClasses.type.body
                 )}
-                style={{ fontVariationSettings: fontWeights.medium }}
+                style={{ fontVariationSettings: fontWeights.normal }}
               />
             </span>
           </Row>
@@ -1368,9 +1368,9 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                         }}
                         className={cn(
                           "block w-full bg-transparent border-0 p-0 m-0 outline-none resize-none overflow-hidden text-foreground placeholder:text-muted-foreground",
-                          sizeClasses.text
+                          sizeClasses.type.body
                         )}
-                        style={{ fontVariationSettings: fontWeights.medium }}
+                        style={{ fontVariationSettings: fontWeights.normal }}
                       />
                     }
                   />
@@ -1600,7 +1600,7 @@ function ShortcutChip({
       aria-hidden
       suppressHydrationWarning
       className={cn(
-        "inline-flex items-center justify-center gap-0.5 px-1 min-w-[18px] h-[18px] text-[length:var(--fs-micro,11px)] leading-none font-sans tracking-wide",
+        "inline-flex items-center justify-center gap-0.5 px-1 min-w-[18px] h-[18px] text-[length:var(--fs-micro,11px)] leading-none font-sans",
         tone === "inverted"
           ? "bg-background/15 text-background"
           : "bg-foreground/10 text-muted-foreground",
@@ -1763,7 +1763,7 @@ function Row({
         style={{
           fontVariationSettings: chipFilled
             ? fontWeights.semibold
-            : fontWeights.medium,
+            : fontWeights.normal,
         }}
       >
         {chipContent}
@@ -1863,7 +1863,7 @@ function Row({
       {/* Body — fills row */}
       <span
         className={cn(
-          "min-w-0 flex-1 leading-snug",
+          "min-w-0 flex-1",
           sizeClasses.text,
           bodyLayout === "stacked"
             ? "flex flex-col gap-0.5"

@@ -8,7 +8,6 @@ import { CommandMenuPlayground } from "./command-menu";
 import { DropdownPlayground } from "./dropdown";
 import { InputMessagePlayground } from "./input-message";
 import { SidebarPlayground } from "./sidebar";
-import { TypographyPlayground } from "./typography";
 import type { PlaygroundComponent } from "./types";
 
 export type { PlaygroundParts, PlaygroundProps, PlaygroundComponent } from "./types";
@@ -35,5 +34,4 @@ export const playgroundMap: Record<string, PlaygroundComponent> = {
   dropdown: DropdownPlayground,
   "input-message": InputMessagePlayground,
   sidebar: SidebarPlayground,
-  typography: TypographyPlayground,
 };

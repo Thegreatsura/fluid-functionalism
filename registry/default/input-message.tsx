@@ -316,9 +316,9 @@ function QueuedRow({
         // text-box trim on the label doesn't shrink the row.
         "group/qrow flex items-center gap-2 rounded-lg bg-muted",
         compactStep
-          ? "h-7 px-2 text-[length:var(--fs-body-compact,12px)] leading-[var(--lh-body-compact,16px)]"
-          : "h-8 px-2.5 text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)]",
-        "text-foreground/85 select-none outline-none",
+          ? "h-7 px-2 text-[length:var(--fs-body-compact,12px)] leading-[var(--lh-body-compact,18px)]"
+          : "h-8 px-2.5 text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)]",
+        "text-foreground select-none outline-none",
         "cursor-grab active:cursor-grabbing",
         "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]"
       )}
@@ -426,7 +426,7 @@ function SuggestionRow({
       {!active && keyHint ? (
         <ArrowDownIcon
           size={13}
-          className="shrink-0 text-muted-foreground/70 transition-opacity duration-80"
+          className="shrink-0 text-muted-foreground transition-opacity duration-80"
         />
       ) : (
         <EnterIcon

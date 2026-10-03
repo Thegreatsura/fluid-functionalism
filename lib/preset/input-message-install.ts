@@ -22,7 +22,7 @@ import {
 export type { PresetFile };
 
 const USER_BUBBLE_CLASS =
-  "whitespace-pre-wrap break-words px-3.5 py-2 text-[14px] text-pretty bg-[color-mix(in_oklab,var(--accent),var(--background)_45%)] text-accent-foreground";
+  "whitespace-pre-wrap break-words px-3.5 py-2 text-[14px] text-pretty bg-[color-mix(in_oklab,var(--accent),var(--background)_45%)] text-foreground";
 
 function composerFile(p: InputMessagePreset): string {
   const queueOn = p.status !== "off";

@@ -198,6 +198,7 @@ const [messages, setMessages] = useState<string[]>([]);
 const queuedCode = `import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
 import { spring } from "@/lib/springs";
+import { fontWeights } from "@/lib/font-weight";
 import { useIcon } from "@/lib/icon-context";
 import {
   InputMessage, ChatMessage, ThinkingIndicator, FileThumbnail, type QueuedMessage,
@@ -389,7 +390,8 @@ const removeQueued = (item: QueuedMessage) =>
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.6 }}
                   transition={spring.fast}
-                  className="pointer-events-none text-[10px] font-semibold leading-none tabular-nums text-muted-foreground"
+                  className="pointer-events-none text-[10px] leading-none tabular-nums text-muted-foreground"
+                  style={{ fontVariationSettings: fontWeights.semibold }}
                 >
                   {queue.length}
                 </motion.span>
@@ -437,7 +439,7 @@ const removeQueued = (item: QueuedMessage) =>
                   // Compact step: gap-1.5, pl-3 (pl-1.5 with files), pr-1.
                   className={\`group/qm absolute bottom-0 left-10 right-10 flex select-none items-center gap-2 \${
                     item.files.length > 0 ? "pl-2" : "pl-3.5"
-                  } pr-1.5 rounded-[20px] bg-[color-mix(in_oklab,var(--accent),var(--background)_68%)] text-site-subtitle text-muted-foreground shadow-surface-3 active:cursor-grabbing\`}
+                  } pr-1.5 rounded-[20px] bg-[color-mix(in_oklab,var(--accent),var(--background)_68%)] text-subtitle text-muted-foreground shadow-surface-3 active:cursor-grabbing\`}
                 >
                   {/* Attachments: small thumbnails (28px; 24 at the compact
                       step), then a +N chip past 3. */}
@@ -447,7 +449,7 @@ const removeQueued = (item: QueuedMessage) =>
                         <FileThumbnail key={fi} file={f} size={28} radius={12} />
                       ))}
                       {item.files.length > 3 && (
-                        <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-background/40 text-[11px] font-medium tabular-nums text-foreground/80">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-background/40 text-[11px] leading-3.5 tabular-nums text-foreground">
                           +{item.files.length - 3}
                         </span>
                       )}

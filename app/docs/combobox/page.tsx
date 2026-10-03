@@ -392,7 +392,7 @@ export default function ComboboxDoc() {
       </DocSection>
 
       <DocSection title="Basic">
-        <p className="text-site-subtitle text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           Items are data on the root, <code>ComboboxList</code> renders a row
           per match. Type, then press Enter to pick the highlighted row.
         </p>
@@ -429,7 +429,7 @@ export default function ComboboxDoc() {
       </DocSection>
 
       <DocSection title="Multiple selection">
-        <p className="text-site-subtitle text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           <code>multiple</code> plus <code>ComboboxChips</code>: 1 chip per
           pick, touching picks share one background. Press Backspace in an
           empty field to drop the last chip.
@@ -446,7 +446,7 @@ export default function ComboboxDoc() {
       </DocSection>
 
       <DocSection title="Create from the query">
-        <p className="text-site-subtitle text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           <code>onCreate</code> adds a last row whenever the query matches no
           label exactly. Type a component that is not there, then press Enter.
         </p>
@@ -472,7 +472,7 @@ export default function ComboboxDoc() {
       </DocSection>
 
       <DocSection title="Hide picked rows">
-        <p className="text-site-subtitle text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           <code>hideSelected</code> takes a pick out of the list, so it reads
           as what is left to add. Remove a chip to bring its row back.
         </p>
@@ -509,7 +509,7 @@ export default function ComboboxDoc() {
       </DocSection>
 
       <DocSection title="Long list">
-        <p className="text-site-subtitle text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           String items are their own value and label. The list scrolls past
           300px.
         </p>

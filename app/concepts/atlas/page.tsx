@@ -185,7 +185,7 @@ export default function AtlasPage() {
                   </Button>
                 )}
               />
-              <p className="mt-2 text-center text-[11px] text-muted-foreground">
+              <p className="mt-2 text-center text-[11px] leading-3.5 text-muted-foreground">
                 Atlas can make mistakes. This is a concept screen.
               </p>
             </div>

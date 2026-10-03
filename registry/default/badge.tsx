@@ -39,7 +39,7 @@ const badgeColors = {
 type BadgeColor = keyof typeof badgeColors;
 
 const badgeVariants = cva(
-  "inline-flex items-center font-medium whitespace-nowrap",
+  "inline-flex items-center whitespace-nowrap",
   {
     variants: {
       variant: {

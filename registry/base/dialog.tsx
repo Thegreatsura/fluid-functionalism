@@ -9,6 +9,7 @@ import {
   type HTMLAttributes,
 } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { fontWeights } from "@/lib/font-weight";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useIcon } from "@/lib/icon-context";
@@ -278,7 +279,7 @@ const DialogTitle = forwardRef<
         "text-foreground",
         className
       )}
-      style={{ fontVariationSettings: "'wght' 700" }}
+      style={{ fontVariationSettings: fontWeights.semibold }}
       {...props}
     />
   );

@@ -149,7 +149,7 @@ function ComparePageInner() {
             >
               Shadcn VS Fluid Functionalism
             </h1>
-            <p className="text-site-subtitle text-muted-foreground">
+            <p className="text-site-body text-muted-foreground">
               Hover the difference, side by side
             </p>
             <div className="flex items-center gap-2 mt-2">

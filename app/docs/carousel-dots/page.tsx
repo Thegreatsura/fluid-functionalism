@@ -123,7 +123,7 @@ export default function CarouselDotsDoc() {
       description="Dots for a carousel, static or on autoplay."
     >
       <DocSection title="Static">
-        <p className="text-site-body leading-relaxed text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           Hover a dot to see its click area, then click it. The highlight glides
           from dot to dot.
         </p>
@@ -133,7 +133,7 @@ export default function CarouselDotsDoc() {
       </DocSection>
 
       <DocSection title="Autoplay">
-        <p className="text-site-body leading-relaxed text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           Add <Code>autoplay</Code> and the pill fills, then the next slide comes
           in. Hover the slide to pause. Reduced motion turns the timer off.
         </p>

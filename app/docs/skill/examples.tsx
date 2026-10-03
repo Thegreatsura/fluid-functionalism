@@ -39,6 +39,7 @@ function GenericTabs({ selected, onSelect }: { selected: number; onSelect: (i: n
           onClick={() => onSelect(i)}
           className={cn(
             "h-9 px-3 text-site-body text-muted-foreground [&:is(:hover,[data-script-hover])]:bg-muted/60",
+            // eslint-disable-next-line no-restricted-syntax -- the generic version, bold on purpose to show the reflow
             selected === i && "bg-muted font-semibold text-foreground [&:is(:hover,[data-script-hover])]:bg-muted",
             shape.bg
           )}

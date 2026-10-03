@@ -7,10 +7,18 @@
 import { describe, expect, it } from "vitest";
 import { twMerge } from "tailwind-merge";
 import { generate } from "../scripts/generate-type-scale.mjs";
-import { typeScale, typeClasses } from "../registry/default/lib/type-scale.ts";
+import { typeScale, typeClasses, typeSizes } from "../registry/default/lib/type-scale.ts";
 import { cn } from "../registry/default/lib/utils.ts";
 import { fontWeights } from "../registry/default/lib/font-weight.ts";
-import { SEMIBOLD, generateTypesetCss } from "../lib/typeset/generate.ts";
+import {
+  BOLD,
+  SEMIBOLD,
+  TYPESET_ROLES,
+  TYPESET_SPACE,
+  generateTypesetCss,
+  selectorList,
+  typesetRules,
+} from "../lib/typeset/generate.ts";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
@@ -28,6 +36,15 @@ describe("type scale generation", () => {
       for (const v of ["default", "compact"]) {
         expect(typeClasses[v][role]).toContain(`,${step[v].size}px)]`);
         expect(typeClasses[v][role]).toContain(`,${step[v].leading}px)]`);
+      }
+    }
+  });
+
+  it("the size map is the size half of the class map", () => {
+    for (const role of Object.keys(typeScale)) {
+      for (const v of ["default", "compact"]) {
+        expect(typeClasses[v][role].startsWith(`${typeSizes[v][role]} leading-`)).toBe(true);
+        expect(typeSizes[v][role]).not.toContain("leading-");
       }
     }
   });
@@ -74,39 +91,119 @@ describe("FF cn with theme utilities", () => {
 });
 
 describe("typeset sheet", () => {
-  it("uses the library's semibold weight", () => {
+  const rules = typesetRules(typeScale);
+  const css = generateTypesetCss(typeScale);
+  const block = (sel) => css.split(`${sel} {`)[1].split("}")[0];
+  // The element list a rule opens with: `:where(.typeset p, .typeset li)`.
+  const firstWhere = (sel) => {
+    let depth = 0;
+    for (let i = 0; i < sel.length; i++) {
+      if (sel[i] === "(") depth++;
+      else if (sel[i] === ")" && --depth === 0) return sel.slice(":where(".length, i);
+    }
+    return "";
+  };
+  /** Declarations of the rule for exactly these elements, e.g. "h3, h4". */
+  const declsFor = (elements) => {
+    const want = elements
+      .split(", ")
+      .map((part) => `.typeset ${part}`)
+      .join(", ");
+    const match = rules.filter(([sel]) => !sel.includes("::") && firstWhere(sel) === want);
+    expect(match, elements).toHaveLength(1);
+    return match[0][1];
+  };
+
+  it("uses the library's weights", () => {
     expect(SEMIBOLD).toBe(fontWeights.semibold);
+    expect(BOLD).toBe(fontWeights.bold);
   });
 
-  it("sets .typeset-scale levels from the roles at both steps", () => {
-    const css = generateTypesetCss(undefined, true, typeScale);
-    const block = (sel) => css.split(`${sel} {`)[1].split("}")[0];
-    const num = (decls, name) => Number(new RegExp(`${name}: ([0-9.]+);`).exec(decls)[1]);
-    for (const [sel, step] of [
-      [":where(.typeset-scale)", "default"],
-      [":where(.typeset-scale.typeset-compact)", "compact"],
+  it("reads every style from the type scale tokens at both steps", () => {
+    for (const [sel, step, suffix] of [
+      [":where(.typeset)", "default", ""],
+      [":where(.typeset.typeset-compact)", "compact", "-compact"],
     ]) {
       const decls = block(sel);
-      const body = typeScale.body[step].size;
-      for (const [level, role] of [
-        ["h1", "display"],
-        ["h2", "title"],
-        ["h3", "subtitle"],
-        ["h4", "body"],
-        ["h5", "caption"],
-        ["h6", "micro"],
-      ]) {
-        // Within rounding: the level times the body size lands on the role.
-        expect(num(decls, `--typeset-${level}`) * body).toBeCloseTo(typeScale[role][step].size, 1);
+      for (const role of TYPESET_ROLES) {
+        const { size, leading } = typeScale[role][step];
+        expect(decls).toContain(`--typeset-${role}: var(--fs-${role}${suffix}, ${size}px);`);
+        expect(decls).toContain(`--typeset-${role}-leading: var(--lh-${role}${suffix}, ${leading}px);`);
       }
-      expect(num(decls, "--typeset-code") * body).toBeCloseTo(typeScale.caption[step].size, 1);
-      expect(decls).toContain(`${body}px)`);
+      for (const [name, px] of Object.entries(TYPESET_SPACE)) {
+        expect(decls).toContain(`--typeset-space-${name}: ${px[step]}px;`);
+      }
     }
   });
 
-  it("never relies on selectors that reflow streamed content", () => {
-    const css = generateTypesetCss();
-    expect(css).not.toMatch(/:last-child|:has\(|margin-bottom/);
+  it("sets each element in the site's style", () => {
+    const root = rules.find(([sel]) => sel === ":where(.typeset)")[1];
+    expect(root["font-size"]).toBe("var(--typeset-body)");
+    expect(root["line-height"]).toBe("var(--typeset-body-leading)");
+    expect(root.color).toMatch(/^var\(--muted-foreground/);
+    // h1 is the display style, and display is bold. The site has 3 heading
+    // styles, so h3 to h6 share subtitle.
+    expect(declsFor("h1")).toMatchObject({
+      "font-size": "var(--typeset-display)",
+      "line-height": "var(--typeset-display-leading)",
+      "font-variation-settings": fontWeights.bold,
+    });
+    expect(declsFor("h2")).toMatchObject({ "font-size": "var(--typeset-title)", "line-height": "var(--typeset-title-leading)" });
+    expect(declsFor("h3, h4, h5, h6")).toMatchObject({
+      "font-size": "var(--typeset-subtitle)",
+      "line-height": "var(--typeset-subtitle-leading)",
+    });
+    expect(declsFor("h1, h2, h3, h4, h5, h6")["font-variation-settings"]).toBe(fontWeights.semibold);
+    // Code and keys in caption, code in the foreground; figcaption caption
+    // in the muted color.
+    expect(declsFor("code")).toMatchObject({ "font-size": "var(--typeset-caption)", color: "var(--foreground, currentColor)" });
+    expect(declsFor("kbd")["font-size"]).toBe("var(--typeset-caption)");
+    expect(declsFor("figcaption")).toMatchObject({
+      "font-size": "var(--typeset-caption)",
+      "line-height": "var(--typeset-caption-leading)",
+    });
+    expect(declsFor("figcaption").color).toMatch(/^var\(--muted-foreground/);
+  });
+
+  it("never relies on selectors or wrapping that reflow streamed content", () => {
+    expect(css).not.toMatch(/:last-child|:has\(|margin-bottom|text-wrap:\s*(pretty|balance)/);
+    // A base layer's balance or pretty is switched off, not just left out.
+    expect(css).toContain("text-wrap-style: auto");
+    // Newlines between blocks stay whitespace inside a pre-wrap host.
+    expect(css).toMatch(/:where\(\.typeset\) \{[^}]*white-space: normal/);
+  });
+
+  it("lands every size, line height, and gap on a whole pixel, with nothing to tune", () => {
+    for (const [sel, decls] of rules) {
+      for (const [prop, value] of Object.entries(decls)) {
+        // The sheet's own variables are tokens with px fallbacks, or px.
+        if (prop.startsWith("--")) {
+          expect(value, `${prop} in ${sel}`).toMatch(/^(var\(--(fs|lh)-[a-z]+(-compact)?, \d+px\)|\d+px)$/);
+          continue;
+        }
+        if (!/^(font-size|line-height|margin-top|height)$/.test(prop)) continue;
+        expect(value, `${prop} in ${sel}`).toMatch(
+          /^(var\(--typeset-[a-z-]+\)|0|auto|1em|\d+px|round\(nearest, [0-9.]+em, 1px\))$/
+        );
+      }
+    }
+  });
+
+  it("scopes every element selector whole to .typeset", () => {
+    // An outer list or .not-typeset must not reach in: each part of the
+    // opening :where() list starts inside .typeset, and so does the opt-out.
+    let checked = 0;
+    for (const [sel] of rules) {
+      if (!sel.startsWith(":where(.typeset ")) continue;
+      checked++;
+      for (const part of selectorList(firstWhere(sel))) {
+        expect(part.startsWith(".typeset "), `${part} in ${sel}`).toBe(true);
+      }
+      for (const m of sel.matchAll(/:not\(:where\(([^()]*)\)\)/g)) {
+        for (const part of selectorList(m[1])) expect(part.startsWith(".typeset "), sel).toBe(true);
+      }
+    }
+    expect(checked).toBeGreaterThan(40);
   });
 });
 

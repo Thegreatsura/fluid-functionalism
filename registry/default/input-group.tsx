@@ -281,7 +281,7 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
               "text-destructive",
               compact ? "text-[length:var(--fs-caption-compact,11px)] leading-[var(--lh-caption-compact,14px)] pl-2" : "text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)] pl-2.5"
             )}
-            style={{ fontVariationSettings: fontWeights.medium }}
+            style={{ fontVariationSettings: fontWeights.normal }}
           >
             {error}
           </Field.Error>

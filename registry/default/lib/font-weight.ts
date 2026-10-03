@@ -1,4 +1,7 @@
-// Inter (variable) weight tokens for `fontVariationSettings`.
+// Inter (variable) weight tokens for `fontVariationSettings`. Text uses 3:
+// `normal` for text, `semibold` for headings and selected items, `bold` for
+// the display style only. `medium` stays exported so existing code keeps
+// compiling.
 //
 // Each weight is paired with an optical-size (`opsz`) value so that animating
 // between weights keeps the text's advance width nearly constant: a heavier
@@ -17,6 +20,7 @@
 // is intended — we want weight, not font-size, to drive optical size.
 export const fontWeights = {
   normal: "'wght' 400, 'opsz' 14",
+  /** @deprecated Text uses 3 weights: `normal`, `semibold`, and `bold` for display. */
   medium: "'wght' 450, 'opsz' 15",
   semibold: "'wght' 550, 'opsz' 18",
   bold: "'wght' 700, 'opsz' 25",

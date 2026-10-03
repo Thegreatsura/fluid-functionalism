@@ -1,204 +1,259 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { Pause, Play } from "lucide-react";
+import { useInView, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { fontWeights } from "@/registry/default/lib/font-weight";
+import { useShape } from "@/registry/default/lib/shape-context";
 import { typeClass } from "@/registry/default/lib/size-context";
-import { Button } from "@/registry/radix/button";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 
-function Label({ children }: { children: ReactNode }) {
-  return <span className="text-site-caption text-muted-foreground">{children}</span>;
+/** One side of a before/after: a framed specimen with its verdict under it,
+ *  as on the fluid hover page. */
+function Specimen({
+  good,
+  caption,
+  className,
+  children,
+}: {
+  good: boolean;
+  caption: ReactNode;
+  className?: string;
+  children: ReactNode;
+}) {
+  const shape = useShape();
+  return (
+    <div className="flex min-w-0 flex-col items-center gap-3">
+      <div className={cn("w-full border border-border/60", shape.container, className)}>{children}</div>
+      <span className="flex items-center justify-center gap-2 text-center text-site-caption text-muted-foreground">
+        <span aria-hidden="true">{good ? "✅" : "❌"}</span>
+        <span>{caption}</span>
+      </span>
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
 // Weight + optical size
 // ---------------------------------------------------------------------------
 
-const WEIGHTS = [
-  { name: "normal", wght: 400 },
-  { name: "medium", wght: 450 },
-  { name: "semibold", wght: 550 },
-  { name: "bold", wght: 700 },
-] as const;
+// Measured: weight alone widens it 2.3px, the paired weights 0px.
+const MENU_LABEL = "Download all invoices";
 
-const WEIGHT_LABEL = "Quarterly planning review";
+/** The menu's check, drawn as MenuItem draws it. */
+function CheckGlyph() {
+  return (
+    <svg
+      width={16}
+      height={16}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="ml-auto shrink-0 text-foreground"
+      aria-hidden="true"
+    >
+      <path d="M4 12L9 17L20 6" />
+    </svg>
+  );
+}
 
-export function WeightOpszDemo() {
-  const [index, setIndex] = useState(0);
-  const [playing, setPlaying] = useState(true);
-  const plainRef = useRef<HTMLSpanElement>(null);
-  const pairedRef = useRef<HTMLSpanElement>(null);
-  const measureRef = useRef<HTMLDivElement>(null);
-  const [widths, setWidths] = useState<{ plain: number[]; paired: number[] } | null>(null);
+/** Two menu rows, one of them selected. Each row's optical size sits after
+ *  its label, so a label that grows pushes it along. The blue line marks the
+ *  unselected width; whatever runs past it is tinted red. */
+function WeightMenu({
+  settings,
+  opsz,
+  selected,
+  onDelta,
+}: {
+  settings: readonly [unselected: string, selected: string];
+  opsz: readonly [unselected: string, selected: string];
+  /** Which row is selected. */
+  selected: 0 | 1;
+  onDelta: (px: number) => void;
+}) {
+  const shape = useShape();
+  const frameRef = useRef<HTMLDivElement>(null);
+  const labelRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
+  // In px from the frame: the unselected label's right edge, how far past it
+  // a selected label runs, and each row's label box.
+  const [marks, setMarks] = useState<{ edge: number; over: number; tops: number[]; height: number } | null>(null);
+  const onDeltaRef = useRef(onDelta);
+  onDeltaRef.current = onDelta;
 
-  useEffect(() => {
-    if (!playing) return;
-    const id = window.setInterval(() => setIndex((i) => (i + 1) % WEIGHTS.length), 1100);
-    return () => window.clearInterval(id);
-  }, [playing]);
-
-  // Measure every weight once, off screen, after the font is ready.
   useLayoutEffect(() => {
     let cancelled = false;
-    document.fonts.ready.then(() => {
-      const root = measureRef.current;
-      if (!root || cancelled) return;
-      const read = (sel: string) =>
-        Array.from(root.querySelectorAll<HTMLElement>(sel)).map((el) => el.getBoundingClientRect().width);
-      setWidths({ plain: read("[data-plain]"), paired: read("[data-paired]") });
-    });
+    const measure = () => {
+      const frame = frameRef.current;
+      const rows = labelRefs.current.map((el) => el?.getBoundingClientRect());
+      if (cancelled || !frame || !rows[0] || !rows[1]) return;
+      const f = frame.getBoundingClientRect();
+      const on = rows[selectedRef.current]!;
+      const off = rows[1 - selectedRef.current]!;
+      setMarks({
+        edge: off.right - f.left,
+        over: on.right - off.right,
+        tops: rows.map((r) => r!.top - f.top),
+        height: on.height,
+      });
+      onDeltaRef.current(on.width - off.width);
+    };
+    // Widths are only right once Inter has loaded.
+    document.fonts.ready.then(measure);
+    const ro = new ResizeObserver(measure);
+    if (frameRef.current) ro.observe(frameRef.current);
     return () => {
       cancelled = true;
+      ro.disconnect();
     };
   }, []);
 
-  const w = WEIGHTS[index];
-  const plainSettings = `'wght' ${w.wght}`;
-  const pairedSettings = fontWeights[w.name];
-  const delta = (arr: number[] | undefined, i: number) =>
-    arr ? arr[i] - arr[0] : 0;
-  const fmt = (n: number) => `${n >= 0 ? "+" : "−"}${Math.abs(n).toFixed(1)}px`;
-
-  const row = (label: string, ref: React.RefObject<HTMLSpanElement | null>, settings: string, d: number, good: boolean) => (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between gap-3">
-        <Label>{label}</Label>
-        <span
-          className={cn(
-            "text-site-caption tabular-nums transition-colors duration-150",
-            good ? "text-muted-foreground" : "text-foreground"
-          )}
-        >
-          {widths ? fmt(d) : ""}
-        </span>
-      </div>
-      <div className="relative">
-        {/* The width at 400: the edge a label must not cross to avoid reflow. */}
-        {widths && (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-y-[-4px] w-px bg-[#6B97FF]"
-            style={{ left: widths.plain[0] }}
-          />
-        )}
-        <span
-          ref={ref}
-          className={cn(typeClass("body"), "inline-block whitespace-nowrap text-foreground transition-[font-variation-settings] duration-150")}
-          style={{ fontVariationSettings: settings }}
-        >
-          {WEIGHT_LABEL}
-        </span>
-      </div>
-    </div>
-  );
-
   return (
-    <ComponentPreview hideHeader>
-      <div className="flex w-full max-w-[420px] flex-col gap-5">
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon-compact"
-            aria-label={playing ? "Pause" : "Play"}
-            onClick={() => setPlaying((p) => !p)}
-          >
-            {playing ? <Pause /> : <Play />}
-          </Button>
-          {WEIGHTS.map((x, i) => (
-            <Button
-              key={x.name}
-              size="compact"
-              variant={i === index ? "secondary" : "ghost"}
-              onClick={() => {
-                setPlaying(false);
-                setIndex(i);
+    <div ref={frameRef} className="relative flex flex-col p-1">
+      {marks && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-2 w-px bg-[#6B97FF]"
+          style={{ left: marks.edge }}
+        />
+      )}
+      {/* What spills past the line, tinted over the selected label's end. */}
+      {marks && marks.over >= 0.5 && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute bg-[#F2555A]/45"
+          style={{ left: marks.edge, width: marks.over, top: marks.tops[selected] - 3, height: marks.height + 6 }}
+        />
+      )}
+      {[0, 1].map((i) => {
+        const on = i === selected ? 1 : 0;
+        return (
+          <div key={i} className={cn("flex h-9 items-center gap-2 px-2", shape.item, typeClass("body"))}>
+            <span
+              ref={(node) => {
+                labelRefs.current[i] = node;
               }}
+              className={cn("whitespace-nowrap", on ? "text-foreground" : "text-muted-foreground")}
+              style={{ fontVariationSettings: settings[on] }}
             >
-              {x.wght}
-            </Button>
-          ))}
-        </div>
-        {row("Weight only", plainRef, plainSettings, delta(widths?.plain, index), index === 0)}
-        {row("Weight + optical size", pairedRef, pairedSettings, delta(widths?.paired, index), true)}
-        <div ref={measureRef} aria-hidden className="pointer-events-none invisible absolute left-0 top-0">
-          {WEIGHTS.map((x) => (
-            <span key={`p${x.name}`} data-plain className={cn(typeClass("body"), "absolute whitespace-nowrap")} style={{ fontVariationSettings: `'wght' ${x.wght}` }}>
-              {WEIGHT_LABEL}
+              {MENU_LABEL}
             </span>
-          ))}
-          {WEIGHTS.map((x) => (
-            <span key={`q${x.name}`} data-paired className={cn(typeClass("body"), "absolute whitespace-nowrap")} style={{ fontVariationSettings: fontWeights[x.name] }}>
-              {WEIGHT_LABEL}
+            <span
+              className={cn(
+                "whitespace-nowrap font-mono text-site-caption",
+                on && opsz[1] !== opsz[0] ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              opsz {opsz[on]}
             </span>
-          ))}
-        </div>
-      </div>
-    </ComponentPreview>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Text details
-// ---------------------------------------------------------------------------
-
-function Pair({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex min-w-0 flex-1 flex-col gap-2">
-      <Label>{label}</Label>
-      {children}
+            {on === 1 && <CheckGlyph />}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-const DASHED = "outline outline-1 outline-dashed outline-[#6B97FF]/70";
+const wider = (px: number | null) =>
+  px === null ? "" : Math.abs(px) < 0.25 ? ": same width" : `: ${Math.abs(px).toFixed(1)}px wider`;
 
-export function TrimDemo() {
+export function WeightOpszDemo() {
+  const [plain, setPlain] = useState<number | null>(null);
+  const [paired, setPaired] = useState<number | null>(null);
+  // The selection moves between the two rows while the demo is on screen:
+  // 2px is hard to see standing still, and easy to see jump. Reduced motion
+  // keeps the second row selected.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(rootRef, { amount: 0.5 });
+  const reduceMotion = useReducedMotion();
+  const [selected, setSelected] = useState<0 | 1>(1);
+  useEffect(() => {
+    if (!inView || reduceMotion) return;
+    const id = window.setInterval(() => setSelected((s) => (s === 1 ? 0 : 1)), 1400);
+    return () => window.clearInterval(id);
+  }, [inView, reduceMotion]);
+
   return (
     <ComponentPreview hideHeader>
-      <div className="flex w-full flex-col gap-6 sm:flex-row">
-        <Pair label="Line box">
-          <span className="flex h-9 w-fit items-center rounded-lg bg-accent px-4">
-            <span className={cn(typeClass("body"), "text-foreground", DASHED)}>Save changes</span>
-          </span>
-        </Pair>
-        <Pair label="Trimmed to cap height">
-          <span className="flex h-9 w-fit items-center rounded-lg bg-accent px-4">
-            <span className={cn(typeClass("body"), "text-foreground [text-box:trim-both_cap_alphabetic]", DASHED)}>
-              Save changes
-            </span>
-          </span>
-        </Pair>
+      <div ref={rootRef} className="grid w-full max-w-xl gap-5 sm:grid-cols-2">
+        {/* Weight alone leaves optical size on auto: the font size, 14 at
+            the axis floor, for both rows. */}
+        <Specimen good={false} caption={`Weight only${wider(plain)}`}>
+          <WeightMenu
+            settings={["'wght' 400", "'wght' 550"]}
+            opsz={["auto", "auto"]}
+            selected={selected}
+            onDelta={setPlain}
+          />
+        </Specimen>
+        <Specimen good caption={`Weight + optical size${wider(paired)}`}>
+          <WeightMenu
+            settings={[fontWeights.normal, fontWeights.semibold]}
+            opsz={["14", "18"]}
+            selected={selected}
+            onDelta={setPaired}
+          />
+        </Specimen>
       </div>
     </ComponentPreview>
   );
 }
 
-const HEADLINE = "Ship the new settings dialog before the review";
-const PARAGRAPH =
-  "Pick compact for dense tools with long tables, and keep default for every other screen in the app.";
+// ---------------------------------------------------------------------------
+// Balance and pretty
+// ---------------------------------------------------------------------------
 
-export function WrapDemo() {
+// Measured at 214px: wrap sets the headline 6 words over 2 (balance 4 and 4)
+// and leaves the paragraph's last word alone (pretty brings one down), with
+// a few px either side to spare for font rendering.
+const HEADLINE = "Plan the launch of the new billing page";
+const PARAGRAPH =
+  "Each role pairs a size with a line height, so a caption in a menu and a caption in a table share one rhythm.";
+const SAMPLE = "w-[214px] max-w-full";
+
+const heading = (wrap: string) => (
+  <p
+    className={cn(typeClass("title"), SAMPLE, "text-foreground", wrap)}
+    style={{ fontVariationSettings: fontWeights.semibold }}
+  >
+    {HEADLINE}
+  </p>
+);
+
+const paragraph = (wrap: string) => (
+  <p className={cn(typeClass("body"), SAMPLE, "text-muted-foreground", wrap)}>{PARAGRAPH}</p>
+);
+
+export function BalanceDemo() {
   return (
     <ComponentPreview hideHeader>
-      <div className="grid w-full gap-6 lg:grid-cols-2">
-        <Pair label="Heading, wrap">
-          <p className={cn(typeClass("title"), "w-[280px] max-w-full text-foreground [text-wrap:wrap]")} style={{ fontVariationSettings: fontWeights.semibold }}>
-            {HEADLINE}
-          </p>
-        </Pair>
-        <Pair label="Heading, balance">
-          <p className={cn(typeClass("title"), "w-[280px] max-w-full text-foreground [text-wrap:balance]")} style={{ fontVariationSettings: fontWeights.semibold }}>
-            {HEADLINE}
-          </p>
-        </Pair>
-        <Pair label="Paragraph, wrap">
-          <p className={cn(typeClass("body"), "w-[300px] max-w-full text-muted-foreground [text-wrap:wrap]")}>{PARAGRAPH}</p>
-        </Pair>
-        <Pair label="Paragraph, pretty">
-          <p className={cn(typeClass("body"), "w-[300px] max-w-full text-muted-foreground [text-wrap:pretty]")}>{PARAGRAPH}</p>
-        </Pair>
+      <div className="grid w-full max-w-xl gap-5 sm:grid-cols-2">
+        <Specimen good={false} className="px-4 py-5" caption={<><code>wrap</code> leaves a short last line</>}>
+          {heading("[text-wrap:wrap]")}
+        </Specimen>
+        <Specimen good className="px-4 py-5" caption={<><code>balance</code> evens the lines</>}>
+          {heading("[text-wrap:balance]")}
+        </Specimen>
+      </div>
+    </ComponentPreview>
+  );
+}
+
+export function PrettyDemo() {
+  return (
+    <ComponentPreview hideHeader>
+      <div className="grid w-full max-w-xl gap-5 sm:grid-cols-2">
+        <Specimen good={false} className="px-4 py-5" caption={<><code>wrap</code> leaves one word alone</>}>
+          {paragraph("[text-wrap:wrap]")}
+        </Specimen>
+        <Specimen good className="px-4 py-5" caption={<><code>pretty</code> brings a word down to join it</>}>
+          {paragraph("[text-wrap:pretty]")}
+        </Specimen>
       </div>
     </ComponentPreview>
   );

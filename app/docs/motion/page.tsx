@@ -186,12 +186,12 @@ function SpringReferenceSection() {
                 <Link
                   key={label}
                   href={slug}
-                  className="text-site-body text-muted-foreground/50 transition-colors hover:text-foreground"
+                  className="text-site-body text-muted-foreground transition-colors hover:text-foreground"
                 >
                   {label}
                 </Link>
               ) : (
-                <span key={label} className="text-site-body text-muted-foreground/30">
+                <span key={label} className="text-site-body text-muted-foreground">
                   {label}
                 </span>
               )
@@ -246,7 +246,7 @@ function SpringTokensDemo() {
               >
                 {key}
               </span>
-              <span className="font-mono text-[11px] text-muted-foreground/70">
+              <span className="font-mono text-[11px] leading-3.5 text-muted-foreground">
                 {meta}
               </span>
               <span className="ml-auto hidden text-site-caption text-muted-foreground sm:inline">
@@ -269,7 +269,7 @@ function SpringTokensDemo() {
             </button>
           </div>
         ))}
-        <p className="text-center text-site-caption text-muted-foreground/70">
+        <p className="text-center text-site-caption text-muted-foreground">
           Click a track (or replay) to fire all three springs.
         </p>
       </div>
@@ -394,7 +394,7 @@ function ModalExitDemo() {
             </span>
           </div>
         </div>
-        <p className="text-center text-site-caption text-muted-foreground/70">
+        <p className="text-center text-site-caption text-muted-foreground">
           Toggle one, then the other — both open on{" "}
           <span className="font-mono">spring.slow</span>; only the close differs.
         </p>
@@ -418,7 +418,7 @@ export default function MotionDoc() {
       description="Three spring speeds, exits a little faster than entrances, and one fluid hover shared by every list. Pick a speed, wire it in — every component follows the same pattern."
     >
       <DocSection title="Three speeds">
-        <p className="text-site-body leading-relaxed text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           All animations come from one of three springs in{" "}
           <Code>lib/springs</Code>. Hover states and small toggles use{" "}
           <Code>fast</Code>. Dropdowns and tabs use <Code>moderate</Code>.
@@ -433,7 +433,7 @@ export default function MotionDoc() {
       </DocSection>
 
       <DocSection title="Slow in, faster out">
-        <p className="text-site-body leading-relaxed text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           Both modals open on <Code>spring.slow</Code>. The only difference is
           the close: the left exits on the same <Code>spring.slow</Code>, the
           right on <Code>spring.slow.exit</Code> — one tier faster. Toggle the
@@ -444,7 +444,7 @@ export default function MotionDoc() {
       </DocSection>
 
       <DocSection title="All tokens">
-        <p className="text-site-body leading-relaxed text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           Click a track to see it. The ball enters right on the spring, then
           returns left on the exit tween. Everything lives in{" "}
           <Code>lib/springs</Code> — duration values belong there, not
@@ -453,12 +453,12 @@ export default function MotionDoc() {
         <SpringReferenceSection />
 
         <h3
-          className="mt-8 text-[15px] text-foreground"
+          className="mt-8 text-site-subtitle text-foreground"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           Reduced motion
         </h3>
-        <p className="text-site-body leading-relaxed text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           All springs respect the OS setting. Wrap the app tree in{" "}
           <Code>{`<MotionConfig reducedMotion="user">`}</Code> and when the
           user turns on reduced motion, the position changes drop out and only

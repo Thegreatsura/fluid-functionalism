@@ -101,7 +101,7 @@ const ThinkingIndicator = forwardRef<HTMLDivElement, ThinkingIndicatorProps>(
           "inline-grid overflow-hidden",
           typeClass("body", compactStep ? "compact" : "default")
         )}
-        style={{ fontVariationSettings: fontWeights.medium }}
+        style={{ fontVariationSettings: fontWeights.normal }}
       >
         {/* An invisible copy of the longest word reserves the width, so the
             cycle never shifts what sits next to the indicator.

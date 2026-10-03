@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { fontWeights } from "@/lib/font-weight";
 import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
 import { FileThumbnail } from "@/components/ui/file-thumbnail";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -247,7 +248,8 @@ export function QueuedStack({
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.6 }}
                         transition={spring.fast}
-                        className="pointer-events-none text-[length:var(--fs-micro-compact,10px)] font-semibold leading-none tabular-nums text-muted-foreground"
+                        className="pointer-events-none text-[length:var(--fs-micro-compact,10px)] leading-none tabular-nums text-muted-foreground"
+                        style={{ fontVariationSettings: fontWeights.semibold }}
                       >
                         {stackCount}
                       </motion.span>
@@ -347,7 +349,7 @@ export function QueuedStack({
                         ))}
                         {item.files.length > 3 && (
                           <span
-                            className={`flex ${compactStep ? "h-6 w-6" : "h-7 w-7"} items-center justify-center bg-background/40 text-[length:var(--fs-micro,11px)] leading-[var(--lh-micro,14px)] font-medium tabular-nums text-foreground/80`}
+                            className={`flex ${compactStep ? "h-6 w-6" : "h-7 w-7"} items-center justify-center bg-background/40 text-[length:var(--fs-micro,11px)] leading-[var(--lh-micro,14px)] tabular-nums text-foreground`}
                             style={{ borderRadius: attachmentRadius }}
                           >
                             +{item.files.length - 3}

@@ -29,10 +29,11 @@ const typeScale = {
     default: { size: 14, leading: 20 },
     compact: { size: 13, leading: 18 },
   },
-  /** Control labels and body copy. */
+  /** Control labels, body copy, and paragraphs. 20px also puts a row of
+   *  padded text on the 36px ladder (8 + 20 + 8), 18px on the 28px one. */
   body: {
-    default: { size: 13, leading: 18 },
-    compact: { size: 12, leading: 16 },
+    default: { size: 13, leading: 20 },
+    compact: { size: 12, leading: 18 },
   },
   /** Secondary text: descriptions, meta rows, errors, group labels. */
   caption: {
@@ -50,7 +51,7 @@ type TypeScaleRole = keyof typeof typeScale;
 
 const typeScaleRoles = Object.keys(typeScale) as TypeScaleRole[];
 
-// Class strings per role and step. Arbitrary values over the CSS variables,
+// Class strings per role and step (size + leading), and the size half alone. Arbitrary values over the CSS variables,
 // with the px values as fallbacks, so a component renders the right size even
 // where the `type-scale` tokens were never installed, and stock
 // tailwind-merge reads them as font-size / line-height (a bare `text-caption`
@@ -63,7 +64,7 @@ const typeClasses = {
     display: "text-[length:var(--fs-display,28px)] leading-[var(--lh-display,34px)]",
     title: "text-[length:var(--fs-title,16px)] leading-[var(--lh-title,22px)]",
     subtitle: "text-[length:var(--fs-subtitle,14px)] leading-[var(--lh-subtitle,20px)]",
-    body: "text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)]",
+    body: "text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)]",
     caption: "text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]",
     micro: "text-[length:var(--fs-micro,11px)] leading-[var(--lh-micro,14px)]",
   },
@@ -71,11 +72,31 @@ const typeClasses = {
     display: "text-[length:var(--fs-display-compact,24px)] leading-[var(--lh-display-compact,30px)]",
     title: "text-[length:var(--fs-title-compact,15px)] leading-[var(--lh-title-compact,20px)]",
     subtitle: "text-[length:var(--fs-subtitle-compact,13px)] leading-[var(--lh-subtitle-compact,18px)]",
-    body: "text-[length:var(--fs-body-compact,12px)] leading-[var(--lh-body-compact,16px)]",
+    body: "text-[length:var(--fs-body-compact,12px)] leading-[var(--lh-body-compact,18px)]",
     caption: "text-[length:var(--fs-caption-compact,11px)] leading-[var(--lh-caption-compact,14px)]",
     micro: "text-[length:var(--fs-micro-compact,10px)] leading-[var(--lh-micro-compact,12px)]",
   },
 } as const satisfies Record<TypeScaleVariant, Record<TypeScaleRole, string>>;
+
+const typeSizes = {
+  default: {
+    display: "text-[length:var(--fs-display,28px)]",
+    title: "text-[length:var(--fs-title,16px)]",
+    subtitle: "text-[length:var(--fs-subtitle,14px)]",
+    body: "text-[length:var(--fs-body,13px)]",
+    caption: "text-[length:var(--fs-caption,12px)]",
+    micro: "text-[length:var(--fs-micro,11px)]",
+  },
+  compact: {
+    display: "text-[length:var(--fs-display-compact,24px)]",
+    title: "text-[length:var(--fs-title-compact,15px)]",
+    subtitle: "text-[length:var(--fs-subtitle-compact,13px)]",
+    body: "text-[length:var(--fs-body-compact,12px)]",
+    caption: "text-[length:var(--fs-caption-compact,11px)]",
+    micro: "text-[length:var(--fs-micro-compact,10px)]",
+  },
+} as const satisfies Record<TypeScaleVariant, Record<TypeScaleRole, string>>;
+
 // </generated:type-classes>
 
 /** The class string for one role at one step (size + leading). */
@@ -83,5 +104,11 @@ function typeClass(role: TypeScaleRole, variant: TypeScaleVariant = "default"): 
   return typeClasses[variant][role];
 }
 
-export { typeScale, typeScaleRoles, typeClasses, typeClass };
+/** The size half alone, for text whose line box is set elsewhere: a
+ *  control's fixed height, or a `py` + inherited line height row. */
+function typeSize(role: TypeScaleRole, variant: TypeScaleVariant = "default"): string {
+  return typeSizes[variant][role];
+}
+
+export { typeScale, typeScaleRoles, typeClasses, typeSizes, typeClass, typeSize };
 export type { TypeScaleRole, TypeScaleVariant, TypeScalePair, TypeScaleStep };

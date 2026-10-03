@@ -91,7 +91,7 @@ part itself.
 - Settings surface → `dialog-sidebar` block
 - Chat / AI interface → `input-message` + `chat-message` + `thinking-steps` +
   `thinking-indicator` (+ `queued-stack`, `ask-user-questions`), and
-  `typography` for the markdown in replies (`.typeset typeset-chat`)
+  `typography` for the markdown in replies (`.typeset`)
 - Docs, changelogs, any rendered markdown → `typography` (`.typeset`)
 - Action palette → `command-menu` (dialog shell on ⌘K included)
 - Forms → `input-group`, `select`, `combobox`, `checkbox-group`,

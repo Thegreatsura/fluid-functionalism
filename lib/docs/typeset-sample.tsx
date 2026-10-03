@@ -5,51 +5,42 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  type CSSProperties,
   type MouseEvent,
   type PointerEvent,
 } from "react";
 import { Fragment, useMemo } from "react";
-import { EditorContent, useEditor } from "@tiptap/react";
+import { fontWeights } from "@/registry/default/lib/font-weight";
+import { EditorContent, Node, createDocument, mergeAttributes, useEditor } from "@tiptap/react";
+import { EditorState } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { TableKit } from "@tiptap/extension-table";
 import { Placeholder } from "@tiptap/extensions";
 import { cn } from "@/lib/utils";
 import { useShape } from "@/registry/default/lib/shape-context";
+import { useThemeContext } from "@/registry/default/lib/theme-context";
 import { Button } from "@/registry/radix/button";
 import { Switch } from "@/registry/radix/switch";
 import { Tooltip } from "@/registry/radix/tooltip";
-import { TYPESET_DEFAULTS, typesetRules, type TypesetValues } from "@/lib/typeset/generate";
+import { typeScale } from "@/lib/type-scale";
+import { selectorList, typesetRules } from "@/lib/typeset/generate";
 
-/** The four typeset variables as inline style, for previews that retune the
- *  shared sheet without injecting a second copy of it. */
-export function typesetVars(v: TypesetValues): CSSProperties {
-  return {
-    "--typeset-size": v.size === null ? "1em" : `${v.size}px`,
-    "--typeset-leading": String(v.leading),
-    "--typeset-flow": String(v.flow),
-    "--typeset-ratio": String(v.ratio),
-  } as CSSProperties;
-}
-
-// The Type scale preset's document: one sample per role, top to bottom, each
-// set at the role's real size by .typeset-scale (markdown's heading levels,
-// plus a paragraph for body).
+// The Type scale document: each style the way the site uses it. Display
+// titles the page in bold, title heads a section, body is the muted
+// paragraph, subtitle sets h3 to h6, and caption is a muted figcaption.
 const SCALE_SAMPLES: Array<[tag: string, text: string]> = [
   ["h1", "This is the main display"],
   ["h2", "This is a section title"],
-  ["h3", "This is a subtitle, for cards and chat bubbles"],
   [
     "p",
-    "This is a longer paragraph in the body role, the size of labels and copy across every component. It runs onto a second line so you can see its leading at work.",
+    "This is a paragraph in the body style, the size of labels and copy across every component. It runs onto a second line so you can see its line height at work.",
   ],
-  ["h5", "This is a caption, for descriptions and meta rows"],
-  ["h6", "This is micro, for keyboard caps and counters"],
+  ["h3", "This is a heading in the subtitle style, for h3 to h6"],
+  ["figcaption", "This is a caption, for descriptions and meta rows"],
 ];
 
-/** Starting document per content preset on /docs/typography, as the HTML the
- *  editor loads. Between them, every element the sheet styles appears. */
+/** Starting HTML of each document on /docs/typography. Between them, every
+ *  element the sheet styles appears. */
 export const TYPESET_SAMPLES = {
   scale: SCALE_SAMPLES.map(([tag, text]) => `<${tag}>${text}</${tag}>`).join(""),
   release: [
@@ -58,17 +49,17 @@ export const TYPESET_SAMPLES = {
     "<h2>What changed</h2>",
     "<p>Each role is now a size and a line height, so a caption in a menu and a caption in a table sit on the same rhythm.</p>",
     "<ul>",
-    "<li><p>Six roles, from display to micro</p></li>",
-    "<li><p>Two steps per role</p><ul><li><p>Default for most screens</p></li><li><p>Compact for dense tools</p></li></ul></li>",
+    "<li><p>Five styles, from display to caption</p></li>",
+    "<li><p>Two steps per style</p><ul><li><p>Default for most screens</p></li><li><p>Compact for dense tools</p></li></ul></li>",
     "<li><p>One source file generates every copy</p></li>",
     "</ul>",
     "<h3>Install order</h3>",
     "<ol><li><p>Add the type scale tokens</p></li><li><p>Add the prose sheet</p></li><li><p>Wrap your content in <code>.typeset</code></p></li></ol>",
     "<blockquote><p>Spacing only goes above an element, so streamed text never moves what is already on screen.</p></blockquote>",
-    '<pre><code class="language-tsx">&lt;article className="typeset typeset-docs"&gt;\n  {content}\n&lt;/article&gt;</code></pre>',
+    '<pre><code class="language-tsx">&lt;article className="typeset"&gt;\n  {content}\n&lt;/article&gt;</code></pre>',
     "<table><tbody>",
     "<tr><th><p>Role</p></th><th><p>Default</p></th><th><p>Compact</p></th></tr>",
-    "<tr><td><p>Body</p></td><td><p>13 / 18</p></td><td><p>12 / 16</p></td></tr>",
+    "<tr><td><p>Body</p></td><td><p>13 / 20</p></td><td><p>12 / 18</p></td></tr>",
     "<tr><td><p>Caption</p></td><td><p>12 / 16</p></td><td><p>11 / 14</p></td></tr>",
     "</tbody></table>",
     "<hr>",
@@ -90,25 +81,13 @@ export const TYPESET_SAMPLES = {
     "<h3>Sizes in the wild</h3>",
     "<table><tbody>",
     "<tr><th><p>Size</p></th><th><p>Screens</p></th><th><p>Maps to</p></th></tr>",
-    "<tr><td><p>11px</p></td><td><p>18</p></td><td><p>micro</p></td></tr>",
     "<tr><td><p>12px</p></td><td><p>64</p></td><td><p>caption</p></td></tr>",
     "<tr><td><p>13px</p></td><td><p>97</p></td><td><p>body</p></td></tr>",
     "<tr><td><p>14px</p></td><td><p>41</p></td><td><p>subtitle</p></td></tr>",
+    "<tr><td><p>16px</p></td><td><p>22</p></td><td><p>title</p></td></tr>",
     "</tbody></table>",
     "<h3>Next steps</h3>",
-    "<ol><li><p>Agree on the six roles with engineering</p></li><li><p>Run the codemod on one surface</p></li><li><p>Review the diff together on Friday</p></li></ol>",
-  ].join(""),
-  chat: [
-    "<p>Here is how I would set up type on your settings page.</p>",
-    "<p><strong>Short version:</strong> size every label with <code>typeClass()</code>, and wrap the help text in <code>.typeset</code>.</p>",
-    "<ol>",
-    '<li><p>Install the tokens:</p><pre><code class="language-bash">npx shadcn@latest add https://www.fluidfunctionalism.com/r/type-scale.json</code></pre></li>',
-    '<li><p>Swap the hard-coded sizes:</p><pre><code class="language-tsx">&lt;span className={typeClass("caption")}&gt;Saved 2 minutes ago&lt;/span&gt;</code></pre></li>',
-    "<li><p>Check compact mode in the table views.</p></li>",
-    "</ol>",
-    "<p>A few things to watch:</p>",
-    "<ul><li><p>Captions in compact rows drop to 11px, not 12</p></li><li><p>Keep <code>leading-none</code> for single-line key caps only</p></li></ul>",
-    "<p>Want me to run it on the billing page next?</p>",
+    "<ol><li><p>Agree on the five styles with engineering</p></li><li><p>Run the codemod on one surface</p></li><li><p>Review the diff together on Friday</p></li></ol>",
   ].join(""),
 } as const;
 
@@ -118,7 +97,18 @@ export type TypesetSampleName = keyof typeof TYPESET_SAMPLES;
 // "1. " numbered, "[] " to-do, "> " quote, "```" code, "---" rule, and
 // **bold**, *italic*, `code` inline. It emits plain elements, so the sheet
 // styles the live document the same way it styles rendered markdown.
+// A caption line. Markdown has no caption of its own, so the sample uses
+// figcaption, which the sheet sets in the caption style.
+const Caption = Node.create({
+  name: "caption",
+  group: "block",
+  content: "inline*",
+  parseHTML: () => [{ tag: "figcaption" }],
+  renderHTML: ({ HTMLAttributes }) => ["figcaption", mergeAttributes(HTMLAttributes), 0],
+});
+
 const EXTENSIONS = [
+  Caption,
   StarterKit.configure({
     heading: { levels: [1, 2, 3, 4, 5, 6] },
     link: { openOnClick: false },
@@ -138,14 +128,27 @@ const EXTENSIONS = [
   }),
 ];
 
+// A constant, so useEditor doesn't re-apply it on every render. Its
+// setProps would drop the role Tiptap adds on create, so the role is set
+// here too. `relative` keeps the editor above the inspect bands (both
+// positioned, painted in tree order).
+const EDITOR_PROPS = {
+  attributes: {
+    class: "relative outline-none",
+    role: "textbox",
+    "aria-multiline": "true",
+    "aria-label": "Sample document",
+  },
+};
+
 // Tiptap marks the empty line with data-placeholder; show it as a ghost.
 const PLACEHOLDER =
-  "[&_.is-empty]:before:pointer-events-none [&_.is-empty]:before:float-left [&_.is-empty]:before:h-0 [&_.is-empty]:before:whitespace-nowrap [&_.is-empty]:before:text-muted-foreground/60 [&_.is-empty]:before:content-[attr(data-placeholder)]";
+  "[&_.is-empty]:before:pointer-events-none [&_.is-empty]:before:float-left [&_.is-empty]:before:h-0 [&_.is-empty]:before:whitespace-nowrap [&_.is-empty]:before:text-muted-foreground [&_.is-empty]:before:content-[attr(data-placeholder)]";
 
 // ── Inspect ──────────────────────────────────────────────
 // Hover a text block to see its line boxes (one band per line) and a readout
-// of its measured font size and line height. With spacing on, it also shows
-// who owns the space around the block: the margin above it (the sheet only
+// of its measured font size and line height. It also shows who owns the
+// space around the block: the margin above it (the sheet only
 // ever spaces from the top, so that margin can belong to the block itself or
 // to a list item or list it opens), padding, and flex gaps, each with the
 // sheet rule that set it, so a refinement knows which rule to touch. One
@@ -173,13 +176,29 @@ interface InspectMark {
   lineHeight: number;
 }
 
-const INSPECT_BLOCKS = ".ProseMirror :is(h1, h2, h3, h4, h5, h6, p, pre)";
+const INSPECT_BLOCKS = ".ProseMirror :is(h1, h2, h3, h4, h5, h6, p, pre, figcaption)";
 const INSPECT_BLUE = "#6B97FF";
 const INSPECT_BAND = "rgba(107, 151, 255, 0.16)";
 const INSPECT_TONES = {
   margin: { fill: "rgba(255, 168, 82, 0.28)", line: "rgba(240, 140, 40, 0.9)" },
   padding: { fill: "rgba(153, 255, 201, 0.35)", line: "rgba(83, 214, 145, 0.9)" },
 } as const;
+
+/** The theme opposite the page's. The tooltip inverts the page
+ *  (bg-foreground), so its readout sits in that theme's scope, the way the
+ *  forced-theme previews do: muted there is the muted made for that surface. */
+function useInverseTheme(): "light" | "dark" {
+  const { theme } = useThemeContext();
+  const [osDark, setOsDark] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const sync = () => setOsDark(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return theme === "dark" || (theme === "system" && osDark) ? "light" : "dark";
+}
 
 const pxLabel = (value: number) => {
   const n = Math.round(value * 10) / 10;
@@ -219,7 +238,7 @@ interface SpaceMark {
   value: number;
   /** The element the space belongs to, e.g. "li". */
   owner: string;
-  /** The sheet rule that set it: the matching selector and its formula. */
+  /** The sheet rule that set it, as its matching selector. */
   rule: string | null;
   band: Box;
   tone: keyof typeof INSPECT_TONES;
@@ -227,43 +246,20 @@ interface SpaceMark {
 
 // The sheet's own rules (the ones generateTypesetCss writes), to trace a
 // margin or padding back to its selector. Values don't change selectors.
-const SHEET_RULES = typesetRules(TYPESET_DEFAULTS, true);
-const PREFIX = ":where(.typeset) :where(";
+const SHEET_RULES = typesetRules(typeScale);
 
-/** The selector list inside `:where(.typeset) :where(…)`, split at its
- *  top-level commas. */
-function selectorParts(sel: string): string[] {
-  if (!sel.startsWith(PREFIX)) return [];
-  let depth = 1;
-  let i = PREFIX.length;
-  for (; i < sel.length && depth > 0; i++) {
+/** The selector list a sheet rule opens with, `:where(.typeset p, …)`,
+ *  split at its top-level commas. */
+function whereParts(sel: string): string[] {
+  if (!sel.startsWith(":where(")) return [];
+  let depth = 0;
+  let i = 0;
+  for (; i < sel.length; i++) {
     if (sel[i] === "(") depth++;
-    else if (sel[i] === ")") depth--;
+    else if (sel[i] === ")" && --depth === 0) break;
   }
-  const inner = sel.slice(PREFIX.length, i - 1);
-  const parts: string[] = [];
-  let d = 0;
-  let start = 0;
-  for (let j = 0; j < inner.length; j++) {
-    if (inner[j] === "(") d++;
-    else if (inner[j] === ")") d--;
-    else if (inner[j] === "," && d === 0) {
-      parts.push(inner.slice(start, j).trim());
-      start = j + 1;
-    }
-  }
-  parts.push(inner.slice(start).trim());
-  return parts;
+  return selectorList(sel.slice(":where(".length, i));
 }
-
-/** `calc(var(--typeset-flow) * 2em / (var(--typeset-h2)))` → `flow × 2em ÷ h2`. */
-const formula = (value: string) =>
-  value
-    .replace(/var\(--typeset-([\w-]+)\)/g, "$1")
-    .replace(/^calc\((.*)\)$/, "$1")
-    .replace(/\(([\w-]+)\)/g, "$1")
-    .replace(/ \* /g, " × ")
-    .replace(/ \/ /g, " ÷ ");
 
 const safeMatches = (el: Element, sel: string) => {
   try {
@@ -274,17 +270,22 @@ const safeMatches = (el: Element, sel: string) => {
 };
 
 /** The last sheet rule (same specificity, so order wins) that sets `prop`
- *  on `el`, as `selector · formula`. */
+ *  on `el`, as its selector. */
 function ruleFor(el: HTMLElement, prop: "margin-top" | "padding-top" | "padding-bottom" | "gap"): string | null {
   const short = prop === "margin-top" ? "margin" : prop === "gap" ? "gap" : "padding";
   for (let i = SHEET_RULES.length - 1; i >= 0; i--) {
     const [sel, decls] = SHEET_RULES[i];
     const value = decls[prop] ?? decls[short];
     if (value === undefined || sel.includes("::") || !safeMatches(el, sel)) continue;
-    const part = selectorParts(sel).find((p) => safeMatches(el, `${PREFIX}${p})`)) ?? sel;
-    // The block list in the rhythm rule reads better as the element itself.
-    const readable = part.replace(/:is\([^)]*\)/, el.tagName.toLowerCase());
-    return `${readable} · ${formula(value)}`;
+    const part = whereParts(sel).find((p) => safeMatches(el, p)) ?? sel;
+    // An element list reads better as the element it matched: the block
+    // itself at the end, the one before it in front of a `+`.
+    const tag = (n: Element | null) => n?.tagName.toLowerCase() ?? "*";
+    const readable = part
+      .replace(/^\.typeset /, "")
+      .replace(/:is\([^)]*\)$/, tag(el))
+      .replace(/:is\([^)]*\)/, tag(el.previousElementSibling));
+    return readable;
   }
   return null;
 }
@@ -393,7 +394,7 @@ function spacingOf(el: HTMLElement, frame: HTMLElement): SpaceMark[] {
 
 /** An editable `.typeset` document, like a Notion page: no source pane,
  *  markdown shortcuts format in place. `contentKey` + `version` decide when
- *  `content` is (re)loaded: another preset's draft, or a reset. */
+ *  `content` is (re)loaded: another document's draft, or a reset. */
 export function TypesetEditor({
   content,
   contentKey,
@@ -401,11 +402,8 @@ export function TypesetEditor({
   onChange,
   onReset,
   canReset,
-  style,
   typesetClassName,
-  inspectSpacing = false,
   maxWidth,
-  className,
 }: {
   content: string;
   contentKey: string;
@@ -413,18 +411,13 @@ export function TypesetEditor({
   onChange: (html: string) => void;
   onReset: () => void;
   canReset: boolean;
-  /** The four variables (see typesetVars). */
-  style?: CSSProperties;
-  /** Preset and step classes on the `.typeset` element. */
+  /** The step class on the `.typeset` element. */
   typesetClassName?: string;
-  /** Inspect also shows margins, padding, and gaps, and the rules behind them. */
-  inspectSpacing?: boolean;
   /** Width of the document, in px. */
   maxWidth?: number;
-  /** Size context for an inheriting preset (`size: null`). */
-  className?: string;
 }) {
   const shape = useShape();
+  const inverse = useInverseTheme();
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const [inspect, setInspect] = useState(false);
@@ -437,23 +430,25 @@ export function TypesetEditor({
     content,
     // Rendered on the client only; the static copy below covers SSR.
     immediatelyRender: false,
-    // `relative` keeps the editor above the inspect bands (both positioned,
-    // painted in tree order).
-    editorProps: { attributes: { class: "relative outline-none", "aria-label": "Sample document" } },
-    onUpdate: ({ editor }) => onChangeRef.current(editor.getHTML()),
+    editorProps: EDITOR_PROPS,
+    onUpdate: ({ editor, transaction }) => {
+      if (transaction.docChanged) onChangeRef.current(editor.getHTML());
+    },
   });
 
-  // Swap documents without counting the swap as an edit.
+  // Swap documents without counting the swap as an edit, in a fresh state so
+  // undo can't step back into the previous document. A layout effect ahead
+  // of the inspect one below, which then measures the new document.
   const loaded = useRef({ contentKey, version });
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!editor) return;
     if (loaded.current.contentKey === contentKey && loaded.current.version === version) return;
     loaded.current = { contentKey, version };
-    editor.commands.setContent(content, { emitUpdate: false });
+    const doc = createDocument(content, editor.schema);
+    editor.view.updateState(EditorState.create({ doc, plugins: editor.state.plugins }));
   }, [editor, content, contentKey, version]);
 
-  // Re-measure on every edit, resize, and change of values or preset.
-  const styleKey = JSON.stringify(style ?? {}) + (typesetClassName ?? "");
+  // Re-measure on every edit, document swap, resize, and change of step.
   useLayoutEffect(() => {
     const frame = frameRef.current;
     if (!inspect || !frame || !editor) return;
@@ -466,7 +461,7 @@ export function TypesetEditor({
       ro.disconnect();
       editor.off("update", measure);
     };
-  }, [inspect, editor, styleKey, maxWidth]);
+  }, [inspect, editor, typesetClassName, maxWidth, contentKey, version]);
 
   // The block under the pointer, or the nearest one from a gap.
   const pick = (e: PointerEvent<HTMLDivElement>) => {
@@ -484,8 +479,8 @@ export function TypesetEditor({
 
   const mark = inspect && hovered !== null ? marks[hovered] : undefined;
   const spacing = useMemo(
-    () => (mark && inspectSpacing && frameRef.current ? spacingOf(mark.el, frameRef.current) : []),
-    [mark, inspectSpacing]
+    () => (mark && frameRef.current ? spacingOf(mark.el, frameRef.current) : []),
+    [mark]
   );
 
   // A click in the page margin lands at the end of the document, as in Notion.
@@ -524,13 +519,13 @@ export function TypesetEditor({
       </div>
       <div
         onMouseDown={focusEnd}
-        className={cn("cursor-text bg-background px-5 py-6 sm:px-8 sm:py-8", className)}
+        className="cursor-text bg-background px-5 py-6 sm:px-8 sm:py-8"
       >
         <div
           ref={frameRef}
           onPointerMove={pick}
           onPointerLeave={() => setHovered(null)}
-          className="relative mx-auto w-full"
+          className="relative mx-auto w-full text-foreground"
           style={{ maxWidth }}
         >
           {/* The bands paint under the text (the editor root is positioned
@@ -558,12 +553,12 @@ export function TypesetEditor({
                 outlineOffset: -1,
               }}
             >
-              <span className="font-mono text-[9px] font-semibold leading-none text-foreground">
+              <span className="font-mono text-[9px] leading-none text-foreground" style={{ fontVariationSettings: fontWeights.semibold }}>
                 {Math.round(sp.value * 10) / 10}
               </span>
             </div>
           ))}
-          <div className={cn("typeset text-foreground", typesetClassName, PLACEHOLDER)} style={style}>
+          <div className={cn("typeset", typesetClassName, PLACEHOLDER)}>
             {editor ? (
               <EditorContent editor={editor} />
             ) : (
@@ -577,16 +572,16 @@ export function TypesetEditor({
               side="top"
               sideOffset={8}
               content={
-                <div className="grid grid-cols-[auto_auto] gap-x-4 font-mono text-[11px] leading-[1.55] tabular-nums">
-                  <span className="opacity-60">Font size</span>
+                <div className={cn(inverse, "grid grid-cols-[auto_auto] gap-x-4 font-mono text-[11px] leading-4 tabular-nums")}>
+                  <span className="text-muted-foreground">Font size</span>
                   <span className="text-right">{pxLabel(mark.fontSize)}</span>
-                  <span className="opacity-60">Line height</span>
+                  <span className="text-muted-foreground">Line height</span>
                   <span className="text-right">{pxLabel(mark.lineHeight)}</span>
                   {spacing.map((sp, i) => (
                     <Fragment key={i}>
-                      <span className="mt-1.5 opacity-60">{sp.kind}</span>
+                      <span className="mt-1.5 text-muted-foreground">{sp.kind}</span>
                       <span className="mt-1.5 text-right">{pxLabel(sp.value)}</span>
-                      <span className="col-span-2 opacity-60">
+                      <span className="col-span-2 text-muted-foreground">
                         {sp.owner}
                         {sp.rule ? ` · ${sp.rule}` : ""}
                       </span>

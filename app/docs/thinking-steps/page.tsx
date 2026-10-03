@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
+import { fontWeights } from "@/registry/default/lib/font-weight";
 import {
   ThinkingSteps,
   ThinkingStepsHeader,
@@ -427,7 +428,7 @@ function StreamingDescription({ text, active, done }: { text: string; active: bo
   const show = done ? text : displayed;
   if (!show) return null;
   return (
-    <span className="text-site-body text-muted-foreground leading-snug">
+    <span className="text-site-body text-muted-foreground leading-4.5">
       {show}
     </span>
   );
@@ -823,22 +824,22 @@ export default function ThinkingStepsDoc() {
       </DocSection>
 
       <DocSection title="API Reference">
-        <h3 className="text-site-subtitle font-semibold text-foreground mb-2 mt-4">ThinkingSteps</h3>
+        <h3 className="text-site-subtitle text-foreground mb-2 mt-4" style={{ fontVariationSettings: fontWeights.semibold }}>ThinkingSteps</h3>
         <PropsTable props={rootProps} />
 
-        <h3 className="text-site-subtitle font-semibold text-foreground mb-2 mt-6">ThinkingStepsHeader</h3>
+        <h3 className="text-site-subtitle text-foreground mb-2 mt-6" style={{ fontVariationSettings: fontWeights.semibold }}>ThinkingStepsHeader</h3>
         <PropsTable props={headerProps} />
 
-        <h3 className="text-site-subtitle font-semibold text-foreground mb-2 mt-6">ThinkingStep</h3>
+        <h3 className="text-site-subtitle text-foreground mb-2 mt-6" style={{ fontVariationSettings: fontWeights.semibold }}>ThinkingStep</h3>
         <PropsTable props={stepProps} />
 
-        <h3 className="text-site-subtitle font-semibold text-foreground mb-2 mt-6">ThinkingStepDetails</h3>
+        <h3 className="text-site-subtitle text-foreground mb-2 mt-6" style={{ fontVariationSettings: fontWeights.semibold }}>ThinkingStepDetails</h3>
         <PropsTable props={detailsProps} />
 
-        <h3 className="text-site-subtitle font-semibold text-foreground mb-2 mt-6">ThinkingStepSource</h3>
+        <h3 className="text-site-subtitle text-foreground mb-2 mt-6" style={{ fontVariationSettings: fontWeights.semibold }}>ThinkingStepSource</h3>
         <PropsTable props={sourceProps} />
 
-        <h3 className="text-site-subtitle font-semibold text-foreground mb-2 mt-6">ThinkingStepImage</h3>
+        <h3 className="text-site-subtitle text-foreground mb-2 mt-6" style={{ fontVariationSettings: fontWeights.semibold }}>ThinkingStepImage</h3>
         <PropsTable props={imageProps} />
       </DocSection>
     </DocPage>

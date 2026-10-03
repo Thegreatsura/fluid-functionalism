@@ -206,7 +206,7 @@ already exist. Candidates in that order:
    ad-hoc backgrounds and shadows that break at depth or in dark mode.
 4. **Sizes** (`size-context`) — three-plus control heights in the wild →
    the 36/28 ladder shared by buttons, inputs, selects, tabs, rows.
-5. **Typography** (`type-scale`, `typography`): five-plus text sizes or
+5. **Typography** (`size-context`, `typography`): five-plus text sizes or
    line heights in the wild, or chat replies and docs rendering markdown
    with stock or plugin prose styles → six roles with paired leading, and
    `.typeset` for the markdown.

@@ -195,8 +195,8 @@ function HeightGuides({ height }: { height: number }) {
           />
         </svg>
         <span
-          className="text-site-caption tabular-nums"
-          style={{ color: "#6B97FF", fontVariationSettings: fontWeights.semibold }}
+          className="text-site-caption tabular-nums text-foreground"
+          style={{ fontVariationSettings: fontWeights.semibold }}
         >
           {height}px
         </span>
@@ -387,11 +387,10 @@ function CompactRegionDemo() {
         />
       </svg>
       <span
-        className="absolute text-site-caption leading-snug select-none hidden sm:block"
+        className="absolute text-site-caption text-foreground select-none hidden sm:block"
         style={{
           left: 318,
           top: 18,
-          color: "#6B97FF",
           fontVariationSettings: fontWeights.semibold,
         }}
       >
@@ -523,14 +522,11 @@ function TokenInspectorDemo() {
         renderTooltip={(raw) => {
           const rows = tokenReadout(raw, step);
           return (
-            <div className="font-mono text-[11px] leading-[1.55] normal-case tracking-normal">
+            <div className="font-mono text-[11px] leading-4 normal-case tracking-normal">
               {rows.length > 0 ? (
                 rows.map(([token, value]) => (
                   <div key={token}>
-                    <span
-                      className="font-semibold"
-                      style={{ color: "#6B97FF" }}
-                    >
+                    <span style={{ fontVariationSettings: fontWeights.semibold }}>
                       {token}
                     </span>{" "}
                     {value}
@@ -599,15 +595,15 @@ export default function SizesPage() {
       installNote="Installs the size-context lib: SizeProvider, the useSize and useTypeScale hooks, the token maps behind both steps, and the type-scale tokens."
     >
       <DocSection title="The principle">
-        <p className="text-site-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground">
           An interface reads as one product when its controls share a sizing
           rhythm. A button next to a select next to a tab should land on the
           same height.
         </p>
-        <p className="text-site-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground">
           Each size scales text, icons, and padding together.
         </p>
-        <p className="text-site-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground">
           Compact is for dense, data-heavy tools; default is the right call
           for everything else.
         </p>
@@ -617,7 +613,7 @@ export default function SizesPage() {
       </DocSection>
 
       <DocSection title="Typography scale">
-        <p className="text-site-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground">
           Type follows the ladder. Compact drops each of the six roles one
           notch, size and leading together, so a dense screen keeps the same
           hierarchy at a smaller size. The full scale lives on
@@ -626,7 +622,7 @@ export default function SizesPage() {
       </DocSection>
 
       <DocSection title="Compact regions">
-        <p className="text-site-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground">
           Density is a region decision, not a per-control one. Wrap the region
           in a<Code>SizeProvider</Code> and everything inside follows — menus
           included, since React context crosses portals.
@@ -635,7 +631,7 @@ export default function SizesPage() {
       </DocSection>
 
       <DocSection title="Token reference">
-        <p className="text-site-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground">
           The table, measured live: hover a control below and every number in
           the readout is a token from this table. Flip the step and the
           element re-measures under your cursor.

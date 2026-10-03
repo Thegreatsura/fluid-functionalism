@@ -63,7 +63,7 @@ export function BentoCard({ slug, name, isNew, gridSize = "small", animateLayout
           "text-site-body text-muted-foreground transition-colors duration-80",
           slug && "group-hover/link:text-foreground"
         )}
-        style={{ fontVariationSettings: fontWeights.medium }}
+        style={{ fontVariationSettings: fontWeights.normal }}
       >
         {name}
       </span>

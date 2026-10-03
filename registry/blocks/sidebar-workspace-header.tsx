@@ -79,7 +79,7 @@ export function SidebarWorkspaceHeader({
   }`;
   const nameSpan = (
     <span
-      className="min-w-0 truncate text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] text-foreground"
+      className="min-w-0 truncate text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)] text-foreground"
       style={{ fontVariationSettings: fontWeights.semibold }}
     >
       {name}

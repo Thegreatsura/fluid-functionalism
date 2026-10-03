@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { fontWeights } from "@/registry/default/lib/font-weight";
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 
@@ -156,7 +157,7 @@ function PrimitiveToggle() {
               "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)] focus-visible:ring-offset-2 focus-visible:ring-offset-background",
               selected ? "text-background" : "text-muted-foreground hover:text-foreground"
             )}
-            style={{ fontVariationSettings: "'wght' 500" }}
+            style={{ fontVariationSettings: fontWeights.normal }}
             aria-pressed={selected}
           >
             {selected && (
@@ -177,7 +178,7 @@ function PrimitiveToggle() {
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid grid-cols-[180px_1fr_1fr] gap-6 items-start py-8 border-t border-border">
-      <div className="text-sm" style={{ fontVariationSettings: "'wght' 600" }}>
+      <div className="text-sm" style={{ fontVariationSettings: fontWeights.semibold }}>
         {label}
       </div>
       {children}
@@ -189,7 +190,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 function SingleRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid grid-cols-[180px_1fr_1fr] gap-6 items-start py-8 border-t border-border">
-      <div className="text-sm" style={{ fontVariationSettings: "'wght' 600" }}>
+      <div className="text-sm" style={{ fontVariationSettings: fontWeights.semibold }}>
         {label}
       </div>
       <div className="col-span-2">{children}</div>
@@ -234,20 +235,20 @@ export default function CompareBasesPage() {
         onMouseLeave={() => setHeroHovered(false)}
       >
         <h1
-          className="text-6xl leading-[1.1] tracking-tight text-foreground"
-          style={{ fontVariationSettings: "'wght' 700" }}
+          className="text-6xl leading-[1.1] text-foreground"
+          style={{ fontVariationSettings: fontWeights.bold }}
         >
           Fluid Functionalism
         </h1>
         <p
-          className="text-6xl leading-[1.1] tracking-tight text-muted-foreground"
-          style={{ fontVariationSettings: "'wght' 700" }}
+          className="text-6xl leading-[1.1] text-muted-foreground"
+          style={{ fontVariationSettings: fontWeights.bold }}
         >
           built on Radix
         </p>
         <motion.p
-          className="text-6xl leading-[1.1] tracking-tight text-foreground mb-8"
-          style={{ fontVariationSettings: "'wght' 700" }}
+          className="text-6xl leading-[1.1] text-foreground mb-8"
+          style={{ fontVariationSettings: fontWeights.bold }}
           initial={false}
           animate={{
             opacity: heroHovered ? 1 : 0,
@@ -271,10 +272,10 @@ export default function CompareBasesPage() {
 
       <div className="grid grid-cols-[180px_1fr_1fr] gap-6 items-end pb-2">
         <div />
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+        <div className="text-xs text-muted-foreground">
           Radix
         </div>
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+        <div className="text-xs text-muted-foreground">
           Base UI
         </div>
       </div>
@@ -508,8 +509,8 @@ export default function CompareBasesPage() {
       {/* ── Single-source components ─────────────────────────────────── */}
       <section className="pt-24 pb-4">
         <h2
-          className="text-2xl tracking-tight text-foreground"
-          style={{ fontVariationSettings: "'wght' 700" }}
+          className="text-2xl text-foreground"
+          style={{ fontVariationSettings: fontWeights.semibold }}
         >
           Built on Base UI
         </h2>

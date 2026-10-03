@@ -138,7 +138,7 @@ function StatusesDemo() {
     <div className="grid w-full max-w-[560px] grid-cols-1 gap-x-3 gap-y-5 sm:grid-cols-2">
       {(["low", "high"] as const).map((contrast) => (
         <div key={contrast} className="flex flex-col gap-2">
-          <span className="px-1 text-caption text-muted-foreground">
+          <span className="px-1 text-site-caption text-muted-foreground">
             {contrast === "low" ? "Low contrast" : "High contrast"}
           </span>
           {STATUSES.map((status) => (
@@ -218,7 +218,7 @@ export default function BannerDoc() {
       </DocSection>
 
       <DocSection title="Statuses">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           5 statuses, 2 contrasts. Low colors only the icon; high washes the whole banner.
         </p>
         <ComponentPreview code={statusesCode}>
@@ -227,7 +227,7 @@ export default function BannerDoc() {
       </DocSection>
 
       <DocSection title="Actions">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           3 variants. Primary sits at the edge next to a one-line title, and leads under a
           description.
         </p>
@@ -237,7 +237,7 @@ export default function BannerDoc() {
       </DocSection>
 
       <DocSection title="Fixed">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           <code>variant=&quot;fixed&quot;</code> runs edge to edge under your header. Scroll the
           content: the bar stays put. Press ✕: it closes and the content slides up.
         </p>
@@ -247,7 +247,7 @@ export default function BannerDoc() {
       </DocSection>
 
       <DocSection title="Custom icon">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           <code>icon</code> swaps in any icon, drawn in the status color.
         </p>
         <ComponentPreview code={iconCode}>

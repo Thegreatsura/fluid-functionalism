@@ -118,9 +118,9 @@ export function DocPage({
               Installation
             </h2>
             {installNote ? (
-              <p className="text-site-caption text-muted-foreground text-balance">{installNote}</p>
+              <p className="text-site-body text-muted-foreground text-balance">{installNote}</p>
             ) : DUAL_FLAVOR_SLUGS.has(installSlug ?? slug) ? (
-              <p className="text-site-caption text-muted-foreground text-balance">
+              <p className="text-site-body text-muted-foreground text-balance">
                 {base === "base"
                   ? "Base UI flavor. Switch in the right panel."
                   : "Radix flavor. Switch in the right panel."}
@@ -128,11 +128,11 @@ export function DocPage({
             ) : base === "base" ? (
               // User has Base UI selected globally, but this component has no
               // Base flavour. Surface that so the toggle doesn't feel inert.
-              <p className="text-site-caption text-muted-foreground text-balance">
+              <p className="text-site-body text-muted-foreground text-balance">
                 Same source under both flavors.
               </p>
             ) : (
-              <p className="text-site-caption text-muted-foreground text-balance">
+              <p className="text-site-body text-muted-foreground text-balance">
                 One prompt for your coding agent: install command, usage, props.
               </p>
             )}

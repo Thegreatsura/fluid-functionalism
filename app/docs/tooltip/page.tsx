@@ -1,6 +1,7 @@
 "use client";
 
 import { Tooltip } from "@/registry/radix/tooltip";
+import { fontWeights } from "@/registry/default/lib/font-weight";
 import { Button } from "@/components/ui/button";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
@@ -24,11 +25,12 @@ const placementCode = `import { Tooltip } from "./components";
 <Tooltip content="Left" side="left">...</Tooltip>`;
 
 const richCode = `import { Tooltip } from "./components";
+import { fontWeights } from "@/lib/font-weight";
 
 <Tooltip
   content={
     <div className="flex flex-col gap-1">
-      <span className="font-medium">Keyboard shortcut</span>
+      <span style={{ fontVariationSettings: fontWeights.semibold }}>Keyboard shortcut</span>
       <span className="text-muted-foreground">⌘ + S</span>
     </div>
   }
@@ -146,7 +148,7 @@ export default function TooltipDoc() {
           <Tooltip
             content={
               <div className="flex flex-col gap-1">
-                <span style={{ fontVariationSettings: "'wght' 550" }}>
+                <span style={{ fontVariationSettings: fontWeights.semibold }}>
                   Keyboard shortcut
                 </span>
                 <span className="text-muted-foreground">⌘ + S</span>

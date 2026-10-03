@@ -83,7 +83,7 @@ function SuccessToast({ message }: { message: string }) {
         "mx-auto flex h-9 w-max items-center gap-2 bg-foreground px-3 text-site-body text-background",
         shapeClasses.bg
       )}
-      style={{ fontVariationSettings: fontWeights.medium }}
+      style={{ fontVariationSettings: fontWeights.normal }}
     >
       <span
         aria-hidden
@@ -145,7 +145,7 @@ function ShortcutToast({
         "mx-auto flex h-9 w-max items-center gap-2 bg-foreground px-3 text-site-body text-background",
         shapeClasses.bg
       )}
-      style={{ fontVariationSettings: fontWeights.medium }}
+      style={{ fontVariationSettings: fontWeights.normal }}
     >
       <kbd
         aria-hidden

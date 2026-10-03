@@ -228,11 +228,11 @@ function ValueDisplay({
   const renderValue = (index: number) => {
     if (editingIndex === index) {
       return (
-        <span className="inline-grid text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)]">
+        <span className="inline-grid text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)]">
           {/* Ghost for layout stability — widest possible value */}
           <span
             className="col-start-1 row-start-1 invisible"
-            style={{ fontVariationSettings: fontWeights.medium }}
+            style={{ fontVariationSettings: fontWeights.normal }}
             aria-hidden="true"
           >
             {label ? `${label}: ` : ""}
@@ -262,7 +262,7 @@ function ValueDisplay({
                 "w-[5ch] bg-transparent text-foreground outline-none border-b border-border text-center",
                 shape.input
               )}
-              style={{ fontVariationSettings: fontWeights.medium }}
+              style={{ fontVariationSettings: fontWeights.normal }}
             />
           </span>
         </span>
@@ -286,8 +286,8 @@ function ValueDisplay({
     ? `${label ? `${label}: ` : ""}${formatValue(max)} — ${formatValue(max)}`
     : `${label ? `${label}: ` : ""}${formatValue(max)}`;
 
-  // Weight, not color, signals interaction: normal → medium over 100ms while
-  // hovered or pressed. tabular-nums plus a ghost set at medium weight (the
+  // Weight, not color, signals interaction: normal → semibold over 100ms while
+  // hovered or pressed. tabular-nums plus a ghost set at semibold (the
   // heaviest this label gets) keep the box from changing width.
   return (
     <span
@@ -297,14 +297,14 @@ function ValueDisplay({
       )}
       style={{
         fontVariationSettings: isInteracting
-          ? fontWeights.medium
+          ? fontWeights.semibold
           : fontWeights.normal,
       }}
     >
       {/* Invisible ghost — reserves width of widest possible value */}
       <span
         className="col-start-1 row-start-1 invisible whitespace-nowrap"
-        style={{ fontVariationSettings: fontWeights.medium }}
+        style={{ fontVariationSettings: fontWeights.semibold }}
         aria-hidden="true"
       >
         {widestValue}
@@ -317,7 +317,7 @@ function ValueDisplay({
         {isRange ? (
           <>
             {renderValue(0)}
-            <span className="mx-1 text-muted-foreground/50">—</span>
+            <span className="mx-1 text-muted-foreground">—</span>
             {renderValue(1)}
           </>
         ) : (
@@ -358,7 +358,7 @@ function TooltipValue({ value, formatValue, motionX }: TooltipValueProps) {
     >
       <span
         className={cn("text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)] text-background tabular-nums whitespace-nowrap bg-foreground px-2 py-1", shape.bg)}
-        style={{ fontVariationSettings: fontWeights.medium }}
+        style={{ fontVariationSettings: fontWeights.normal }}
       >
         {formatValue(value)}
       </span>
@@ -856,7 +856,7 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
     );
 
     // --- Interaction state for tooltip ---
-    // Also drives the value label's normal → medium weight shift.
+    // Also drives the value label's normal → semibold weight shift.
     const isInteracting = isHovered || isPressed;
 
     // --- Per-thumb accessible names ---
@@ -1104,7 +1104,7 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
                 >
                   <span
                     className={cn("text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)] text-background tabular-nums whitespace-nowrap bg-foreground px-2 py-1", shape.bg)}
-                    style={{ fontVariationSettings: fontWeights.medium }}
+                    style={{ fontVariationSettings: fontWeights.normal }}
                   >
                     {formatValue(hoverPreview.snappedValue)}
                   </span>
@@ -1586,7 +1586,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
             >
               <span
                 className={cn("text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)] text-background tabular-nums whitespace-nowrap bg-foreground px-2 py-1", shape.bg)}
-                style={{ fontVariationSettings: fontWeights.medium }}
+                style={{ fontVariationSettings: fontWeights.normal }}
               >
                 {formatValue(hoverPreview.snappedValue)}
               </span>
@@ -1702,12 +1702,12 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         {variant === "pips" && (
           <div className="absolute inset-0 flex items-center px-2 z-[2] pointer-events-none" aria-hidden>
             {label && (
-              <span className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] px-2 bg-background text-transparent select-none">
+              <span className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)] px-2 bg-background text-transparent select-none">
                 {label}
               </span>
             )}
             <span
-              className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] tabular-nums ml-auto px-2 bg-background text-transparent select-none"
+              className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)] tabular-nums ml-auto px-2 bg-background text-transparent select-none"
               style={{ minWidth: `${String(formatValue(max)).length}ch` }}
             >
               {formatValue(value)}
@@ -1756,7 +1756,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
           <div className="absolute inset-0 flex items-center px-2 z-[4] pointer-events-none">
             {label && (
               <motion.span
-                className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] px-2"
+                className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)] px-2"
                 initial={false}
                 animate={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
                 transition={spring.fast}
@@ -1767,7 +1767,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
             {/* minWidth reserves formatValue(max)'s length in ch, so the value
                 slot keeps its width as the number changes. */}
             <motion.span
-              className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] tabular-nums ml-auto px-2"
+              className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)] tabular-nums ml-auto px-2"
               initial={false}
               animate={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
               transition={spring.fast}
@@ -1816,7 +1816,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         {/* Scrubber: label */}
         {variant === "scrubber" && label && (
           <motion.span
-            className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] shrink-0 z-10"
+            className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)] shrink-0 z-10"
             initial={false}
             animate={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
             transition={spring.fast}
@@ -1830,7 +1830,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
           <>
             <div className="flex-1" />
             <motion.span
-              className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,18px)] shrink-0 tabular-nums text-right z-10"
+              className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)] shrink-0 tabular-nums text-right z-10"
               initial={false}
               animate={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
               transition={spring.fast}

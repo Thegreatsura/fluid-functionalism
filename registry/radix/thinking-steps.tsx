@@ -422,17 +422,17 @@ function ThinkingStep({
             <div className="flex-1 flex flex-col gap-1 min-w-0">
               <span
                 className={cn(
-                  sizeClasses.text,
+                  sizeClasses.type.body,
                   "text-foreground",
                   isActive && "shimmer-text"
                 )}
-                style={{ fontVariationSettings: fontWeights.medium }}
+                style={{ fontVariationSettings: fontWeights.semibold }}
               >
                 {label}
                 {isActive && "…"}
               </span>
               {description && (
-                <span className={cn(sizeClasses.text, "text-muted-foreground")}>
+                <span className={cn(sizeClasses.type.body, "text-muted-foreground")}>
                   {description}
                 </span>
               )}

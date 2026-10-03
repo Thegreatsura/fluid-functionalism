@@ -76,7 +76,7 @@ function Cite({ n }: { n: number }) {
 function Answer() {
   return (
     <ChatMessage from="assistant" className="max-w-full">
-      <div className="flex flex-col gap-3 text-site-subtitle leading-relaxed text-foreground">
+      <div className="flex flex-col gap-3 text-site-subtitle text-foreground">
         <p>
           The Stoics drew a sharp line between what is{" "}
           <span style={{ fontVariationSettings: fontWeights.semibold }}>
@@ -129,7 +129,7 @@ function SourcesPanel() {
           <div className="flex min-w-0 flex-col">
             <span
               className="truncate text-site-body text-foreground"
-              style={{ fontVariationSettings: fontWeights.medium }}
+              style={{ fontVariationSettings: fontWeights.normal }}
             >
               {s.title}
             </span>

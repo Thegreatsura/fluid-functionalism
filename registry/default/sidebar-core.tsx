@@ -853,7 +853,7 @@ export type SidebarTriggerProps = ButtonProps;
 /** Keystroke chip rendered inside the (inverted) tooltip surface. */
 function ShortcutKbd({ children }: { children: ReactNode }) {
   return (
-    <kbd className="-my-1 flex h-4 min-w-4 items-center justify-center rounded border border-background/30 px-1 font-sans text-[length:var(--fs-micro-compact,10px)] leading-[var(--lh-micro-compact,12px)] text-background/80">
+    <kbd className="-my-1 flex h-4 min-w-4 items-center justify-center rounded border border-background/30 px-1 font-sans text-[length:var(--fs-micro-compact,10px)] leading-[var(--lh-micro-compact,12px)] text-background">
       {children}
     </kbd>
   );
@@ -1443,7 +1443,7 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
               ? ({ "--group-actions-pad": `${group.actionsCount * 28 + 6}px` } as CSSProperties)
               : undefined,
           className: cn(
-            "flex h-8 w-full shrink-0 cursor-pointer select-none items-center gap-2 px-2 text-left text-muted-foreground/70 outline-none",
+            "flex h-8 w-full shrink-0 cursor-pointer select-none items-center gap-2 px-2 text-left text-muted-foreground outline-none",
             "transition-colors duration-80 hover:text-muted-foreground",
             group.actionsCount > 0 && "pr-[var(--group-actions-pad)]",
             "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
@@ -1498,7 +1498,7 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
         ref: ref as Ref<HTMLElement>,
         "data-sidebar": "group-label",
         className: cn(
-          "flex h-8 shrink-0 items-center gap-2 px-2 text-muted-foreground/70 outline-none",
+          "flex h-8 shrink-0 items-center gap-2 px-2 text-muted-foreground outline-none",
           typeClass("caption", sizeVariant),
           className
         ),

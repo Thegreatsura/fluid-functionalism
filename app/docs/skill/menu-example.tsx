@@ -82,6 +82,7 @@ function GenericList({ selected, onSelect }: { selected: number; onSelect: (i: n
             // Hover louder than the selection: the cursor, not the pick,
             // is what the eye lands on. Scripted hover counts as hover.
             "[&:is(:hover,[data-script-hover])]:bg-selected dark:[&:is(:hover,[data-script-hover])]:bg-selected",
+            // eslint-disable-next-line no-restricted-syntax -- the generic version, bold on purpose to show the reflow
             selected === i && "bg-selected/50 font-bold dark:bg-accent/40",
             shape.item
           )}

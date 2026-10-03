@@ -236,7 +236,7 @@ function DemoPageInner() {
             >
               Fluid Functionalism
             </h1>
-            <p className="text-site-subtitle text-muted-foreground">
+            <p className="text-site-body text-muted-foreground">
               Refined UI components with satisfying hover.
             </p>
             <div className="flex items-center gap-2 mt-2">

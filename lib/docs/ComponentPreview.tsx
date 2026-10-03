@@ -165,7 +165,7 @@ export function ComponentPreview({
             <Tooltip content={playbackButton?.tooltip ?? "Replay animation"} side="top">
               <button
                 onClick={playbackButton?.onClick ?? onReplay}
-                className={`w-10 h-10 flex items-center justify-center ${shape.button} text-muted-foreground/60 hover:text-foreground hover:bg-hover transition-colors duration-100 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]`}
+                className={`w-10 h-10 flex items-center justify-center ${shape.button} text-muted-foreground hover:text-foreground hover:bg-hover transition-colors duration-100 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]`}
                 aria-label={playbackButton?.tooltip ?? "Replay animation"}
               >
                 {playbackButton?.icon ?? <ReplayIcon size={16} strokeWidth={1.5} />}

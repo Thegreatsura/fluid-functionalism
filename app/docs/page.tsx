@@ -50,7 +50,7 @@ export default function DocsIndex() {
         </div>
       </div>
 
-      <section className="flex flex-col gap-6 text-site-subtitle text-foreground/90 leading-relaxed">
+      <section className="flex flex-col gap-6 text-site-body text-muted-foreground">
         <div className="flex flex-col gap-2">
           <h3
             className="text-site-title text-foreground leading-none"
@@ -145,14 +145,14 @@ export default function DocsIndex() {
         </h2>
         <div className="flex flex-col gap-2 mt-2">
           <p className="text-site-body text-muted-foreground flex items-center gap-2 ml-1">
-            <span className="inline-flex items-center justify-center size-[18px] rounded-full bg-muted text-muted-foreground text-[11px] shrink-0" style={{ fontVariationSettings: fontWeights.medium }}>1</span>
+            <span className="inline-flex items-center justify-center size-[18px] rounded-full bg-muted text-muted-foreground text-[11px] leading-3.5 shrink-0" style={{ fontVariationSettings: fontWeights.normal }}>1</span>
             Add the registry to your project:
           </p>
           <InputCopy value="npx shadcn@latest registry add @fluid" align="left" className="w-fit" />
         </div>
         <div className="flex flex-col gap-2 mt-2">
           <p className="text-site-body text-muted-foreground flex items-center gap-2 ml-1">
-            <span className="inline-flex items-center justify-center size-[18px] rounded-full bg-muted text-muted-foreground text-[11px] shrink-0" style={{ fontVariationSettings: fontWeights.medium }}>2</span>
+            <span className="inline-flex items-center justify-center size-[18px] rounded-full bg-muted text-muted-foreground text-[11px] leading-3.5 shrink-0" style={{ fontVariationSettings: fontWeights.normal }}>2</span>
             Install any component:
           </p>
           <InputCopy value="npx shadcn@latest add @fluid/button" align="left" className="w-fit" />
@@ -183,7 +183,7 @@ export default function DocsIndex() {
           the installed IconProvider and override any slot — names you
           leave out keep their Lucide default:
         </p>
-        <pre className="text-site-caption leading-relaxed text-muted-foreground bg-muted/60 rounded-lg px-4 py-3 overflow-x-auto w-fit max-w-full">
+        <pre className="text-site-caption text-muted-foreground bg-muted/60 rounded-lg px-4 py-3 overflow-x-auto w-fit max-w-full">
           <code>{`import { IconProvider } from "@/lib/icon-context";
 import { CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
 

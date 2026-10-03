@@ -107,7 +107,7 @@ const PRIORITY_FILTER = [
 function Avatar({ initials }: { initials: string }) {
   return (
     <span
-      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] text-white ${
+      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] text-background ${
         ASSIGNEE_COLOR[initials] ?? "bg-neutral-500"
       }`}
       style={{ fontVariationSettings: fontWeights.semibold }}
@@ -185,7 +185,7 @@ function Board({ rows }: { rows: Issue[] }) {
               >
                 <span className="text-site-body text-foreground">{issue.title}</span>
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-muted-foreground">
+                  <span className="font-mono text-[11px] leading-3.5 text-muted-foreground">
                     {issue.key}
                   </span>
                   <div className="flex items-center gap-2">

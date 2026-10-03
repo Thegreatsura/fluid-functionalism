@@ -25,7 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
-import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
+import { SizeProvider, typeClass, useSize, type SizeVariant } from "@/lib/size-context";
 import { useIcon, type IconComponent } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
 import { Button, type ButtonProps } from "@/components/ui/button";
@@ -531,10 +531,10 @@ const BannerTitle = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagrap
         data-slot="banner-title"
         className={cn(
           "col-start-2 row-start-1 min-w-0 text-foreground",
-          compact ? "text-[13px] leading-[18px]" : "text-[14px] leading-5",
+          typeClass("subtitle", compact ? "compact" : "default"),
           className
         )}
-        style={{ fontVariationSettings: fontWeights.medium, ...style }}
+        style={{ fontVariationSettings: fontWeights.semibold, ...style }}
         {...props}
       />
     );
@@ -544,8 +544,8 @@ const BannerTitle = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagrap
 BannerTitle.displayName = "BannerTitle";
 
 // ── BannerDescription ────────────────────────────────────
-// 70% foreground rather than muted-foreground: the muted grey drops under
-// 4.5:1 on the tinted and neutral fills.
+// Foreground, like the title: muted grey drops under 4.5:1 on the tinted
+// and neutral fills, and the title already stands apart by its weight.
 
 const BannerDescription = forwardRef<
   HTMLParagraphElement,
@@ -557,8 +557,8 @@ const BannerDescription = forwardRef<
       ref={ref}
       data-slot="banner-description"
       className={cn(
-        "col-start-2 row-start-2 mt-0.5 min-w-0 text-foreground/70",
-        compact ? "text-[13px] leading-[18px]" : "text-[14px] leading-5",
+        "col-start-2 row-start-2 mt-0.5 min-w-0 text-foreground",
+        typeClass("subtitle", compact ? "compact" : "default"),
         className
       )}
       {...props}
@@ -639,7 +639,7 @@ const BannerAction = forwardRef<HTMLButtonElement, BannerActionProps>(
   ({ variant = "secondary", href, external = false, className, children, ...props }, ref) => {
     const classes = cn(
       BANNER_ACTION_ORDER[variant],
-      variant === "ghost" && "text-foreground/70",
+      variant === "ghost" && "text-foreground",
       className
     );
 

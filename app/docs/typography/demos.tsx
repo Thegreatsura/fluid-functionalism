@@ -19,7 +19,9 @@ import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 import type { ItemRect } from "@/registry/default/hooks/use-fluid-hover";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { useShape } from "@/registry/default/lib/shape-context";
-import { typeClass } from "@/registry/default/lib/size-context";
+import { typeClass, useSizeVariant } from "@/registry/default/lib/size-context";
+import { typeStyles, type TypeScaleRole } from "@/registry/default/lib/type-scale";
+import { ScrollArea } from "@/registry/base/scroll-area";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { FakeCursor } from "@/lib/docs/fake-cursor";
 
@@ -49,11 +51,87 @@ function Specimen({
 }
 
 // ---------------------------------------------------------------------------
+// The scale, as a spec sheet
+// ---------------------------------------------------------------------------
+
+/** The 5 styles the page counts, each with the sample it sets (its own job),
+ *  its weight, and its color. The numbers come from typeStyles. */
+const SPEC: Array<{
+  role: TypeScaleRole;
+  name: string;
+  sample: string;
+  weight: "bold" | "semibold" | "normal";
+  muted: boolean;
+}> = [
+  { role: "display", name: "Display", sample: "Page titles", weight: "bold", muted: false },
+  { role: "title", name: "Title", sample: "Section titles", weight: "semibold", muted: false },
+  { role: "subtitle", name: "Subtitle", sample: "Sub-headings and card titles", weight: "semibold", muted: false },
+  { role: "body", name: "Body", sample: "Labels, menu items, and paragraphs", weight: "normal", muted: true },
+  { role: "caption", name: "Caption", sample: "Descriptions and meta rows", weight: "normal", muted: true },
+];
+
+/** The axes a fontWeights token sets. */
+const axes = (fvs: string) => ({
+  wght: /'wght' (\d+)/.exec(fvs)?.[1],
+  opsz: /'opsz' (\d+)/.exec(fvs)?.[1],
+});
+
+/** The 5 styles as a spec sheet: the name, a live sample, and the font size,
+ *  line height, and weight (with its optical size), all at the page's size
+ *  step, so S switches every number. */
+export function TypeScaleSpecimen() {
+  const shape = useShape();
+  const step = useSizeVariant() === "compact" ? "compact" : "default";
+  const cols = "grid grid-cols-[80px_minmax(0,1fr)_64px_72px_56px] items-center gap-x-4 px-5";
+  const num = "font-mono text-site-caption tabular-nums";
+  return (
+    <ScrollArea
+      orientation="horizontal"
+      viewportClassName="scroll-fade-x"
+      className={cn("w-full border border-border/60", shape.container)}
+    >
+      <div className="min-w-[560px]">
+        <div className={cn(cols, "border-b border-border/60 py-2.5 text-site-caption text-muted-foreground")}>
+          <span>Style</span>
+          <span>Sample</span>
+          <span>Font size</span>
+          <span>Line height</span>
+          <span>Weight</span>
+        </div>
+        {SPEC.map(({ role, name, sample, weight, muted }) => {
+          const { wght, opsz } = axes(fontWeights[weight]);
+          const { size, leading } = typeStyles[role][step];
+          return (
+            <div key={role} className={cn(cols, "border-b border-border/40 py-4 last:border-b-0")}>
+              <span className="text-site-body text-foreground" style={{ fontVariationSettings: fontWeights.semibold }}>
+                {name}
+              </span>
+              <span
+                className={cn("min-w-0 truncate", typeClass(role, step), muted ? "text-muted-foreground" : "text-foreground")}
+                style={{ fontVariationSettings: fontWeights[weight] }}
+              >
+                {sample}
+              </span>
+              <span className={cn(num, "text-foreground")}>{size}px</span>
+              <span className={cn(num, "text-foreground")}>{leading}px</span>
+              <span className={cn(num, "flex flex-col items-start")}>
+                <span className="text-foreground">{wght}</span>
+                <span className="text-muted-foreground">opsz {opsz}</span>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </ScrollArea>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Weight + optical size
 // ---------------------------------------------------------------------------
 
-// Measured: weight alone widens it 2.3px, the paired weights 0px.
-const MENU_LABEL = "Download all invoices";
+// Measured: weight alone widens it 2.4px, the paired weights 0.1px.
+const MENU_LABEL = "Open the settings dialog";
 
 /** One menu item that behaves like a sidebar row: a hover background under
  *  the pointer, and a click that sets the active background and turns the
@@ -306,13 +384,14 @@ export function WeightOpszDemo() {
 // Balance and pretty
 // ---------------------------------------------------------------------------
 
-// Measured at 214px: wrap sets the headline 5 words over 2 (204px, then
-// 83px), balance 3 over 4 with the first line the longer (156px, 132px),
-// and wrap leaves the paragraph's last word alone (pretty brings one down),
-// with a few px either side to spare for font rendering.
-const HEADLINE = "Everything you need to run your billing";
+// Measured at 214px: wrap sets the headline 4 words over 2 (199px, then
+// 97px), balance 3 over 3 with the first line the longer (171px, 126px).
+// Wrap leaves the paragraph's last word alone ("cursor."), and pretty
+// brings "your" down to join it, with room either side to spare for font
+// rendering.
+const HEADLINE = "Give every component the same motion";
 const PARAGRAPH =
-  "Each role pairs a size with a line height, so a caption in a menu and a caption in a table share one rhythm.";
+  "Hover glides from item to item instead of blinking, so the highlight always sits under your cursor.";
 const SAMPLE = "w-[214px] max-w-full";
 
 const heading = (wrap: string) => (

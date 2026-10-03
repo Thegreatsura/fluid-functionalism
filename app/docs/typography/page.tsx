@@ -2,11 +2,11 @@
 
 import { type ReactNode } from "react";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
-import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
-import { TYPESET_SAMPLES, TypesetEditor } from "@/lib/docs/typeset-sample";
+import { MARKDOWN_SAMPLE, TypesetEditor } from "@/lib/docs/typeset-sample";
 import { TYPESET_SPACE } from "@/lib/typeset/generate";
 import { fontWeights } from "@/registry/default/lib/font-weight";
-import { BalanceDemo, PrettyDemo, WeightOpszDemo } from "./demos";
+import { cn } from "@/lib/utils";
+import { BalanceDemo, PrettyDemo, TypeScaleSpecimen, WeightOpszDemo } from "./demos";
 
 /** Inline code chip used throughout the prose. */
 function Code({ children }: { children: ReactNode }) {
@@ -23,6 +23,33 @@ function P({ children }: { children: ReactNode }) {
 
 function Rule({ children }: { children: ReactNode }) {
   return <li className="pl-1 text-site-body text-muted-foreground">{children}</li>;
+}
+
+/** A titled part inside a section, styled like the surfaces page's. The
+ *  negative margin tucks its line against it (8px), as with a section title. */
+function H3({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <h3
+      className={cn("-mb-2 text-site-subtitle text-foreground", className)}
+      style={{ fontVariationSettings: fontWeights.semibold }}
+    >
+      {children}
+    </h3>
+  );
+}
+
+/** A link off the site, opened in a new tab. */
+function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="text-foreground underline underline-offset-4"
+    >
+      {children}
+    </a>
+  );
 }
 
 /** The sheet's gaps, named by the styles they sit around. A caption takes
@@ -65,18 +92,6 @@ function GapTable() {
   );
 }
 
-const classRows: PropDef[] = [
-  { name: ".typeset", type: "class", description: "Sets everything inside in the 5 styles, like the rest of the site." },
-  { name: ".typeset-compact", type: "class", description: "The compact step: one notch smaller, with tighter spacing." },
-  { name: ".not-typeset", type: "class", description: "Leaves a part alone, like a component inside a chat reply." },
-];
-
-const apiRows: PropDef[] = [
-  { name: "typeClass(role, variant?)", type: "string", description: "Puts your own text in one of the styles, like every component. In a server component, import it from @/lib/type-scale." },
-  { name: "useSize().type", type: "Record<TypeScaleRole, string>", description: "The same, at the size step of the region it's in." },
-  { name: "text-<role>", type: "utility", description: "The same styles as Tailwind classes, like text-caption." },
-];
-
 export default function TypographyDoc() {
   return (
     <DocPage
@@ -85,12 +100,17 @@ export default function TypographyDoc() {
       installSlug="typography"
       installNote="The 5 styles for any text, markdown included."
       description="Bold rules that create consistency across the whole component library."
+      intro="Typography is hard. Every style you add makes it clunkier, so building this page was mostly cutting and refactoring until only the essential rules remained. Those rules power every component in the library, and each one is simple. Defining them and applying them on every surface is what makes it hard. Good rules hold every kind of component, and every component holds to them. Enjoy!"
     >
-      <DocSection title="4 rules">
+      <DocSection title="5 rules">
         <ul className="flex list-disc flex-col gap-1.5 pl-5 marker:text-muted-foreground">
           <Rule>5 styles for the whole site, from page titles to captions.</Rule>
           <Rule>3 weights: regular for text, semibold for headings and selected items, bold for page titles.</Rule>
           <Rule>2 text colors: foreground and muted.</Rule>
+          <Rule>
+            1 font family:{" "}
+            <ExternalLink href="https://rsms.me/inter/">Inter Variable 4.0</ExternalLink>.
+          </Rule>
           <Rule>1 paragraph style.</Rule>
         </ul>
       </DocSection>
@@ -107,52 +127,47 @@ export default function TypographyDoc() {
 
       <DocSection title="The scale">
         <P>
-          The 5 styles, called roles in code, each a size and a line height. Edit the page below like
-          a Notion doc, and press<Code>S</Code>to drop every style a notch for compact.
+          5 styles, each a size and a line height. Press<Code>S</Code>for compact.
         </P>
-        <TypesetEditor content={TYPESET_SAMPLES.scale} label="Type scale sample" />
+        <TypeScaleSpecimen />
       </DocSection>
 
       <DocSection title="Markdown">
         <P>Markdown gets the same 5 styles, to-dos and tables included.</P>
-        <TypesetEditor content={TYPESET_SAMPLES.notion} label="Notion doc sample" />
+        <TypesetEditor content={MARKDOWN_SAMPLE} label="Markdown sample" />
       </DocSection>
 
       <DocSection title="Spacing">
-        <P>Space around the 5 styles, always above a block, so text streaming in never moves what&apos;s on screen.</P>
+        <P>Space only goes above a block, so streaming text never shifts.</P>
         <GapTable />
       </DocSection>
 
-      <DocSection title="Weight without reflow">
+      <DocSection title="3 tweaks">
+        <P>Small details that stop text from jumping or wrapping awkwardly.</P>
+
+        <H3 className="mt-2">Weight without reflow</H3>
         <P>
-          Each weight in<Code>fontWeights</Code>brings its own optical size, so a label that turns
-          semibold keeps its width.
+          Each weight carries its own optical size, so semibold labels keep their width.
+          Idea from{" "}
+          <ExternalLink href="https://x.com/lochieaxon/status/2061631101999968701">
+            @lochieaxon
+          </ExternalLink>
+          .
         </P>
         <WeightOpszDemo />
-      </DocSection>
 
-      <DocSection title="Balanced headings">
+        <H3 className="mt-6">Balanced headings</H3>
         <P>
           Headings use<Code>text-wrap: balance</Code>so their lines come out even.
         </P>
         <BalanceDemo />
-      </DocSection>
 
-      <DocSection title="Pretty paragraphs">
+        <H3 className="mt-6">Pretty paragraphs</H3>
         <P>
           Paragraphs use<Code>text-wrap: pretty</Code>so none ends on a lone word.
         </P>
         <PrettyDemo />
       </DocSection>
-
-      <div className="flex flex-col gap-8">
-        <DocSection title="Classes">
-          <PropsTable props={classRows} />
-        </DocSection>
-        <DocSection title="Type scale API">
-          <PropsTable props={apiRows} />
-        </DocSection>
-      </div>
     </DocPage>
   );
 }

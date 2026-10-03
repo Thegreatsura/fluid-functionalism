@@ -15,6 +15,8 @@ import { useBase, DUAL_FLAVOR_SLUGS } from "@/lib/base-context";
 interface DocPageProps {
   title: string;
   description: ReactNode;
+  /** A short paragraph under the description, read before the install. */
+  intro?: ReactNode;
   /** Slug used for prev/next navigation (must match a `componentList` entry). */
   slug?: string;
   /** Registry slug used for the auto-injected Installation snippet. Defaults to `slug`.
@@ -38,6 +40,7 @@ interface DocPageProps {
 export function DocPage({
   title,
   description,
+  intro,
   slug,
   installSlug,
   showInstall = true,
@@ -74,6 +77,7 @@ export function DocPage({
             {title}
           </h1>
           <p className="text-site-body text-muted-foreground">{description}</p>
+          {intro && <p className="mt-4 text-site-body text-muted-foreground">{intro}</p>}
         </div>
         {slug && (
           <div className="flex items-center gap-1 shrink-0">

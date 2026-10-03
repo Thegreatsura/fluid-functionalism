@@ -15,6 +15,7 @@ import {
   SEMIBOLD,
   TICK_PATH,
   TYPESET_CHECK,
+  TYPESET_SUB_INDENT,
   TYPESET_ROLES,
   TYPESET_SPACE,
   FORCED_COLORS,
@@ -181,10 +182,22 @@ describe("typeset sheet", () => {
       const decls = block(sel);
       expect(decls).toContain(`--typeset-check: ${TYPESET_CHECK.box[step]}px;`);
       expect(decls).toContain(`--typeset-check-radius: ${TYPESET_CHECK.radius[step]}px;`);
-      expect(decls).toContain(`--typeset-indent: ${TYPESET_CHECK.box[step] + TYPESET_CHECK.gap}px;`);
+      expect(decls).toContain(`--typeset-check-gap: ${TYPESET_CHECK.gap[step]}px;`);
+      expect(decls).toContain(`--typeset-indent: ${TYPESET_CHECK.box[step] + TYPESET_CHECK.gap[step]}px;`);
+      expect(decls).toContain(`--typeset-sub-indent: ${TYPESET_SUB_INDENT[step]}px;`);
     }
-    expect(declsFor("ul, ol")["padding-left"]).toBe("var(--typeset-indent)");
+    // Lists like the site's: disc bullets and numbers in the indent, 4px
+    // before their text, which lands on the same edge as a to-do's.
+    expect(declsFor("ul, ol")["padding-left"]).toBe("calc(var(--typeset-indent) - 4px)");
+    expect(declsFor("li")["padding-left"]).toBe("4px");
+    // Sub-lists step in less than the list itself.
+    expect(declsFor("li ul, li ol")["padding-left"]).toBe("calc(var(--typeset-sub-indent) - 4px)");
+    expect(declsFor("ul")["list-style-type"]).toBe("disc");
     expect(declsFor("input[type=checkbox]")).toMatchObject({ appearance: "none", background: "none" });
+    // Hover reads the same checked or not: the outline in the hover color.
+    expect(declsFor("input[type=checkbox]:checked:not(:disabled):hover")["border-color"]).toBe(
+      declsFor("input[type=checkbox]:not(:disabled):hover")["border-color"]
+    );
     // The checked tick is the text color through a mask: no fill anywhere.
     const tick = rules.find(([sel]) => sel.includes("input[type=checkbox]:checked") && sel.endsWith("::before"))[1];
     expect(tick.mask).toContain(TICK_PATH);

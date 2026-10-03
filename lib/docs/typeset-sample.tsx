@@ -10,7 +10,7 @@ import {
 } from "react";
 import { Fragment, useMemo } from "react";
 import { fontWeights } from "@/registry/default/lib/font-weight";
-import { EditorContent, Node, mergeAttributes, useEditor } from "@tiptap/react";
+import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { TableKit } from "@tiptap/extension-table";
@@ -24,87 +24,58 @@ import { Tooltip } from "@/registry/radix/tooltip";
 import { typeStyles } from "@/lib/type-scale";
 import { selectorList, typesetRules } from "@/lib/typeset/generate";
 
-// The Type scale document: each style the way the site uses it. Display
-// titles the page in bold, title heads a section, body is the muted
-// paragraph, subtitle sets h3 to h6, and caption is a muted figcaption.
-const SCALE_SAMPLES: Array<[tag: string, text: string]> = [
-  ["h1", "This is the main display"],
-  ["h2", "This is a section title"],
-  [
-    "p",
-    "This is a paragraph in the body style, the size of labels and copy across every component. It runs onto a second line so you can see its line height at work.",
-  ],
-  ["h3", "This is a heading in the subtitle style, for h3 to h6"],
-  ["figcaption", "This is a caption, for descriptions and meta rows"],
-];
-
-/** Starting HTML of the two documents on /docs/typography: the type scale,
- *  and a Notion doc with most of what markdown writes: 3 heading levels,
- *  bold, italic, strikethrough, inline code, a link, nested bullets,
- *  numbers, and to-dos, a quote, a table, a code block, and a rule. */
-export const TYPESET_SAMPLES = {
-  scale: SCALE_SAMPLES.map(([tag, text]) => `<${tag}>${text}</${tag}>`).join(""),
-  notion: [
-    "<h1>Q3 design system audit</h1>",
-    "<p><strong>Owner</strong> Design systems · <strong>Status</strong> In progress · <strong>Due</strong> October 14</p>",
-    "<h2>Goals</h2>",
-    '<ul data-type="taskList">',
-    '<li data-type="taskItem" data-checked="true"><p>List every text size in the product</p></li>',
-    '<li data-type="taskItem" data-checked="true"><p>Map each one to a type style</p></li>',
-    '<li data-type="taskItem" data-checked="false"><p>Replace hard-coded sizes on the settings pages</p>',
-    '<ul data-type="taskList">',
-    '<li data-type="taskItem" data-checked="true"><p>Billing</p></li>',
-    '<li data-type="taskItem" data-checked="false"><p>Notifications</p></li>',
-    "</ul></li>",
-    '<li data-type="taskItem" data-checked="false"><p>Ship compact mode for the data tables</p></li>',
-    "</ul>",
-    "<h2>Findings</h2>",
-    '<p>We found <strong>23 distinct font sizes</strong> across 140 screens. Most are <em>one-offs</em>: a <code>13.5px</code> label here, a <code>15px</code> caption there. The <a href="/docs/typography">type scale</a> covers all of them with 5 styles.</p>',
-    "<blockquote><p>The fix is not fewer screens. It is fewer decisions.</p></blockquote>",
-    "<h3>Where they live</h3>",
-    "<ul>",
-    "<li><p>Settings pages</p><ul><li><p>Labels at 13.5px</p></li><li><p>Help text at 11.5px</p></li></ul></li>",
-    "<li><p>Data tables</p></li>",
-    "<li><p>Marketing pages</p></li>",
-    "</ul>",
-    "<h3>Sizes in the wild</h3>",
-    "<table><tbody>",
-    "<tr><th><p>Size</p></th><th><p>Screens</p></th><th><p>Maps to</p></th></tr>",
-    "<tr><td><p>12px</p></td><td><p>64</p></td><td><p>caption</p></td></tr>",
-    "<tr><td><p>13px</p></td><td><p>97</p></td><td><p>body</p></td></tr>",
-    "<tr><td><p>14px</p></td><td><p>41</p></td><td><p>subtitle</p></td></tr>",
-    "<tr><td><p>16px</p></td><td><p>22</p></td><td><p>title</p></td></tr>",
-    "</tbody></table>",
-    "<h2>The fix</h2>",
-    "<p>We planned to <s>rename every token</s> keep the names and change the values, so nothing breaks. A codemod swaps each one-off for its style:</p>",
-    '<pre><code class="language-tsx">// Before\n&lt;span className="text-[13.5px]"&gt;Billing&lt;/span&gt;\n\n// After\n&lt;span className={typeClass("body")}&gt;Billing&lt;/span&gt;</code></pre>',
-    "<h3>Next steps</h3>",
-    "<ol>",
-    "<li><p>Agree on the 5 styles with engineering</p></li>",
-    "<li><p>Run the codemod on one surface</p><ol><li><p>Settings first</p></li><li><p>Then the data tables</p></li></ol></li>",
-    "<li><p>Review the diff together on Friday</p></li>",
-    "</ol>",
-    "<hr>",
-    "<p>Questions go in the <strong>#design-systems</strong> channel.</p>",
-  ].join(""),
-} as const;
+/** Starting HTML of the Markdown section on /docs/typography: a
+ *  getting-started doc with most of what markdown writes: 3 heading levels,
+ *  bold, italic, strikethrough, inline code, a link, nested bullets, numbers,
+ *  and to-dos, a quote, a table, a code block, and a rule. */
+export const MARKDOWN_SAMPLE = [
+  "<h1>Getting started with Fluid Functionalism</h1>",
+  "<p><strong>Flavors</strong> Radix and Base UI · <strong>Stack</strong> React and Tailwind v4 · <strong>License</strong> MIT</p>",
+  "<h2>Setup</h2>",
+  '<ul data-type="taskList">',
+  '<li data-type="taskItem" data-checked="true"><p>Install the type scale and the markdown styles</p></li>',
+  '<li data-type="taskItem" data-checked="true"><p>Add a dropdown and a dialog</p></li>',
+  '<li data-type="taskItem" data-checked="false"><p>Move every list to fluid hover</p>',
+  '<ul data-type="taskList">',
+  '<li data-type="taskItem" data-checked="true"><p>Sidebar</p></li>',
+  '<li data-type="taskItem" data-checked="false"><p>Command menu</p></li>',
+  "</ul></li>",
+  '<li data-type="taskItem" data-checked="false"><p>Switch dense screens to compact</p></li>',
+  "</ul>",
+  "<h2>How it moves</h2>",
+  '<p>Every component animates with <strong>3 spring speeds</strong>, and hover <em>glides</em> to the item under your cursor instead of blinking. A label turns <code>semibold</code> without moving its neighbors, since <code>fontWeights</code> pairs each weight with an optical size. The <a href="/docs/motion">motion page</a> has every value.</p>',
+  "<blockquote><p>No component invents its own timing, so everything moves at the same pace.</p></blockquote>",
+  "<h3>What you get</h3>",
+  "<ul>",
+  "<li><p>Components in 2 flavors</p><ul><li><p>Radix</p></li><li><p>Base UI</p></li></ul></li>",
+  "<li><p>A size ladder of 36px and 28px rows</p></li>",
+  "<li><p>A skill for your coding agent</p></li>",
+  "</ul>",
+  "<h3>Spring speeds</h3>",
+  "<table><tbody>",
+  "<tr><th><p>Speed</p></th><th><p>Duration</p></th><th><p>Used for</p></th></tr>",
+  "<tr><td><p>fast</p></td><td><p>0.08s</p></td><td><p>Hover, tooltips, focus rings</p></td></tr>",
+  "<tr><td><p>moderate</p></td><td><p>0.16s</p></td><td><p>Dropdowns and tabs</p></td></tr>",
+  "<tr><td><p>slow</p></td><td><p>0.24s</p></td><td><p>Dialogs and drawers</p></td></tr>",
+  "</tbody></table>",
+  "<h2>Install</h2>",
+  "<p>Each piece installs with the shadcn CLI. We planned to <s>ship one big bundle</s> ship one item per component, so you only add what you use:</p>",
+  '<pre><code class="language-bash"># One component\nnpx shadcn@latest add https://www.fluidfunctionalism.com/r/dropdown.json\n\n# The skill for your coding agent\nnpx skills add mickadesign/fluid-functionalism</code></pre>',
+  "<h3>Next steps</h3>",
+  "<ol>",
+  "<li><p>Read the craft notes for each component</p></li>",
+  "<li><p>Install the skill</p><ol><li><p>Let it read your stack</p></li><li><p>Fix what it flags</p></li></ol></li>",
+  "<li><p>Ship it</p></li>",
+  "</ol>",
+  "<hr>",
+  "<p>Found a bug? Open an issue on <strong>GitHub</strong>.</p>",
+].join("");
 
 // Tiptap's markdown shortcuts format as you type: "# " heading, "- " list,
 // "1. " numbered, "[] " to-do, "> " quote, "```" code, "---" rule, and
 // **bold**, *italic*, `code` inline. It emits plain elements, so the sheet
 // styles the live document the same way it styles rendered markdown.
-// A caption line. Markdown has no caption of its own, so the sample uses
-// figcaption, which the sheet sets in the caption style.
-const Caption = Node.create({
-  name: "caption",
-  group: "block",
-  content: "inline*",
-  parseHTML: () => [{ tag: "figcaption" }],
-  renderHTML: ({ HTMLAttributes }) => ["figcaption", mergeAttributes(HTMLAttributes), 0],
-});
-
 const EXTENSIONS = [
-  Caption,
   StarterKit.configure({
     heading: { levels: [1, 2, 3, 4, 5, 6] },
     link: { openOnClick: false },

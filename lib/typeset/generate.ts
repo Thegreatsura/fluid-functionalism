@@ -47,13 +47,22 @@ export const TYPESET_SPACE = {
 } as const;
 
 /** The to-do checkbox, drawn like the library's CheckboxItem: a 16px box
- *  (14px compact) with 5px corners (4px), 4px from its text. Lists indent by
- *  the box and its gap, so bullet text and to-do text start at the same edge. */
+ *  (14px compact) with 5px corners (4px), 8px from its text (4px compact),
+ *  CheckboxItem's own row gap. Every list puts its text on the same edge,
+ *  box + gap: 24px, 18px compact. */
 export const TYPESET_CHECK = {
   box: { default: 16, compact: 14 },
   radius: { default: 5, compact: 4 },
-  gap: 4,
+  gap: { default: 8, compact: 4 },
 } as const;
+
+/** Room between a bullet or a number and its text, as on the site's own
+ *  lists (`list-disc pl-5`, items `pl-1`). */
+const MARKER_GAP = 4;
+
+/** How far a sub-list's text sits past its parent's, whatever the marker:
+ *  less than the list's own indent, so nesting reads without drifting. */
+export const TYPESET_SUB_INDENT = { default: 20, compact: 16 } as const;
 
 /** The CheckboxItem tick (24px grid), drawn 2px wider than the box as the
  *  library draws it. tests/type-scale.test.mjs keeps it equal to theirs. */
@@ -118,7 +127,9 @@ function stepDecls(scale: TypeScaleData, step: Step): Decls {
   }
   d["--typeset-check"] = `${TYPESET_CHECK.box[step]}px`;
   d["--typeset-check-radius"] = `${TYPESET_CHECK.radius[step]}px`;
-  d["--typeset-indent"] = `${TYPESET_CHECK.box[step] + TYPESET_CHECK.gap}px`;
+  d["--typeset-check-gap"] = `${TYPESET_CHECK.gap[step]}px`;
+  d["--typeset-indent"] = `${TYPESET_CHECK.box[step] + TYPESET_CHECK.gap[step]}px`;
+  d["--typeset-sub-indent"] = `${TYPESET_SUB_INDENT[step]}px`;
   return d;
 }
 
@@ -195,10 +206,15 @@ export function typesetRules(scale: TypeScaleData): Rule[] {
     ],
     [el("a:hover"), { "text-decoration-color": "currentColor" }],
 
-    [el("ul, ol"), { "padding-left": v("indent") }],
-    // Bullets as text with one space after, the same as a number's ". ":
-    // the built-in disc gets a wider gap, so it sat further from its text.
-    [el("ul"), { "list-style-type": '"• "' }],
+    // Bullets and numbers sit in the indent, 4px before their text, the way
+    // the site's own lists do: their text lands on the indent, the same
+    // edge as a to-do's.
+    [el("ul, ol"), { "padding-left": `calc(${v("indent")} - ${MARKER_GAP}px)` }],
+    // A sub-list steps in less: its text sits the sub-indent past its
+    // parent's.
+    [el("li ul, li ol"), { "padding-left": `calc(${v("sub-indent")} - ${MARKER_GAP}px)` }],
+    [el("li"), { "padding-left": `${MARKER_GAP}px` }],
+    [el("ul"), { "list-style-type": "disc" }],
     [el("ol"), { "list-style-type": "decimal" }],
     // Nested numbers outline the way Notion and Docs do: 1. → a. → i., then
     // the cycle repeats, so a level never reads like its parent.
@@ -207,7 +223,7 @@ export function typesetRules(scale: TypeScaleData): Rule[] {
     [el("ol ol ol ol"), { "list-style-type": "decimal" }],
     [el("ol ol ol ol ol"), { "list-style-type": "lower-alpha" }],
     [el("ol ol ol ol ol ol"), { "list-style-type": "lower-roman" }],
-    [el("ul ul"), { "list-style-type": '"◦ "' }],
+    [el("ul ul"), { "list-style-type": "circle" }],
     // Pseudo-elements can't sit inside :where(), so the marker goes after it.
     [`${el("li")}::marker`, { color: MUTED }],
     // List rhythm, inside items too. `li > div > …` is a Tiptap to-do, whose
@@ -221,7 +237,21 @@ export function typesetRules(scale: TypeScaleData): Rule[] {
     // puts the checkbox in a label next to a content div. Its editor view
     // drops data-type from the items, so they're matched through the list.
     [el('.contains-task-list, ul[data-type="taskList"]'), { "list-style-type": "none", "padding-left": "0" }],
-    [el(".contains-task-list .contains-task-list"), { "padding-left": v("indent") }],
+    // The box is the marker: no item padding in front of it.
+    [el('.contains-task-list > li, ul[data-type="taskList"] > li'), { "padding-left": "0" }],
+    // Sub-tasks step in the sub-indent too. A GFM item's box starts its
+    // content, so a nested list is padded from there; a Tiptap item nests
+    // inside its text column, so the list pulls back from there. A plain
+    // list under a GFM to-do starts past the to-do's text.
+    [el(".contains-task-list .contains-task-list"), { "padding-left": v("sub-indent") }],
+    [
+      el('ul[data-type="taskList"] > li > div > ul[data-type="taskList"]'),
+      { "margin-left": `calc(${v("sub-indent")} - ${v("indent")})` },
+    ],
+    [
+      el(".task-list-item > :is(ul, ol):not(.contains-task-list)"),
+      { "padding-left": `calc(${v("indent")} + ${v("sub-indent")} - ${MARKER_GAP}px)` },
+    ],
     // The checkbox, as the library draws it: an outline that steps aside for
     // the tick alone when checked, never a filled box.
     [
@@ -241,6 +271,9 @@ export function typesetRules(scale: TypeScaleData): Rule[] {
     ],
     [el("input[type=checkbox]:not(:disabled):hover"), { "border-color": BORDER_HOVER }],
     [el("input[type=checkbox]:checked"), { "border-color": "transparent" }],
+    // Hovered, a checked box brings its outline back around the tick, in the
+    // same color as an unchecked one: still no fill, and plainly clickable.
+    [el("input[type=checkbox]:checked:not(:disabled):hover"), { "border-color": BORDER_HOVER }],
     // Read-only markdown renders disabled boxes: no pointer, no fading.
     [el("input[type=checkbox]:disabled"), { cursor: "default" }],
     // On a pseudo-element, not the box: a mask on the box would hide its
@@ -258,10 +291,13 @@ export function typesetRules(scale: TypeScaleData): Rule[] {
     ],
     // GFM puts the box inline, centered on the first line, straight in the
     // item or, in a loose list, in its paragraph. Its renderers (remark-gfm,
-    // GitHub) write a space after the box, and that space is the gap: about
-    // the 4px Tiptap gets, so the text lands on the indent.
-    [el(".task-list-item input[type=checkbox]"), { "vertical-align": "-0.25em" }],
-    [el('ul[data-type="taskList"] > li'), { display: "flex", gap: `${TYPESET_CHECK.gap}px`, "align-items": "flex-start" }],
+    // GitHub) write a space after the box, about 4px of the gap; the margin
+    // makes up the rest, so the text lands on the indent.
+    [
+      el(".task-list-item input[type=checkbox]"),
+      { "vertical-align": "-0.25em", "margin-right": `calc(${v("check-gap")} - 4px)` },
+    ],
+    [el('ul[data-type="taskList"] > li'), { display: "flex", gap: v("check-gap"), "align-items": "flex-start" }],
     // One line box tall, so the box centers on the first line of the item.
     [
       el('ul[data-type="taskList"] > li > label'),

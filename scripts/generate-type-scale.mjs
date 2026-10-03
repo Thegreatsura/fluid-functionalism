@@ -176,7 +176,10 @@ export async function typographyItem(scale) {
     type: "registry:item",
     title: "Typography",
     description:
-      "Prose styles for rendered markdown and rich-text editors (Tiptap works as is): wrap content in .typeset and every element sets in the type scale's styles, as on the site. h1 is display in bold, h2 title, h3 to h6 subtitle, paragraphs body in the muted color, figcaption and code caption. Reads the --fs-* and --lh-* tokens, with px fallbacks. Zero specificity inside @layer components, so any utility wins; .not-typeset opts a subtree out; spacing only above elements, so streamed content never reflows. Add .typeset-compact for the compact step.",
+      "The type scale and prose styles in one install. size-context brings the 6 roles, typeClass(), and the --fs-* / --lh-* tokens; the prose styles set rendered markdown and rich-text editors (Tiptap works as is) in those roles: wrap content in .typeset, and h1 is display in bold, h2 title, h3 to h6 subtitle, paragraphs body in the muted color, figcaption and code caption. Zero specificity inside @layer components, so any utility wins; .not-typeset opts a subtree out; spacing only above elements, so streamed content never reflows. Add .typeset-compact for the compact step.",
+    // One install for the whole Typography page: the prose styles read the
+    // tokens size-context brings (with px fallbacks without them).
+    registryDependencies: ["size-context"],
     css: typesetRegistryCss(scale),
     docs: "Docs & builder: https://www.fluidfunctionalism.com/docs/typography.",
     categories: ["theme"],

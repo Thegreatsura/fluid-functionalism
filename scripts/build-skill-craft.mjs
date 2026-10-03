@@ -1,6 +1,6 @@
 // Generates skills/fluid-functionalism/references/craft.md from the craft
-// arrays in lib/docs/prompt-entries.ts, so the skill ships the same craft
-// the Copy-prompt briefs carry, without a second hand-maintained copy.
+// arrays in lib/docs/prompt-entries.ts. The skill is the one place the craft
+// ships: Copy-prompt briefs carry install, usage, and props, and point here.
 // Run after editing any craft entry:  node scripts/build-skill-craft.mjs
 // tests/skill-craft.test.mjs regenerates to a temp path (--out <path>) and
 // fails the build when the committed file has drifted.

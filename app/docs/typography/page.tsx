@@ -82,8 +82,8 @@ export default function TypographyDoc() {
     <DocPage
       title="Typography"
       slug="typography"
-      installSlug="size-context"
-      installNote="The 5 styles for your own text, already in every component."
+      installSlug="typography"
+      installNote="The 5 styles for any text, markdown included."
       description="Bold rules that create consistency across the whole component library."
     >
       <DocSection title="4 rules">
@@ -125,26 +125,22 @@ export default function TypographyDoc() {
 
       <DocSection title="Weight without reflow">
         <P>
-          A heavier weight makes Inter wider, so a label that turns semibold on selection pushes its
-          neighbors. Each weight in<Code>fontWeights</Code>carries its own optical size, which pulls
-          the letters back in. The blue line is the unselected width.
+          Each weight in<Code>fontWeights</Code>brings its own optical size, so a label that turns
+          semibold keeps its width.
         </P>
         <WeightOpszDemo />
       </DocSection>
 
       <DocSection title="Balanced headings">
         <P>
-          Headings set<Code>text-wrap: balance</Code>so the browser evens out their lines instead of
-          filling the first one and leaving a short one.
+          Headings use<Code>text-wrap: balance</Code>so their lines come out even.
         </P>
         <BalanceDemo />
       </DocSection>
 
       <DocSection title="Pretty paragraphs">
         <P>
-          Paragraphs set<Code>text-wrap: pretty</Code>so the browser brings a word down rather than
-          end on one word alone. Both rules are global, in the base layer, and both stay off
-          inside<Code>.typeset</Code>where streamed text would re-wrap lines already on screen.
+          Paragraphs use<Code>text-wrap: pretty</Code>so none ends on a lone word.
         </P>
         <PrettyDemo />
       </DocSection>

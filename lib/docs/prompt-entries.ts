@@ -1,4 +1,5 @@
-/** Per-page usage snippet and props list for the "Copy prompt" button.
+/** Per-page usage snippet and props list for the "Copy prompt" button, and
+ *  the craft notes the skill ships (references/craft.md).
  *  Keyed by doc page slug. `install-prompt.ts` derives the rest (install
  *  command, description, flavor, docs URL). Keep imports pointing at the
  *  installed paths (`@/components/ui/*`, `@/lib/*`, `@/hooks/*`), not the
@@ -14,8 +15,8 @@ export interface PromptEntry {
    *  that a consumer (human or agent) would miss from the API alone — exact
    *  behaviors, exact values, and the why where one exists. Each bullet is
    *  one decision, ≤2 lines, sourced from the component code and doc page —
-   *  never aspirational. Rendered in the Copy-prompt brief so composed code
-   *  respects the behaviors instead of fighting them. */
+   *  never aspirational. Ships in the skill (scripts/build-skill-craft.mjs
+   *  writes references/craft.md); the Copy prompt points to the skill. */
   craft?: string[];
 }
 
@@ -180,8 +181,7 @@ const { type } = useSize(); // type.caption, type.body, ...
 // Stock tailwind-merge reads a bare text-caption as a color, so prefer
 // typeClass() inside cn().
 
-// Prose (rendered markdown, chat replies, editors), a separate install:
-// npx shadcn@latest add https://www.fluidfunctionalism.com/r/typography.json
+// Prose (rendered markdown, chat replies, editors), same install:
 <article className="typeset">{markdown}</article>
 // One notch down in a compact region:
 <article className={cn("typeset", compact && "typeset-compact")}>{markdown}</article>`,

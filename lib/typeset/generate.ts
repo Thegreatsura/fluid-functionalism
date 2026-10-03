@@ -272,7 +272,8 @@ export function typesetRules(scale: TypeScaleData): Rule[] {
     // own state, since a strike-through can't be undone by descendants.
     [
       el('ul[data-type="taskList"] > li[data-checked="true"] > div > :not(ul, ol)'),
-      { color: MUTED, "text-decoration-line": "line-through", "text-decoration-color": "color-mix(in oklab, currentColor 50%, transparent)" },
+      // The line takes the text color: a faded one all but vanishes on dark.
+      { color: MUTED, "text-decoration-line": "line-through" },
     ],
 
     [

@@ -6,8 +6,7 @@ import {
   CARD_PRESET_DEF,
 } from "@/lib/preset/components";
 
-const craftHeading =
-  "Craft (built-in behaviors — compose around them, don't re-implement or fight them):";
+const skillInstall = "npx skills add mickadesign/fluid-functionalism";
 
 describe("Copy prompts", () => {
   const prompts = [
@@ -25,10 +24,12 @@ describe("Copy prompts", () => {
     },
   ];
 
-  it.each(prompts)("includes Card craft in the $kind prompt", ({ value }) => {
-    expect(value).toContain(craftHeading);
+  // The craft ships in the skill; a brief points there instead of pasting it.
+  it.each(prompts)("leaves the craft to the skill in the $kind prompt", ({ value }) => {
+    expect(value).not.toContain("Craft (");
     for (const point of PROMPT_ENTRIES.card.craft ?? []) {
-      expect(value).toContain(`- ${point}`);
+      expect(value).not.toContain(point);
     }
+    expect(value).toContain(skillInstall);
   });
 });

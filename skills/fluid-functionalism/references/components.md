@@ -57,7 +57,7 @@ needs it.
 | [Scrollbars](https://www.fluidfunctionalism.com/docs/scrollbars) | `scroll-area` · `base/scroll-area` | A scrollbar that stays out of the way but never disappears, with native scroll on touch | [Scrollbars](craft.md#scrollbars) |
 | [Sizes](https://www.fluidfunctionalism.com/docs/sizes) | `size-context` | 2 sizes, a 36px default and a 28px compact, shared by buttons, inputs, selects, tabs, and rows | [Sizes](craft.md#sizes) |
 | [Surfaces](https://www.fluidfunctionalism.com/docs/surfaces) | `elevated` | 8 elevation levels so popovers, dropdowns, and dialogs stay visible at any depth, in light and dark | [Surfaces](craft.md#surfaces) |
-| [Typography](https://www.fluidfunctionalism.com/docs/typography) | `type-scale` · `typography` | 6 type roles, each a size and a line height at both sizes, plus `.typeset`, a prose sheet for rendered markdown | [Typography](craft.md#typography) |
+| [Typography](https://www.fluidfunctionalism.com/docs/typography) | `typography` (brings `size-context`) | 6 type roles, each a size and a line height at both sizes, plus `.typeset`, a prose sheet for rendered markdown | [Typography](craft.md#typography) |
 
 Other installable libs and hooks (usually arrive as dependencies):
 `font-weight` (variable weight tokens for the ghost-span pattern),

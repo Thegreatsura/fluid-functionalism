@@ -709,7 +709,6 @@ html[data-size="compact"] {
   :where(.typeset ul[data-type="taskList"] > li[data-checked="true"] > div > :not(ul, ol)):not(:where(.typeset .not-typeset, .typeset .not-typeset *)) {
     color: var(--muted-foreground, color-mix(in oklab, currentColor 65%, transparent));
     text-decoration-line: line-through;
-    text-decoration-color: color-mix(in oklab, currentColor 50%, transparent);
   }
 
   :where(.typeset blockquote):not(:where(.typeset .not-typeset, .typeset .not-typeset *)) {

@@ -275,9 +275,10 @@ written down. In order of reach:
   their rationale in comments. Before modifying one, read its installed
   file (`components/ui/*`, `hooks/*`, `lib/*`) — never restyle or re-time
   from memory of what the stock shadcn version does.
-- **Each doc page's Copy-prompt brief carries the same "Craft" section.**
-  When a user pastes one, treat those bullets as constraints, not
-  suggestions.
+- **The craft lives in [references/craft.md](references/craft.md).** Copy-prompt
+  briefs carry only install, usage, and props. Before composing a
+  component, read its craft section and treat the bullets as constraints,
+  not suggestions.
 
 ## Gotchas
 

@@ -2,7 +2,10 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "typography",
   "title": "Typography",
-  "description": "Prose styles for rendered markdown and rich-text editors (Tiptap works as is): wrap content in .typeset and every element sets in the type scale's styles, as on the site. h1 is display in bold, h2 title, h3 to h6 subtitle, paragraphs body in the muted color, figcaption and code caption. Reads the --fs-* and --lh-* tokens, with px fallbacks. Zero specificity inside @layer components, so any utility wins; .not-typeset opts a subtree out; spacing only above elements, so streamed content never reflows. Add .typeset-compact for the compact step.",
+  "description": "The type scale and prose styles in one install. size-context brings the 6 roles, typeClass(), and the --fs-* / --lh-* tokens; the prose styles set rendered markdown and rich-text editors (Tiptap works as is) in those roles: wrap content in .typeset, and h1 is display in bold, h2 title, h3 to h6 subtitle, paragraphs body in the muted color, figcaption and code caption. Zero specificity inside @layer components, so any utility wins; .not-typeset opts a subtree out; spacing only above elements, so streamed content never reflows. Add .typeset-compact for the compact step.",
+  "registryDependencies": [
+    "https://www.fluidfunctionalism.com/r/size-context.json"
+  ],
   "css": {
     "@layer components": {
       ":where(.typeset)": {
@@ -198,8 +201,7 @@
       },
       ":where(.typeset ul[data-type=\"taskList\"] > li[data-checked=\"true\"] > div > :not(ul, ol)):not(:where(.typeset .not-typeset, .typeset .not-typeset *))": {
         "color": "var(--muted-foreground, color-mix(in oklab, currentColor 65%, transparent))",
-        "text-decoration-line": "line-through",
-        "text-decoration-color": "color-mix(in oklab, currentColor 50%, transparent)"
+        "text-decoration-line": "line-through"
       },
       ":where(.typeset blockquote):not(:where(.typeset .not-typeset, .typeset .not-typeset *))": {
         "padding-left": "1em",

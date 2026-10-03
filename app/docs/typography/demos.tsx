@@ -57,19 +57,16 @@ const MENU_LABEL = "Download all invoices";
 
 /** One menu item that behaves like a sidebar row: a hover background under
  *  the pointer, and a click that sets the active background and turns the
- *  label semibold. Its optical size sits after the label, so a label that
- *  grows pushes it along. The blue line marks the unselected width; whatever
- *  runs past it is tinted red. */
+ *  label semibold. The blue line marks the unselected width; whatever runs
+ *  past it is tinted red. */
 function WeightItem({
   settings,
-  opsz,
   selected,
   onToggle,
   cursor,
   onDelta,
 }: {
   settings: readonly [unselected: string, selected: string];
-  opsz: readonly [unselected: string, selected: string];
   selected: boolean;
   onToggle: () => void;
   /** The scripted pointer while it plays, and whether it's over the item. */
@@ -180,14 +177,6 @@ function WeightItem({
         >
           {MENU_LABEL}
         </span>
-        <span
-          className={cn(
-            "whitespace-nowrap font-mono text-site-caption",
-            selected && opsz[1] !== opsz[0] ? "text-foreground" : "text-muted-foreground"
-          )}
-        >
-          opsz {opsz[on]}
-        </span>
       </div>
       {settings.map((setting, i) => (
         <span
@@ -293,7 +282,6 @@ export function WeightOpszDemo() {
         <Specimen good={false} caption={`Weight only${wider(plain)}`}>
           <WeightItem
             settings={["'wght' 400", "'wght' 550"]}
-            opsz={["auto", "auto"]}
             selected={selected}
             onToggle={() => setSelected((v) => !v)}
             cursor={cursor}
@@ -303,7 +291,6 @@ export function WeightOpszDemo() {
         <Specimen good caption={`Weight + optical size${wider(paired)}`}>
           <WeightItem
             settings={[fontWeights.normal, fontWeights.semibold]}
-            opsz={["14", "18"]}
             selected={selected}
             onToggle={() => setSelected((v) => !v)}
             cursor={cursor}
@@ -319,10 +306,11 @@ export function WeightOpszDemo() {
 // Balance and pretty
 // ---------------------------------------------------------------------------
 
-// Measured at 214px: wrap sets the headline 6 words over 2 (balance 4 and 4)
-// and leaves the paragraph's last word alone (pretty brings one down), with
-// a few px either side to spare for font rendering.
-const HEADLINE = "Plan the launch of the new billing page";
+// Measured at 214px: wrap sets the headline 5 words over 2 (204px, then
+// 83px), balance 3 over 4 with the first line the longer (156px, 132px),
+// and wrap leaves the paragraph's last word alone (pretty brings one down),
+// with a few px either side to spare for font rendering.
+const HEADLINE = "Everything you need to run your billing";
 const PARAGRAPH =
   "Each role pairs a size with a line height, so a caption in a menu and a caption in a table share one rhythm.";
 const SAMPLE = "w-[214px] max-w-full";

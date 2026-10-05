@@ -57,6 +57,7 @@ needs it.
 | [Scrollbars](https://www.fluidfunctionalism.com/docs/scrollbars) | `scroll-area` · `base/scroll-area` | A scrollbar that stays out of the way but never disappears, with native scroll on touch | [Scrollbars](craft.md#scrollbars) |
 | [Sizes](https://www.fluidfunctionalism.com/docs/sizes) | `size-context` | 2 sizes, a 36px default and a 28px compact, shared by buttons, inputs, selects, tabs, and rows | [Sizes](craft.md#sizes) |
 | [Surfaces](https://www.fluidfunctionalism.com/docs/surfaces) | `elevated` | 8 elevation levels so popovers, dropdowns, and dialogs stay visible at any depth, in light and dark | [Surfaces](craft.md#surfaces) |
+| [Typography](https://www.fluidfunctionalism.com/docs/typography) | `typography` (brings `size-context`) | 6 type roles, each a size and a line height at both sizes, plus `.typeset`, a prose sheet for rendered markdown | [Typography](craft.md#typography) |
 
 Other installable libs and hooks (usually arrive as dependencies):
 `font-weight` (variable weight tokens for the ghost-span pattern),
@@ -89,7 +90,9 @@ part itself.
 - App shell / navigation → `sidebar-app` block (or `sidebar` to compose your own)
 - Settings surface → `dialog-sidebar` block
 - Chat / AI interface → `input-message` + `chat-message` + `thinking-steps` +
-  `thinking-indicator` (+ `queued-stack`, `ask-user-questions`)
+  `thinking-indicator` (+ `queued-stack`, `ask-user-questions`), and
+  `typography` for the markdown in replies (`.typeset`)
+- Docs, changelogs, any rendered markdown → `typography` (`.typeset`)
 - Action palette → `command-menu` (dialog shell on ⌘K included)
 - Forms → `input-group`, `select`, `combobox`, `checkbox-group`,
   `radio-group`, `switch`, `slider`, `color-picker`
@@ -97,3 +100,5 @@ part itself.
 - Custom list/menu/grid you're writing yourself → `use-fluid-hover` +
   `springs`, then follow
   [custom-motion.md](custom-motion.md)
+- Text in custom UI → `typeClass(role, variant)` from `size-context` (the
+  [Typography craft](craft.md#typography) says which role), never raw px

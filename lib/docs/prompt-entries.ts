@@ -1,4 +1,5 @@
-/** Per-page usage snippet and props list for the "Copy prompt" button.
+/** Per-page usage snippet and props list for the "Copy prompt" button, and
+ *  the craft notes the skill ships (references/craft.md).
  *  Keyed by doc page slug. `install-prompt.ts` derives the rest (install
  *  command, description, flavor, docs URL). Keep imports pointing at the
  *  installed paths (`@/components/ui/*`, `@/lib/*`, `@/hooks/*`), not the
@@ -14,8 +15,8 @@ export interface PromptEntry {
    *  that a consumer (human or agent) would miss from the API alone — exact
    *  behaviors, exact values, and the why where one exists. Each bullet is
    *  one decision, ≤2 lines, sourced from the component code and doc page —
-   *  never aspirational. Rendered in the Copy-prompt brief so composed code
-   *  respects the behaviors instead of fighting them. */
+   *  never aspirational. Ships in the skill (scripts/build-skill-craft.mjs
+   *  writes references/craft.md); the Copy prompt points to the skill. */
   craft?: string[];
 }
 
@@ -124,7 +125,7 @@ import { spring } from "@/lib/springs";
       "One `control` height token by design for BOTH bounded controls (buttons, inputs, select triggers) AND list/menu rows: a popup row lines up with the trigger that opened it because they share this height.",
       "Segmented tabs are sized so `segmentPad` + `segmentItem` adds back up to the control height (28px item + 4px pad = 36px default; 24 + 2 = 28 compact) \u2014 the segmented control's outer box stays on the same ladder as its neighbours.",
       "The compact step halves the `gap` token (8px \u2192 4px) because \"density is spacing as much as control height\" \u2014 control-to-control spacing comes from the ladder, not from layout code.",
-      "Type follows the ladder: compact drops each role one notch (display 28\u219224, title 16\u219215, subtitle 14\u219213, body 13\u219212, caption 12\u219211) so a dense region reads as \"a smaller sibling of the same hierarchy, not a squeezed copy\".",
+      "Type follows the ladder: compact drops each of the six roles one notch, size and leading together (body 13/20px \u2192 12/18px, caption 12/16px \u2192 11/14px), so a dense region reads as \"a smaller sibling of the same hierarchy, not a squeezed copy\". The scale itself is its own system: see Typography.",
       "Resolution order is explicit component `size` prop > surrounding `SizeProvider` > `\"default\"`; ~20 components accept the per-component override and it wins over the provider.",
       "Density is a region decision, not a per-control one: wrap the region in one `SizeProvider` and everything follows \u2014 menus opened from it included, since React context crosses portals.",
     ],
@@ -144,11 +145,51 @@ function Toolbar() {
     props: [
       "SizeProvider size: \"default\" | \"compact\". Controlled variant; pins every control in the subtree to one step.",
       "SizeProvider defaultSize: \"default\" | \"compact\" (default \"default\"). Uncontrolled initial variant, switchable via useSizeContext().setSize.",
-      "useSize(override?): SizeClasses. Returns { variant, control, controlHeight, segmentItem, segmentPad, text, px, itemPx, gap, icon } for the current step.",
+      "useSize(override?): SizeClasses. Returns { variant, control, controlHeight, segmentItem, segmentPad, text, type, px, itemPx, gap, icon } (type = one size + leading class per role) for the current step.",
       "useSizeVariant(override?): \"default\" | \"compact\". The resolved step, honoring a per-component override over the provider.",
       "useSizeContext(): { size, setSize }. Read or switch the step from inside a SizeProvider.",
-      "useTypeScale(override?): Record<TypeScaleRole, number>. Font sizes per role (display, title, body, caption and so on) for the current step.",
+      "useTypeScale(override?): Record<TypeScaleRole, number>. Font size in px per role (display, title, subtitle, body, caption, micro) for the current step. Line heights are in typeStyles and the --lh-* tokens.",
       "size (on components): \"default\" | \"compact\" (default from provider). Per-component override on Button, Badge, Select, Tabs, Dropdown, Accordion, Card and most others.",
+    ],
+  },
+  typography: {
+    craft: [
+      "Six roles, each a size and a whole-pixel line height at both ladder steps: display 28/34px (compact 24/30), title 16/22 (15/20), subtitle 14/20 (13/18), body 13/20 (12/18), caption 12/16 (11/14), micro 11/14 (10/12). Body's 20px is also the paragraph line height, and puts a padded row on the ladder: 8 + 20 + 8 = 36px, 5 + 18 + 5 = 28px. Pairing the leading with the size puts a caption in a menu and a caption in a table on the same rhythm.",
+      "Pick the role by purpose, then check its default/compact pair: a 14/13px chat bubble is `subtitle` at both steps, not `body` when compact; an 11px error inside a compact control is compact `caption`. `micro` is only for keyboard caps, counters, and tiny badges, single line, so its leading is tight on purpose.",
+      "Components never write `text-[13px]`: they use `typeClass(role, variant)` or `useSize().type.<role>`, which emit `text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]`. Stock tailwind-merge reads a bare `text-caption` as a color and drops it next to `text-muted-foreground` inside `cn()`; the arbitrary form survives, and its px fallbacks render even without the `type-scale` tokens.",
+      "To override a role's line height (a `leading-none` key cap, a `leading-5` input whose line box sets the caret height), put the `leading-*` after `typeClass()` inside `cn()`: tailwind-merge drops the role's own leading. In a plain class string, two leadings resolve by stylesheet order, not by the order you wrote them.",
+      "`typeClass` lives in `@/lib/type-scale`, which has no \"use client\" directive; `@/lib/size-context` re-exports it for client components. Import from `type-scale` in a server component, where a function from a client module can't be called.",
+      "Text uses 2 colors, `text-foreground` and `text-muted-foreground` (`text-background` on a dark fill), and red only for errors: never an opacity step like `text-muted-foreground/60`. No uppercase, no letter-spacing, and no eyebrow labels above titles: hierarchy comes from size and weight. Lint enforces the colors, case, and spacing.",
+      "Text uses 3 weights: `fontWeights.normal` (400, opsz 14) for text, `fontWeights.semibold` (550, opsz 18) for headings and selected items, and `fontWeights.bold` (700, opsz 25) only for the display style, the page title. The paired optical size holds a label's width when it turns semibold, within \u00b10.4px across a corpus of real labels, where weight alone widens a 25-character label by about 3.4px.",
+      "`.typeset` sets markdown the way the site sets its pages, with nothing to tune: h1 display in bold, h2 title, h3 to h6 subtitle, paragraphs body in the muted color, figcaption and code caption, each with its role's line height. It reads the `--fs-*` and `--lh-*` tokens (px fallbacks), so a tuned scale reaches prose too. Micro stays out of prose: it sizes key caps, counters, and initials inside components, never reading text.",
+      "Prose spacing is fixed in whole pixels: 12px between blocks and 8px below a heading, as on the site's doc pages, 24px above h1 and h2, 20px above h3 to h6, 24px on both sides of a rule, 4px between list items. `.typeset-compact`, next to `.typeset`, switches to the compact roles (12/18 body, 24/30 display) and steps the spacing down to 8, 4, 16, 12, 16, and 4.",
+      "The prose sheet sits in `@layer components` with every selector inside `:where()`, so it has zero specificity and any utility on an element wins without `!important`. Each selector is scoped whole to `.typeset`, so a list or a `.not-typeset` around the prose changes nothing inside it. `.not-typeset` skips a subtree but keeps its outer spacing, so a component dropped into prose still sits in the rhythm, and plain divs take no rhythm at all, so an embedded component spaces itself.",
+      "It styles editors as well as rendered markdown: GFM task lists (remark-gfm classes) and Tiptap's markup (a `li[data-type=taskItem]` with a checkbox label and a content div, tables in `.tableWrapper`) both work as is. A to-do's checkbox is drawn like the library's CheckboxItem: a 16px outline (14px compact) with 5px corners that steps aside for the tick alone when checked, never a filled box. Hovered, the outline darkens, and on a checked box it comes back around the tick. It centers on its first line and sits 8px from its text (4px compact), CheckboxItem's row gap. Every list puts its text 24px in (18px compact): disc bullets and numbers sit in the indent with 4px before their text, like the site's own lists. Sub-items step in 20px (16px compact), whatever the marker. A checked item strikes through, as in Notion; its nested sub-tasks keep their own state.",
+      "Space only goes above an element (no `:last-child`, no `:has()`, no `margin-bottom`) and lines wrap plainly (no `text-wrap: pretty` or `balance`, which re-wrap earlier lines as words arrive), so text streamed in at the end of a chat reply never moves what is already on screen. The root also resets `white-space`, so markdown's newlines between blocks don't turn into blank lines inside a pre-wrap chat bubble.",
+    ],
+    usage: `import { typeClass } from "@/lib/type-scale"; // no "use client", fine in server components
+import { useSize } from "@/lib/size-context";
+
+// Six roles (display, title, subtitle, body, caption, micro), each a size and
+// a leading, at the default and compact steps of the size ladder.
+<p className={typeClass("caption")}>Last updated 4 minutes ago</p>
+<p className={typeClass("caption", "compact")}>In a dense toolbar</p>
+// Or follow the surrounding SizeProvider:
+const { type } = useSize(); // type.caption, type.body, ...
+
+// Theme utilities from the tokens: text-caption, text-body, ...
+// Stock tailwind-merge reads a bare text-caption as a color, so prefer
+// typeClass() inside cn().
+
+// Prose (rendered markdown, chat replies, editors), same install:
+<article className="typeset">{markdown}</article>
+// One notch down in a compact region:
+<article className={cn("typeset", compact && "typeset-compact")}>{markdown}</article>`,
+    props: [
+      "typeClass(role, variant = \"default\"): string. Size + leading classes with px fallbacks for one role at one step.",
+      "useSize().type: Record<TypeScaleRole, string>. The same classes for the resolved step.",
+      "useTypeScale(override?): Record<TypeScaleRole, number>. Font size in px per role for the resolved step.",
+      ".typeset: sets plain elements in the type styles, as on the site. .typeset-compact (next to it) steps it down; .not-typeset opts a subtree out; .typeset-scroll wraps wide tables.",
     ],
   },
   surfaces: {
@@ -294,7 +335,7 @@ const questions: AskUserQuestion[] = [
       "Both fills are translucent, so an inline banner takes on the surface under it. The fixed bar paints the same fill over an opaque `var(--background)`, so the page scrolling under it never shows through.",
       "Status colors ship as the component's own `--info`, `--success` and `--warning` tokens: Tailwind 500s in light mode and 300s in dark mode, where the mark cut into the glyph turns dark. Error reuses `--destructive`, so it matches the app's other error states.",
       "The 4 colored statuses get filled glyphs drawn in the component (a circle or triangle in the status color, the mark stroked in the page color with `stroke-background`), so they stay filled whatever icon library the app uses. The neutral default uses the icon set's outline `info` icon at the usual 1.5 stroke, and the `icon` prop draws any icon as an outline in the status color.",
-      "The title is medium weight on the foreground. The description is 70% foreground, not muted-foreground, which drops under 4.5:1 on the tinted and neutral fills; ghost actions get the same 70% for the same reason.",
+      "The title is semibold on the foreground, and so is the description, in regular: muted-foreground drops under 4.5:1 on the tinted and neutral fills, and the weight already separates the two. Ghost actions use the foreground too.",
       "Every part sits on one 4-column grid (icon, text, actions, \u2715), so layout is pure CSS: actions trail a title-only banner and drop under the text (8px below it, 6px compact) when a BannerDescription is present (`:has()`) or the banner is under 24rem (container query). Margins space the columns, not grid gaps, so a missing part leaves no gap.",
       "The icon box is one title line tall (20px, 18px compact). A title-only banner centres the icon, actions and \u2715 on the text; a description switches the grid to `items-start` so they hold the first line.",
       "The inset is even on all 4 sides (16px, 12px compact). Trailing actions and the \u2715 are 28px targets pulled into the padding with negative margins, so a one-line banner is 52px tall with or without actions.",
@@ -896,7 +937,7 @@ import {
       "Compact thumb snaps to the step grid continuously during drag (pixel \u2192 snapped value \u2192 pixel on every move); a track click spring-animates the thumb to the snapped position (`spring.moderate`), and release spring-settles to the final quantized position.",
       "The compact engine's value label is click-to-edit: clicking swaps in a number input, auto-selected; Enter/blur commits (clamped to min/max then snapped to step or nearest `steps` entry), Escape cancels; an invisible ghost of the widest possible value reserves width so nothing shifts.",
       "Hovering the track previews the change: a 40%-accent bar runs from the nearest thumb center to the snapped hover value (extended to the track edge at min/max \"so there's no gap\", rounded only on its leading edge), plus a tooltip that appears after a 100ms delay and hides while pressed.",
-      "That same compact value display shifts normal \u2192 medium weight while hovering/pressing (fontVariationSettings, 100ms transition) with tabular-nums, so interaction is signalled without layout shift; the comfortable design instead animates its value color muted \u2192 foreground on `spring.fast`.",
+      "That same compact value display shifts normal \u2192 semibold while hovering/pressing (fontVariationSettings, 100ms transition) with tabular-nums, so interaction is signalled without layout shift; the comfortable design instead animates its value color muted \u2192 foreground on `spring.fast`.",
       "Range mode: pointer-down grabs the nearest thumb, and thumbs can't cross \u2014 each is clamped half a thumb-width (10px of the 20px thumb) from the other.",
       "Step dots are masked out on the filled side of the track with a 2px feather (a moving linear-gradient mask driven by the thumb's motion value) and grow 1.25x on hover; an invisible Radix slider supplies ARIA + keyboard, and non-uniform `steps` runs it on indices so arrow keys walk the list, with `aria-valuetext` reporting the formatted value.",
       "Comfortable (default-size) designs use a 2px handle line that grows 2px taller (inset 8 \u2192 7) and darkens 25% \u2192 50% \u2192 100% foreground across rest/hover/focus; at min a zeroOffset (8px pips, 17px scrubber) keeps the line visible; scrubber drag sets fill directly (glued, no spring) while pips springs per snap; both add an 8px-beyond-each-edge hit area.",
@@ -1130,7 +1171,7 @@ const [selected, setSelected] = useState(0);
       "Enters on the fast tier (0.08s spring) with a 4px slide toward the trigger from the chosen side (top\u2192y:4, bottom\u2192y:-4, left\u2192x:4, right\u2192x:-4) and fades out on the quicker 0.06s exit tween; default `sideOffset` is 8.",
       "Hover delay defaults to 200ms; an app-level `TooltipProvider` adds skip-delay grouping (300ms window) so moving between adjacent triggers shows the next tooltip instantly. Each bare Tooltip falls back to a per-instance provider only when no ambient one exists \u2014 a per-instance provider everywhere would defeat the grouping and re-wait the full delay between neighbors.",
       "`followCursor=\"x\" | \"y\"` tracks the pointer along one axis for tall or wide triggers (the Sidebar rail) where a centered tooltip sits far from the pointer; the other axis stays anchored by `side`. The offset is a framer motion value, so per-move updates skip React re-renders; a force-opened follow tooltip rests centered until a real pointer takes over.",
-      "The bubble is an inverted surface (`bg-foreground text-background`), 12px at medium weight (`fontVariationSettings`); `text-box: trim-both cap alphabetic` recenters the label, with the padding bump applied only where text-box is supported so overall height stays ~26px on untrimmed browsers.",
+      "The bubble is an inverted surface (`bg-foreground text-background`), 12px at regular weight (`fontVariationSettings`); `text-box: trim-both cap alphabetic` recenters the label, with the padding bump applied only where text-box is supported so overall height stays ~24px on untrimmed browsers.",
       "`contentClassName` exists because Radix copies the content's z-index onto its popper wrapper: pass a z utility there to lift the whole tooltip above other fixed layers (default z-50); on Base UI the same prop lands on the Positioner instead. `className` styles the bubble itself.",
       "`forceOpen` pins the tooltip open (or closed) over the hover/focus behavior \u2014 `onOpenChange` still reports the internal state before forceOpen is applied.",
     ],

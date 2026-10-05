@@ -1,5 +1,16 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import {
+  animate,
+  easeInOut,
+  useInView,
+  useMotionValue,
+  useMotionValueEvent,
+  useReducedMotion,
+  useTransform,
+  type AnimationPlaybackControls,
+} from "framer-motion";
 import { useShape } from "@/registry/default/lib/shape-context";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { ScrollArea } from "@/registry/base/scroll-area";
@@ -12,6 +23,7 @@ import {
   TableCell,
 } from "@/registry/default/table";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
+import { FakeCursor } from "@/lib/docs/fake-cursor";
 import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
 
@@ -203,7 +215,7 @@ function ReleaseRows() {
       {RELEASES.map((release) => (
         <div
           key={release}
-          className="px-3 py-2 text-body text-foreground whitespace-nowrap"
+          className="px-3 py-2 text-site-body text-foreground whitespace-nowrap"
         >
           {release}
         </div>
@@ -214,41 +226,153 @@ function ReleaseRows() {
 
 function PanelLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-caption text-muted-foreground text-center">
+    <span className="text-site-caption text-muted-foreground text-center">
       {children}
     </span>
   );
 }
 
-function ProblemDemo() {
+// ---------------------------------------------------------------------------
+// The problem, with a scripted cursor
+//
+// One cursor per list rides the same clock: it slides in from the left,
+// rests, scrolls down and back, and slides out. Over the plain list nothing
+// shows, which is the problem. Over ScrollArea the real component reacts:
+// the cursor's position is fed in as pointer events, so the scrollbar shows
+// on hover and the fades follow the scroll. A real pointer inside the demo
+// takes over; the script resumes when it leaves.
+// ---------------------------------------------------------------------------
+
+/* Geometry: each list is w-64 h-56 (256 × 224). The cursor rests left of
+   the list, in the gap or the padding, and comes to a stop inside it. */
+const LIST_W = 256;
+const LIST_H = 224;
+const OUT = { x: -22, y: 150 };
+const IN = { x: 132, y: 112 };
+const SCROLL_TO = 200;
+/** Seconds per leg: in, rest, scroll down, rest, scroll up, rest, out, rest. */
+const LEGS_S = [0.8, 0.7, 1.2, 0.6, 1.0, 0.5, 0.7, 1.3];
+const LOOP_S = LEGS_S.reduce((a, b) => a + b, 0);
+/** Where each leg ends, as offsets (0..1) into the loop. */
+const TIMES = LEGS_S.reduce<number[]>((acc, leg) => [...acc, acc[acc.length - 1] + leg / LOOP_S], [0]);
+const XS = [OUT.x, IN.x, IN.x, IN.x, IN.x, IN.x, IN.x, OUT.x, OUT.x];
+const YS = [OUT.y, IN.y, IN.y, IN.y, IN.y, IN.y, IN.y, OUT.y, OUT.y];
+const SCROLLS = [0, 0, 0, SCROLL_TO, SCROLL_TO, 0, 0, 0, 0];
+
+function ProblemPreview() {
   const shape = useShape();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const plainRef = useRef<HTMLDivElement>(null);
+  const fluidRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(rootRef, { amount: 0.35 });
+  const reduced = useReducedMotion();
+  // A real pointer inside the demo owns both lists until it leaves.
+  const [userInside, setUserInside] = useState(false);
+  const scripted = inView && !reduced && !userInside;
+
+  const progress = useMotionValue(0);
+  const x = useTransform(progress, TIMES, XS, { ease: easeInOut });
+  const y = useTransform(progress, TIMES, YS, { ease: easeInOut });
+  const scroll = useTransform(progress, TIMES, SCROLLS, { ease: easeInOut });
+  const controlsRef = useRef<AnimationPlaybackControls | null>(null);
+  const hoveringRef = useRef(false);
+
+  // The script is one animation, paused and resumed in place so a visiting
+  // pointer holds the current frame.
+  useEffect(() => {
+    if (!scripted) {
+      controlsRef.current?.pause();
+      return;
+    }
+    if (controlsRef.current) {
+      controlsRef.current.play();
+      return;
+    }
+    controlsRef.current = animate(progress, [0, 1], {
+      duration: LOOP_S,
+      ease: "linear",
+      repeat: Infinity,
+    });
+  }, [scripted, progress]);
+  useEffect(() => () => controlsRef.current?.stop(), []);
+
+  /** Tell ScrollArea the pointer is over it or has left, the way a mouse
+   *  would: Base UI reads hover from pointermove and pointerleave. */
+  const setFluidHover = (on: boolean) => {
+    const root = fluidRef.current;
+    if (!root || hoveringRef.current === on) return;
+    hoveringRef.current = on;
+    const init = { bubbles: true, pointerType: "mouse" } as const;
+    if (on) root.dispatchEvent(new PointerEvent("pointermove", init));
+    else root.dispatchEvent(new PointerEvent("pointerout", { ...init, relatedTarget: root.parentElement }));
+  };
+
+  // Every frame of the script: scroll both lists and hover the fluid one
+  // while the cursor is inside it.
+  useMotionValueEvent(progress, "change", () => {
+    if (!scripted) return;
+    const top = scroll.get();
+    if (plainRef.current) plainRef.current.scrollTop = top;
+    const viewport = fluidRef.current?.querySelector<HTMLElement>('[data-slot="scroll-area-viewport"]');
+    if (viewport) viewport.scrollTop = top;
+    const cx = x.get();
+    const cy = y.get();
+    setFluidHover(cx >= 0 && cx <= LIST_W && cy >= 0 && cy <= LIST_H);
+  });
+
+  // Handing over to a real pointer: drop the scripted hover first.
+  useEffect(() => {
+    if (!scripted) setFluidHover(false);
+  });
+
   return (
-    <ComponentPreview code={PROBLEM_CODE} padding="responsive">
-      <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
-        <div className="flex flex-col gap-2">
+    <div
+      ref={rootRef}
+      className="flex flex-col sm:flex-row gap-6 items-center sm:items-start"
+      onMouseEnter={() => setUserInside(true)}
+      onMouseMove={() => setUserInside(true)}
+      onPointerDown={() => setUserInside(true)}
+      onMouseLeave={() => setUserInside(false)}
+    >
+      <div className="flex flex-col gap-2">
+        <div className="relative">
           <div
+            ref={plainRef}
             className={`h-56 w-64 overflow-y-auto border border-border ${shape.container}`}
           >
             <ReleaseRows />
           </div>
-          <PanelLabel>
-            <span aria-hidden="true">❌</span> MacOS scrollbar — hide until you
-            scroll + clipped list without signifier
-          </PanelLabel>
+          {scripted && <FakeCursor x={x} y={y} />}
         </div>
-        <div className="flex flex-col gap-2">
+        <PanelLabel>
+          <span aria-hidden="true">❌</span> The native scrollbar hides until you
+          scroll, so the list looks cut off
+        </PanelLabel>
+      </div>
+      <div className="flex flex-col gap-2">
+        <div className="relative">
           <ScrollArea
+            ref={fluidRef}
             viewportClassName="scroll-fade"
             className={`h-56 w-64 border border-border ${shape.container}`}
           >
             <ReleaseRows />
           </ScrollArea>
-          <PanelLabel>
-            <span aria-hidden="true">✅</span> Fluid Functionalism — Refined
-            scrollbars on hover + fade
-          </PanelLabel>
+          {scripted && <FakeCursor x={x} y={y} />}
         </div>
+        <PanelLabel>
+          <span aria-hidden="true">✅</span> ScrollArea shows its scrollbar on
+          hover and fades the edges
+        </PanelLabel>
       </div>
+    </div>
+  );
+}
+
+function ProblemDemo() {
+  return (
+    <ComponentPreview code={PROBLEM_CODE} padding="responsive">
+      <ProblemPreview />
     </ComponentPreview>
   );
 }
@@ -270,7 +394,7 @@ function HorizontalDemo() {
           {MONTHS.map((month) => (
             <div
               key={month}
-              className={`flex items-center justify-center h-20 w-28 shrink-0 border border-border text-body text-foreground ${shape.bg}`}
+              className={`flex items-center justify-center h-20 w-28 shrink-0 border border-border text-site-body text-foreground ${shape.bg}`}
             >
               {month}
             </div>
@@ -340,7 +464,7 @@ function TableDemo() {
 function H3({ children }: { children: React.ReactNode }) {
   return (
     <h3
-      className="text-[15px] text-foreground mt-2"
+      className="text-site-subtitle text-foreground mt-2"
       style={{ fontVariationSettings: fontWeights.semibold }}
     >
       {children}
@@ -350,7 +474,7 @@ function H3({ children }: { children: React.ReactNode }) {
 
 function P({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-body text-muted-foreground leading-relaxed">
+    <p className="text-site-body text-muted-foreground">
       {children}
     </p>
   );
@@ -363,16 +487,10 @@ export default function ScrollbarsDoc() {
       slug="scrollbars"
       installSlug="scroll-area"
       installNote="Installs the ScrollArea component with the shape-system scrollbar and the scroll-fade edge treatment."
-      description={
-        <>
-          A scrollbar that stays out of the way but never disappears, over
-          shadcn&apos;s scroll-fade as the baseline edge treatment — restyled to
-          the shape system, with native scroll physics on touch.
-        </>
-      }
+      description="A scrollbar that stays out of the way but never disappears."
     >
       <DocSection title="The problem">
-        <div className="flex flex-col gap-3 text-body text-muted-foreground leading-relaxed">
+        <div className="flex flex-col gap-3 text-site-body text-muted-foreground">
           <p>
             macOS hides the scrollbar until you start scrolling, so a clipped
             list gives no sign it has more below. And the moment it does appear,
@@ -387,7 +505,7 @@ export default function ScrollbarsDoc() {
         <P>
           The thumb rests narrow and low-contrast, then widens and darkens on
           hover so it stays quiet until you reach for it. Press{" "}
-          <kbd className="px-1 py-0.5 rounded bg-muted text-caption font-mono">
+          <kbd className="px-1 py-0.5 rounded bg-muted text-site-caption font-mono">
             R
           </kbd>{" "}
           to see the radius follow the shape system. On touch-primary devices
@@ -421,17 +539,17 @@ export default function ScrollbarsDoc() {
             scroll-fade
           </a>
           , vendored as a CSS utility in{" "}
-          <code className="px-1 py-0.5 rounded bg-[light-dark(#EBEBED,#2C2C2C)] text-caption text-foreground">
+          <code className="px-1 py-0.5 rounded bg-[light-dark(#EBEBED,#2C2C2C)] text-site-caption text-foreground">
             globals.css
           </code>
           . A mask dissolves the content toward the edges that have more to
           scroll, and a scroll-driven animation keeps the true start and end
           crisp. Drop{" "}
-          <code className="px-1 py-0.5 rounded bg-[light-dark(#EBEBED,#2C2C2C)] text-caption text-foreground">
+          <code className="px-1 py-0.5 rounded bg-[light-dark(#EBEBED,#2C2C2C)] text-site-caption text-foreground">
             scroll-fade
           </code>{" "}
           (or{" "}
-          <code className="px-1 py-0.5 rounded bg-[light-dark(#EBEBED,#2C2C2C)] text-caption text-foreground">
+          <code className="px-1 py-0.5 rounded bg-[light-dark(#EBEBED,#2C2C2C)] text-site-caption text-foreground">
             scroll-fade-x
           </code>
           ) on the viewport and it rides under the scrollbar — no JavaScript.
@@ -447,7 +565,7 @@ export default function ScrollbarsDoc() {
         <H3>Double overflow</H3>
         <P>
           A table taller and wider than its box.{" "}
-          <code className="px-1 py-0.5 rounded bg-[light-dark(#EBEBED,#2C2C2C)] text-caption text-foreground">
+          <code className="px-1 py-0.5 rounded bg-[light-dark(#EBEBED,#2C2C2C)] text-site-caption text-foreground">
             orientation=&quot;both&quot;
           </code>{" "}
           adds both scrollbars and the corner.

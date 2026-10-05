@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { fontWeights } from "@/registry/default/lib/font-weight";
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
@@ -39,7 +40,7 @@ export default function NotFound() {
       >
         <div
           aria-hidden="true"
-          className="mb-12 flex select-none gap-[0.04em] text-[clamp(7rem,18vw,12rem)] leading-none font-light tracking-[-0.04em] text-foreground"
+          className="mb-12 flex select-none gap-[0.04em] text-[clamp(7rem,18vw,12rem)] leading-none text-foreground"
         >
           <span>4</span>
           <motion.span
@@ -54,7 +55,11 @@ export default function NotFound() {
           </motion.span>
           <span>4</span>
         </div>
-        <h1 id="not-found-title" className="text-xl font-medium tracking-tight">
+        <h1
+          id="not-found-title"
+          className="text-xl"
+          style={{ fontVariationSettings: fontWeights.semibold }}
+        >
           <span className="sr-only">404. </span>A little out of place.
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">

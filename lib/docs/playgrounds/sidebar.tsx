@@ -158,7 +158,7 @@ function FooterCallout({
         className={variant === "banner" ? "gap-0 pt-3" : "gap-[2px] py-3"}
       >
         <CardTitle className="truncate">Sidebar is here</CardTitle>
-        <CardDescription className="truncate text-caption">
+        <CardDescription className="truncate text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]">
           New in Fluid Functionalism
         </CardDescription>
       </CardHeader>
@@ -332,7 +332,7 @@ export function FooterCalloutStack({
                 }
               >
                 <CardTitle className="truncate">{c.title}</CardTitle>
-                <CardDescription className="truncate text-caption">
+                <CardDescription className="truncate text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]">
                   {c.desc}
                 </CardDescription>
               </CardHeader>
@@ -469,7 +469,7 @@ function tipHelperLines(): string[] {
     `  <span className="flex items-center gap-2">`,
     `    <span className="[text-box:trim-both_cap_alphabetic]">{label}</span>`,
     `    <kbd className="-my-1 flex h-4 min-w-4 items-center justify-center rounded border`,
-    `      border-background/30 px-1 font-sans text-[10px] text-background/80">{shortcut}</kbd>`,
+    `      border-background/30 px-1 font-sans text-[10px] text-background">{shortcut}</kbd>`,
     `  </span>`,
     `);`,
   ];
@@ -693,7 +693,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
     lines.push(`          <SidebarInput placeholder="Search…" aria-label="Search" className="pl-8 pr-12" />`);
     lines.push(`          {/* revealed on hover/focus — the placeholder owns the field at rest */}`);
     lines.push(`          <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 font-sans`);
-    lines.push(`            text-[11px] text-muted-foreground opacity-0 transition-opacity duration-80`);
+    lines.push(`            text-[11px] leading-3.5 text-muted-foreground opacity-0 transition-opacity duration-80`);
     lines.push(`            group-hover/search:opacity-100 group-focus-within/search:opacity-100">${SEARCH_SHORTCUT}</kbd>`);
     lines.push(`        </div>`);
     if (headerActions.length > 0) {
@@ -705,7 +705,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
         lines.push(`              {/* shortcut chip, revealed on row hover */}`);
         lines.push(`              <span className="ml-auto inline-flex opacity-0 transition-opacity duration-80`);
         lines.push(`                group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100">`);
-        lines.push(`                <kbd className="font-sans text-[11px] text-muted-foreground">${a.shortcut}</kbd>`);
+        lines.push(`                <kbd className="font-sans text-[11px] leading-3.5 text-muted-foreground">${a.shortcut}</kbd>`);
         lines.push(`              </span>`);
         lines.push(`            </SidebarMenuButton>`);
         lines.push(`          </SidebarMenuItem>`);
@@ -887,7 +887,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
           : `${stackCardIndent}  <CardHeader className="gap-[2px] py-3">`
       );
       lines.push(`${stackCardIndent}    <CardTitle className="truncate">{c.title}</CardTitle>`);
-      lines.push(`${stackCardIndent}    <CardDescription className="truncate text-caption">{c.desc}</CardDescription>`);
+      lines.push(`${stackCardIndent}    <CardDescription className="truncate text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]">{c.desc}</CardDescription>`);
       lines.push(`${stackCardIndent}  </CardHeader>`);
       lines.push(`${stackCardIndent}</Card>`);
       if (o.footerCallout === "inline") {
@@ -925,7 +925,7 @@ export function buildSidebarPlaygroundCode(o: PlayState): string {
       );
       lines.push(`${calloutIndent}    <CardTitle className="truncate">Sidebar is here</CardTitle>`);
       lines.push(
-        `${calloutIndent}    <CardDescription className="truncate text-caption">New in Fluid Functionalism</CardDescription>`
+        `${calloutIndent}    <CardDescription className="truncate text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]">New in Fluid Functionalism</CardDescription>`
       );
       lines.push(`${calloutIndent}  </CardHeader>`);
       lines.push(`${calloutIndent}</Card>`);
@@ -1085,7 +1085,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
           re-applies it and the chip pulls its box back with -my-1 — together
           they keep this the same height as a tooltip without a shortcut. */}
       <span className="[text-box:trim-both_cap_alphabetic]">{label}</span>
-      <kbd className="-my-1 flex h-4 min-w-4 items-center justify-center rounded border border-background/30 px-1 font-sans text-[10px] text-background/80">
+      <kbd className="-my-1 flex h-4 min-w-4 items-center justify-center rounded border border-background/30 px-1 font-sans text-[10px] text-background">
         {shortcut}
       </kbd>
     </span>
@@ -1387,7 +1387,7 @@ export function SidebarPlayground({ children }: PlaygroundProps) {
                         <SidebarMenuButton icon={icons[a.icon]}>
                           {a.label}
                           <span className="ml-auto inline-flex opacity-0 transition-opacity duration-80 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100">
-                            <kbd className="font-sans text-[11px] text-muted-foreground">
+                            <kbd className="font-sans text-[11px] leading-3.5 text-muted-foreground">
                               {a.shortcut}
                             </kbd>
                           </span>

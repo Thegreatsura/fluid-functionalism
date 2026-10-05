@@ -367,7 +367,7 @@ export function CommandMenuPlayground({ children }: PlaygroundProps) {
           options={shortcutOptions}
         />
       </PlayField>
-      <p className="px-1 text-caption text-muted-foreground">
+      <p className="px-1 text-site-caption text-muted-foreground">
         Fires while the preview has focus.
       </p>
 

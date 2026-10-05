@@ -1,6 +1,6 @@
 // Generates skills/fluid-functionalism/references/craft.md from the craft
-// arrays in lib/docs/prompt-entries.ts, so the skill ships the same craft
-// the Copy-prompt briefs carry, without a second hand-maintained copy.
+// arrays in lib/docs/prompt-entries.ts. The skill is the one place the craft
+// ships: Copy-prompt briefs carry install, usage, and props, and point here.
 // Run after editing any craft entry:  node scripts/build-skill-craft.mjs
 // tests/skill-craft.test.mjs regenerates to a temp path (--out <path>) and
 // fails the build when the committed file has drifted.
@@ -16,13 +16,14 @@ const OUT =
         new URL("../skills/fluid-functionalism/references/craft.md", import.meta.url),
       );
 
-// Section order: the five systems first (one adopted system lifts every
+// Section order: the six systems first (one adopted system lifts every
 // surface), then components alphabetically. Display names match the docs.
 export const SYSTEMS = [
   ["motion", "Motion (springs)"],
   ["fluid-hover", "Fluid Hover (use-fluid-hover)"],
   ["surfaces", "Surfaces (elevated)"],
   ["sizes", "Sizes (size-context)"],
+  ["typography", "Typography (type-scale, typography)"],
   ["scrollbars", "Scrollbars (scroll-area)"],
 ];
 export const COMPONENTS = [

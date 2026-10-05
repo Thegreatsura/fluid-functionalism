@@ -71,7 +71,7 @@ export default function SliderPage() {
         >
           Audio Mixer
         </h1>
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           Slider variants styled as a music production control surface.
         </p>
       </div>
@@ -82,7 +82,7 @@ export default function SliderPage() {
 
       <section className="flex flex-col gap-4">
         <h2
-          className="text-[15px] text-foreground"
+          className="text-[15px] leading-5.5 text-foreground"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           Channel Strip
@@ -132,7 +132,7 @@ export default function SliderPage() {
 
       <section className="flex flex-col gap-4">
         <h2
-          className="text-[15px] text-foreground"
+          className="text-[15px] leading-5.5 text-foreground"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           Parametric EQ
@@ -207,7 +207,7 @@ export default function SliderPage() {
 
       <section className="flex flex-col gap-4">
         <h2
-          className="text-[15px] text-foreground"
+          className="text-[15px] leading-5.5 text-foreground"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           Range Selection
@@ -239,7 +239,7 @@ export default function SliderPage() {
 
       <section className="flex flex-col gap-4">
         <h2
-          className="text-[15px] text-foreground"
+          className="text-[15px] leading-5.5 text-foreground"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           Compressor
@@ -303,7 +303,7 @@ export default function SliderPage() {
 
       <section className="flex flex-col gap-4">
         <h2
-          className="text-[15px] text-foreground"
+          className="text-[15px] leading-5.5 text-foreground"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           Effects Sends
@@ -339,7 +339,7 @@ export default function SliderPage() {
 
       <section className="flex flex-col gap-4">
         <h2
-          className="text-[15px] text-foreground"
+          className="text-[15px] leading-5.5 text-foreground"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           Settings
@@ -390,7 +390,7 @@ export default function SliderPage() {
 
       <section className="flex flex-col gap-4">
         <h2
-          className="text-[15px] text-foreground"
+          className="text-[15px] leading-5.5 text-foreground"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           Master Controls

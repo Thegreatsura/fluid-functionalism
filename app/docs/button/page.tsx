@@ -97,7 +97,7 @@ export default function ButtonDoc() {
       </DocSection>
 
       <DocSection title="Variants">
-        <p className="text-subtitle text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           4 variants, inline or full width: add <code>className=&quot;w-full&quot;</code>{" "}
           to stretch one to its container.
         </p>

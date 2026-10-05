@@ -6,7 +6,6 @@
   "dependencies": [
     "lucide-react"
   ],
-  "registryDependencies": [],
   "files": [
     {
       "path": "registry/default/lib/icon-context.tsx",

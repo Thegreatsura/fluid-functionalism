@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { useShape, shapeMap } from "@/lib/shape-context";
-import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
+import { SizeProvider, useSize, typeClass, type SizeVariant } from "@/lib/size-context";
 import { Elevated } from "@/lib/elevated";
 import {
   popupMotionClass,
@@ -328,7 +328,7 @@ const SelectTrigger = forwardRef<HTMLButtonElement, SelectTriggerProps>(
           </SelectPrimitive.Icon>
         </SelectPrimitive.Trigger>
         {error && (
-          <span className="text-[12px] text-destructive pl-3">{error}</span>
+          <span className="text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)] text-destructive pl-3">{error}</span>
         )}
       </div>
     );
@@ -793,7 +793,7 @@ const SelectLabel = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
       ref={ref}
       className={cn(
         "px-2 py-1.5 shrink-0 text-muted-foreground",
-        compact ? "text-[11px]" : "text-[12px]",
+        typeClass("caption", compact ? "compact" : "default"),
         className
       )}
       {...props}

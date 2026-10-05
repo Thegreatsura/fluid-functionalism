@@ -595,7 +595,7 @@ function calloutLines(p: SidebarPreset): string[] {
   const header = (ind: string, dynamic: boolean) => [
     inline ? `${ind}  <CardHeader className="gap-[2px] py-3">` : `${ind}  <CardHeader className="gap-0 pt-3">`,
     `${ind}    <CardTitle className="truncate">${dynamic ? "{c.title}" : "Aurora 2 is here"}</CardTitle>`,
-    `${ind}    <CardDescription className="truncate text-caption">${dynamic ? "{c.desc}" : "Longer context, faster agents"}</CardDescription>`,
+    `${ind}    <CardDescription className="truncate text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]">${dynamic ? "{c.desc}" : "Longer context, faster agents"}</CardDescription>`,
     `${ind}  </CardHeader>`,
   ];
   if (!p.footerCalloutStacked) {

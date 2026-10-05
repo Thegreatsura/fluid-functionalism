@@ -35,7 +35,7 @@ export default function FluidSkillDoc() {
       </DocSection>
 
       <DocSection title="What it knows">
-        <p className="text-body leading-relaxed text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           The craft behind every component, distilled from its implementation and
           code comments: exact values, interaction rules, edge cases, and why each
           detail matters. Once the FF components are in place, your agent uses this

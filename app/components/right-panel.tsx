@@ -168,11 +168,11 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
       <div className="flex flex-col gap-1.5 py-3">
         <Tooltip content={<span>Press &ensp;<kbd className="font-mono opacity-50">T</kbd>&ensp; to cycle</span>} side={tooltipSide}>
           <div className="flex items-center justify-between">
-            <span className="text-body text-muted-foreground">Theme</span>
+            <span className="text-site-body text-muted-foreground">Theme</span>
             <Select value={theme} onValueChange={(v) => setTheme(v as Theme)}>
               <SelectTrigger
                 variant="borderless"
-                className="min-w-0 w-auto h-7 px-2 text-body"
+                className="min-w-0 w-auto h-7 px-2 text-site-body"
                 icon={themeOptions.find((o) => o.value === theme)?.icon}
               />
               <SelectContent>
@@ -187,11 +187,11 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
         </Tooltip>
         <Tooltip content={<span>Press &ensp;<kbd className="font-mono opacity-50">R</kbd>&ensp; to toggle</span>} side={tooltipSide}>
           <div className="flex items-center justify-between">
-            <span className="text-body text-muted-foreground">Radius</span>
+            <span className="text-site-body text-muted-foreground">Radius</span>
             <Select value={shape} onValueChange={(v) => setShape(v as ShapeVariant)}>
               <SelectTrigger
                 variant="borderless"
-                className="min-w-0 w-auto h-7 px-2 text-body"
+                className="min-w-0 w-auto h-7 px-2 text-site-body"
                 icon={shapeOptions.find((o) => o.value === shape)?.icon}
               />
               <SelectContent>
@@ -206,11 +206,11 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
         </Tooltip>
         <Tooltip content={<span>Press &ensp;<kbd className="font-mono opacity-50">S</kbd>&ensp; to toggle</span>} side={tooltipSide}>
           <div className="flex items-center justify-between">
-            <span className="text-body text-muted-foreground">Size</span>
+            <span className="text-site-body text-muted-foreground">Size</span>
             <Select value={size} onValueChange={(v) => setSize(v as SizeVariant)}>
               <SelectTrigger
                 variant="borderless"
-                className="min-w-0 w-auto h-7 px-2 text-body"
+                className="min-w-0 w-auto h-7 px-2 text-site-body"
               />
               <SelectContent>
                 {sizeOptions.map((o, i) => (
@@ -224,11 +224,11 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
         </Tooltip>
         <Tooltip content={<span>Press &ensp;<kbd className="font-mono opacity-50">I</kbd>&ensp; to cycle</span>} side={tooltipSide}>
           <div className="flex items-center justify-between">
-            <span className="text-body text-muted-foreground">Icons</span>
+            <span className="text-site-body text-muted-foreground">Icons</span>
             <Select value={iconLibrary} onValueChange={(v) => setIconLibrary(v as IconLibrary)}>
               <SelectTrigger
                 variant="borderless"
-                className="min-w-0 w-auto h-7 px-2 text-body"
+                className="min-w-0 w-auto h-7 px-2 text-site-body"
               />
               <SelectContent>
                 {iconOptions.map((o, i) => (
@@ -241,11 +241,11 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
           </div>
         </Tooltip>
         <div className="flex items-center justify-between">
-          <span className="text-body text-muted-foreground">Primitive</span>
+          <span className="text-site-body text-muted-foreground">Primitive</span>
           <Select value={base} onValueChange={(v) => setBase(v as Base)}>
             <SelectTrigger
               variant="borderless"
-              className="min-w-0 w-auto h-7 px-2 text-body"
+              className="min-w-0 w-auto h-7 px-2 text-site-body"
             />
             <SelectContent>
               {baseOptions.map((o, i) => (
@@ -265,7 +265,7 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
           alt=""
           className="w-5 h-5 rounded-full object-cover shrink-0 outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
         />
-        <p className="text-body text-muted-foreground">
+        <p className="text-site-body text-muted-foreground">
           Created by{" "}
           <a
             href="https://x.com/micka_design"
@@ -347,7 +347,7 @@ export function RightPanel() {
                   <span className="[text-box:trim-both_cap_alphabetic]">
                     Expand properties panel
                   </span>
-                  <kbd className="-my-1 flex h-4 min-w-4 items-center justify-center rounded border border-background/30 px-1 font-sans text-[10px] text-background/80">
+                  <kbd className="-my-1 flex h-4 min-w-4 items-center justify-center rounded border border-background/30 px-1 font-sans text-[10px] text-background">
                     ]
                   </kbd>
                 </span>
@@ -409,7 +409,7 @@ export function RightPanel() {
           <SurfaceProvider value={2}>
             <div className="flex items-center justify-between pt-2 pb-2">
               <h2
-                className="text-title text-foreground leading-none"
+                className="text-site-title text-foreground leading-none"
                 style={{ fontVariationSettings: fontWeights.semibold }}
               >
                 Make them yours

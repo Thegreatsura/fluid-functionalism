@@ -124,7 +124,7 @@ export function ComponentPreview({
       >
         {title && (
           <span
-            className="px-4 py-2.5 text-body text-foreground mr-auto"
+            className="px-4 py-2.5 text-site-body text-foreground mr-auto"
             style={{ fontVariationSettings: fontWeights.semibold }}
           >
             {title}
@@ -165,7 +165,7 @@ export function ComponentPreview({
             <Tooltip content={playbackButton?.tooltip ?? "Replay animation"} side="top">
               <button
                 onClick={playbackButton?.onClick ?? onReplay}
-                className={`w-10 h-10 flex items-center justify-center ${shape.button} text-muted-foreground/60 hover:text-foreground hover:bg-hover transition-colors duration-100 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]`}
+                className={`w-10 h-10 flex items-center justify-center ${shape.button} text-muted-foreground hover:text-foreground hover:bg-hover transition-colors duration-100 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]`}
                 aria-label={playbackButton?.tooltip ?? "Replay animation"}
               >
                 {playbackButton?.icon ?? <ReplayIcon size={16} strokeWidth={1.5} />}
@@ -222,7 +222,7 @@ export function ComponentPreview({
           </div>
         ) : (
           <div
-            className={`overflow-auto text-body [&_pre]:m-0 [&_pre]:p-4 ${minHeightClass.replace("min-h-", "[&_pre]:min-h-")} [&_.shiki]:!bg-transparent`}
+            className={`overflow-auto text-site-body [&_pre]:m-0 [&_pre]:p-4 ${minHeightClass.replace("min-h-", "[&_pre]:min-h-")} [&_.shiki]:!bg-transparent`}
             dangerouslySetInnerHTML={{ __html: html }}
           />
         )}
@@ -247,7 +247,7 @@ export function ComponentPreview({
   return (
     <div className="flex flex-col gap-3">
       {frame}
-      <p className="pb-2 text-center text-caption text-muted-foreground">{caption}</p>
+      <p className="pb-2 text-center text-site-caption text-muted-foreground">{caption}</p>
     </div>
   );
 }

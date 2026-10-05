@@ -228,6 +228,17 @@ system:
 - **Weight without reflow.** Text that gets heavier on state
   (selected/active/open) uses the ghost-span pattern with `fontWeights`
   tokens, so the layout never shifts.
+- **Type comes from six roles.** Size text with `typeClass(role, variant)` or
+  `useSize().type.<role>` from `@/lib/size-context` (display, title,
+  subtitle, body, caption, micro; each a size and a line height); a server
+  component imports `typeClass` from `@/lib/type-scale`. Text uses 3 weights:
+  `fontWeights.normal` for text, `fontWeights.semibold` for headings and
+  selected items, `fontWeights.bold` only for the display style; never a
+  Tailwind `font-*`. 2 text colors, foreground and muted, never
+  an opacity step of them; no uppercase, no letter-spacing, no eyebrows. Never a raw
+  `text-[13px]`, and never a bare `text-caption` inside `cn()`: stock
+  tailwind-merge reads it as a color and drops it. Rendered markdown goes in
+  `.typeset` (install `@fluid/typography`), not hand-styled elements.
 - **Icon swaps crossfade in one cell.** Two glyphs mounted in the same grid
   cell, fading with a touch of blur and scale — the slot never resizes.
 - **Nested corners are concentric.** When a rounded surface sits close inside
@@ -264,9 +275,10 @@ written down. In order of reach:
   their rationale in comments. Before modifying one, read its installed
   file (`components/ui/*`, `hooks/*`, `lib/*`) — never restyle or re-time
   from memory of what the stock shadcn version does.
-- **Each doc page's Copy-prompt brief carries the same "Craft" section.**
-  When a user pastes one, treat those bullets as constraints, not
-  suggestions.
+- **The craft lives in [references/craft.md](references/craft.md).** Copy-prompt
+  briefs carry only install, usage, and props. Before composing a
+  component, read its craft section and treat the bullets as constraints,
+  not suggestions.
 
 ## Gotchas
 

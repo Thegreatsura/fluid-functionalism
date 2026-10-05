@@ -148,7 +148,7 @@ export function SiteCommandMenuTrigger() {
         <SidebarMenuButton icon={icons.search} onClick={() => setOpen(true)}>
           Search
         </SidebarMenuButton>
-        <SidebarMenuBadge className="font-sans text-caption">{mac ? "⌘K" : "Ctrl K"}</SidebarMenuBadge>
+        <SidebarMenuBadge className="font-sans text-site-caption">{mac ? "⌘K" : "Ctrl K"}</SidebarMenuBadge>
       </SidebarMenuItem>
     </SidebarMenu>
   );

@@ -236,7 +236,7 @@ function CarouselDotsPreview() {
         <AnimatePresence mode="popLayout" initial={false} custom={direction}>
           <motion.span
             key={slide}
-            className="col-start-1 row-start-1 text-body text-foreground"
+            className="col-start-1 row-start-1 text-site-body text-foreground"
             custom={direction}
             variants={slideVariants}
             initial="enter"
@@ -448,7 +448,7 @@ function SliderPreview() {
   return (
     <div className="flex flex-col gap-8 w-full max-w-[280px]">
       <div className="flex flex-col gap-1.5 w-full">
-        <div className="flex items-center justify-between text-body">
+        <div className="flex items-center justify-between text-site-body">
           <span className="text-muted-foreground">{SLIDER_OPACITY.label}</span>
           <span className="text-muted-foreground tabular-nums">{basic}</span>
         </div>
@@ -822,7 +822,7 @@ function SidebarPreview() {
                     aria-label="Search threads"
                     className="pl-8 pr-11"
                   />
-                  <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 font-sans text-caption text-muted-foreground opacity-0 transition-opacity duration-80 group-hover/search:opacity-100 group-focus-within/search:opacity-100">
+                  <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 font-sans text-site-caption text-muted-foreground opacity-0 transition-opacity duration-80 group-hover/search:opacity-100 group-focus-within/search:opacity-100">
                     ⌘K
                   </kbd>
                 </div>
@@ -832,7 +832,7 @@ function SidebarPreview() {
                     <SidebarMenuButton icon={icons.plus}>
                       New thread
                       <span className="ml-auto inline-flex opacity-0 transition-opacity duration-80 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100">
-                        <kbd className="font-sans text-caption text-muted-foreground">⌘N</kbd>
+                        <kbd className="font-sans text-site-caption text-muted-foreground">⌘N</kbd>
                       </span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

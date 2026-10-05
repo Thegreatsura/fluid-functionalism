@@ -175,7 +175,7 @@ function SurfaceChip({ level }: { level: number }) {
         className={cn("w-14 h-14", shape.container, surfaceClasses(level))}
         aria-hidden
       />
-      <span className="text-[11px] text-muted-foreground font-mono">
+      <span className="text-[11px] leading-3.5 text-muted-foreground font-mono">
         {level}
       </span>
     </div>
@@ -188,7 +188,7 @@ function TokensDemo() {
       <div className="flex flex-col gap-4 w-full">
         <div className="dark flex flex-col gap-2">
           <span
-            className="text-[11px] text-muted-foreground tracking-wider"
+            className="text-[11px] leading-3.5 text-muted-foreground"
             style={{ fontVariationSettings: fontWeights.semibold }}
           >
             Dark
@@ -207,7 +207,7 @@ function TokensDemo() {
         </div>
         <div className="light flex flex-col gap-2">
           <span
-            className="text-[11px] text-muted-foreground tracking-wider"
+            className="text-[11px] leading-3.5 text-muted-foreground"
             style={{ fontVariationSettings: fontWeights.semibold }}
           >
             Light
@@ -269,7 +269,7 @@ function StaticRoleItem({
       <div className="flex flex-col gap-0.5 min-w-0 flex-1">
         <span
           className={cn(
-            "text-body transition-colors duration-80",
+            "text-site-body transition-colors duration-80",
             checked
               ? "text-foreground"
               : "text-muted-foreground group-hover:text-foreground"
@@ -277,12 +277,12 @@ function StaticRoleItem({
           style={{
             fontVariationSettings: checked
               ? fontWeights.semibold
-              : fontWeights.medium,
+              : fontWeights.normal,
           }}
         >
           {label}
         </span>
-        <span className="text-caption text-muted-foreground leading-snug">
+        <span className="text-site-caption text-muted-foreground">
           {description}
         </span>
       </div>
@@ -458,11 +458,8 @@ function ProblemAnnotations() {
           }}
         >
           <span
-            className="text-caption leading-tight"
-            style={{
-              color: a.color,
-              fontVariationSettings: fontWeights.semibold,
-            }}
+            className="text-site-caption text-foreground"
+            style={{ fontVariationSettings: fontWeights.semibold }}
           >
             {a.title}
           </span>
@@ -473,8 +470,7 @@ function ProblemAnnotations() {
               style={{ backgroundColor: a.swatch }}
             />
             <span
-              className="text-[11px] font-mono leading-tight"
-              style={{ color: a.color }}
+              className="text-[11px] font-mono leading-3.5 text-muted-foreground"
             >
               {a.hex}
             </span>
@@ -511,13 +507,13 @@ function ProblemDemo() {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div
-                    className="shrink-0 w-7 h-7 rounded-full bg-foreground text-background flex items-center justify-center text-caption"
+                    className="shrink-0 w-7 h-7 rounded-full bg-foreground text-background flex items-center justify-center text-site-caption"
                     style={{ fontVariationSettings: fontWeights.semibold }}
                   >
                     M
                   </div>
                   <span
-                    className="text-[15px] text-foreground"
+                    className="text-site-title text-foreground"
                     style={{ fontVariationSettings: fontWeights.semibold }}
                   >
                     Invite to your workspace
@@ -534,8 +530,8 @@ function ProblemDemo() {
 
               <label className="flex flex-col gap-2">
                 <span
-                  className="text-body text-foreground"
-                  style={{ fontVariationSettings: fontWeights.medium }}
+                  className="text-site-body text-foreground"
+                  style={{ fontVariationSettings: fontWeights.normal }}
                 >
                   Email
                 </span>
@@ -543,21 +539,21 @@ function ProblemDemo() {
                   readOnly
                   rows={2}
                   placeholder="email@gmail.com, email2@gmail.com..."
-                  className="text-body text-foreground placeholder:text-muted-foreground bg-transparent hover:bg-hover border border-border rounded-xl px-3 py-2 resize-none outline-none transition-colors duration-80 cursor-pointer"
+                  className="text-site-body text-foreground placeholder:text-muted-foreground bg-transparent hover:bg-hover border border-border rounded-xl px-3 py-2 resize-none outline-none transition-colors duration-80 cursor-pointer"
                 />
               </label>
 
               <div className="flex flex-col gap-2">
                 <span
-                  className="text-body text-foreground"
-                  style={{ fontVariationSettings: fontWeights.medium }}
+                  className="text-site-body text-foreground"
+                  style={{ fontVariationSettings: fontWeights.normal }}
                 >
                   Select role
                 </span>
                 <button
                   type="button"
                   aria-expanded
-                  className="flex items-center justify-between gap-2 h-10 px-3 rounded-xl bg-active text-body text-foreground border border-border cursor-pointer transition-colors duration-80"
+                  className="flex items-center justify-between gap-2 h-10 px-3 rounded-xl bg-active text-site-body text-foreground border border-border cursor-pointer transition-colors duration-80"
                 >
                   <span>Member</span>
                   <ChevronDown
@@ -600,15 +596,15 @@ function ProblemDemo() {
               <div className="flex justify-end items-center gap-2 pt-2">
                 <button
                   type="button"
-                  className="h-9 px-4 rounded-full bg-transparent hover:bg-hover text-body text-foreground cursor-pointer transition-colors duration-80"
-                  style={{ fontVariationSettings: fontWeights.medium }}
+                  className="h-9 px-4 rounded-full bg-transparent hover:bg-hover text-site-body text-foreground cursor-pointer transition-colors duration-80"
+                  style={{ fontVariationSettings: fontWeights.normal }}
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   disabled
-                  className="h-9 px-4 rounded-full bg-foreground text-background text-body cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
+                  className="h-9 px-4 rounded-full bg-foreground text-background text-site-body cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
                   style={{ fontVariationSettings: fontWeights.semibold }}
                 >
                   Send invites
@@ -643,7 +639,7 @@ const SURFACE_HEX_DARK: Record<number, string> = {
 
 function SwatchRow({ label, hex }: { label: string; hex: string }) {
   return (
-    <div className="flex items-center gap-2 text-[11px] font-mono">
+    <div className="flex items-center gap-2 text-[11px] leading-3.5 font-mono">
       <span
         aria-hidden
         className="w-3 h-3 rounded-sm border border-border/40 shrink-0"
@@ -684,7 +680,7 @@ function SubstrateDemo() {
                 style={{ backgroundColor: `var(--surface-${substrate})` }}
               >
                 <span
-                  className="text-caption text-foreground"
+                  className="text-site-caption text-foreground"
                   style={{ fontVariationSettings: fontWeights.semibold }}
                 >
                   {label}
@@ -706,11 +702,11 @@ function SubstrateDemo() {
               <div className="flex flex-col gap-1 px-1 pb-4">
                 <SwatchRow label="BG" hex={SURFACE_HEX_DARK[substrate]} />
                 <SwatchRow label="Menu" hex={SURFACE_HEX_DARK[menuLevel]} />
-                <div className="flex items-center gap-2 text-[11px] font-mono pt-1">
+                <div className="flex items-center gap-2 text-[11px] leading-3.5 font-mono pt-1">
                   <span className="text-muted-foreground">Hover</span>
                   <span className="ml-auto text-foreground">+6%</span>
                 </div>
-                <div className="flex items-center gap-2 text-[11px] font-mono">
+                <div className="flex items-center gap-2 text-[11px] leading-3.5 font-mono">
                   <span className="text-muted-foreground">Selected</span>
                   <span className="ml-auto text-foreground">+10%</span>
                 </div>
@@ -737,16 +733,16 @@ function ElevatedDemo() {
             surfaceClasses(1)
           )}
         >
-          <span className="text-caption text-muted-foreground">Page</span>
+          <span className="text-site-caption text-muted-foreground">Page</span>
           <Elevated offset={2} className="rounded-2xl p-5 flex flex-col gap-3">
-            <span className="text-caption text-muted-foreground">Card</span>
+            <span className="text-site-caption text-muted-foreground">Card</span>
             <Elevated
               offset={2}
               className="rounded-2xl p-5 flex flex-col gap-3"
             >
-              <span className="text-caption text-muted-foreground">Popover</span>
+              <span className="text-site-caption text-muted-foreground">Popover</span>
               <Elevated offset={2} className="rounded-2xl p-5">
-                <span className="text-caption text-muted-foreground">Menu</span>
+                <span className="text-site-caption text-muted-foreground">Menu</span>
               </Elevated>
             </Elevated>
           </Elevated>
@@ -771,7 +767,7 @@ function buildStack(low: number, high: number): ReactNode {
   const boxClass =
     "relative rounded-2xl p-6 flex items-center justify-center [&:hover>span]:opacity-100 [&:has([data-surface]:hover)>span]:opacity-0";
   const labelClass =
-    "absolute top-2 left-2.5 text-caption text-muted-foreground opacity-0 transition-opacity duration-150";
+    "absolute top-2 left-2.5 text-site-caption text-muted-foreground opacity-0 transition-opacity duration-150";
 
   let node: ReactNode = null;
   for (let lvl = high; lvl >= low + 1; lvl--) {
@@ -905,18 +901,18 @@ function RoleItem({
       <div className="flex flex-col gap-0.5 min-w-0 flex-1">
         <span
           className={cn(
-            "text-body transition-colors duration-80",
+            "text-site-body transition-colors duration-80",
             highlighted ? "text-foreground" : "text-muted-foreground"
           )}
           style={{
             fontVariationSettings: checked
               ? fontWeights.semibold
-              : fontWeights.medium,
+              : fontWeights.normal,
           }}
         >
           {label}
         </span>
-        <span className="text-caption text-muted-foreground leading-snug">
+        <span className="text-site-caption text-muted-foreground">
           {description}
         </span>
       </div>
@@ -1102,11 +1098,8 @@ function SolutionAnnotations({
           style={{ left: c.left, top: c.top, width: c.labelW }}
         >
           <span
-            className="text-caption leading-tight"
-            style={{
-              color,
-              fontVariationSettings: fontWeights.semibold,
-            }}
+            className="text-site-caption text-foreground"
+            style={{ fontVariationSettings: fontWeights.semibold }}
           >
             {c.title}
           </span>
@@ -1116,10 +1109,7 @@ function SolutionAnnotations({
               className="w-2.5 h-2.5 rounded-[3px] border border-white/15 shrink-0"
               style={{ backgroundColor: c.hex }}
             />
-            <span
-              className="text-[11px] font-mono leading-tight"
-              style={{ color }}
-            >
+            <span className="text-[11px] font-mono leading-3.5 text-muted-foreground">
               {c.hex}
             </span>
           </span>
@@ -1156,13 +1146,13 @@ function InviteDialogDemo() {
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div
-                  className="shrink-0 w-7 h-7 rounded-full bg-foreground text-background flex items-center justify-center text-caption"
+                  className="shrink-0 w-7 h-7 rounded-full bg-foreground text-background flex items-center justify-center text-site-caption"
                   style={{ fontVariationSettings: fontWeights.semibold }}
                 >
                   M
                 </div>
                 <span
-                  className="text-[15px] text-foreground"
+                  className="text-site-title text-foreground"
                   style={{ fontVariationSettings: fontWeights.semibold }}
                 >
                   Invite to your workspace
@@ -1179,8 +1169,8 @@ function InviteDialogDemo() {
 
             <label className="flex flex-col gap-2">
               <span
-                className="text-body text-foreground"
-                style={{ fontVariationSettings: fontWeights.medium }}
+                className="text-site-body text-foreground"
+                style={{ fontVariationSettings: fontWeights.normal }}
               >
                 Email
               </span>
@@ -1188,21 +1178,21 @@ function InviteDialogDemo() {
                 readOnly
                 rows={2}
                 placeholder="email@gmail.com, email2@gmail.com..."
-                className="text-body text-foreground placeholder:text-muted-foreground bg-transparent hover:bg-hover border border-border rounded-xl px-3 py-2 resize-none outline-none transition-colors duration-80 cursor-pointer"
+                className="text-site-body text-foreground placeholder:text-muted-foreground bg-transparent hover:bg-hover border border-border rounded-xl px-3 py-2 resize-none outline-none transition-colors duration-80 cursor-pointer"
               />
             </label>
 
             <div className="flex flex-col gap-2">
               <span
-                className="text-body text-foreground"
-                style={{ fontVariationSettings: fontWeights.medium }}
+                className="text-site-body text-foreground"
+                style={{ fontVariationSettings: fontWeights.normal }}
               >
                 Select role
               </span>
               <button
                 type="button"
                 aria-expanded
-                className="flex items-center justify-between gap-2 h-10 px-3 rounded-xl bg-active text-body text-foreground border border-border cursor-pointer transition-colors duration-80"
+                className="flex items-center justify-between gap-2 h-10 px-3 rounded-xl bg-active text-site-body text-foreground border border-border cursor-pointer transition-colors duration-80"
               >
                 <span>Member</span>
                 <ChevronDown
@@ -1241,15 +1231,15 @@ function InviteDialogDemo() {
             <div className="flex justify-end items-center gap-2 pt-2">
               <button
                 type="button"
-                className="h-9 px-4 rounded-full bg-transparent hover:bg-hover text-body text-foreground cursor-pointer transition-colors duration-80"
-                style={{ fontVariationSettings: fontWeights.medium }}
+                className="h-9 px-4 rounded-full bg-transparent hover:bg-hover text-site-body text-foreground cursor-pointer transition-colors duration-80"
+                style={{ fontVariationSettings: fontWeights.normal }}
               >
                 Cancel
               </button>
               <button
                 type="button"
                 disabled
-                className="h-9 px-4 rounded-full bg-foreground text-background text-body cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
+                className="h-9 px-4 rounded-full bg-foreground text-background text-site-body cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
                 style={{ fontVariationSettings: fontWeights.semibold }}
               >
                 Send invites
@@ -1321,7 +1311,7 @@ export default function SurfacesDoc() {
       }
     >
       <DocSection title="The problem">
-        <div className="flex flex-col gap-3 text-body text-muted-foreground leading-relaxed">
+        <div className="flex flex-col gap-3 text-site-body text-muted-foreground">
           <p>
             In light mode, we use shadow behind white surfaces to signify
             elevation. In dark mode, we use progressively lighter backgrounds
@@ -1337,17 +1327,17 @@ export default function SurfacesDoc() {
       </DocSection>
 
       <DocSection title="The solution">
-        <div className="flex flex-col gap-3 text-body text-muted-foreground leading-relaxed">
+        <div className="flex flex-col gap-3 text-site-body text-muted-foreground">
           <p>Three pieces: tokens, substrate context, and the primitive.</p>
         </div>
 
         <h3
-          className="text-[15px] text-foreground mt-2"
+          className="text-site-subtitle text-foreground mt-2"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           Tokens
         </h3>
-        <p className="text-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground">
           Eight bg/shadow pairs. Light mode flattens to white after step 2
           (shadow alone carries elevation). Dark mode keeps adding white-opacity
           plus a layered shadow recipe.
@@ -1355,12 +1345,12 @@ export default function SurfacesDoc() {
         <TokensDemo />
 
         <h3
-          className="text-[15px] text-foreground mt-6"
+          className="text-site-subtitle text-foreground mt-6"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           Substrate
         </h3>
-        <p className="text-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground">
           Each container knows its own level and tells whatever opens inside.
           A popover on the page and the same popover inside a dialog both
           end up at the right depth, without anything passed between them.
@@ -1368,12 +1358,12 @@ export default function SurfacesDoc() {
         <SubstrateDemo />
 
         <h3
-          className="text-[15px] text-foreground mt-6"
+          className="text-site-subtitle text-foreground mt-6"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           Elevated
         </h3>
-        <p className="text-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground">
           Wrap a panel and the background settles at the level it belongs to.
           The shadow doesn&apos;t change, so a popover still reads as a popover
           three layers down.
@@ -1381,12 +1371,12 @@ export default function SurfacesDoc() {
         <ElevatedDemo />
 
         <h3
-          className="text-[15px] text-foreground mt-6"
+          className="text-site-subtitle text-foreground mt-6"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           Move through levels
         </h3>
-        <p className="text-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground">
           Drag both knobs to choose which slice of the ladder to nest. Each
           layer lifts a single step off the one it sits in — whether you span
           two levels or all eight.
@@ -1396,24 +1386,24 @@ export default function SurfacesDoc() {
 
       <DocSection title="Examples">
         <h3
-          className="text-[15px] text-foreground"
+          className="text-site-subtitle text-foreground"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           Invite dialog
         </h3>
-        <p className="text-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground">
           Dialog at surface 5, role picker at surface 7 — no props passed
           between them.
         </p>
         <InviteDialogDemo />
 
         <h3
-          className="text-[15px] text-foreground mt-6"
+          className="text-site-subtitle text-foreground mt-6"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           Color picker
         </h3>
-        <p className="text-body text-muted-foreground leading-relaxed">
+        <p className="text-site-body text-muted-foreground">
           The format dropdown sits one level above the picker panel.
         </p>
         <ColorPickerDemo />

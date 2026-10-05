@@ -20,6 +20,7 @@ import {
   type MotionValue,
 } from "framer-motion";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
+import { FakeCursor } from "@/lib/docs/fake-cursor";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { spring } from "@/registry/default/lib/springs";
 import { cn } from "@/registry/default/lib/utils";
@@ -139,7 +140,7 @@ useFluidHover(containerRef, { axis: "xy" });`;
 // ---------------------------------------------------------------------------
 
 const rowClass =
-  "relative z-10 flex h-9 w-full shrink-0 items-center px-3 text-left text-body text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]";
+  "relative z-10 flex h-9 w-full shrink-0 items-center px-3 text-left text-site-body text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]";
 
 function FluidRow({
   index,
@@ -218,26 +219,6 @@ function rowUnder(y: number): number | null {
   return i < ROWS.length && within ? i : null;
 }
 
-function FakeCursor({ y }: { y: MotionValue<number> }) {
-  return (
-    <motion.span
-      aria-hidden
-      // The arrow's tip sits 3px in from the SVG's corner.
-      className="pointer-events-none absolute -left-[3px] -top-[3px] z-30"
-      style={{ x: CURSOR_X, y }}
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24">
-        <path
-          d="m4 4 7.07 17 2.51-7.39L21 11.07z"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-          className="fill-foreground stroke-background"
-        />
-      </svg>
-    </motion.span>
-  );
-}
-
 function PlainHoverList({
   fakeIndex,
   cursor,
@@ -263,7 +244,7 @@ function PlainHoverList({
           {label}
         </button>
       ))}
-      {cursor && <FakeCursor y={cursor} />}
+      {cursor && <FakeCursor x={CURSOR_X} y={cursor} />}
     </div>
   );
 }
@@ -293,7 +274,7 @@ function FluidHoverList({
           {label}
         </FluidRow>
       ))}
-      {cursor && <FakeCursor y={cursor} />}
+      {cursor && <FakeCursor x={CURSOR_X} y={cursor} />}
     </div>
   );
 }
@@ -361,7 +342,7 @@ function PlainVsFluidPreview({ paused }: { paused: boolean }) {
 
   const frame = cn("w-full border border-border/60", shape.container);
   const labelClass =
-    "flex items-center justify-center gap-2 text-caption text-muted-foreground";
+    "flex items-center justify-center gap-2 text-site-caption text-muted-foreground";
   const cursor = scripted ? y : null;
   return (
     <div
@@ -512,7 +493,7 @@ function MathList({ showMath }: { showMath: boolean }) {
                   }}
                 />
                 <span
-                  className="absolute left-0 -translate-x-[calc(100%+8px)] -translate-y-1/2 whitespace-nowrap font-mono text-[11px] text-[color:var(--focus-ring,#6B97FF)]"
+                  className="absolute left-0 -translate-x-[calc(100%+8px)] -translate-y-1/2 whitespace-nowrap font-mono text-[11px] leading-3.5 text-foreground"
                   style={{ top: (cursorY + winner) / 2 }}
                 >
                   {distance}px
@@ -571,12 +552,12 @@ function AxisBlock({
     <div className="flex flex-col gap-3">
       <div className="flex items-baseline gap-2">
         <code
-          className="font-mono text-caption text-foreground"
+          className="font-mono text-site-caption text-foreground"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           axis=&quot;{axis}&quot;
         </code>
-        <span className="text-caption text-muted-foreground">{hint}</span>
+        <span className="text-site-caption text-muted-foreground">{hint}</span>
       </div>
       {children}
     </div>
@@ -837,9 +818,9 @@ function CostList({ onMeter }: { onMeter: (m: CostMeter) => void }) {
 function Stat({ value, label, hint }: { value: string; label: string; hint: string }) {
   return (
     <div className="flex flex-col items-center gap-0.5 text-center">
-      <span className="font-mono text-body tabular-nums text-foreground">{value}</span>
-      <span className="text-caption text-muted-foreground">{label}</span>
-      <span className="text-[11px] leading-snug text-muted-foreground/60">{hint}</span>
+      <span className="font-mono text-site-body tabular-nums text-foreground">{value}</span>
+      <span className="text-site-caption text-muted-foreground">{label}</span>
+      <span className="text-[11px] leading-3.5 text-muted-foreground">{hint}</span>
     </div>
   );
 }
@@ -1225,12 +1206,12 @@ function ListsCallouts({ canvasRef }: { canvasRef: React.RefObject<HTMLDivElemen
           }}
         >
           <span
-            className="text-caption leading-tight"
-            style={{ color: c.color, fontVariationSettings: fontWeights.semibold }}
+            className="text-site-caption text-foreground"
+            style={{ fontVariationSettings: fontWeights.semibold }}
           >
             {c.title}
           </span>
-          <span className="text-balance text-[11px] leading-snug text-muted-foreground">{c.line}</span>
+          <span className="text-balance text-[11px] leading-3.5 text-muted-foreground">{c.line}</span>
         </div>
       ))}
     </>

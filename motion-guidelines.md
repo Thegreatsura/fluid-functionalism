@@ -118,7 +118,9 @@ reflows. Use the **ghost-span pattern** — an invisible copy of the label at th
 heaviest weight reserves the width while the visible copy animates
 `font-variation-settings`. Each `fontWeights` token (`@/lib/font-weight`) also
 pairs a tighter optical size with the heavier weight so the advance width barely
-changes. The full pattern and rules live in
+changes (semibold within ±0.4px of regular, the pair every selected label switches between; the Weight
+without reflow demo on [/docs/typography](https://www.fluidfunctionalism.com/docs/typography)
+measures it live). The full pattern and rules live in
 [`component-documentation-guidelines.md`](component-documentation-guidelines.md#animated-font-weight--the-ghost-span-pattern).
 
 ## Fluid hover (`registry/default/hooks/use-fluid-hover.ts`)

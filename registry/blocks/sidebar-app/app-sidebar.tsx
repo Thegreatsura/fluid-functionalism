@@ -68,7 +68,7 @@ export function AppSidebar(props: Omit<SidebarProps, "children">) {
                 New
                 {/* shortcut chip, revealed on row hover */}
                 <span className="ml-auto inline-flex opacity-0 transition-opacity duration-80 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100">
-                  <kbd className="font-sans text-[11px] text-muted-foreground">
+                  <kbd className="font-sans text-[length:var(--fs-micro,11px)] leading-[var(--lh-micro,14px)] text-muted-foreground">
                     ⇧⌘O
                   </kbd>
                 </span>
@@ -111,7 +111,7 @@ export function AppSidebar(props: Omit<SidebarProps, "children">) {
         <SidebarUserFooter
           name="Jane Doe"
           avatar={
-            <span className="flex size-5 items-center justify-center rounded-full bg-muted-foreground text-[10px] text-background">
+            <span className="flex size-5 items-center justify-center rounded-full bg-muted-foreground text-[length:var(--fs-micro-compact,10px)] leading-[var(--lh-micro-compact,12px)] text-background">
               J
             </span>
           }

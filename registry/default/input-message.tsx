@@ -316,9 +316,9 @@ function QueuedRow({
         // text-box trim on the label doesn't shrink the row.
         "group/qrow flex items-center gap-2 rounded-lg bg-muted",
         compactStep
-          ? "h-7 px-2 text-[12px]"
-          : "h-8 px-2.5 text-[13px]",
-        "text-foreground/85 select-none outline-none",
+          ? "h-7 px-2 text-[length:var(--fs-body-compact,12px)] leading-[var(--lh-body-compact,18px)]"
+          : "h-8 px-2.5 text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)]",
+        "text-foreground select-none outline-none",
         "cursor-grab active:cursor-grabbing",
         "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]"
       )}
@@ -409,7 +409,7 @@ function SuggestionRow({
         // Text size mirrors the composer's textarea/placeholder (the rows
         // read as prompt candidates, not metadata); heights follow the
         // QueuedRow step ladder.
-        compactStep ? "h-7 px-2 text-[13px]" : "h-8 px-2.5 text-[14px]",
+        compactStep ? "h-7 px-2 text-[length:var(--fs-subtitle-compact,13px)] leading-[var(--lh-subtitle-compact,18px)]" : "h-8 px-2.5 text-[length:var(--fs-subtitle,14px)] leading-[var(--lh-subtitle,20px)]",
         "text-muted-foreground transition-colors duration-80",
         active && "text-foreground"
       )}
@@ -426,7 +426,7 @@ function SuggestionRow({
       {!active && keyHint ? (
         <ArrowDownIcon
           size={13}
-          className="shrink-0 text-muted-foreground/70 transition-opacity duration-80"
+          className="shrink-0 text-muted-foreground transition-opacity duration-80"
         />
       ) : (
         <EnterIcon
@@ -1191,8 +1191,8 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
                 "w-full resize-none rounded-none bg-transparent outline-none",
                 "text-foreground placeholder:text-muted-foreground",
                 compactStep
-                  ? "text-[13px] leading-[18px] px-1.5 py-1.5"
-                  : "text-[14px] leading-5 px-2 py-2"
+                  ? "text-[length:var(--fs-subtitle-compact,13px)] leading-[var(--lh-subtitle-compact,18px)] px-1.5 py-1.5"
+                  : "text-[length:var(--fs-subtitle,14px)] leading-[var(--lh-subtitle,20px)] px-2 py-2"
               )}
               style={{ fontVariationSettings: fontWeights.normal }}
               {...restTextareaProps}
@@ -1209,8 +1209,8 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
                   // Mirror the textarea's step typography exactly so the ghost
                   // sits where typed text will.
                   compactStep
-                    ? "text-[13px] leading-[18px] px-1.5 py-1.5"
-                    : "text-[14px] leading-5 px-2 py-2"
+                    ? "text-[length:var(--fs-subtitle-compact,13px)] leading-[var(--lh-subtitle-compact,18px)] px-1.5 py-1.5"
+                    : "text-[length:var(--fs-subtitle,14px)] leading-[var(--lh-subtitle,20px)] px-2 py-2"
                 )}
                 style={{ fontVariationSettings: fontWeights.normal }}
               >
@@ -1223,7 +1223,7 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
                   <kbd
                     className={cn(
                       "inline-flex shrink-0 -translate-y-px items-center rounded-[5px] border border-border bg-background px-1 font-sans text-muted-foreground",
-                      compactStep ? "h-4 text-[10px]" : "h-[18px] text-[11px]"
+                      compactStep ? "h-4 text-[length:var(--fs-micro-compact,10px)] leading-[var(--lh-micro-compact,12px)]" : "h-[18px] text-[length:var(--fs-micro,11px)] leading-[var(--lh-micro,14px)]"
                     )}
                   >
                     Tab
@@ -1246,7 +1246,7 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
               // Buttons), so the compact step scales any button in the row —
               // send button included — down to 24px via a scoped override.
               compactStep
-                ? "gap-1.5 [&_button]:h-6 [&_button.w-7]:w-6 [&_button]:text-[11px]"
+                ? "gap-1.5 [&_button]:h-6 [&_button.w-7]:w-6 [&_button]:text-[length:var(--fs-caption-compact,11px)] [&_button]:leading-[var(--lh-caption-compact,14px)]"
                 : "gap-2"
             )}
           >

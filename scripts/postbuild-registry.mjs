@@ -68,6 +68,8 @@ export const CUSTOM_ITEMS = new Set([
   // shared interaction/focus tokens)
   "surfaces",
   "tokens",
+  "type-scale",
+  "typography",
   // primitive-touching components (have both Radix and Base flavours)
   ...DUAL_FLAVOR_SLUGS,
   // blocks (single-source compositions over flavoured components)

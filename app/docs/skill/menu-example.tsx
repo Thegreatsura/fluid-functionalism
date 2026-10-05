@@ -60,10 +60,10 @@ const TURN: Array<{ row: number; click?: boolean }> = [
 const HOLD_MS = 600;
 
 const rowBase =
-  "relative z-10 flex h-9 w-full shrink-0 items-center gap-2 px-3 text-left text-body text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]";
+  "relative z-10 flex h-9 w-full shrink-0 items-center gap-2 px-3 text-left text-site-body text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]";
 
 function Count({ n }: { n: number }) {
-  return <span className="text-caption tabular-nums text-muted-foreground">{n}</span>;
+  return <span className="text-site-caption tabular-nums text-muted-foreground">{n}</span>;
 }
 
 /** Generic: :hover per row with no transition, font-weight bold that
@@ -82,6 +82,7 @@ function GenericList({ selected, onSelect }: { selected: number; onSelect: (i: n
             // Hover louder than the selection: the cursor, not the pick,
             // is what the eye lands on. Scripted hover counts as hover.
             "[&:is(:hover,[data-script-hover])]:bg-selected dark:[&:is(:hover,[data-script-hover])]:bg-selected",
+            // eslint-disable-next-line no-restricted-syntax -- the generic version, bold on purpose to show the reflow
             selected === i && "bg-selected/50 font-bold dark:bg-accent/40",
             shape.item
           )}

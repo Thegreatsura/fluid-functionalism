@@ -25,12 +25,10 @@ interface BuildInstallPromptOptions {
   base: Base;
 }
 
-function appendCraft(lines: string[], details: PromptEntry | undefined): void {
-  if (!details?.craft?.length) return;
-  lines.push("");
-  lines.push("Craft (built-in behaviors — compose around them, don't re-implement or fight them):");
-  for (const point of details.craft) lines.push(`- ${point}`);
-}
+/** The craft (exact behaviors and values) ships in the skill, not in the
+ *  brief: one pointer instead of a page of bullets. */
+const SKILL_LINE =
+  "For the design details behind it (exact behaviors and values), add the Fluid Functionalism skill: npx skills add mickadesign/fluid-functionalism";
 
 /** Builds the text behind the "Copy prompt" button on every doc page: a
  *  self-contained brief a visitor pastes into an AI coding agent. It carries
@@ -71,7 +69,8 @@ export function buildInstallPrompt({ slug, installSlug, base }: BuildInstallProm
     for (const prop of details.props) lines.push(`- ${prop}`);
   }
 
-  appendCraft(lines, details);
+  lines.push("");
+  lines.push(SKILL_LINE);
 
   lines.push("");
   const about: string[] = [];
@@ -147,7 +146,8 @@ export function buildPresetPrompt({ def, code, base }: BuildPresetPromptOptions)
     for (const prop of details.props) lines.push(`- ${prop}`);
   }
 
-  appendCraft(lines, details);
+  lines.push("");
+  lines.push(SKILL_LINE);
 
   lines.push("");
   const about: string[] = [];

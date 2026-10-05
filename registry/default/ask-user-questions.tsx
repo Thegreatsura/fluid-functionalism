@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
-import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
+import { SizeProvider, useSize, typeClass, type SizeVariant } from "@/lib/size-context";
 import { useIcon } from "@/lib/icon-context";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { useMergeSplitBlocks, SelectionBackgrounds } from "@/hooks/use-merge-split";
@@ -739,7 +739,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
           )}
           {...rest}
         >
-          <p className="text-[13px] text-muted-foreground">No questions.</p>
+          <p className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)] text-muted-foreground">No questions.</p>
         </div>
       );
     }
@@ -1068,7 +1068,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                       style={{
                         fontVariationSettings: isSelected
                           ? fontWeights.semibold
-                          : fontWeights.medium,
+                          : fontWeights.normal,
                       }}
                     >
                       {opt.title}
@@ -1077,8 +1077,8 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                   {opt.description && (
                     <span
                       className={cn(
-                        compact ? "text-[11px]" : "text-[12px]",
-                        "text-muted-foreground leading-snug"
+                        typeClass("caption", compact ? "compact" : "default"),
+                        "text-muted-foreground"
                       )}
                     >
                       {opt.description}
@@ -1100,7 +1100,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                       style={{
                         fontVariationSettings: isSelected
                           ? fontWeights.semibold
-                          : fontWeights.medium,
+                          : fontWeights.normal,
                       }}
                     >
                       {opt.title}
@@ -1196,10 +1196,10 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                   // input it replaces — no border, no padding, no
                   // resize handle, no scrollbars (height is JS-driven,
                   // see the auto-resize effect above).
-                  "col-start-1 row-start-1 block w-full bg-transparent border-0 p-0 m-0 outline-none resize-none overflow-hidden leading-snug text-foreground placeholder:text-muted-foreground",
-                  sizeClasses.text
+                  "col-start-1 row-start-1 block w-full bg-transparent border-0 p-0 m-0 outline-none resize-none overflow-hidden text-foreground placeholder:text-muted-foreground",
+                  sizeClasses.type.body
                 )}
-                style={{ fontVariationSettings: fontWeights.medium }}
+                style={{ fontVariationSettings: fontWeights.normal }}
               />
             </span>
           </Row>
@@ -1238,8 +1238,8 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
             // floor: the option rows bleed by -mx-3, so anything tighter puts
             // their hover background flush against the card edge.
             compact
-              ? "px-3.5 sm:px-4 pt-2.5 sm:pt-3 pb-1.5 text-[11px]"
-              : "px-4 sm:px-5 pt-3.5 sm:pt-4 pb-2 text-[12px]"
+              ? "px-3.5 sm:px-4 pt-2.5 sm:pt-3 pb-1.5 text-[length:var(--fs-caption-compact,11px)] leading-[var(--lh-caption-compact,14px)]"
+              : "px-4 sm:px-5 pt-3.5 sm:pt-4 pb-2 text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]"
           )}
         >
           <span>
@@ -1285,7 +1285,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
               {/* Question title */}
               <h3
                 id={`${reactId}-${qId}-title`}
-                className="text-[16px] text-foreground leading-snug"
+                className="text-[length:var(--fs-title,16px)] leading-[var(--lh-title,22px)] text-foreground"
                 style={{ fontVariationSettings: fontWeights.semibold }}
               >
                 {question.title}
@@ -1367,10 +1367,10 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                           }
                         }}
                         className={cn(
-                          "block w-full bg-transparent border-0 p-0 m-0 outline-none resize-none overflow-hidden leading-snug text-foreground placeholder:text-muted-foreground",
-                          sizeClasses.text
+                          "block w-full bg-transparent border-0 p-0 m-0 outline-none resize-none overflow-hidden text-foreground placeholder:text-muted-foreground",
+                          sizeClasses.type.body
                         )}
-                        style={{ fontVariationSettings: fontWeights.medium }}
+                        style={{ fontVariationSettings: fontWeights.normal }}
                       />
                     }
                   />
@@ -1479,7 +1479,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                             ...spring.fast,
                             opacity: { duration: 0.12 },
                           }}
-                          className="min-w-0 px-2 sm:px-3 text-left text-[12px] leading-snug text-destructive"
+                          className="min-w-0 px-2 sm:px-3 text-left text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)] text-destructive"
                         />
                       }
                     >
@@ -1600,7 +1600,7 @@ function ShortcutChip({
       aria-hidden
       suppressHydrationWarning
       className={cn(
-        "inline-flex items-center justify-center gap-0.5 px-1 min-w-[18px] h-[18px] text-[11px] leading-none font-sans tracking-wide",
+        "inline-flex items-center justify-center gap-0.5 px-1 min-w-[18px] h-[18px] text-[length:var(--fs-micro,11px)] leading-none font-sans",
         tone === "inverted"
           ? "bg-background/15 text-background"
           : "bg-foreground/10 text-muted-foreground",
@@ -1723,7 +1723,7 @@ function Row({
 
   // The chip "slot" is a fixed 28×28 cell holding the chip number/circle.
   // When topAlign is on, the slot floats up so the chip's vertical centre
-  // lines up with the centre of a `text-[13px] leading-snug` first line
+  // lines up with the centre of a body-role (13px / 18px) first line
   // (line-height ≈ 18px → centre 9px; chip centre 14px → diff 5px).
   // Stacked rows pair a title with a description, so we add 4px of
   // breathing room back on top (effective shift -1px) — that lands the
@@ -1745,7 +1745,7 @@ function Row({
       <span
         aria-hidden
         className={cn(
-          "absolute inline-flex items-center justify-center text-[11px] transition-[opacity,font-variation-settings] duration-80",
+          "absolute inline-flex items-center justify-center text-[length:var(--fs-micro,11px)] leading-[var(--lh-micro,14px)] transition-[opacity,font-variation-settings] duration-80",
           compact ? "w-[18px] h-[18px]" : "w-5 h-5",
           isMulti && shape.bg,
           isMulti
@@ -1763,7 +1763,7 @@ function Row({
         style={{
           fontVariationSettings: chipFilled
             ? fontWeights.semibold
-            : fontWeights.medium,
+            : fontWeights.normal,
         }}
       >
         {chipContent}
@@ -1863,7 +1863,7 @@ function Row({
       {/* Body — fills row */}
       <span
         className={cn(
-          "min-w-0 flex-1 leading-snug",
+          "min-w-0 flex-1",
           sizeClasses.text,
           bodyLayout === "stacked"
             ? "flex flex-col gap-0.5"

@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { fontWeights } from "@/lib/font-weight";
 import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
 import { FileThumbnail } from "@/components/ui/file-thumbnail";
 import { Tooltip } from "@/components/ui/tooltip";
 import { type QueuedMessage } from "@/components/ui/input-message";
 import { useIcon } from "@/lib/icon-context";
 import { nestedRadius, useShape } from "@/lib/shape-context";
-import { useSizeVariant } from "@/lib/size-context";
+import { useSizeVariant, typeClass } from "@/lib/size-context";
 import { spring } from "@/lib/springs";
 
 // ---------------------------------------------------------------------------
@@ -247,7 +248,8 @@ export function QueuedStack({
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.6 }}
                         transition={spring.fast}
-                        className="pointer-events-none text-[10px] font-semibold leading-none tabular-nums text-muted-foreground"
+                        className="pointer-events-none text-[length:var(--fs-micro-compact,10px)] leading-none tabular-nums text-muted-foreground"
+                        style={{ fontVariationSettings: fontWeights.semibold }}
                       >
                         {stackCount}
                       </motion.span>
@@ -333,7 +335,7 @@ export function QueuedStack({
                       compactStep
                         ? `gap-1.5 ${item.files.length > 0 ? "pl-1.5" : "pl-3"} pr-1`
                         : `gap-2 ${item.files.length > 0 ? "pl-2" : "pl-3.5"} pr-1.5`
-                    } text-subtitle text-muted-foreground shadow-surface-3 active:cursor-grabbing ${shape.bg}`}
+                    } ${typeClass("subtitle", compactStep ? "compact" : "default")} text-muted-foreground shadow-surface-3 active:cursor-grabbing ${shape.bg}`}
                   >
                     {item.files.length > 0 && (
                       <div className="pointer-events-none flex shrink-0 items-center gap-1">
@@ -347,7 +349,7 @@ export function QueuedStack({
                         ))}
                         {item.files.length > 3 && (
                           <span
-                            className={`flex ${compactStep ? "h-6 w-6" : "h-7 w-7"} items-center justify-center bg-background/40 text-[11px] font-medium tabular-nums text-foreground/80`}
+                            className={`flex ${compactStep ? "h-6 w-6" : "h-7 w-7"} items-center justify-center bg-background/40 text-[length:var(--fs-micro,11px)] leading-[var(--lh-micro,14px)] tabular-nums text-foreground`}
                             style={{ borderRadius: attachmentRadius }}
                           >
                             +{item.files.length - 3}

@@ -4,7 +4,7 @@ import { forwardRef, useState, useEffect, type HTMLAttributes } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
-import { useSize, type SizeVariant } from "@/lib/size-context";
+import { useSize, typeClass, type SizeVariant } from "@/lib/size-context";
 
 // The glyph is one path morphing circle → infinity → circle → infinity →
 // circle. All 3 shapes share the same commands (a move, 4 curves, a close),
@@ -99,9 +99,9 @@ const ThinkingIndicator = forwardRef<HTMLDivElement, ThinkingIndicatorProps>(
         aria-hidden="true"
         className={cn(
           "inline-grid overflow-hidden",
-          compactStep ? "text-[12px]" : "text-[13px]"
+          typeClass("body", compactStep ? "compact" : "default")
         )}
-        style={{ fontVariationSettings: fontWeights.medium }}
+        style={{ fontVariationSettings: fontWeights.normal }}
       >
         {/* An invisible copy of the longest word reserves the width, so the
             cycle never shifts what sits next to the indicator.

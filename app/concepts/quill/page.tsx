@@ -140,7 +140,7 @@ function AIBlock() {
           className={cn("flex gap-2.5 rounded-xl p-3.5", surfaceClasses(2, 2))}
         >
           <Sparkle size={16} className="mt-0.5 shrink-0 text-muted-foreground" />
-          <p className="text-subtitle leading-relaxed text-foreground">{b}</p>
+          <p className="text-site-subtitle text-foreground">{b}</p>
         </div>
       ))}
 
@@ -163,7 +163,7 @@ function AIBlock() {
         minRows={1}
         maxRows={4}
         leftSlot={
-          <span className="flex items-center gap-1.5 pl-1 text-caption text-muted-foreground">
+          <span className="flex items-center gap-1.5 pl-1 text-site-caption text-muted-foreground">
             <Sparkle size={14} />
             Quill AI
           </span>
@@ -178,7 +178,7 @@ function AIBlock() {
 function DocumentBody() {
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-[15px] leading-relaxed text-muted-foreground">
+      <p className="text-[15px] leading-6 text-muted-foreground">
         The single source of truth for what we&rsquo;re building this quarter, why,
         and who owns each bet. Edit freely — every block here is a Fluid
         Functionalism component.
@@ -187,7 +187,7 @@ function DocumentBody() {
       {/* Callout */}
       <div className={cn("flex gap-3 rounded-xl p-4", surfaceClasses(2, 2))}>
         <span className="text-[18px] leading-none">💡</span>
-        <p className="text-subtitle leading-relaxed text-foreground">
+        <p className="text-site-subtitle text-foreground">
           Decisions are final once they land in the Initiatives table. Use
           comments for anything still in debate.
         </p>
@@ -195,7 +195,7 @@ function DocumentBody() {
 
       <h2
         className="pt-2 text-[18px] text-foreground"
-        style={{ fontVariationSettings: fontWeights.bold }}
+        style={{ fontVariationSettings: fontWeights.semibold }}
       >
         Goals
       </h2>
@@ -205,7 +205,7 @@ function DocumentBody() {
           "Move 60% of new accounts onto self-serve billing",
           "Close SOC 2 Type II without slipping the roadmap",
         ].map((g) => (
-          <li key={g} className="flex items-start gap-2 text-subtitle text-foreground">
+          <li key={g} className="flex items-start gap-2 text-site-subtitle text-foreground">
             <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground" />
             {g}
           </li>
@@ -216,7 +216,7 @@ function DocumentBody() {
 
       <h2
         className="pt-2 text-[18px] text-foreground"
-        style={{ fontVariationSettings: fontWeights.bold }}
+        style={{ fontVariationSettings: fontWeights.semibold }}
       >
         Initiatives
       </h2>
@@ -249,7 +249,7 @@ function DocumentBody() {
 
       <h2
         className="pt-2 text-[18px] text-foreground"
-        style={{ fontVariationSettings: fontWeights.bold }}
+        style={{ fontVariationSettings: fontWeights.semibold }}
       >
         Draft with AI
       </h2>
@@ -273,13 +273,13 @@ export default function QuillPage() {
         <div className="mx-auto max-w-[760px] px-8 py-12">
           <div className="mb-2 text-[40px]">🗓️</div>
           <h1
-            className="text-[34px] leading-tight text-foreground"
+            className="text-[34px] leading-10.5 text-foreground"
             style={{ fontVariationSettings: fontWeights.bold }}
           >
             Q3 Planning
           </h1>
-          <div className="mb-6 mt-2 flex items-center gap-2 text-caption text-muted-foreground">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-[9px] text-white">
+          <div className="mb-6 mt-2 flex items-center gap-2 text-site-caption text-muted-foreground">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-[9px] text-background">
               DK
             </span>
             Dana Kim · edited just now
@@ -307,7 +307,7 @@ export default function QuillPage() {
             </TabsSubtlePanel>
 
             <TabsSubtlePanel index={2} selectedIndex={tab} idPrefix="quill">
-              <ul className="flex flex-col gap-3 text-body text-muted-foreground">
+              <ul className="flex flex-col gap-3 text-site-body text-muted-foreground">
                 <li>Dana added the Initiatives table · 2h ago</li>
                 <li>Mara changed Billing v2 to “At risk” · 5h ago</li>
                 <li>Sam created this page · yesterday</li>

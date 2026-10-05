@@ -139,6 +139,7 @@ The systems every component shares. Each installs as code, the same way.
 | [Scrollbars](https://www.fluidfunctionalism.com/docs/scrollbars) | `scroll-area` · `base/scroll-area` | A scrollbar that stays out of the way but never disappears, with native scroll on touch |
 | [Sizes](https://www.fluidfunctionalism.com/docs/sizes) | `size-context` | 2 sizes, a 36px default and a 28px compact, shared by buttons, inputs, selects, tabs, and rows |
 | [Surfaces](https://www.fluidfunctionalism.com/docs/surfaces) | `elevated` | 8 elevation levels so popovers, dropdowns, and dialogs stay visible at any depth, in light and dark |
+| [Typography](https://www.fluidfunctionalism.com/docs/typography) | `type-scale` · `typography` | 6 type roles, each a size and a leading at both sizes, plus a prose sheet for rendered markdown with a builder to tune it |
 
 ## Blocks
 

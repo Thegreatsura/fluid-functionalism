@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
-import { useSize, SizeProvider, type SizeVariant } from "@/lib/size-context";
+import { useSize, SizeProvider, typeClass, type SizeVariant } from "@/lib/size-context";
 import { useFluidHover, type ItemRect } from "@/hooks/use-fluid-hover";
 import type { IconComponent } from "@/lib/icon-context";
 import { resolveSlotTemplate, slotElement } from "@/components/ui/sidebar-core";
@@ -923,7 +923,7 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
           : sizeClasses.variant === "compact"
             ? "h-7"
             : "h-8";
-    const textClass = size === "sm" ? "text-[12px]" : sizeClasses.text;
+    const textClass = size === "sm" ? typeClass("body", "compact") : sizeClasses.text;
 
     // Roving tabindex: the active rows' buttons are the menu's tab stops; with
     // no active row, the menu's first row keeps it keyboard-reachable.
@@ -1173,7 +1173,8 @@ const SidebarMenuBadge = forwardRef<HTMLDivElement, SidebarMenuBadgeProps>(
         data-sidebar="menu-badge"
         className={cn(
           "pointer-events-none absolute right-2 z-10 flex h-5 min-w-5 items-center justify-center px-1 tabular-nums",
-          sizeClasses.variant === "compact" ? "top-1 text-[10px]" : "top-1.5 text-[11px]",
+          sizeClasses.variant === "compact" ? "top-1" : "top-1.5",
+          typeClass("micro", sizeClasses.variant),
           "transition-[color,font-variation-settings] duration-80",
           lit ? "text-foreground" : "text-muted-foreground",
           className
@@ -1420,7 +1421,7 @@ const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonP
           content={content}
           lit={lit}
           emphasized={isActive}
-          textClass={size === "sm" ? "text-[12px]" : sizeClasses.text}
+          textClass={size === "sm" ? typeClass("body", "compact") : sizeClasses.text}
         />
       </>
     );

@@ -28,7 +28,7 @@ import {
   SelectionBackgrounds,
 } from "@/hooks/use-merge-split";
 import { useShape, shapeMap } from "@/lib/shape-context";
-import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
+import { SizeProvider, useSize, typeClass, type SizeVariant } from "@/lib/size-context";
 import { Elevated } from "@/lib/elevated";
 import {
   popupMotionClass,
@@ -832,7 +832,7 @@ const ComboboxInput = forwardRef<HTMLInputElement, ComboboxInputProps>(
           <FieldControls clearable={clearable} compact={compact} iconSize={sizeClasses.icon} />
         </FieldFrame>
         {error && (
-          <span className="text-[12px] text-destructive pl-3">{error}</span>
+          <span className="text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)] text-destructive pl-3">{error}</span>
         )}
       </div>
     );
@@ -943,7 +943,8 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
                     className={cn(
                       "inline-flex max-w-full shrink-0 items-center gap-0.5 bg-hover pl-2 pr-0.5 text-foreground",
                       shape.variant === "pill" ? "rounded-full" : "rounded-md",
-                      compact ? "h-5 text-[11px]" : "h-6 text-[12px]"
+                      compact ? "h-5" : "h-6",
+                      typeClass("caption", compact ? "compact" : "default")
                     )}
                   >
                     <span className="truncate">{label}</span>
@@ -980,7 +981,7 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
           <FieldControls clearable={clearable} compact={compact} iconSize={sizeClasses.icon} />
         </FieldFrame>
         {error && (
-          <span className="text-[12px] text-destructive pl-3">{error}</span>
+          <span className="text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)] text-destructive pl-3">{error}</span>
         )}
       </div>
     );

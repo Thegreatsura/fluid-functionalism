@@ -15,6 +15,8 @@ import { useBase, DUAL_FLAVOR_SLUGS } from "@/lib/base-context";
 interface DocPageProps {
   title: string;
   description: ReactNode;
+  /** A short paragraph under the description, read before the install. */
+  intro?: ReactNode;
   /** Slug used for prev/next navigation (must match a `componentList` entry). */
   slug?: string;
   /** Registry slug used for the auto-injected Installation snippet. Defaults to `slug`.
@@ -38,6 +40,7 @@ interface DocPageProps {
 export function DocPage({
   title,
   description,
+  intro,
   slug,
   installSlug,
   showInstall = true,
@@ -68,12 +71,13 @@ export function DocPage({
           {/* Page chrome rides the type-scale roles (see /docs/sizes):
               display for the h1, body for the description. */}
           <h1
-            className="text-display text-foreground leading-none mb-2"
+            className="text-site-display text-foreground leading-none mb-2"
             style={{ fontVariationSettings: fontWeights.bold }}
           >
             {title}
           </h1>
-          <p className="text-body text-muted-foreground">{description}</p>
+          <p className="text-site-body text-muted-foreground">{description}</p>
+          {intro && <p className="mt-4 text-site-body text-muted-foreground">{intro}</p>}
         </div>
         {slug && (
           <div className="flex items-center gap-1 shrink-0">
@@ -112,15 +116,15 @@ export function DocPage({
         <div className="flex items-center justify-between gap-6">
           <div className="flex min-w-0 flex-col gap-2">
             <h2
-              className="text-title text-foreground leading-none"
+              className="text-site-title text-foreground leading-none"
               style={{ fontVariationSettings: fontWeights.semibold }}
             >
               Installation
             </h2>
             {installNote ? (
-              <p className="text-caption text-muted-foreground text-balance">{installNote}</p>
+              <p className="text-site-body text-muted-foreground text-balance">{installNote}</p>
             ) : DUAL_FLAVOR_SLUGS.has(installSlug ?? slug) ? (
-              <p className="text-caption text-muted-foreground text-balance">
+              <p className="text-site-body text-muted-foreground text-balance">
                 {base === "base"
                   ? "Base UI flavor. Switch in the right panel."
                   : "Radix flavor. Switch in the right panel."}
@@ -128,11 +132,11 @@ export function DocPage({
             ) : base === "base" ? (
               // User has Base UI selected globally, but this component has no
               // Base flavour. Surface that so the toggle doesn't feel inert.
-              <p className="text-caption text-muted-foreground text-balance">
+              <p className="text-site-body text-muted-foreground text-balance">
                 Same source under both flavors.
               </p>
             ) : (
-              <p className="text-caption text-muted-foreground text-balance">
+              <p className="text-site-body text-muted-foreground text-balance">
                 One prompt for your coding agent: install command, usage, props.
               </p>
             )}
@@ -163,7 +167,7 @@ export function DocSection({ title, children }: DocSectionProps) {
   return (
     <div className="flex flex-col gap-4 pt-6">
       <h2
-        className="-mb-2 text-title text-foreground leading-none"
+        className="-mb-2 text-site-title text-foreground leading-none"
         style={{ fontVariationSettings: fontWeights.semibold }}
       >
         {title}

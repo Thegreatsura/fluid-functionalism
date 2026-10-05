@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { fontWeights } from "@/lib/font-weight";
 import { usePathname } from "next/navigation";
 import {
   Sidebar,
@@ -56,7 +57,11 @@ function NavGroup({
       {label && (
         <SidebarGroupLabel>
           {label}
-          <span className="text-[11px]">{entries.length}</span>
+          {/* Styled like the "⌘K" badge in the Search row, so the counts line
+              up in the same right-hand column. */}
+          <span className="ml-auto flex h-5 min-w-5 items-center justify-center px-1 font-sans text-site-caption tabular-nums text-muted-foreground">
+            {entries.length}
+          </span>
         </SidebarGroupLabel>
       )}
       <SidebarMenu aria-label={ariaLabel}>
@@ -125,8 +130,8 @@ export function SiteSidebar() {
         <SidebarFooter className="p-4 pt-2">
           <div className="flex items-center justify-between pt-2">
             <h2
-              className="text-title text-foreground leading-none"
-              style={{ fontVariationSettings: "'wght' 600" }}
+              className="text-site-title text-foreground leading-none"
+              style={{ fontVariationSettings: fontWeights.semibold }}
             >
               Make them yours
             </h2>

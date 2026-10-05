@@ -29,6 +29,7 @@ export const FF_MODULES = [
   "fluid-hover-highlight",
   "font-weight",
   "size-context",
+  "type-scale",
   "shape-context",
   "surface-context",
   "surface-classes",

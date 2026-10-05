@@ -304,7 +304,7 @@ export function Compare({
   const style = bare ? undefined : { height: FRAME_H };
   const labelClass = (side: Side) =>
     cn(
-      "text-caption transition-colors duration-150",
+      "text-site-caption transition-colors duration-150",
       active === side ? "text-foreground" : "text-muted-foreground"
     );
   return (

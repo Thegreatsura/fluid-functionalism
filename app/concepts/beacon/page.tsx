@@ -107,7 +107,7 @@ const PRIORITY_FILTER = [
 function Avatar({ initials }: { initials: string }) {
   return (
     <span
-      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] text-white ${
+      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] text-background ${
         ASSIGNEE_COLOR[initials] ?? "bg-neutral-500"
       }`}
       style={{ fontVariationSettings: fontWeights.semibold }}
@@ -137,7 +137,7 @@ function IssueTable({ rows }: { rows: Issue[] }) {
                 {STATUS[issue.status].label}
               </Badge>
             </TableCell>
-            <TableCell className="font-mono text-caption text-muted-foreground">
+            <TableCell className="font-mono text-site-caption text-muted-foreground">
               {issue.key}
             </TableCell>
             <TableCell className="text-foreground">{issue.title}</TableCell>
@@ -174,7 +174,7 @@ function Board({ rows }: { rows: Issue[] }) {
               <Badge variant="dot" size="sm" color={STATUS[col.key].color}>
                 {col.label}
               </Badge>
-              <span className="text-caption text-muted-foreground tabular-nums">
+              <span className="text-site-caption text-muted-foreground tabular-nums">
                 {items.length}
               </span>
             </div>
@@ -183,9 +183,9 @@ function Board({ rows }: { rows: Issue[] }) {
                 key={issue.key}
                 className={cn("flex flex-col gap-2 rounded-xl p-3", surfaceClasses(2, 2))}
               >
-                <span className="text-body text-foreground">{issue.title}</span>
+                <span className="text-site-body text-foreground">{issue.title}</span>
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-muted-foreground">
+                  <span className="font-mono text-[11px] leading-3.5 text-muted-foreground">
                     {issue.key}
                   </span>
                   <div className="flex items-center gap-2">
@@ -288,7 +288,7 @@ function TriagePanel({
         <div className="flex items-center gap-2">
           <Sparkle size={16} className="text-foreground" />
           <span
-            className="text-subtitle text-foreground"
+            className="text-site-subtitle text-foreground"
             style={{ fontVariationSettings: fontWeights.semibold }}
           >
             AI triage
@@ -337,7 +337,7 @@ function TriagePanel({
       )}
 
       {state === "done" && (
-        <div className="flex items-center gap-2 text-body text-foreground">
+        <div className="flex items-center gap-2 text-site-body text-foreground">
           <Check size={16} className="text-emerald-500" />
           Applied 3 changes · re-ranked the Active view.
         </div>

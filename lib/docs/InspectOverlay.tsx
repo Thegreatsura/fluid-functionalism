@@ -10,6 +10,7 @@ import {
   type RefObject,
 } from "react";
 import { motion } from "framer-motion";
+import { fontWeights } from "@/registry/default/lib/font-weight";
 import { spring } from "@/lib/springs";
 import { useSizeVariant } from "@/lib/size-context";
 import { Tooltip } from "@/registry/radix/tooltip";
@@ -692,7 +693,7 @@ export function InspectOverlay({
               className="absolute flex items-center justify-center"
               style={{ left: s.left, top: s.top, width: s.width, height: s.height, background: GREEN }}
             >
-              <span className="text-[9px] font-mono font-semibold leading-none text-foreground">
+              <span className="text-[9px] font-mono leading-none text-foreground" style={{ fontVariationSettings: fontWeights.semibold }}>
                 {s.label}
               </span>
             </div>
@@ -703,7 +704,7 @@ export function InspectOverlay({
               className="absolute flex items-center justify-center"
               style={{ left: s.left, top: s.top, width: s.width, height: s.height, background: GREEN, outline: `1px dashed ${GREEN_LINE}`, outlineOffset: -1 }}
             >
-              <span className="text-[9px] font-mono font-semibold leading-none text-foreground">
+              <span className="text-[9px] font-mono leading-none text-foreground" style={{ fontVariationSettings: fontWeights.semibold }}>
                 {s.label}
               </span>
             </div>
@@ -728,8 +729,8 @@ export function InspectOverlay({
             renderTooltip ? (
               renderTooltip(target.raw)
             ) : (
-            <div className="font-mono text-[11px] leading-[1.55] normal-case tracking-normal">
-              <div className="font-semibold" style={{ color: BLUE }}>
+            <div className="font-mono text-[11px] leading-4 normal-case tracking-normal">
+              <div style={{ fontVariationSettings: fontWeights.semibold }}>
                 {target.anchor}
               </div>
               <div>{target.meta}</div>

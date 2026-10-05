@@ -24,9 +24,9 @@ const FOCUS_RING_MESSAGE =
 // the surrounding SizeProvider (see /docs/sizes). Overriding that with a raw
 // px in className freezes one step of the ladder, so the text stops
 // responding when the site size changes. Site chrome has the type-scale
-// roles for this — text-display / text-title / text-subtitle / text-body /
-// text-caption, defined in app/globals.css — and a component that genuinely
-// wants a different step takes `size`.
+// roles for this — text-site-display / -title / -subtitle / -body /
+// -caption / -micro, generated into app/globals.css — and a component that
+// genuinely wants a different step takes `size`.
 //
 // Deliberately scoped to className on FF components, not to every element:
 // previews that mimic a component's internals with plain divs legitimately
@@ -35,11 +35,59 @@ const FF_COMPONENT_REGEX =
   "^(Accordion|AskUser|Badge|Button|Card|Chat|Checkbox|Color|Dialog|Dropdown|Elevated|Input|Menu|Nav|Radio|Scroll|Select|Sidebar|Slider|Switch|Table|Tabs|Thinking|Tooltip)";
 const HARDCODED_TYPE_REGEX = "\\btext-\\[[0-9]";
 const HARDCODED_TYPE_MESSAGE =
-  "Hardcoded font size on a component. Type follows the size ladder: pass `size`, or use a type-scale role (text-caption / text-body / text-subtitle / text-title / text-display) so it tracks the site size step.";
+  "Hardcoded font size on a component. Type follows the size ladder: pass `size`, or use a site type-scale role (text-site-caption / -body / -subtitle / -title / -display / -micro) so it tracks the site size step.";
+
+// Inside the registry every size and leading comes from the type scale
+// (/docs/typography): typeClass(role, variant), sizeClasses.type.<role>, or
+// the literal role class with its var(--fs-*) / var(--lh-*) fallback. A raw
+// text-[13px] or leading-[18px] is drift the scale can't reach, and a bare
+// text-caption (or site-only text-site-caption) breaks in installs: stock
+// tailwind-merge takes it for a color and drops it inside cn().
+// The bare role class is caught behind a variant (`sm:`, `hover:`), an
+// important `!`, or with a `/leading` modifier; `\x2F` is the slash, which
+// would end the selector's regex literal.
+const REGISTRY_TYPE_REGEX = "\\btext-\\[[0-9]|\\bleading-\\[(?!var\\(--lh-)|(?:^|[\\s:!])text-(?:site-)?(?:display|title|subtitle|body|caption|micro)(?:-compact)?(?:[\\s!\\x2F]|$)";
+const REGISTRY_TYPE_MESSAGE =
+  "Registry type comes from the type scale: typeClass(role, variant) or sizeClasses.type.<role> from @/lib/size-context, not a raw text-[Npx], leading-[…], or bare text-<role> class.";
+
+// Text uses 3 weights: fontWeights.normal, fontWeights.semibold, and
+// fontWeights.bold for the display style, through fontVariationSettings so
+// each carries its optical size. Bans other raw 'wght' values and Tailwind
+// weight utilities (font-normal is regular, so it passes).
+const WEIGHT_MESSAGE =
+  "Text uses 3 weights: fontWeights.normal for text, fontWeights.semibold for headings and selected items, fontWeights.bold for the display style (via fontVariationSettings).";
+const RAW_WGHT_REGEX = "'wght' (?!400|550|700)[0-9]";
+const TW_WEIGHT_REGEX = "(^|[\\s:!])font-(thin|extralight|light|medium|semibold|bold|extrabold|black)($|[\\s!])";
+
+// Hierarchy comes from size and weight: no uppercase, no letter-spacing
+// (tracking-normal is a reset, so it passes). And text uses 2 colors,
+// foreground and muted (text-background on dark fills), never an opacity
+// step of them. Scoped to class strings, so prose naming a class is fine;
+// \x2F is the slash, which would end the selector's regex literal.
+const CASE_TRACKING_REGEX = "(^|[\\s:!])(uppercase($|[\\s!])|tracking-(?!normal)[a-z0-9\\[])";
+const CASE_TRACKING_MESSAGE = "Hierarchy comes from size and weight: no uppercase, no letter-spacing.";
+const FADED_TEXT_REGEX = "(^|[\\s:!])text-(muted-foreground|foreground|background)\\x2F[0-9]";
+const FADED_TEXT_MESSAGE =
+  "Text uses 2 colors: text-foreground or text-muted-foreground (text-background on dark fills), not an opacity step of them.";
+const CLASS_SCOPES = [
+  'JSXAttribute[name.name="className"]',
+  "CallExpression[callee.name=/^(cn|cva|clsx)$/]",
+];
+const classRules = (regex, message) =>
+  CLASS_SCOPES.flatMap((scope) => [
+    { selector: `${scope} Literal[value=/${regex}/]`, message },
+    { selector: `${scope} TemplateElement[value.raw=/${regex}/]`, message },
+  ]);
 
 const shadcnRestrictedRules = {
   "no-restricted-syntax": [
     "error",
+    ...classRules(CASE_TRACKING_REGEX, CASE_TRACKING_MESSAGE),
+    ...classRules(FADED_TEXT_REGEX, FADED_TEXT_MESSAGE),
+    { selector: `Literal[value=/${RAW_WGHT_REGEX}/]`, message: WEIGHT_MESSAGE },
+    { selector: `TemplateElement[value.raw=/${RAW_WGHT_REGEX}/]`, message: WEIGHT_MESSAGE },
+    { selector: `Literal[value=/${TW_WEIGHT_REGEX}/]`, message: WEIGHT_MESSAGE },
+    { selector: `TemplateElement[value.raw=/${TW_WEIGHT_REGEX}/]`, message: WEIGHT_MESSAGE },
     {
       selector: `Literal[value=/${SHADCN_RESERVED_REGEX}/]`,
       message:
@@ -70,6 +118,14 @@ const shadcnRestrictedRules = {
       selector: `JSXOpeningElement[name.name=/${FF_COMPONENT_REGEX}/] > JSXAttribute[name.name="className"] TemplateElement[value.raw=/${HARDCODED_TYPE_REGEX}/]`,
       message: HARDCODED_TYPE_MESSAGE,
     },
+  ],
+};
+
+const registryRestrictedRules = {
+  "no-restricted-syntax": [
+    ...shadcnRestrictedRules["no-restricted-syntax"],
+    { selector: `Literal[value=/${REGISTRY_TYPE_REGEX}/]`, message: REGISTRY_TYPE_MESSAGE },
+    { selector: `TemplateElement[value.raw=/${REGISTRY_TYPE_REGEX}/]`, message: REGISTRY_TYPE_MESSAGE },
   ],
 };
 
@@ -124,5 +180,13 @@ export default [
       "app/components/shadcn-previews.tsx",
     ],
     rules: shadcnRestrictedRules,
+  },
+  // Registry sources: the shadcn rules plus the type-scale rule. A later
+  // block replaces no-restricted-syntax wholesale, so this one repeats them.
+  {
+    files: ["registry/**/*.{ts,tsx}"],
+    // The tailwind-merge list names the role utilities on purpose.
+    ignores: ["registry/default/lib/utils.ts"],
+    rules: registryRestrictedRules,
   },
 ];

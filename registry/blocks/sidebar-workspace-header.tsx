@@ -79,7 +79,7 @@ export function SidebarWorkspaceHeader({
   }`;
   const nameSpan = (
     <span
-      className="min-w-0 truncate text-[13px] text-foreground"
+      className="min-w-0 truncate text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)] text-foreground"
       style={{ fontVariationSettings: fontWeights.semibold }}
     >
       {name}
@@ -160,7 +160,7 @@ export function WorkspaceTile({
   return (
     <span
       className={cn(
-        "flex size-5 shrink-0 items-center justify-center bg-foreground text-[10px] text-background",
+        "flex size-5 shrink-0 items-center justify-center bg-foreground text-[length:var(--fs-micro-compact,10px)] leading-[var(--lh-micro-compact,12px)] text-background",
         shape.bgRadius >= 20 ? "rounded-full" : "rounded-md",
         className
       )}

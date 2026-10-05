@@ -25,6 +25,7 @@ export const systemList: SystemEntry[] = [
   { slug: "scrollbars", name: "Scrollbars", description: "A scrollbar that stays out of the way but never disappears, over shadcn's scroll-fade baseline — restyled to the shape system, native scroll on touch." },
   { slug: "sizes", name: "Sizes", description: "A two-step size ladder — a 36px default and a 28px compact — shared by buttons, inputs, selects, tabs, and rows." },
   { slug: "surfaces", name: "Surfaces", description: "Eight-level surface and shadow ladder for elevation in light and dark mode." },
+  { slug: "typography", name: "Typography", description: "Bold rules that create consistency across the whole component library.", isNew: true, dotColor: "bg-[var(--warning)]" },
 ];
 
 export const componentList: ComponentEntry[] = [
@@ -66,6 +67,7 @@ export const skillEntry: SystemEntry = {
   name: "Skill",
   description: "Gives your coding agent the components and the craft behind them, then puts both to work on your project.",
   isNew: true,
+  dotColor: "bg-[var(--warning)]",
 };
 
 /** The sidebar's System group, in its order: the systems plus the skill

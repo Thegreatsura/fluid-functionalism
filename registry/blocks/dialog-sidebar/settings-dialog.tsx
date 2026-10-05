@@ -135,7 +135,7 @@ export function SettingsDialog({
                     (a referenced title names the dialog even while hidden);
                     this is the visible heading for narrow screens. */}
                 <h2
-                  className="mb-3 text-[16px] leading-tight text-foreground"
+                  className="mb-3 text-[length:var(--fs-title,16px)] leading-[var(--lh-title,22px)] text-foreground"
                   style={{ fontVariationSettings: fontWeights.normal }}
                 >
                   Settings
@@ -152,12 +152,12 @@ export function SettingsDialog({
                 </Select>
               </div>
               <h3
-                className="hidden text-[16px] leading-tight text-foreground sm:block"
+                className="hidden text-[length:var(--fs-title,16px)] leading-[var(--lh-title,22px)] text-foreground sm:block"
                 style={{ fontVariationSettings: fontWeights.normal }}
               >
                 {current.label}
               </h3>
-              <p className="hidden text-[13px] text-muted-foreground sm:block">
+              <p className="hidden text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)] text-muted-foreground sm:block">
                 {current.description}
               </p>
             </div>
@@ -202,9 +202,9 @@ function SettingRow({
       )}
     >
       <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-[13px] text-foreground">{label}</span>
+        <span className="text-[length:var(--fs-body,13px)] leading-[var(--lh-body,20px)] text-foreground">{label}</span>
         {description && (
-          <span className="text-[12px] text-muted-foreground">{description}</span>
+          <span className="text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)] text-muted-foreground">{description}</span>
         )}
       </div>
       <div className="shrink-0">{children}</div>

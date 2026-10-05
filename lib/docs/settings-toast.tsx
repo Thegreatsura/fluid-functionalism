@@ -80,10 +80,10 @@ function SuccessToast({ message }: { message: string }) {
   return (
     <div
       className={cn(
-        "mx-auto flex h-9 w-max items-center gap-2 bg-foreground px-3 text-body text-background",
+        "mx-auto flex h-9 w-max items-center gap-2 bg-foreground px-3 text-site-body text-background",
         shapeClasses.bg
       )}
-      style={{ fontVariationSettings: fontWeights.medium }}
+      style={{ fontVariationSettings: fontWeights.normal }}
     >
       <span
         aria-hidden
@@ -142,10 +142,10 @@ function ShortcutToast({
       animate={{ scale: pressed ? 0.95 : 1 }}
       transition={spring.fast}
       className={cn(
-        "mx-auto flex h-9 w-max items-center gap-2 bg-foreground px-3 text-body text-background",
+        "mx-auto flex h-9 w-max items-center gap-2 bg-foreground px-3 text-site-body text-background",
         shapeClasses.bg
       )}
-      style={{ fontVariationSettings: fontWeights.medium }}
+      style={{ fontVariationSettings: fontWeights.normal }}
     >
       <kbd
         aria-hidden

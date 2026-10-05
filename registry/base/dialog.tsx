@@ -9,12 +9,13 @@ import {
   type HTMLAttributes,
 } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { fontWeights } from "@/lib/font-weight";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useIcon } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
 import { useShape } from "@/lib/shape-context";
-import { useSize, useSizeVariant } from "@/lib/size-context";
+import { useSize, useSizeVariant, typeClass } from "@/lib/size-context";
 import { SurfaceProvider, useSurface } from "@/lib/surface-context";
 import { surfaceClasses } from "@/lib/surface-classes";
 import { Button } from "@/components/ui/button";
@@ -274,11 +275,11 @@ const DialogTitle = forwardRef<
     <DialogPrimitive.Title
       ref={ref}
       className={cn(
-        compact ? "text-[15px]" : "text-[16px]",
-        "text-foreground leading-tight",
+        typeClass("title", compact ? "compact" : "default"),
+        "text-foreground",
         className
       )}
-      style={{ fontVariationSettings: "'wght' 700" }}
+      style={{ fontVariationSettings: fontWeights.semibold }}
       {...props}
     />
   );
@@ -294,7 +295,7 @@ const DialogDescription = forwardRef<
     <DialogPrimitive.Description
       ref={ref}
       className={cn(
-        compact ? "text-[12px]" : "text-[13px]",
+        typeClass("body", compact ? "compact" : "default"),
         "text-muted-foreground",
         className
       )}

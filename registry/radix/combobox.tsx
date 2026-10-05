@@ -648,6 +648,9 @@ const FieldInput = forwardRef<
         // The caret is as tall as the line box (Chrome, Safari); the
         // ladder's leading keeps it in proportion to the field.
         sizeClasses.variant === "compact" ? "leading-5" : "leading-6",
+        // iOS Safari zooms the page into a focused field under 16px, so
+        // touch screens get 16px, inside the same line box.
+        "pointer-coarse:text-[16px]",
         inputClassName
       )}
       {...props}

@@ -1197,7 +1197,10 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                   // resize handle, no scrollbars (height is JS-driven,
                   // see the auto-resize effect above).
                   "col-start-1 row-start-1 block w-full bg-transparent border-0 p-0 m-0 outline-none resize-none overflow-hidden text-foreground placeholder:text-muted-foreground",
-                  sizeClasses.type.body
+                  sizeClasses.type.body,
+                  // iOS Safari zooms the page into a focused field under
+                  // 16px, so touch screens get 16px, on the same leading.
+                  "pointer-coarse:text-[16px]"
                 )}
                 style={{ fontVariationSettings: fontWeights.normal }}
               />
@@ -1368,7 +1371,10 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                         }}
                         className={cn(
                           "block w-full bg-transparent border-0 p-0 m-0 outline-none resize-none overflow-hidden text-foreground placeholder:text-muted-foreground",
-                          sizeClasses.type.body
+                          sizeClasses.type.body,
+                          // 16px on touch screens, as on the Other row: iOS
+                          // zooms the page into a focused field under 16px.
+                          "pointer-coarse:text-[16px]"
                         )}
                         style={{ fontVariationSettings: fontWeights.normal }}
                       />

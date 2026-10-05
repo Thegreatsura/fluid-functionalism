@@ -1146,6 +1146,9 @@ const SidebarInput = forwardRef<HTMLInputElement, SidebarInputProps>(
           "focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
           size.variant === "compact" ? "h-7" : "h-8",
           size.text,
+          // iOS Safari zooms the page into a focused field under 16px, so
+          // touch screens get 16px, inside the same height and leading.
+          "pointer-coarse:text-[16px]",
           shape.input,
           className
         )}

@@ -260,6 +260,10 @@ function ValueDisplay({
               aria-label={`Edit slider value${isRange ? (index === 0 ? " (start)" : " (end)") : ""}`}
               className={cn(
                 "w-[5ch] bg-transparent text-foreground outline-none border-b border-border text-center",
+                // iOS Safari zooms the page into a focused field under 16px,
+                // so touch screens get 16px. 5ch widens with the text, so the
+                // same 5 digits still fit.
+                "pointer-coarse:text-[16px]",
                 shape.input
               )}
               style={{ fontVariationSettings: fontWeights.normal }}

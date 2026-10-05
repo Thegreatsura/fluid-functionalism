@@ -521,7 +521,10 @@ const ComboboxInput = forwardRef<HTMLInputElement, ComboboxInputProps>(
               sizeClasses.text,
               // The caret is as tall as the line box (Chrome, Safari); the
               // ladder's leading keeps it in proportion to the field.
-              compact ? "leading-5" : "leading-6"
+              compact ? "leading-5" : "leading-6",
+              // iOS Safari zooms the page into a focused field under 16px, so
+              // touch screens get 16px, inside the same line box.
+              "pointer-coarse:text-[16px]"
             )}
             {...props}
           />
@@ -719,9 +722,13 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
                       aria-invalid={!!error || undefined}
                       className={cn(
                         "w-full min-w-0 rounded-none bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-[inherit]",
-                        // Line box = row height, so the caret spans the chip row.
+                        sizeClasses.text,
+                        // Line box = row height, so the caret spans the chip
+                        // row. After the role: cn() keeps the later leading.
                         compact ? "h-5 leading-5" : "h-6 leading-6",
-                        sizeClasses.text
+                        // iOS Safari zooms the page into a focused field under
+                        // 16px, so touch screens get 16px, inside that line box.
+                        "pointer-coarse:text-[16px]"
                       )}
                       {...props}
                     />

@@ -46,7 +46,11 @@ const HARDCODED_TYPE_MESSAGE =
 // The bare role class is caught behind a variant (`sm:`, `hover:`), an
 // important `!`, or with a `/leading` modifier; `\x2F` is the slash, which
 // would end the selector's regex literal.
-const REGISTRY_TYPE_REGEX = "\\btext-\\[[0-9]|\\bleading-\\[(?!var\\(--lh-)|(?:^|[\\s:!])text-(?:site-)?(?:display|title|subtitle|body|caption|micro)(?:-compact)?(?:[\\s!\\x2F]|$)";
+// One raw size passes: `pointer-coarse:text-[16px]` on an editable field.
+// iOS Safari zooms the page into a focused field set under 16px, so touch
+// screens get 16px whatever the role. That floor is the platform's, not a
+// step of the scale; any other size behind `pointer-coarse:` is still caught.
+const REGISTRY_TYPE_REGEX = "(?<!pointer-coarse:)\\btext-\\[[0-9]|pointer-coarse:text-\\[(?!16px\\])[0-9]|\\bleading-\\[(?!var\\(--lh-)|(?:^|[\\s:!])text-(?:site-)?(?:display|title|subtitle|body|caption|micro)(?:-compact)?(?:[\\s!\\x2F]|$)";
 const REGISTRY_TYPE_MESSAGE =
   "Registry type comes from the type scale: typeClass(role, variant) or sizeClasses.type.<role> from @/lib/size-context, not a raw text-[Npx], leading-[…], or bare text-<role> class.";
 

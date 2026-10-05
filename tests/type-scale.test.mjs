@@ -26,6 +26,7 @@ import {
 } from "../lib/typeset/generate.ts";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import ts from "typescript";
 
 describe("type scale generation", () => {
   it("every generated output is up to date", async () => {
@@ -73,6 +74,17 @@ describe.each([
 
   it("a later role replaces an earlier size and leading", () => {
     expect(merge("text-[13px] leading-snug", caption)).toBe(caption);
+  });
+
+  // Fields take 16px on touch screens so iOS Safari doesn't zoom the page
+  // into them: a size behind its own variant, so the role's size, its
+  // leading, and a field's own leading all stay.
+  it("keeps the touch field size beside the role and its leading", () => {
+    const body = typeClasses.default.body;
+    expect(merge(body, "pointer-coarse:text-[16px]")).toBe(`${body} pointer-coarse:text-[16px]`);
+    expect(merge(body, "leading-6", "pointer-coarse:text-[16px]")).toBe(
+      "text-[length:var(--fs-body,13px)] leading-6 pointer-coarse:text-[16px]"
+    );
   });
 });
 
@@ -257,19 +269,19 @@ describe("typeset sheet", () => {
   });
 });
 
+const files = [];
+const walk = (dir) => {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) walk(p);
+    else if (/\.tsx?$/.test(name)) files.push(p);
+  }
+};
+walk(new URL("../registry", import.meta.url).pathname);
+
 // Components carry the role classes as literal strings (Tailwind must read
 // them in source), so their px fallbacks are copies: keep them on the scale.
 describe("role class literals in registry sources", () => {
-  const files = [];
-  const walk = (dir) => {
-    for (const name of readdirSync(dir)) {
-      const p = join(dir, name);
-      if (statSync(p).isDirectory()) walk(p);
-      else if (/\.tsx?$/.test(name)) files.push(p);
-    }
-  };
-  walk(new URL("../registry", import.meta.url).pathname);
-
   it.each(files.map((f) => [f.split("/registry/")[1], f]))("%s", (_rel, file) => {
     const src = readFileSync(file, "utf-8");
     for (const m of src.matchAll(/var\(--(fs|lh)-([a-z]+)(-compact)?,(\d+)px\)/g)) {
@@ -278,5 +290,48 @@ describe("role class literals in registry sources", () => {
       expect(pair, `unknown role ${role}`).toBeDefined();
       expect(Number(px), m[0]).toBe(kind === "fs" ? pair.size : pair.leading);
     }
+  });
+});
+
+// iOS Safari zooms the page into a focused field set under 16px, so every
+// editable field takes `pointer-coarse:text-[16px]`, written on the element
+// itself where Tailwind reads it in source.
+describe("editable fields in registry sources", () => {
+  const TOUCH_SIZE = "pointer-coarse:text-[16px]";
+  // Input types that never open a keyboard.
+  const NO_KEYBOARD = new Set(["hidden", "file", "checkbox", "radio", "range", "color", "button", "submit", "reset", "image"]);
+  const isField = (tag) =>
+    tag === "input" || tag === "textarea" || tag === "Field.Control" || tag.endsWith(".Input");
+
+  const fields = files
+    .filter((file) => file.endsWith(".tsx"))
+    .flatMap((file) => {
+      const source = readFileSync(file, "utf-8");
+      const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+      const found = [];
+      const visit = (node) => {
+        if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+          const tag = node.tagName.getText(sf);
+          const type = node.attributes.properties.find(
+            (attr) => ts.isJsxAttribute(attr) && attr.name.getText(sf) === "type"
+          )?.initializer;
+          const noKeyboard = type && ts.isStringLiteral(type) && NO_KEYBOARD.has(type.text);
+          if (isField(tag) && !noKeyboard) {
+            const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
+            found.push([`${file.split("/registry/")[1]}:${line} <${tag}>`, node.getText(sf)]);
+          }
+        }
+        ts.forEachChild(node, visit);
+      };
+      visit(sf);
+      return found;
+    });
+
+  it("finds the fields", () => {
+    expect(fields.length).toBeGreaterThan(10);
+  });
+
+  it.each(fields)("%s takes 16px on touch screens", (_where, element) => {
+    expect(element).toContain(TOUCH_SIZE);
   });
 });

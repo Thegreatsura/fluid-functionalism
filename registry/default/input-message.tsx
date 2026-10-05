@@ -1192,7 +1192,11 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
                 "text-foreground placeholder:text-muted-foreground",
                 compactStep
                   ? "text-[length:var(--fs-subtitle-compact,13px)] leading-[var(--lh-subtitle-compact,18px)] px-1.5 py-1.5"
-                  : "text-[length:var(--fs-subtitle,14px)] leading-[var(--lh-subtitle,20px)] px-2 py-2"
+                  : "text-[length:var(--fs-subtitle,14px)] leading-[var(--lh-subtitle,20px)] px-2 py-2",
+                // iOS Safari zooms the page into a focused field under 16px, so
+                // touch screens get 16px. The leading stays, so every row of
+                // the auto-resize keeps its height.
+                "pointer-coarse:text-[16px]"
               )}
               style={{ fontVariationSettings: fontWeights.normal }}
               {...restTextareaProps}
@@ -1207,10 +1211,11 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
                 className={cn(
                   "pointer-events-none absolute inset-0 overflow-hidden text-muted-foreground",
                   // Mirror the textarea's step typography exactly so the ghost
-                  // sits where typed text will.
+                  // sits where typed text will, 16px touch size included.
                   compactStep
                     ? "text-[length:var(--fs-subtitle-compact,13px)] leading-[var(--lh-subtitle-compact,18px)] px-1.5 py-1.5"
-                    : "text-[length:var(--fs-subtitle,14px)] leading-[var(--lh-subtitle,20px)] px-2 py-2"
+                    : "text-[length:var(--fs-subtitle,14px)] leading-[var(--lh-subtitle,20px)] px-2 py-2",
+                  "pointer-coarse:text-[16px]"
                 )}
                 style={{ fontVariationSettings: fontWeights.normal }}
               >

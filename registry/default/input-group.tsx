@@ -265,7 +265,11 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
             placeholder={placeholder}
             className={cn(
               "w-full rounded-none bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-[inherit]",
-              sizeClasses.text
+              sizeClasses.text,
+              // iOS Safari zooms the page into a focused field under 16px, so
+              // touch screens get 16px. Size only: the leading stays, and the
+              // container's fixed height keeps the row on the ladder.
+              "pointer-coarse:text-[16px]"
             )}
             style={{ fontVariationSettings: fontWeights.normal }}
             {...props}

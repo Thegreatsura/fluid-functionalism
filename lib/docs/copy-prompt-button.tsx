@@ -98,6 +98,9 @@ export function CopyPromptButton({ prompt, size, className, onCopy }: CopyPrompt
       textarea.setAttribute("readonly", "");
       textarea.style.position = "fixed";
       textarea.style.opacity = "0";
+      // 16px: iOS Safari zooms the page into a focused field set smaller,
+      // and select() can focus this one.
+      textarea.style.fontSize = "16px";
       document.body.appendChild(textarea);
       textarea.select();
       try {

@@ -350,7 +350,10 @@ const DropdownSearch = forwardRef<HTMLInputElement, DropdownSearchProps>(
             // The line box: Safari runs the caret its full height, so the
             // ladder's leading keeps it in proportion to the row. (Chrome
             // sizes the caret to the font itself, whatever the leading.)
-            compact ? "leading-5" : "leading-6"
+            compact ? "leading-5" : "leading-6",
+            // iOS Safari zooms the page into a focused field under 16px, so
+            // touch screens get 16px, inside the same line box.
+            "pointer-coarse:text-[16px]"
           )}
           {...props}
         />

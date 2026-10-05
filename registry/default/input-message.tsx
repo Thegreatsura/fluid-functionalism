@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
 import { spring } from "@/lib/springs";
 import { nestedRadius, useShape } from "@/lib/shape-context";
-import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
+import { SizeProvider, useSize, fieldTouchClass, type SizeVariant } from "@/lib/size-context";
 import { useIcon } from "@/lib/icon-context";
 import { surfaceClasses } from "@/lib/surface-classes";
 import { SurfaceProvider } from "@/lib/surface-context";
@@ -491,11 +491,13 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
     const [hovered, setHovered] = useState(false);
 
     // Split out onFocus/onBlur so the rest-spread onto the textarea can't
-    // clobber the composed handlers below.
+    // clobber the composed handlers below, and className so it merges with
+    // the field's own classes instead of replacing them.
     const {
       onFocus: _textareaOnFocus,
       onBlur: _textareaOnBlur,
       "aria-describedby": textareaDescribedBy,
+      className: textareaClassName,
       ...restTextareaProps
     } = textareaProps ?? {};
 
@@ -1193,10 +1195,8 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
                 compactStep
                   ? "text-[length:var(--fs-subtitle-compact,13px)] leading-[var(--lh-subtitle-compact,18px)] px-1.5 py-1.5"
                   : "text-[length:var(--fs-subtitle,14px)] leading-[var(--lh-subtitle,20px)] px-2 py-2",
-                // iOS Safari zooms the page into a focused field under 16px, so
-                // touch screens get 16px. The leading stays, so every row of
-                // the auto-resize keeps its height.
-                "pointer-coarse:text-[16px]"
+                fieldTouchClass,
+                textareaClassName
               )}
               style={{ fontVariationSettings: fontWeights.normal }}
               {...restTextareaProps}
@@ -1215,7 +1215,7 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
                   compactStep
                     ? "text-[length:var(--fs-subtitle-compact,13px)] leading-[var(--lh-subtitle-compact,18px)] px-1.5 py-1.5"
                     : "text-[length:var(--fs-subtitle,14px)] leading-[var(--lh-subtitle,20px)] px-2 py-2",
-                  "pointer-coarse:text-[16px]"
+                  fieldTouchClass
                 )}
                 style={{ fontVariationSettings: fontWeights.normal }}
               >

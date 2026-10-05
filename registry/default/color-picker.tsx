@@ -1217,7 +1217,9 @@ const TextColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
     return (
       <div
         className={cn(
-          "flex items-center px-2 bg-transparent hover:bg-hover active:bg-active transition-colors duration-80 focus-within:ring-1 focus-within:ring-[color:var(--focus-ring,#6B97FF)] select-none",
+          // The inset halves on touch screens, as on the channel fields: an
+          // 8-digit hex in 16px digits needs the room.
+          "flex items-center px-2 pointer-coarse:px-1 bg-transparent hover:bg-hover active:bg-active transition-colors duration-80 focus-within:ring-1 focus-within:ring-[color:var(--focus-ring,#6B97FF)] select-none",
           sizeClasses.control,
           shape.input,
           className
@@ -1272,10 +1274,7 @@ const TextColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
           aria-label={ariaLabel}
           className={cn(
             "flex-1 min-w-0 bg-transparent text-foreground outline-none tabular-nums",
-            sizeClasses.text,
-            // iOS Safari zooms the page into a focused field under 16px, so
-            // touch screens get 16px, inside the same height and leading.
-            "pointer-coarse:text-[16px]",
+            sizeClasses.field,
             align === "center" && "text-center",
             align === "right" && "text-right",
             inputClassName
@@ -1516,9 +1515,7 @@ const ScrubColorInput = forwardRef<HTMLInputElement, ColorInputProps>(
             }}
             className={cn(
               "flex-1 min-w-0 bg-transparent text-foreground outline-none tabular-nums",
-              sizeClasses.text,
-              // 16px on touch screens, like the text field above.
-              "pointer-coarse:text-[16px]",
+              sizeClasses.field,
               align === "center" && "text-center",
               align === "right" && "text-right",
               !editing && "pointer-events-none",

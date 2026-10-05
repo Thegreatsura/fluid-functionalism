@@ -9,6 +9,7 @@ export {
   typeScale,
   typeClasses,
   typeClass,
+  fieldTouchClass,
 } from "@/registry/default/lib/size-context";
 export type {
   SizeVariant,

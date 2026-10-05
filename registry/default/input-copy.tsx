@@ -84,6 +84,9 @@ const InputCopy = forwardRef<HTMLDivElement, InputCopyProps>(
       textarea.style.fontSize = "16px";
       document.body.appendChild(textarea);
       textarea.select();
+      // iOS Safari's select() only moves the caret to the end; the explicit
+      // range is what selects the text there, so the copy isn't empty.
+      textarea.setSelectionRange(0, textarea.value.length);
       let ok = false;
       try {
         ok = document.execCommand("copy");

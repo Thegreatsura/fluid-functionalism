@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
 import { useIcon, type IconComponent } from "@/lib/icon-context";
 import { shapeMap } from "@/lib/shape-context";
-import { SizeProvider, useSize, typeClass, type SizeVariant } from "@/lib/size-context";
+import { SizeProvider, useSize, typeClass, fieldTouchClass, type SizeVariant } from "@/lib/size-context";
 import { isDisabledRow } from "@/lib/popup";
 import {
   useFluidHover,
@@ -870,9 +870,7 @@ const CommandMenuInput = forwardRef<HTMLInputElement, CommandMenuInputProps>(
             // One notch above the rows' body size: the field is the palette's
             // title line. The line box keeps the caret in proportion.
             compact ? "text-[length:var(--fs-subtitle-compact,13px)] leading-5" : "text-[length:var(--fs-subtitle,14px)] leading-6",
-            // iOS Safari zooms the page into a focused field under 16px, so
-            // touch screens get 16px, inside the same line box.
-            "pointer-coarse:text-[16px]",
+            fieldTouchClass,
             className
           )}
           {...props}

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useIcon } from "@/lib/icon-context";
-import { useSizeVariant } from "@/lib/size-context";
+import { useSizeVariant, fieldTouchClass } from "@/lib/size-context";
+import { cn } from "@/lib/utils";
 import { Button } from "@/registry/radix/button";
 import { Switch } from "@/registry/radix/switch";
 import {
@@ -59,8 +60,8 @@ function buildButtonCode(o: {
   return `<Button\n${props.map((p) => "  " + p).join("\n")}\n>\n  ${child}\n</Button>`;
 }
 
-// A borderless text input styled to match the select rows. 16px on touch
-// screens, like the library's fields: iOS zooms into anything smaller.
+// A borderless text input styled to match the select rows. Like the
+// library's fields, it takes 16px on touch screens (fieldTouchClass).
 function PlayText({
   value,
   onChange,
@@ -74,7 +75,10 @@ function PlayText({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       aria-label="Button label"
-      className="h-7 w-[124px] rounded-md bg-transparent px-2 text-right text-site-body pointer-coarse:text-[16px] text-foreground transition-colors duration-80 hover:bg-hover focus:bg-hover outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]"
+      className={cn(
+        "h-7 w-[124px] rounded-md bg-transparent px-2 text-right text-site-body text-foreground transition-colors duration-80 hover:bg-hover focus:bg-hover outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
+        fieldTouchClass
+      )}
     />
   );
 }

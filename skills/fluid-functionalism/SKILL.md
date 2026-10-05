@@ -237,7 +237,9 @@ system:
   Tailwind `font-*`. 2 text colors, foreground and muted, never
   an opacity step of them; no uppercase, no letter-spacing, no eyebrows. Never a raw
   `text-[13px]`, and never a bare `text-caption` inside `cn()`: stock
-  tailwind-merge reads it as a color and drops it. Rendered markdown goes in
+  tailwind-merge reads it as a color and drops it. A text field takes
+  `useSize().field`, which adds 16px on touch screens so iOS Safari doesn't
+  zoom the page into it on focus. Rendered markdown goes in
   `.typeset` (install `@fluid/typography`), not hand-styled elements.
 - **Icon swaps crossfade in one cell.** Two glyphs mounted in the same grid
   cell, fading with a touch of blur and scale — the slot never resizes.

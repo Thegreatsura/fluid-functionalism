@@ -50,7 +50,8 @@ const TOKEN_ROWS: Array<{
 }> = [
   { token: "control", applies: "Controls and rows — shared so menu rows line up with their trigger", def: "h-9 · 36px", compact: "h-7 · 28px" },
   { token: "segmentItem + segmentPad", applies: "Segmented tabs inside their padded list", def: "28px + 4px = 36px", compact: "24px + 2px = 28px" },
-  { token: "text", applies: "Labels inside controls (the body role)", def: "13px / 18px", compact: "12px / 16px" },
+  { token: "text", applies: "Labels inside controls (the body role)", def: "13px / 20px", compact: "12px / 18px" },
+  { token: "field", applies: "Text in editable fields: the body role, 16px on touch screens so iOS doesn't zoom on focus", def: "13px / 20px, 16px on touch", compact: "12px / 18px, 16px on touch" },
   { token: "icon", applies: "Leading/trailing icons, checkbox square, radio circle", def: "16px", compact: "14px" },
   { token: "px / itemPx", applies: "Control / row horizontal padding", def: "12px / 8px", compact: "10px / 6px" },
   { token: "gap", applies: "Icon-to-label and control-to-control gap", def: "8px", compact: "4px" },

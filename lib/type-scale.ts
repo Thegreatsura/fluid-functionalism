@@ -1,4 +1,4 @@
-export { typeStyles, typeScale, typeScaleRoles, typeClasses, typeClass } from "@/registry/default/lib/type-scale";
+export { typeStyles, typeScale, typeScaleRoles, typeClasses, typeClass, fieldTouchClass } from "@/registry/default/lib/type-scale";
 export type {
   TypeScaleRole,
   TypeScaleVariant,

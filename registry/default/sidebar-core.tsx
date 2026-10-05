@@ -1145,7 +1145,7 @@ const SidebarInput = forwardRef<HTMLInputElement, SidebarInputProps>(
           "focus:bg-card focus:ring-border",
           "focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
           size.variant === "compact" ? "h-7" : "h-8",
-          size.text,
+          size.field,
           shape.input,
           className
         )}

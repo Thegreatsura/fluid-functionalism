@@ -13,6 +13,7 @@ import {
   typeScale,
   typeClasses,
   typeClass,
+  fieldTouchClass,
   type TypeScaleRole,
   type TypeScalePair,
   type TypeScaleStep,
@@ -40,6 +41,10 @@ interface SizeClasses {
    *  Its 20px line box (18px compact) is what puts a padded row on the
    *  ladder: 8 + 20 + 8 = 36, 5 + 18 + 5 = 28. */
   text: string;
+  /** `text` for an editable field: the same body role, plus 16px on touch
+   *  screens (`fieldTouchClass`), since iOS Safari zooms the page into a
+   *  focused field set under 16px. */
+  field: string;
   /** One class string per type role at this step (size + leading). */
   type: Record<TypeScaleRole, string>;
   /** Horizontal padding of bounded controls (select trigger, inputs). */
@@ -67,6 +72,7 @@ const sizeMap: Record<SizeVariant, SizeClasses> = {
     segmentItem: "h-7",
     segmentPad: "p-1",
     text: typeClasses.default.body,
+    field: `${typeClasses.default.body} ${fieldTouchClass}`,
     type: typeClasses.default,
     px: "px-3",
     itemPx: "px-2",
@@ -83,6 +89,7 @@ const sizeMap: Record<SizeVariant, SizeClasses> = {
     segmentItem: "h-6",
     segmentPad: "p-0.5",
     text: typeClasses.compact.body,
+    field: `${typeClasses.compact.body} ${fieldTouchClass}`,
     type: typeClasses.compact,
     px: "px-2.5",
     itemPx: "px-1.5",
@@ -178,6 +185,7 @@ export {
   typeScale,
   typeClasses,
   typeClass,
+  fieldTouchClass,
 };
 export type {
   SizeVariant,

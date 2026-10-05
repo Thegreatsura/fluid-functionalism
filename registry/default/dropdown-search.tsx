@@ -346,7 +346,7 @@ const DropdownSearch = forwardRef<HTMLInputElement, DropdownSearchProps>(
           // its own corners (pill mode nicks the caret at the left edge).
           className={cn(
             "min-w-0 flex-1 rounded-none bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-[inherit]",
-            sizeClasses.text,
+            sizeClasses.field,
             // The line box: Safari runs the caret its full height, so the
             // ladder's leading keeps it in proportion to the row. (Chrome
             // sizes the caret to the font itself, whatever the leading.)

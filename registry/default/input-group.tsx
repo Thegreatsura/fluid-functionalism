@@ -265,7 +265,7 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
             placeholder={placeholder}
             className={cn(
               "w-full rounded-none bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-[inherit]",
-              sizeClasses.text
+              sizeClasses.field
             )}
             style={{ fontVariationSettings: fontWeights.normal }}
             {...props}

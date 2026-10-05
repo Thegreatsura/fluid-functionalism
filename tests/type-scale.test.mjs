@@ -7,7 +7,8 @@
 import { describe, expect, it } from "vitest";
 import { twMerge } from "tailwind-merge";
 import { generate } from "../scripts/generate-type-scale.mjs";
-import { typeStyles, typeScale, typeClasses } from "../registry/default/lib/type-scale.ts";
+import { typeStyles, typeScale, typeClasses, fieldTouchClass } from "../registry/default/lib/type-scale.ts";
+import { sizeMap } from "../registry/default/lib/size-context.tsx";
 import { cn } from "../registry/default/lib/utils.ts";
 import { fontWeights } from "../registry/default/lib/font-weight.ts";
 import {
@@ -25,7 +26,8 @@ import {
   typesetRules,
 } from "../lib/typeset/generate.ts";
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
+import ts from "typescript";
 
 describe("type scale generation", () => {
   it("every generated output is up to date", async () => {
@@ -73,6 +75,17 @@ describe.each([
 
   it("a later role replaces an earlier size and leading", () => {
     expect(merge("text-[13px] leading-snug", caption)).toBe(caption);
+  });
+
+  // Fields take 16px on touch screens so iOS Safari doesn't zoom the page
+  // into them: a size behind its own variant, so the role's size, its
+  // leading, and a field's own leading all stay.
+  it("keeps the touch field size beside the role and its leading", () => {
+    const body = typeClasses.default.body;
+    expect(merge(body, fieldTouchClass)).toBe(`${body} ${fieldTouchClass}`);
+    expect(merge(sizeMap.default.field, "leading-6")).toBe(
+      `text-[length:var(--fs-body,13px)] ${fieldTouchClass} leading-6`
+    );
   });
 });
 
@@ -257,19 +270,19 @@ describe("typeset sheet", () => {
   });
 });
 
+const files = [];
+const walk = (dir) => {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) walk(p);
+    else if (/\.tsx?$/.test(name)) files.push(p);
+  }
+};
+walk(new URL("../registry", import.meta.url).pathname);
+
 // Components carry the role classes as literal strings (Tailwind must read
 // them in source), so their px fallbacks are copies: keep them on the scale.
 describe("role class literals in registry sources", () => {
-  const files = [];
-  const walk = (dir) => {
-    for (const name of readdirSync(dir)) {
-      const p = join(dir, name);
-      if (statSync(p).isDirectory()) walk(p);
-      else if (/\.tsx?$/.test(name)) files.push(p);
-    }
-  };
-  walk(new URL("../registry", import.meta.url).pathname);
-
   it.each(files.map((f) => [f.split("/registry/")[1], f]))("%s", (_rel, file) => {
     const src = readFileSync(file, "utf-8");
     for (const m of src.matchAll(/var\(--(fs|lh)-([a-z]+)(-compact)?,(\d+)px\)/g)) {
@@ -278,5 +291,101 @@ describe("role class literals in registry sources", () => {
       expect(pair, `unknown role ${role}`).toBeDefined();
       expect(Number(px), m[0]).toBe(kind === "fs" ? pair.size : pair.leading);
     }
+  });
+});
+
+describe("field size class", () => {
+  it("is 16px on touch screens only", () => {
+    expect(fieldTouchClass).toBe("pointer-coarse:text-[16px]");
+  });
+
+  it.each(["default", "compact"])("useSize().field at %s is the body role plus the touch size", (step) => {
+    expect(sizeMap[step].field).toBe(`${typeClasses[step].body} ${fieldTouchClass}`);
+  });
+});
+
+// iOS Safari zooms the page into a focused field set under 16px, so every
+// editable field carries the touch size in its className, unconditionally:
+// `useSize().field` (body plus `fieldTouchClass`), `fieldTouchClass` after
+// another role, or the literal. Registry, docs, and app code all count.
+describe("editable fields carry the touch size", () => {
+  const repoRoot = new URL("..", import.meta.url).pathname;
+  const sources = [];
+  const collect = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) collect(p);
+      else if (/\.tsx?$/.test(name)) sources.push(p);
+    }
+  };
+  ["registry", "lib", "app"].forEach((dir) => collect(join(repoRoot, dir)));
+
+  // Input types that never open a keyboard.
+  const NO_KEYBOARD = new Set(["hidden", "file", "checkbox", "radio", "range", "color", "button", "submit", "reset", "image"]);
+  const isField = (tag) =>
+    tag === "input" || tag === "textarea" || tag === "Field.Control" || tag.endsWith(".Input");
+  const attr = (node, sf, name) =>
+    node.attributes.properties.find((a) => ts.isJsxAttribute(a) && a.name.getText(sf) === name);
+  // One className part that always applies the touch size.
+  const carries = (expr) =>
+    ((ts.isStringLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr)) &&
+      expr.text.split(/\s+/).includes(fieldTouchClass)) ||
+    (ts.isIdentifier(expr) && expr.text === "fieldTouchClass") ||
+    (ts.isPropertyAccessExpression(expr) && expr.name.text === "field");
+  // The className as a whole: a bare part, or a top-level argument of cn().
+  // A part inside a condition (`compact && ...`) doesn't count.
+  const unconditional = (init) => {
+    if (!init) return false;
+    if (ts.isStringLiteral(init)) return carries(init);
+    if (!ts.isJsxExpression(init) || !init.expression) return false;
+    const e = init.expression;
+    if (carries(e)) return true;
+    return (
+      ts.isCallExpression(e) &&
+      ts.isIdentifier(e.expression) &&
+      /^(cn|clsx|twMerge)$/.test(e.expression.text) &&
+      e.arguments.some(carries)
+    );
+  };
+
+  const fields = [];
+  const created = [];
+  for (const file of sources) {
+    const source = readFileSync(file, "utf-8");
+    const where = relative(repoRoot, file);
+    if (/document\.createElement\(\s*["'](?:textarea|input)["']\s*\)/.test(source)) created.push([where, source]);
+    if (!file.endsWith(".tsx")) continue;
+    const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const visit = (node) => {
+      if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+        const tag = node.tagName.getText(sf);
+        const type = attr(node, sf, "type")?.initializer;
+        const noKeyboard = type && ts.isStringLiteral(type) && NO_KEYBOARD.has(type.text);
+        // A read-only field never opens a keyboard, and an element passed as
+        // `render` is checked on its own when the walk reaches it.
+        if (isField(tag) && !noKeyboard && !attr(node, sf, "readOnly") && !attr(node, sf, "render")) {
+          const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
+          fields.push([`${where}:${line} <${tag}>`, unconditional(attr(node, sf, "className")?.initializer)]);
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(sf);
+  }
+
+  it("finds the fields", () => {
+    expect(fields.length).toBeGreaterThan(10);
+    expect(created.length).toBeGreaterThan(0);
+  });
+
+  it.each(fields)("%s carries the touch size in its className", (_where, ok) => {
+    expect(ok).toBe(true);
+  });
+
+  // The copy fallbacks build a textarea in script: 16px so iOS doesn't zoom
+  // into it, and an explicit range because iOS select() selects nothing.
+  it.each(created)("%s sizes and selects its script-made field for iOS", (_where, source) => {
+    expect(source).toContain('style.fontSize = "16px"');
+    expect(source).toContain("setSelectionRange(0, ");
   });
 });

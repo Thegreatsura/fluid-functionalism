@@ -98,5 +98,11 @@ function typeClass(role: TypeScaleRole, variant: TypeScaleVariant = "default"): 
   return typeClasses[variant][role];
 }
 
-export { typeStyles, typeScale, typeScaleRoles, typeClasses, typeClass };
+/** Editable fields add this after their role. iOS Safari zooms the page into
+ *  a focused field set under 16px, so touch screens get 16px. It sets the
+ *  size only: the role's leading and the field's fixed height stay, and
+ *  desktop keeps the role. `useSize().field` is body plus this. */
+const fieldTouchClass = "pointer-coarse:text-[16px]";
+
+export { typeStyles, typeScale, typeScaleRoles, typeClasses, typeClass, fieldTouchClass };
 export type { TypeScaleRole, TypeScaleVariant, TypeScalePair, TypeScaleStep };

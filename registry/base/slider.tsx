@@ -21,7 +21,7 @@ import {
 } from "framer-motion";
 import { Slider as SliderPrimitive } from "@base-ui/react/slider";
 import { cn } from "@/lib/utils";
-import { useSizeVariant, type SizeVariant } from "@/lib/size-context";
+import { useSizeVariant, fieldTouchClass, type SizeVariant } from "@/lib/size-context";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
@@ -242,28 +242,36 @@ function ValueDisplay({
             {label && (
               <span className="text-muted-foreground">{label}:</span>
             )}
-            {/* List values sit off any grid, so the input takes step="any"
-                and commitEdit snaps to the list instead. */}
-            <input
-              ref={inputRef}
-              type="number"
-              value={inputValue}
-              min={min}
-              max={max}
-              step={stepValues ? "any" : step}
-              onChange={(e) => setInputValue(e.target.value)}
-              onBlur={() => commitEdit(index)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") commitEdit(index);
-                if (e.key === "Escape") onCancelEdit();
-              }}
-              aria-label={`Edit slider value${isRange ? (index === 0 ? " (start)" : " (end)") : ""}`}
-              className={cn(
-                "w-[5ch] bg-transparent text-foreground outline-none border-b border-border text-center",
-                shape.input
-              )}
-              style={{ fontVariationSettings: fontWeights.normal }}
-            />
+            {/* The 5ch box is measured in this slot's own size, not the
+                input's, so it keeps its desktop width when touch screens set
+                the digits in 16px (3 digits and a decimal fit) and the track
+                beside the value never shifts further than it does on
+                desktop. */}
+            <span className="inline-flex w-[5ch] shrink-0">
+              {/* List values sit off any grid, so the input takes step="any"
+                  and commitEdit snaps to the list instead. */}
+              <input
+                ref={inputRef}
+                type="number"
+                value={inputValue}
+                min={min}
+                max={max}
+                step={stepValues ? "any" : step}
+                onChange={(e) => setInputValue(e.target.value)}
+                onBlur={() => commitEdit(index)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitEdit(index);
+                  if (e.key === "Escape") onCancelEdit();
+                }}
+                aria-label={`Edit slider value${isRange ? (index === 0 ? " (start)" : " (end)") : ""}`}
+                className={cn(
+                  "w-full min-w-0 bg-transparent text-foreground outline-none border-b border-border text-center",
+                  fieldTouchClass,
+                  shape.input
+                )}
+                style={{ fontVariationSettings: fontWeights.normal }}
+              />
+            </span>
           </span>
         </span>
       );

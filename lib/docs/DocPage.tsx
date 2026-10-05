@@ -66,54 +66,61 @@ export function DocPage({
 
   return (
     <div className="flex flex-col gap-8 px-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div>
+        {/* The title and the arrows share a row, centered on each other; the
+            description runs full width below them. */}
+        <div className="flex items-center justify-between gap-4">
           {/* Page chrome rides the type-scale roles (see /docs/sizes):
               display for the h1, body for the description. */}
           <h1
-            className="text-site-display text-foreground leading-none mb-2"
+            className="text-site-display text-foreground leading-none"
             style={{ fontVariationSettings: fontWeights.bold }}
           >
             {title}
           </h1>
-          <p className="text-site-body text-muted-foreground">{description}</p>
-          {intro && <p className="mt-4 text-site-body text-muted-foreground">{intro}</p>}
+          {slug && (
+            // -my-2: the 36px buttons (28px compact) overhang the title's
+            // line box instead of stretching the row, so the description
+            // stays 8px under the title at every size.
+            <div className="flex items-center gap-1 shrink-0 -my-2">
+              {prev ? (
+                <Tooltip content={<span>{prev.name} &ensp;<kbd className="font-mono opacity-50">&larr;</kbd></span>}>
+                  <Button asChild variant="ghost" size={iconSize}>
+                    <Link href={`/docs/${prev.slug}`} aria-label={`Previous: ${prev.name}`}>
+                      <ArrowRight className="rotate-180" />
+                    </Link>
+                  </Button>
+                </Tooltip>
+              ) : (
+                <Button variant="ghost" size={iconSize} disabled aria-label="No previous component">
+                  <ArrowRight className="rotate-180" />
+                </Button>
+              )}
+              {next ? (
+                <Tooltip content={<span>{next.name} &ensp;<kbd className="font-mono opacity-50">&rarr;</kbd></span>}>
+                  <Button asChild variant="ghost" size={iconSize}>
+                    <Link href={`/docs/${next.slug}`} aria-label={`Next: ${next.name}`}>
+                      <ArrowRight />
+                    </Link>
+                  </Button>
+                </Tooltip>
+              ) : (
+                <Button variant="ghost" size={iconSize} disabled aria-label="No next component">
+                  <ArrowRight />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
-        {slug && (
-          <div className="flex items-center gap-1 shrink-0">
-            {prev ? (
-              <Tooltip content={<span>{prev.name} &ensp;<kbd className="font-mono opacity-50">&larr;</kbd></span>}>
-                <Button asChild variant="ghost" size={iconSize}>
-                  <Link href={`/docs/${prev.slug}`} aria-label={`Previous: ${prev.name}`}>
-                    <ArrowRight className="rotate-180" />
-                  </Link>
-                </Button>
-              </Tooltip>
-            ) : (
-              <Button variant="ghost" size={iconSize} disabled aria-label="No previous component">
-                <ArrowRight className="rotate-180" />
-              </Button>
-            )}
-            {next ? (
-              <Tooltip content={<span>{next.name} &ensp;<kbd className="font-mono opacity-50">&rarr;</kbd></span>}>
-                <Button asChild variant="ghost" size={iconSize}>
-                  <Link href={`/docs/${next.slug}`} aria-label={`Next: ${next.name}`}>
-                    <ArrowRight />
-                  </Link>
-                </Button>
-              </Tooltip>
-            ) : (
-              <Button variant="ghost" size={iconSize} disabled aria-label="No next component">
-                <ArrowRight />
-              </Button>
-            )}
-          </div>
-        )}
+        <p className="mt-2 text-site-body text-muted-foreground">{description}</p>
+        {intro && <p className="mt-4 text-site-body text-muted-foreground">{intro}</p>}
       </div>
       {slug && showInstall && (
         // Two columns: title with its note on the left, the copy button
-        // vertically centered on the right.
-        <div className="flex items-center justify-between gap-6">
+        // vertically centered on the right. The note wraps plainly (no
+        // balance) so its lines run up to the button instead of leaving a
+        // wide gap beside it on narrow screens.
+        <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 flex-col gap-2">
             <h2
               className="text-site-title text-foreground leading-none"
@@ -122,9 +129,9 @@ export function DocPage({
               Installation
             </h2>
             {installNote ? (
-              <p className="text-site-body text-muted-foreground text-balance">{installNote}</p>
+              <p className="text-site-body text-muted-foreground">{installNote}</p>
             ) : DUAL_FLAVOR_SLUGS.has(installSlug ?? slug) ? (
-              <p className="text-site-body text-muted-foreground text-balance">
+              <p className="text-site-body text-muted-foreground">
                 {base === "base"
                   ? "Base UI flavor. Switch in the right panel."
                   : "Radix flavor. Switch in the right panel."}
@@ -132,11 +139,11 @@ export function DocPage({
             ) : base === "base" ? (
               // User has Base UI selected globally, but this component has no
               // Base flavour. Surface that so the toggle doesn't feel inert.
-              <p className="text-site-body text-muted-foreground text-balance">
+              <p className="text-site-body text-muted-foreground">
                 Same source under both flavors.
               </p>
             ) : (
-              <p className="text-site-body text-muted-foreground text-balance">
+              <p className="text-site-body text-muted-foreground">
                 One prompt for your coding agent: install command, usage, props.
               </p>
             )}

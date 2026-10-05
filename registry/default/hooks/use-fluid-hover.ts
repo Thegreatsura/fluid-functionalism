@@ -182,6 +182,20 @@ export function pickNearest({
   return containingIndex ?? closestIndex;
 }
 
+/**
+ * Whether an event happened inside the element whose handler hears it.
+ * React bubbles events from portalled children (a dropdown opened from a
+ * row, a submenu, a tooltip) through their React ancestors, so a list's
+ * handlers also hear moves and clicks that happened in another layer.
+ * A bare point with no target (a caller re-picking at a remembered
+ * position) counts as the list's own.
+ */
+function isOwnEvent(e: { currentTarget?: EventTarget | null; target?: EventTarget | null }) {
+  const { currentTarget, target } = e;
+  if (!(currentTarget instanceof Node) || !(target instanceof Node)) return true;
+  return currentTarget.contains(target);
+}
+
 /** Set on the highlighted item (boolean attribute). */
 export const ACTIVE_ATTR = "data-fluid-hover-active";
 /** Set on the container: the highlighted index, or absent. */
@@ -406,6 +420,7 @@ export function useFluidHover<T extends HTMLElement>(
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
+      if (!isOwnEvent(e)) return;
       const mouseX = e.clientX;
       const mouseY = e.clientY;
 
@@ -463,6 +478,10 @@ export function useFluidHover<T extends HTMLElement>(
       // whose primitive re-renders the list synchronously, like a "create"
       // row that becomes a real item) already landed; it is not a gap.
       if (!target.isConnected) return;
+      // Nor is a click from something rendered through a portal (a dropdown
+      // opened from a row, a submenu): it bubbles here through React, but it
+      // never happened between these rows.
+      if (!isOwnEvent(e)) return;
       // A control that sits between the rows (a search field at the top of
       // a menu, a footer button) keeps its own click too.
       const control = (target as Element).closest?.(

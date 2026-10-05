@@ -48,6 +48,7 @@ export const FF_PARTS = [
   "popup",
   "menu-item",
   "dropdown-search",
+  "dropdown-sub",
   "sidebar-core",
   "sidebar-menu",
   "sidebar-menu-grid",

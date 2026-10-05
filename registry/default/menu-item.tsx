@@ -75,6 +75,10 @@ export interface DropdownContextValue {
    *  primitive. Absent in the inline Dropdown panel, where MenuItem renders
    *  its own ARIA menuitem div. */
   renderMenuItem?: (opts: MenuItemRenderOptions) => ReactElement;
+  /** Popup-only: a DropdownSubTrigger reports its submenu opening and
+   *  closing here, so the menu keeps that row lit while the pointer crosses
+   *  to the submenu and while it is inside it. */
+  onSubmenuOpenChange?: (index: number, open: boolean) => void;
 }
 
 export const DropdownContext = createContext<DropdownContextValue | null>(null);
@@ -90,7 +94,7 @@ export function useDropdownMaybe() {
   return useContext(DropdownContext);
 }
 
-interface MenuItemProps extends HTMLAttributes<HTMLDivElement> {
+export interface MenuItemProps extends HTMLAttributes<HTMLDivElement> {
   /** Optional leading icon. When omitted, the row renders text-only with no
    *  reserved icon column. */
   icon?: IconComponent;

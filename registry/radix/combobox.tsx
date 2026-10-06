@@ -1017,9 +1017,9 @@ const ComboboxContent = forwardRef<HTMLDivElement, ComboboxContentProps>(
     // mounted (forceMount below) until the exit tween finishes.
     const [mounted, setMounted] = useState(false);
 
-    useEffect(() => {
-      if (open) setMounted(true);
-    }, [open]);
+    // Set during the render that opens it, so the portal mounts in the same
+    // commit as `open` rather than one after.
+    if (open && !mounted) setMounted(true);
 
     // Fallback release for the deferred unmount: onAnimationComplete on the
     // motion.div is the primary signal, but rAF-driven animation callbacks

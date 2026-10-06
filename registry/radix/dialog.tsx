@@ -129,9 +129,9 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
     const compact = useSize().variant === "compact";
     const [mounted, setMounted] = useState(false);
 
-    useEffect(() => {
-      if (open) setMounted(true);
-    }, [open]);
+    // Set during the render that opens it, so the portal mounts in the same
+    // commit as `open` rather than one after.
+    if (open && !mounted) setMounted(true);
 
     // Fallback release for the deferred unmount: onAnimationComplete on the
     // panel is the primary signal, but rAF-driven animation callbacks can

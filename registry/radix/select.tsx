@@ -433,12 +433,16 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
     // close begins, in lockstep with the measure effect above that stops
     // syncing checkedIndex. `radixOpen` would fire later, only after Radix's
     // deferred unmount.
-    useEffect(() => {
-      if (open) return;
-      setCheckedIndex(undefined);
-      setActiveIndex(null);
-      setFocusedIndex(null);
-    }, [open, setActiveIndex]);
+    // Done during the render that closes it.
+    const [overlaysOpen, setOverlaysOpen] = useState(open);
+    if (overlaysOpen !== open) {
+      setOverlaysOpen(open);
+      if (!open) {
+        setCheckedIndex(undefined);
+        setActiveIndex(null);
+        setFocusedIndex(null);
+      }
+    }
 
     // Overlays read rects only once the hook reports the item set fully
     // measured. Positioning one from an incomplete pass mounts it at the wrong

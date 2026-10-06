@@ -1072,11 +1072,6 @@ const ComboboxItem = forwardRef<HTMLDivElement, ComboboxItemProps>(
     const shape = popupShape;
     const sizeClasses = useSize();
     const compact = sizeClasses.variant === "compact";
-    const hasMounted = useRef(false);
-
-    useEffect(() => {
-      hasMounted.current = true;
-    }, []);
 
     // Register with fluid hover. Depends on the (stable) registerItem
     // rather than the content context, which is rebuilt on every activeIndex
@@ -1086,7 +1081,6 @@ const ComboboxItem = forwardRef<HTMLDivElement, ComboboxItemProps>(
 
     const isActive = contentCtx?.activeIndex === index;
     const isChecked = comboboxCtx.values.includes(value);
-    const skipAnimation = !hasMounted.current;
     // Base UI matches rows to `items` by value, so the row hands back the
     // item it was rendered from.
     const item = comboboxCtx.itemsByValue.get(value) ?? value;
@@ -1141,7 +1135,10 @@ const ComboboxItem = forwardRef<HTMLDivElement, ComboboxItemProps>(
           aria-hidden
           className={cn("shrink-0", compact ? "w-3.5 h-3.5" : "w-4 h-4")}
         >
-          <AnimatePresence>
+          {/* initial={false}: a row checked at mount shows the finished
+              check instead of drawing it, so default selections don't
+              animate on page load. */}
+          <AnimatePresence initial={false}>
             {isChecked && (
               <motion.svg
                 key="check"
@@ -1160,7 +1157,7 @@ const ComboboxItem = forwardRef<HTMLDivElement, ComboboxItemProps>(
               >
                 <motion.path
                   d="M4 12L9 17L20 6"
-                  initial={{ pathLength: skipAnimation ? 1 : 0 }}
+                  initial={{ pathLength: 0 }}
                   animate={{
                     pathLength: 1,
                     transition: { duration: 0.08, ease: "easeOut" },

@@ -4,7 +4,6 @@ import {
   Children,
   useRef,
   useState,
-  useEffect,
   createContext,
   useContext,
   forwardRef,
@@ -300,7 +299,6 @@ interface RadioItemProps extends HTMLAttributes<HTMLDivElement> {
 const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(
   ({ label, index, selected, onSelect, value, className, ...props }, ref) => {
     const internalRef = useRef<HTMLDivElement>(null);
-    const hasMounted = useRef(false);
     const {
       registerItem,
       activeIndex,
@@ -312,14 +310,7 @@ const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(
 
     useRegisterFluidHoverItem(registerItem, index, internalRef);
 
-    // Rows selected at mount show the dot at full size instead of popping it
-    // in, so default selections don't animate on page load.
-    useEffect(() => {
-      hasMounted.current = true;
-    }, []);
-
     const isActive = activeIndex === index;
-    const skipAnimation = !hasMounted.current;
     const shape = useShape();
     const sizeClasses = useSize();
     const compact = sizeClasses.variant === "compact";
@@ -414,13 +405,16 @@ const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(
           {/* Dot */}
           {/* Pops in on spring.fast from scale 0.3 and opacity 0, and shrinks
               back out over 0.04s. */}
-          <AnimatePresence>
+          {/* initial={false}: a row selected at mount shows the dot at
+              full size instead of popping it in, so default selections
+              don't animate on page load. */}
+          <AnimatePresence initial={false}>
             {isSelected && (
               <motion.div
                 className="absolute inset-0 flex items-center justify-center"
                 initial={{
-                  opacity: skipAnimation ? 1 : 0,
-                  scale: skipAnimation ? 1 : 0.3,
+                  opacity: 0,
+                  scale: 0.3,
                 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.3, transition: { duration: 0.04 } }}

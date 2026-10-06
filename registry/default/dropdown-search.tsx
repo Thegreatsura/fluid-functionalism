@@ -14,7 +14,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { cn } from "@/lib/utils";
-import { useIcon } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import { useSize } from "@/lib/size-context";
 import { useSurface } from "@/lib/surface-context";
 import { SURFACE_BG } from "@/lib/surface-classes";
@@ -216,7 +216,8 @@ const DropdownSearch = forwardRef<HTMLInputElement, DropdownSearchProps>(
     },
     ref
   ) => {
-    const SearchIcon = useIcon("search");
+    const icons = useIcons();
+    const SearchIcon = icons.search;
     const sizeClasses = useSize();
     const compact = sizeClasses.variant === "compact";
     const host = useContext(DropdownSearchHostContext);

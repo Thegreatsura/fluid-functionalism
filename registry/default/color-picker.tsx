@@ -24,7 +24,7 @@ import { nestedRadius, useShape, shapeMap } from "@/lib/shape-context";
 import { SizeProvider, useSize, typeClass, type SizeVariant } from "@/lib/size-context";
 import { useSurface, SurfaceProvider } from "@/lib/surface-context";
 import { surfaceClasses } from "@/lib/surface-classes";
-import { useIcon } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { Elevated } from "@/lib/elevated";
 import { Slider } from "@/registry/radix/slider";
@@ -870,7 +870,8 @@ function FormatDropdown({
   const sizeClasses = useSize();
   const portalContainer = useContext(ColorPickerPortalContainerContext);
   const containerRef = useRef<HTMLDivElement>(null);
-  const ChevronDownIcon = useIcon("chevron-down");
+  const icons = useIcons();
+  const ChevronDownIcon = icons["chevron-down"];
 
   const hover = useFluidHover(containerRef);
   const {
@@ -1555,7 +1556,8 @@ function EyeDropperButton({ onPick }: { onPick: (hex: string) => void }) {
   const [supported, setSupported] = useState(false);
   const shape = useShape();
   const sizeClasses = useSize();
-  const PipetteIcon = useIcon("pipette");
+  const icons = useIcons();
+  const PipetteIcon = icons.pipette;
 
   // window.EyeDropper exists only in Chromium-based browsers. Detect it after mount:
   // the server and the first client render both say "unsupported", so there
@@ -2240,7 +2242,8 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
       return () => clearTimeout(id);
     }, [open]);
 
-    const XIcon = useIcon("x");
+    const icons = useIcons();
+    const XIcon = icons.x;
     const parsed = useMemo(() => parseColor(currentValue), [currentValue]);
     // The tile keeps alpha (over the checker); the text label drops it and
     // shows 6-digit uppercase hex whatever the selected format.

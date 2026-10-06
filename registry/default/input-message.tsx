@@ -22,7 +22,7 @@ import { fontWeights } from "@/lib/font-weight";
 import { spring } from "@/lib/springs";
 import { nestedRadius, useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, fieldTouchClass, type SizeVariant } from "@/lib/size-context";
-import { useIcon } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import { surfaceClasses } from "@/lib/surface-classes";
 import { SurfaceProvider } from "@/lib/surface-context";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
@@ -206,7 +206,8 @@ interface FilePreviewTileProps {
 }
 
 function FilePreviewTile({ file, onRemove, size }: FilePreviewTileProps) {
-  const XIcon = useIcon("x");
+  const icons = useIcons();
+  const XIcon = icons.x;
   const shape = useShape();
   // The tile sits 8px inside the composer's container edge. Derive its curve
   // from that actual inset instead of reusing the popup-specific 4px pair.
@@ -275,8 +276,9 @@ function QueuedRow({
   onRemove,
   onMove,
 }: QueuedRowProps) {
-  const XIcon = useIcon("x");
-  const ImageIcon = useIcon("image");
+  const icons = useIcons();
+  const XIcon = icons.x;
+  const ImageIcon = icons.image;
   const compactStep = useSize().variant === "compact";
   const fileCount = item.files.length;
   const label =
@@ -390,8 +392,9 @@ function SuggestionRow({
   registerItem,
   onSelect,
 }: SuggestionRowProps) {
-  const EnterIcon = useIcon("corner-down-left");
-  const ArrowDownIcon = useIcon("arrow-down");
+  const icons = useIcons();
+  const EnterIcon = icons["corner-down-left"];
+  const ArrowDownIcon = icons["arrow-down"];
   const compactStep = useSize().variant === "compact";
   const ref = useRef<HTMLDivElement>(null);
 
@@ -480,7 +483,8 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
   ) => {
     const shape = useShape();
     const compactStep = useSize(size).variant === "compact";
-    const ArrowUpIcon = useIcon("arrow-up");
+    const icons = useIcons();
+    const ArrowUpIcon = icons["arrow-up"];
     const reduceMotion = useReducedMotion() ?? false;
     const isTouch = useIsTouch();
 

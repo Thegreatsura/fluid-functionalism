@@ -19,7 +19,7 @@ import { Collapsible } from "@base-ui/react/collapsible";
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 import { cn } from "@/lib/utils";
-import { useIcon } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import type { IconName } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
@@ -49,7 +49,8 @@ interface TriggerRowProps extends HTMLAttributes<HTMLButtonElement> {
  */
 const TriggerRow = forwardRef<HTMLButtonElement, TriggerRowProps>(
   ({ open, children, className, ...props }, ref) => {
-    const ChevronRight = useIcon("chevron-right");
+    const icons = useIcons();
+    const ChevronRight = icons["chevron-right"];
     const shape = useShape();
     const sizeClasses = useSize();
     const [isHovered, setIsHovered] = useState(false);
@@ -379,7 +380,8 @@ function ThinkingStep({
   children,
   className,
 }: ThinkingStepProps) {
-    const Icon = useIcon(icon);
+    const icons = useIcons();
+    const Icon = icons[icon];
     const shape = useShape();
     const sizeClasses = useSize();
     const [stepRef, stepHeight] = useStepHeight();

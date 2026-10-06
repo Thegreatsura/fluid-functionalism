@@ -6,7 +6,7 @@ import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
 import { FileThumbnail } from "@/components/ui/file-thumbnail";
 import { Tooltip } from "@/components/ui/tooltip";
 import { type QueuedMessage } from "@/components/ui/input-message";
-import { useIcon } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import { nestedRadius, useShape } from "@/lib/shape-context";
 import { useSizeVariant, typeClass } from "@/lib/size-context";
 import { spring } from "@/lib/springs";
@@ -71,10 +71,11 @@ export function QueuedStack({
     shape.bgRadius,
     compactStep ? 7 : 8
   );
-  const XIcon = useIcon("x");
-  const PencilIcon = useIcon("pencil");
-  const ChevronDownIcon = useIcon("chevron-down");
-  const CornerDownRightIcon = useIcon("corner-down-right");
+  const icons = useIcons();
+  const XIcon = icons.x;
+  const PencilIcon = icons.pencil;
+  const ChevronDownIcon = icons["chevron-down"];
+  const CornerDownRightIcon = icons["corner-down-right"];
 
   // ── Stack geometry.
   const stackCount = queue.length;

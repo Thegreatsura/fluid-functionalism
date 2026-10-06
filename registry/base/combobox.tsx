@@ -16,7 +16,7 @@ import {
 import { motion, AnimatePresence, animate, useMotionValue } from "framer-motion";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
-import { useIcon, type IconComponent } from "@/lib/icon-context";
+import { useIcons, type IconComponent } from "@/lib/icon-context";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
@@ -429,7 +429,8 @@ function FieldControls({
   compact: boolean;
   iconSize: number;
 }) {
-  const XIcon = useIcon("x");
+  const icons = useIcons();
+  const XIcon = icons.x;
   const pill = useShape().variant === "pill";
   return (
     <>
@@ -596,7 +597,8 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
     },
     ref
   ) => {
-    const XIcon = useIcon("x");
+    const icons = useIcons();
+    const XIcon = icons.x;
     const shape = useShape();
     const sizeClasses = useSize(size);
     const compact = sizeClasses.variant === "compact";
@@ -837,7 +839,8 @@ const ComboboxList = forwardRef<HTMLDivElement, ComboboxListProps>(
   ({ className, children }, ref) => {
     const { open, values, multiple, inputValue, createRow } = useComboboxContext();
     const highlight = useContext(ComboboxHighlightContext);
-    const PlusIcon = useIcon("plus");
+    const icons = useIcons();
+    const PlusIcon = icons.plus;
     const shape = popupShape;
     const containerRef = useRef<HTMLDivElement>(null);
 

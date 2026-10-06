@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils";
 import { useSize } from "@/lib/size-context";
-import { useIcon } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import { SIDEBAR_MENU_POPUP } from "@/lib/sidebar-menu-grid";
 
 // ---------------------------------------------------------------------------
@@ -45,7 +45,8 @@ export function SidebarUserFooter({
   className,
 }: SidebarUserFooterProps) {
   const iconSize = useSize().icon;
-  const ChevronsUpDown = useIcon("chevrons-up-down");
+  const icons = useIcons();
+  const ChevronsUpDown = icons["chevrons-up-down"];
   return (
     <SidebarMenu aria-label="User" className={cn(className)}>
       <SidebarMenuItem>

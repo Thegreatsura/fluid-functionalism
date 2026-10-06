@@ -73,7 +73,7 @@ function buildImPlaygroundCode(o: {
   l.push(`import { useEffect, useRef, useState } from "react";`);
   l.push(`import { ${imports.join(", ")} } from "./components";`);
   if (o.leftSlot || o.rightSlot)
-    l.push(`import { useIcon } from "@/lib/icon-context";`);
+    l.push(`import { useIcons } from "@/lib/icon-context";`);
   l.push(``);
   if (o.suggestionsOn) {
     l.push(`const SUGGESTIONS = [`);
@@ -90,8 +90,9 @@ function buildImPlaygroundCode(o: {
     l.push(`const [queue, setQueue] = useState<QueuedMessage[]>([]);`);
     l.push(`const [status, setStatus] = useState<"idle" | "streaming">(${JSON.stringify(o.status)});`);
   }
-  if (o.leftSlot) l.push(`const PlusIcon = useIcon("plus");`);
-  if (o.rightSlot) l.push(`const ChevronDownIcon = useIcon("chevron-down");`);
+  if (o.leftSlot || o.rightSlot) l.push(`const icons = useIcons();`);
+  if (o.leftSlot) l.push(`const PlusIcon = icons.plus;`);
+  if (o.rightSlot) l.push(`const ChevronDownIcon = icons["chevron-down"];`);
   if (o.attachments) {
     l.push(``);
     l.push(`// Pre-fill the composer with a real image + PDF. Images use object-cover;`);

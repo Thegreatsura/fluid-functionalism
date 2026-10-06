@@ -27,7 +27,7 @@ import { spring, exitFallbackMs } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 import { useSize, useSizeVariant, typeClass } from "@/lib/size-context";
-import { useIcon } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import { useSurface, SurfaceProvider } from "@/lib/surface-context";
 import { surfaceClasses } from "@/lib/surface-classes";
 import { Button, type ButtonProps } from "@/components/ui/button";
@@ -891,8 +891,9 @@ const SidebarTrigger = forwardRef<HTMLButtonElement, SidebarTriggerProps>(
     // same shared intent timer, so moving from the trigger into the peeked
     // card (or back) cancels the pending dismissal.
     const hoverPeek = peek === "hover" && !isMobile && !open;
-    const PanelLeftIcon = useIcon("panel-left");
-    const PanelRightIcon = useIcon("panel-right");
+    const icons = useIcons();
+    const PanelLeftIcon = icons["panel-left"];
+    const PanelRightIcon = icons["panel-right"];
     const TriggerIcon = side === "right" ? PanelRightIcon : PanelLeftIcon;
     const iconSize = useSizeVariant() === "compact" ? ("icon-compact" as const) : ("icon" as const);
     const collapsed = isMobile ? !openMobile : !open;
@@ -1393,7 +1394,8 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
     const sizeClasses = useSize();
     const group = useContext(SidebarGroupContext);
     const shape = useShape();
-    const ChevronRightIcon = useIcon("chevron-right");
+    const icons = useIcons();
+    const ChevronRightIcon = icons["chevron-right"];
     const { template, content } = resolveSlotTemplate(render, asChild, children);
 
     // Truncate only the leading text; element children (count badges,

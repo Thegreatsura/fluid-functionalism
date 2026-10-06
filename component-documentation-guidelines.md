@@ -23,7 +23,7 @@ Checklist and conventions for documenting every new component in this project. F
   import { springs } from "@/lib/springs";
   import { fontWeights } from "@/lib/font-weight";
   import { useShape } from "@/lib/shape-context";
-  import { useIcon } from "@/lib/icon-context";
+  import { useIcons } from "@/lib/icon-context";
   import type { IconComponent } from "@/lib/icon-context";
   import { useFluidHover } from "@/hooks/use-fluid-hover";
   import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
@@ -241,7 +241,11 @@ everywhere else.
 - Component: `@/registry/default/<component-name>`
 - Doc utilities: `@/lib/docs/ComponentPreview`, `@/lib/docs/PropsTable`, `@/lib/docs/DocPage`
 - Icons: `@/lib/icon-context` (`useIcon`, `useIcons` hooks, `IconComponent` type)
-  - Components with internal icons: `import { useIcon } from "@/lib/icon-context";`
+  - Components with internal icons read them from the map: `const icons = useIcons();` then
+    `const XIcon = icons.x;` (`icons["chevron-down"]` for hyphenated names). Never
+    `const XIcon = useIcon("x")` in `registry/` or in generated install code: a hook that
+    returns a component reads to the React Compiler lint as a component created during
+    render (`react-hooks/static-components`), which a fresh Next app reports as an error
   - Components accepting icon props: `import type { IconComponent } from "@/lib/icon-context";`
   - Doc pages: call `useIcon("icon-name")` inside the component function for each icon needed
   - Icon prop type is `IconComponent`, not `LucideIcon`

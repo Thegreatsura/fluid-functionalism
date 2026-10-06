@@ -18,7 +18,7 @@ import {
 import { motion, AnimatePresence, animate, useMotionValue, type MotionValue } from "framer-motion";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
-import { useIcon, type IconComponent } from "@/lib/icon-context";
+import { useIcons, type IconComponent } from "@/lib/icon-context";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
@@ -666,7 +666,8 @@ function FieldControls({
   compact: boolean;
   iconSize: number;
 }) {
-  const XIcon = useIcon("x");
+  const icons = useIcons();
+  const XIcon = icons.x;
   const pill = useShape().variant === "pill";
   const { values, inputValue, open, disabled, setOpen, clear, inputRef } =
     useComboboxContext();
@@ -862,7 +863,8 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
     },
     ref
   ) => {
-    const XIcon = useIcon("x");
+    const icons = useIcons();
+    const XIcon = icons.x;
     const shape = useShape();
     const sizeClasses = useSize(size);
     const compact = sizeClasses.variant === "compact";
@@ -1112,7 +1114,8 @@ const ComboboxList = forwardRef<HTMLDivElement, ComboboxListProps>(
     const { open, values, multiple, listId, filteredItems, setHighlight, createRow } =
       useComboboxContext();
     const highlight = useContext(ComboboxHighlightContext);
-    const PlusIcon = useIcon("plus");
+    const icons = useIcons();
+    const PlusIcon = icons.plus;
     const shape = popupShape;
     const containerRef = useRef<HTMLDivElement>(null);
 

@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, typeClass, useSize, type SizeVariant } from "@/lib/size-context";
-import { useIcon, type IconComponent } from "@/lib/icon-context";
+import { useIcons, type IconComponent } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
 import { Button, type ButtonProps } from "@/components/ui/button";
 
@@ -409,8 +409,9 @@ const Banner = forwardRef<HTMLDivElement, BannerProps>(
     const shape = useShape();
     const sizeClasses = useSize(size);
     const compact = sizeClasses.variant === "compact";
-    const XIcon = useIcon("x");
-    const InfoIcon = useIcon("info");
+    const icons = useIcons();
+    const XIcon = icons.x;
+    const InfoIcon = icons.info;
     const reduceMotion = useReducedMotion() ?? false;
     const fixed = variant === "fixed";
 

@@ -519,7 +519,7 @@ const CommandMenu = forwardRef<HTMLDivElement, CommandMenuProps>(
     // container (the child's effects run before the root's, so the ref is
     // set by the time the hook observes it).
     const hover = useFluidHover(listRef, { isItemDisabled: isDisabledRow });
-    const { activeIndex, setActiveIndex, registerItem, itemRects, isMeasured, sessionRef } = hover;
+    const { activeIndex, setActiveIndex, registerItem, itemRects, isMeasured, session } = hover;
     const { onMouseEnter, onMouseMove, onMouseLeave, onClick } = hover.handlers;
     const listHandlers = useMemo(
       () => ({ onMouseEnter, onMouseMove, onMouseLeave, onClick }),
@@ -548,8 +548,8 @@ const CommandMenu = forwardRef<HTMLDivElement, CommandMenuProps>(
       listenersRef.current.forEach((listener) => listener());
     }, [activeIndex]);
     const fill = useMemo<FluidHoverSource>(
-      () => ({ activeIndex, itemRects, isMeasured, sessionRef }),
-      [activeIndex, itemRects, isMeasured, sessionRef]
+      () => ({ activeIndex, itemRects, isMeasured, session }),
+      [activeIndex, itemRects, isMeasured, session]
     );
 
     // Scrolling is the root's, done the moment a move is decided rather

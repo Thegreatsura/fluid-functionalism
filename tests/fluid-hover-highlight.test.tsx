@@ -132,7 +132,7 @@ describe("FluidHoverHighlight, driven by the hook", () => {
     activeIndex: 1,
     itemRects: [rowA, rowB],
     isMeasured: true,
-    sessionRef: { current: 7 },
+    session: 7,
     ...over,
   });
 

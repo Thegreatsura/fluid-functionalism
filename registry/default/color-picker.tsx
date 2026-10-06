@@ -9,6 +9,7 @@ import {
   useEffect,
   useCallback,
   useMemo,
+  useSyncExternalStore,
   type CSSProperties,
   type HTMLAttributes,
   type ReactNode,
@@ -403,10 +404,17 @@ function parseColor(input: string): { r: number; g: number; b: number; a: number
 // Browser-assisted fallback for color strings the manual parser doesn't cover
 // (named CSS colors like "red" / "tomato", etc.). A canvas 2d context
 // round-trips any valid CSS color through `fillStyle`, which serializes to a
-// hex or rgba() string that parseColor understands. Must only be called from
-// event handlers or effects — never at module scope or during render — so SSR
-// stays safe.
+// hex or rgba() string that parseColor understands. Never on the server:
+// call it from event handlers, or from a render gated on useIsClient().
 let cssColorCtx: CanvasRenderingContext2D | null = null;
+
+const subscribeNever = () => () => {};
+
+/** False on the server and while hydrating, true after: a client-only value
+ *  without a hydration mismatch. */
+function useIsClient() {
+  return useSyncExternalStore(subscribeNever, () => true, () => false);
+}
 
 function resolveCssColor(input: string): { r: number; g: number; b: number; a: number } | null {
   const direct = parseColor(input);
@@ -1553,18 +1561,15 @@ interface EyeDropperGlobal {
 }
 
 function EyeDropperButton({ onPick }: { onPick: (hex: string) => void }) {
-  const [supported, setSupported] = useState(false);
   const shape = useShape();
   const sizeClasses = useSize();
   const icons = useIcons();
   const PipetteIcon = icons.pipette;
 
-  // window.EyeDropper exists only in Chromium-based browsers. Detect it after mount:
-  // the server and the first client render both say "unsupported", so there
-  // is no hydration mismatch, and the button never appears elsewhere.
-  useEffect(() => {
-    setSupported(typeof window !== "undefined" && "EyeDropper" in window);
-  }, []);
+  // window.EyeDropper exists only in Chromium-based browsers. The server and
+  // the hydrating render both say "unsupported", so there is no hydration
+  // mismatch, and the button never appears elsewhere.
+  const supported = useIsClient() && "EyeDropper" in window;
 
   if (!supported) return null;
 
@@ -1701,25 +1706,26 @@ function SwatchStrip({
   }, [current]);
 
   // Named CSS colors ("red", "tomato") need the browser to normalize before
-  // the selected-state comparison can match. Resolve them in an effect so
-  // render (and SSR) never touch the DOM.
-  const [resolvedSwatches, setResolvedSwatches] = useState<Record<string, string>>({});
-  useEffect(() => {
-    const next: Record<string, string> = {};
+  // the selected-state comparison can match. Resolved on the client only, so
+  // SSR (and the hydrating render) never touch the DOM.
+  const isClient = useIsClient();
+  const resolvedSwatches = useMemo(() => {
+    const resolved: Record<string, string> = {};
+    if (!isClient) return resolved;
     for (const sw of swatches) {
       if (!parseColor(sw)) {
         const p = resolveCssColor(sw);
-        if (p) next[sw] = rgbToHexStr(p.r, p.g, p.b, p.a).toLowerCase();
+        if (p) resolved[sw] = rgbToHexStr(p.r, p.g, p.b, p.a).toLowerCase();
       }
     }
-    setResolvedSwatches(next);
-  }, [swatches]);
+    return resolved;
+  }, [isClient, swatches]);
 
   return (
     <div className="flex flex-wrap gap-2">
       {swatches.map((sw, i) => {
-        // Until the effect has resolved a named swatch, its raw name never
-        // equals a hex, so it renders unselected on the first render.
+        // Until a named swatch is resolved, its raw name never equals a hex,
+        // so it renders unselected while hydrating.
         const parsed = parseColor(sw);
         const normalized = parsed
           ? rgbToHexStr(parsed.r, parsed.g, parsed.b, parsed.a).toLowerCase()
@@ -1773,14 +1779,12 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 
     // Internal HSV state (canonical). H is preserved across S=0 / V=0
     // transitions. Deliberately computed once from the initial value only.
-    const initialParsed = useMemo(() => {
+    const [hsv, setHsv] = useState(() => {
       const p = parseColor(currentRawValue);
       if (!p) return { h: 0, s: 1, v: 1, a: 1 };
       const hsv = rgbToHsv(p.r, p.g, p.b);
       return { h: hsv.s === 0 ? 0 : hsv.h, s: hsv.s, v: hsv.v, a: p.a };
-    }, []);
-
-    const [hsv, setHsv] = useState(initialParsed);
+    });
 
     // Sticky OKLCH hue: preserves the user's stated OKLCH H across the lossy
     // RGB round-trip (so the displayed H doesn't drift after release) and
@@ -1788,30 +1792,30 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
     // Cleared when the hue moves through another channel: the hue rail, HSL
     // hue, RGB, hex, swatches, the eyedropper, or an outside value. The
     // square, alpha, and HSL S/L edits keep it.
-    const oklchHueRef = useRef<number | null>(null);
+    const [oklchHue, setOklchHue] = useState<number | null>(null);
 
-    // External value sync — when controlled value changes from outside, sync HSV
-    // lastEmittedRef holds the string this panel last emitted. When a
-    // controlled parent echoes it straight back, the sync skips it, so
-    // re-parsing a rounded string never snaps HSV or drops a held hue.
-    const lastEmittedRef = useRef<string>("");
-    useEffect(() => {
-      if (!isControlled) return;
-      const emitted = lastEmittedRef.current;
-      const cur = value as string;
-      if (cur === emitted) return;
-      const p = parseColor(cur);
-      if (!p) return;
-      oklchHueRef.current = null;
-      const newHsv = rgbToHsv(p.r, p.g, p.b);
-      // A gray, white or black from outside keeps the hue already in state.
-      setHsv((prev) => ({
-        h: newHsv.s === 0 ? prev.h : newHsv.h,
-        s: newHsv.s,
-        v: newHsv.v,
-        a: p.a,
-      }));
-    }, [value, isControlled]);
+    // External value sync — when controlled value changes from outside, sync
+    // HSV, during the render that brings it. lastEmitted holds the string
+    // this panel last emitted. When a controlled parent echoes it straight
+    // back, the sync skips it, so re-parsing a rounded string never snaps HSV
+    // or drops a held hue.
+    const [lastEmitted, setLastEmitted] = useState("");
+    const [syncedValue, setSyncedValue] = useState(value);
+    if (isControlled && value !== syncedValue) {
+      setSyncedValue(value);
+      const p = value !== lastEmitted ? parseColor(value as string) : null;
+      if (p) {
+        setOklchHue(null);
+        const newHsv = rgbToHsv(p.r, p.g, p.b);
+        // A gray, white or black from outside keeps the hue already in state.
+        setHsv((prev) => ({
+          h: newHsv.s === 0 ? prev.h : newHsv.h,
+          s: newHsv.s,
+          v: newHsv.v,
+          a: p.a,
+        }));
+      }
+    }
 
     const parsed = useMemo(
       () => buildParsed(hsv.h, hsv.s, hsv.v, hsv.a),
@@ -1826,7 +1830,7 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
         setHsv(merged);
         const p = buildParsed(merged.h, merged.s, merged.v, merged.a);
         const formatted = formatValueByFormat(p, currentFormat);
-        lastEmittedRef.current = formatted;
+        setLastEmitted(formatted);
         if (!isControlled) setInternalValue(formatted);
         onValueChange?.(formatted, p);
       },
@@ -1842,7 +1846,7 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
         onFormatChange?.(f);
         // Re-emit value in new format
         const formatted = formatValueByFormat(parsed, f);
-        lastEmittedRef.current = formatted;
+        setLastEmitted(formatted);
         if (!isControlled) setInternalValue(formatted);
         onValueChange?.(formatted, parsed);
       },
@@ -1860,7 +1864,7 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
         // and is rejected.) Safe here: this only ever runs inside event handlers.
         const p = resolveCssColor(input);
         if (!p) return;
-        oklchHueRef.current = null;
+        setOklchHue(null);
         const newHsv = rgbToHsv(p.r, p.g, p.b);
         const merged = {
           h: newHsv.s === 0 ? hsv.h : newHsv.h,
@@ -1871,7 +1875,7 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
         setHsv(merged);
         const next = buildParsed(merged.h, merged.s, merged.v, merged.a);
         const formatted = formatValueByFormat(next, currentFormat);
-        lastEmittedRef.current = formatted;
+        setLastEmitted(formatted);
         if (!isControlled) setInternalValue(formatted);
         onValueChange?.(formatted, next);
       },
@@ -1929,7 +1933,7 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
         {/* A hue picked on the rail is a new stated hue, so the sticky
             OKLCH hue is dropped and OKLCH H follows the color again. */}
         <div className="flex flex-col [&>*]:mb-0 [&>*+*]:-mt-px">
-          <HueSlider h={hsv.h} onChange={(h) => { oklchHueRef.current = null; updateHsv({ h }); }} />
+          <HueSlider h={hsv.h} onChange={(h) => { setOklchHue(null); updateHsv({ h }); }} />
           <AlphaSlider
             a={hsv.a}
             solidColor={solidColorString}
@@ -1953,7 +1957,7 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
         <ColorInputsRow
           parsed={parsed}
           format={currentFormat}
-          oklchHue={oklchHueRef.current}
+          oklchHue={oklchHue}
           // RGB, HSL and OKLCH edits rebuild the color in their own space
           // from the current rounded RGB, convert back to HSV, and substitute
           // a held hue whenever the result has no saturation.
@@ -1962,7 +1966,7 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
             switch (channel) {
               case "hex": handleHexCommit(value as string); return;
               case "r": case "g": case "b": {
-                oklchHueRef.current = null;
+                setOklchHue(null);
                 const r = channel === "r" ? Number(value) : p.r;
                 const g = channel === "g" ? Number(value) : p.g;
                 const b = channel === "b" ? Number(value) : p.b;
@@ -1975,7 +1979,7 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
                 return;
               }
               case "hSL": case "sSL": case "lSL": {
-                if (channel === "hSL") oklchHueRef.current = null;
+                if (channel === "hSL") setOklchHue(null);
                 const hsl = rgbToHsl(p.r, p.g, p.b);
                 const h2 = channel === "hSL" ? Number(value) : hsl.h;
                 const s2 = channel === "sSL" ? Number(value) / 100 : hsl.s;
@@ -1996,13 +2000,13 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
                 const cur = rgbToOklch(p.r, p.g, p.b);
                 // For L/C edits, anchor on the user's last stated H so we
                 // don't drift along with chroma changes.
-                const baseH = oklchHueRef.current ?? cur.H;
+                const baseH = oklchHue ?? cur.H;
                 const L = channel === "L" ? Number(value) / 100 : cur.L;
                 const C = channel === "C" ? Number(value) : cur.C;
                 const H = channel === "H" ? Number(value) : baseH;
                 // Any OKLCH edit makes H sticky: chroma can go to 0 and back
                 // and the color returns to the hue the user set.
-                oklchHueRef.current = H;
+                setOklchHue(H);
                 const rgb = oklchToRgb(clamp01(L), Math.max(0, C), H);
                 const hsvVal = rgbToHsv(rgb.r, rgb.g, rgb.b);
                 updateHsv({
@@ -2217,7 +2221,7 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
 
     // The popover owns the value (unless controlled) because the trigger
     // shows it too. The panel inside is always controlled with currentValue;
-    // when that is its own emitted string coming back, lastEmittedRef skips
+    // when that is its own emitted string coming back, lastEmitted skips
     // the re-parse.
     const isControlled = pickerProps.value !== undefined;
     const [internalValue, setInternalValue] = useState(pickerProps.value ?? pickerProps.defaultValue ?? "#6B97FF");

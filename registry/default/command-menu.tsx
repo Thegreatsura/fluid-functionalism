@@ -605,7 +605,9 @@ const CommandMenu = forwardRef<HTMLDivElement, CommandMenuProps>(
     // The first enabled row is highlighted whenever the row set changes, so
     // Enter always has a target and it follows the query as it filters.
     const rowsRef = useRef(rows);
-    rowsRef.current = rows;
+    useIsoLayoutEffect(() => {
+      rowsRef.current = rows;
+    });
     useEffect(() => {
       const first = rowsRef.current.findIndex((row) => !row.disabled);
       setActiveIndex(first === -1 ? null : first);
@@ -637,7 +639,9 @@ const CommandMenu = forwardRef<HTMLDivElement, CommandMenuProps>(
     );
 
     const onSelectRef = useRef(onSelect);
-    onSelectRef.current = onSelect;
+    useIsoLayoutEffect(() => {
+      onSelectRef.current = onSelect;
+    });
     const select = useCallback(
       (item: CommandMenuItemData) => {
         if (item.disabled) return;
@@ -1041,7 +1045,9 @@ const CommandMenuList = forwardRef<HTMLDivElement, CommandMenuListProps>(
     // The pointer leaving the list keeps the highlight where it was: Enter
     // still has a target, and the fill stays on the row the field points at.
     const lastActiveRef = useRef<number | null>(null);
-    if (fill && fill.activeIndex !== null) lastActiveRef.current = fill.activeIndex;
+    useIsoLayoutEffect(() => {
+      if (fill && fill.activeIndex !== null) lastActiveRef.current = fill.activeIndex;
+    });
     const handleMouseLeave = () => {
       listHandlers.onMouseLeave();
       setActiveIndex(lastActiveRef.current);
@@ -1477,18 +1483,20 @@ function CommandMenuDialog({
 }: CommandMenuDialogProps) {
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const open = openProp ?? internalOpen;
-  const openRef = useRef(open);
-  openRef.current = open;
-  const scopeRef = useRef(shortcutScope);
-  scopeRef.current = shortcutScope;
-  const onOpenChangeRef = useRef(onOpenChange);
-  onOpenChangeRef.current = onOpenChange;
   // Read through refs so `setOpen` keeps one identity for the dialog's
   // life: the listener below depends on it, and re-registering on every
   // toggle would move the dialog to the end of the peer list, changing
   // which dialog answers a shared combo with each click.
+  const openRef = useRef(open);
+  const scopeRef = useRef(shortcutScope);
+  const onOpenChangeRef = useRef(onOpenChange);
   const controlledRef = useRef(openProp !== undefined);
-  controlledRef.current = openProp !== undefined;
+  useIsoLayoutEffect(() => {
+    openRef.current = open;
+    scopeRef.current = shortcutScope;
+    onOpenChangeRef.current = onOpenChange;
+    controlledRef.current = openProp !== undefined;
+  });
 
   const setOpen = useCallback((next: boolean) => {
     if (!controlledRef.current) setInternalOpen(next);

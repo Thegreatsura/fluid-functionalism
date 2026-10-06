@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { fontWeights } from "@/lib/font-weight";
 import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
 import { FileThumbnail } from "@/components/ui/file-thumbnail";
@@ -18,6 +18,9 @@ import { spring } from "@/lib/springs";
 // count once cards overflow the visible peeks, × removes and ✎/double-click
 // edits a card back into the composer.
 // ---------------------------------------------------------------------------
+
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 // Card height per ladder step — the compact step drops the card with it.
 export const QUEUE_CARD_H = 44;
@@ -96,7 +99,9 @@ export function QueuedStack({
   const [dragY, setDragY] = useState(0);
   const dragStartYRef = useRef(0);
   const queueRef = useRef(queue);
-  queueRef.current = queue;
+  useIsoLayoutEffect(() => {
+    queueRef.current = queue;
+  });
 
   // Touch devices have no hover, so the stack can't fan out on pointer-over.
   // Track `(hover: none)` to drive a tap-to-expand affordance instead: tapping
@@ -113,9 +118,7 @@ export function QueuedStack({
   }, []);
   // Collapse the (touch) stack whenever it empties, so a fresh fill starts
   // collapsed rather than re-opening from the previous pinned state.
-  useEffect(() => {
-    if (queue.length === 0) setTapExpanded(false);
-  }, [queue.length]);
+  if (queue.length === 0 && tapExpanded) setTapExpanded(false);
 
   const stackExpanded =
     stackHovered ||
@@ -141,8 +144,8 @@ export function QueuedStack({
         transition: { type: "spring", duration: 0.42, bounce: 0.5 },
       });
     }
-    // Only react to the count changing.
-  }, [stackCount]);
+    // Acts only when the count grew; the other deps re-run it as a no-op.
+  }, [stackCount, stackExpanded, stackBump]);
 
   useEffect(() => {
     if (!pointerDownId) return;

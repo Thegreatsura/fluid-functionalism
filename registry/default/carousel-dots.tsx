@@ -3,6 +3,7 @@
 import {
   forwardRef,
   useEffect,
+  useLayoutEffect,
   useRef,
   type HTMLAttributes,
 } from "react";
@@ -25,6 +26,9 @@ import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 // duration and then moves to the next. Each dot sits in an
 // 18px round click area, and one fluid highlight glides between those areas
 // on hover, so the target you are about to hit is always visible.
+
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 /** Dot height, and the diameter of every resting dot. */
 const DOT_PX = 6;
@@ -123,7 +127,9 @@ const CarouselDots = forwardRef<HTMLDivElement, CarouselDotsProps>(
 
     // Latest values behind refs, so the clock never restarts on a render.
     const live = useRef({ value, count, duration, paused, loop, onValueChange });
-    live.current = { value, count, duration, paused, loop, onValueChange };
+    useIsoLayoutEffect(() => {
+      live.current = { value, count, duration, paused, loop, onValueChange };
+    });
 
     useEffect(() => {
       // Reduced motion: no timer moves the page on the reader's behalf.

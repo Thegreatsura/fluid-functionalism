@@ -101,6 +101,19 @@ type InputMessageSlot =
   | ReactNode
   | ((ctx: InputMessageSlotContext) => ReactNode);
 
+/** Renders a slot. A function slot is called here, in its own component,
+ *  so InputMessage's render never hands consumer code the context's
+ *  ref-reading callbacks (openFilePicker) mid-render. */
+function InputMessageSlotContent({
+  slot,
+  ctx,
+}: {
+  slot: InputMessageSlot;
+  ctx: InputMessageSlotContext;
+}) {
+  return <>{typeof slot === "function" ? slot(ctx) : slot}</>;
+}
+
 /** A message held in the queue while the assistant is responding. Carries the
  *  trimmed text plus a snapshot of the files attached when it was queued, so
  *  double-click-to-edit can restore both. `id` is a stable key minted on enqueue. */
@@ -515,7 +528,9 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
     // latest value even if a handler closure is stale (e.g. two submits land
     // before the controlled `queue` prop round-trips back).
     const queueRef = useRef(queueArr);
-    queueRef.current = queueArr;
+    useIsoLayoutEffect(() => {
+      queueRef.current = queueArr;
+    });
     const supportsQueue = status !== undefined && onQueueChange !== undefined;
     const streaming = status === "streaming";
     const [liveMsg, setLiveMsg] = useState("");
@@ -985,10 +1000,8 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
       () => ({ openFilePicker, files: filesArr }),
       [openFilePicker, filesArr]
     );
-    const leftContent =
-      typeof leftSlot === "function" ? leftSlot(slotCtx) : leftSlot;
-    const rightContent =
-      typeof rightSlot === "function" ? rightSlot(slotCtx) : rightSlot;
+    const leftContent = <InputMessageSlotContent slot={leftSlot} ctx={slotCtx} />;
+    const rightContent = <InputMessageSlotContent slot={rightSlot} ctx={slotCtx} />;
 
     // ── Drag-and-drop ────────────────────────────────────────────────
     const handleDragOver = useCallback(

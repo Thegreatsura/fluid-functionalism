@@ -59,6 +59,8 @@ export interface UseFluidHoverReturn {
   isMeasured: boolean;
   sessionRef: RefObject<number>;
   handlers: {
+    /** Picks the item nearest the pointer. Moves that happened in a
+     *  portalled child (a row's own dropdown) are ignored. */
     onMouseMove: (e: React.MouseEvent) => void;
     onMouseEnter: () => void;
     onMouseLeave: () => void;
@@ -66,7 +68,9 @@ export interface UseFluidHoverReturn {
      * Routes a click that lands between items (a gap, the padding, past the
      * last row) to the highlighted item, so the highlight and the click agree:
      * what is lit is what a click hits. A click inside an item is left to the
-     * item. Disabled items (`isItemDisabled`) are never activated.
+     * item, and so is one on a control between items (a search field) or
+     * from a portalled child (a row's own dropdown): it never landed between
+     * these items. Disabled items (`isItemDisabled`) are never activated.
      */
     onClick: (e: React.MouseEvent) => void;
   };
@@ -186,11 +190,13 @@ export function pickNearest({
  * Whether an event happened inside the element whose handler hears it.
  * React bubbles events from portalled children (a dropdown opened from a
  * row, a submenu, a tooltip) through their React ancestors, so a list's
- * handlers also hear moves and clicks that happened in another layer.
- * A bare point with no target (a caller re-picking at a remembered
- * position) counts as the list's own.
+ * handlers also hear moves, clicks and focus changes that happened in
+ * another layer. The hook's own move and click handlers skip those; a
+ * consumer with handlers of its own (focus, keys) can call this too. A bare
+ * point with no target (a caller re-picking at a remembered position)
+ * counts as the list's own.
  */
-function isOwnEvent(e: { currentTarget?: EventTarget | null; target?: EventTarget | null }) {
+export function isOwnEvent(e: { currentTarget?: EventTarget | null; target?: EventTarget | null }) {
   const { currentTarget, target } = e;
   if (!(currentTarget instanceof Node) || !(target instanceof Node)) return true;
   return currentTarget.contains(target);

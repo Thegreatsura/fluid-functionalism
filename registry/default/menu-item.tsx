@@ -2,9 +2,11 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useRef,
   useEffect,
+  useState,
   forwardRef,
   type HTMLAttributes,
   type ReactElement,
@@ -92,6 +94,29 @@ export function useDropdown() {
 /** Null-safe context read for callers that render outside a provider. */
 export function useDropdownMaybe() {
   return useContext(DropdownContext);
+}
+
+/**
+ * Open state for DropdownMenu and DropdownSub: controlled by `open` when it
+ * is passed, else local state seeded by `defaultOpen`. Either way the
+ * primitive is always handed a controlled value, so the popup can play its
+ * exit tween before it unmounts.
+ */
+export function useControllableOpen(
+  openProp: boolean | undefined,
+  defaultOpen: boolean,
+  onOpenChange?: (open: boolean) => void
+) {
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const open = openProp !== undefined ? openProp : internalOpen;
+  const setOpen = useCallback(
+    (next: boolean) => {
+      if (openProp === undefined) setInternalOpen(next);
+      onOpenChange?.(next);
+    },
+    [openProp, onOpenChange]
+  );
+  return [open, setOpen] as const;
 }
 
 export interface MenuItemProps extends HTMLAttributes<HTMLDivElement> {

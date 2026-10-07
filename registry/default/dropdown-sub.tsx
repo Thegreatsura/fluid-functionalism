@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  type RefObject,
-  type SyntheticEvent,
-} from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
 import { cn } from "@/lib/utils";
 import { useIcon } from "@/lib/icon-context";
 import { useSize } from "@/lib/size-context";
@@ -39,17 +33,6 @@ export type DropdownSubTriggerProps = Omit<
   MenuItemProps,
   "checked" | "onSelect" | "closeOnClick"
 >;
-
-/**
- * True when an event happened inside the element that handles it. The
- * submenu is a React child of the parent popup rendered through a portal,
- * so its mouse, focus and key events bubble into the parent's React
- * handlers too. Those belong to the submenu: focus on a submenu row would
- * otherwise light the parent row with the same index.
- */
-export function isOwnEvent(e: SyntheticEvent<HTMLElement>) {
-  return e.currentTarget.contains(e.target as Node);
-}
 
 const ROW_SELECTOR = "[data-fluid-hover-index]";
 

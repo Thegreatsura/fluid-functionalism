@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
-import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHover, isOwnEvent } from "@/hooks/use-fluid-hover";
 import {
   useMergeSplitBlocks,
   useSelectionRuns,
@@ -45,6 +45,7 @@ import {
 import {
   DropdownContext,
   MenuItem,
+  useControllableOpen,
   useDropdown,
   useDropdownMaybe,
   type DropdownContextValue,
@@ -54,7 +55,6 @@ import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 import {
   SUBMENU_SIDE_OFFSET,
   SUBMENU_ALIGN_OFFSET,
-  isOwnEvent,
   useSubmenuHost,
   useReportSubmenu,
   SubmenuChevron,
@@ -303,16 +303,8 @@ function DropdownMenu({
   disabled = false,
   size,
 }: DropdownMenuProps) {
-  const [internalOpen, setInternalOpen] = useState(defaultOpen);
-  const open = openProp !== undefined ? openProp : internalOpen;
+  const [open, handleOpenChange] = useControllableOpen(openProp, defaultOpen, onOpenChange);
 
-  const handleOpenChange = useCallback(
-    (next: boolean) => {
-      if (openProp === undefined) setInternalOpen(next);
-      onOpenChange?.(next);
-    },
-    [openProp, onOpenChange]
-  );
 
   const ctx = useMemo(() => ({ open, disabled, sub: false }), [open, disabled]);
 
@@ -644,7 +636,8 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                 ref={ref}
                 // The handlers below skip events from an open submenu: it
                 // renders through a portal, so its events bubble here
-                // through React (see isOwnEvent). The gap click already
+                // through React, and focus on a submenu row would light the
+                // parent row with the same index. The gap click already
                 // ignores them in the hook.
                 onKeyDownCapture={(e) => {
                   if (!isOwnEvent(e)) return;
@@ -800,17 +793,9 @@ function DropdownSub({
   defaultOpen = false,
   onOpenChange,
 }: DropdownSubProps) {
-  const [internalOpen, setInternalOpen] = useState(defaultOpen);
-  const open = openProp !== undefined ? openProp : internalOpen;
+  const [open, handleOpenChange] = useControllableOpen(openProp, defaultOpen, onOpenChange);
   const { disabled } = useDropdownMenuContext();
 
-  const handleOpenChange = useCallback(
-    (next: boolean) => {
-      if (openProp === undefined) setInternalOpen(next);
-      onOpenChange?.(next);
-    },
-    [openProp, onOpenChange]
-  );
 
   const ctx = useMemo(() => ({ open, disabled, sub: true }), [open, disabled]);
 

@@ -11,6 +11,8 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import { DirectionProvider as RadixDirectionProvider } from "@radix-ui/react-direction";
+import { DirectionProvider as BaseDirectionProvider } from "@base-ui/react/direction-provider";
 import * as Base from "@/registry/base/dropdown";
 import * as Radix from "@/registry/radix/dropdown";
 import { MenuItem } from "@/registry/default/menu-item";
@@ -194,5 +196,111 @@ describe.each(flavors)("%s dropdown submenu", (_name, F) => {
     const { view, Menu, parent } = await setup();
     view.rerender(<Menu subOpen={false} rootOpen={false} />);
     expect(activeIn(parent)).toBe("1");
+  });
+});
+
+// A submenu inside a submenu: the middle menu is both a held child of the
+// root and the host of the innermost one.
+describe.each(flavors)("%s nested submenus", (_name, F) => {
+  async function setup() {
+    const onMoveTo = vi.fn();
+    const onArchive = vi.fn();
+    const onPick = vi.fn();
+    const Menu = ({ depth }: { depth: 0 | 1 | 2 }) => (
+      <F.DropdownMenu defaultOpen>
+        <F.DropdownTrigger>Open</F.DropdownTrigger>
+        <F.DropdownContent>
+          <MenuItem index={0} label="Rename" onSelect={() => {}} />
+          <F.DropdownSub open={depth >= 1} onOpenChange={() => {}}>
+            <F.DropdownSubTrigger index={1} label="Move to" onClick={onMoveTo} />
+            <F.DropdownSubContent>
+              <MenuItem index={0} label="Inbox" onSelect={() => {}} />
+              <F.DropdownSub open={depth >= 2} onOpenChange={() => {}}>
+                <F.DropdownSubTrigger index={1} label="Archive" onClick={onArchive} />
+                <F.DropdownSubContent>
+                  <MenuItem index={0} label="2025" onSelect={() => onPick("2025")} />
+                  <MenuItem index={1} label="2026" onSelect={() => onPick("2026")} />
+                </F.DropdownSubContent>
+              </F.DropdownSub>
+            </F.DropdownSubContent>
+          </F.DropdownSub>
+        </F.DropdownContent>
+      </F.DropdownMenu>
+    );
+    const view = render(<Menu depth={0} />);
+    await waitFor(() =>
+      expect(document.activeElement?.getAttribute("aria-label")).toBe("Rename")
+    );
+    view.rerender(<Menu depth={1} />);
+    await waitFor(() => expect(view.getAllByRole("menu")).toHaveLength(2));
+    view.rerender(<Menu depth={2} />);
+    await waitFor(() => expect(view.getAllByRole("menu")).toHaveLength(3));
+    const [root, middle, inner] = view.getAllByRole("menu");
+    return { view, root, middle, inner, onMoveTo, onArchive, onPick };
+  }
+
+  it("renders all 3 menus, each submenu in its own popup", async () => {
+    const { view, root, middle, inner } = await setup();
+    expect(root.contains(view.getByRole("menuitem", { name: "Move to" }))).toBe(true);
+    expect(middle.contains(view.getByRole("menuitem", { name: "Archive" }))).toBe(true);
+    expect(inner.contains(view.getByRole("menuitem", { name: "2026" }))).toBe(true);
+  });
+
+  it("keeps both triggers lit, each in its own menu", async () => {
+    const { root, middle } = await setup();
+    await waitFor(() => {
+      expect(activeIn(root)).toBe("1");
+      expect(activeIn(middle)).toBe("1");
+    });
+  });
+
+  it("focus in the innermost menu lights a row there only", async () => {
+    const { view, root, middle, inner } = await setup();
+    act(() => view.getByRole("menuitem", { name: "2025" }).focus());
+    await frame();
+    expect(activeIn(inner)).toBe("0");
+    expect(activeIn(middle)).toBe("1");
+    expect(activeIn(root)).toBe("1");
+  });
+
+  it("a click in the innermost menu picks once and reaches no trigger", async () => {
+    const { view, onMoveTo, onArchive, onPick } = await setup();
+    fireEvent.click(view.getByRole("menuitem", { name: "2026" }));
+    expect(onPick).toHaveBeenCalledTimes(1);
+    expect(onPick).toHaveBeenCalledWith("2026");
+    expect(onMoveTo).not.toHaveBeenCalled();
+    expect(onArchive).not.toHaveBeenCalled();
+  });
+});
+
+// Both flavors open a submenu toward the reading direction's end, read from
+// each primitive's own DirectionProvider.
+describe.each(flavors)("%s submenu side", (_name, F) => {
+  it.each([
+    ["ltr", "right"],
+    ["rtl", "left"],
+  ] as const)("in %s it opens on the %s", async (dir, side) => {
+    const view = render(
+      <RadixDirectionProvider dir={dir}>
+        <BaseDirectionProvider direction={dir}>
+          <F.DropdownMenu defaultOpen>
+            <F.DropdownTrigger>Open</F.DropdownTrigger>
+            <F.DropdownContent>
+              <F.DropdownSub defaultOpen>
+                <F.DropdownSubTrigger index={0} label="Move to" />
+                <F.DropdownSubContent>
+                  <MenuItem index={0} label="Inbox" onSelect={() => {}} />
+                </F.DropdownSubContent>
+              </F.DropdownSub>
+            </F.DropdownContent>
+          </F.DropdownMenu>
+        </BaseDirectionProvider>
+      </RadixDirectionProvider>
+    );
+    await waitFor(() => expect(view.getAllByRole("menu")).toHaveLength(2));
+    const sub = view.getAllByRole("menu")[1];
+    await waitFor(() =>
+      expect(sub.closest("[data-side]")?.getAttribute("data-side")).toBe(side)
+    );
   });
 });

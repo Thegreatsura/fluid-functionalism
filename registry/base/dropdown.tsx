@@ -16,9 +16,11 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu } from "@base-ui/react/menu";
 import type { MenuTriggerProps } from "@base-ui/react/menu";
+import { useDirection } from "@base-ui/react/direction-provider";
 import {
   DropdownContext,
   MenuItem,
+  useControllableOpen,
   useDropdown,
   useDropdownMaybe,
   type DropdownContextValue,
@@ -26,7 +28,7 @@ import {
 } from "@/components/ui/menu-item";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
-import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHover, isOwnEvent } from "@/hooks/use-fluid-hover";
 import {
   useMergeSplitBlocks,
   useSelectionRuns,
@@ -53,7 +55,6 @@ import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 import {
   SUBMENU_SIDE_OFFSET,
   SUBMENU_ALIGN_OFFSET,
-  isOwnEvent,
   useSubmenuHost,
   useReportSubmenu,
   SubmenuChevron,
@@ -306,17 +307,9 @@ function DropdownMenu({
   disabled = false,
   size,
 }: DropdownMenuProps) {
-  const [internalOpen, setInternalOpen] = useState(defaultOpen);
-  const open = openProp !== undefined ? openProp : internalOpen;
+  const [open, handleOpenChange] = useControllableOpen(openProp, defaultOpen, onOpenChange);
   const actionsRef = useRef<DropdownMenuActions | null>(null);
 
-  const handleOpenChange = useCallback(
-    (next: boolean) => {
-      if (openProp === undefined) setInternalOpen(next);
-      onOpenChange?.(next);
-    },
-    [openProp, onOpenChange]
-  );
 
   const ctx = useMemo(() => ({ open, actionsRef, sub: false }), [open]);
 
@@ -604,7 +597,8 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                 }
                 // The handlers below skip events from an open submenu: it
                 // renders through a portal, so its events bubble here
-                // through React (see isOwnEvent). The gap click already
+                // through React, and focus on a submenu row would light the
+                // parent row with the same index. The gap click already
                 // ignores them in the hook.
                 onKeyDownCapture={(e) => {
                   if (!isOwnEvent(e)) return;
@@ -759,17 +753,9 @@ function DropdownSub({
   defaultOpen = false,
   onOpenChange,
 }: DropdownSubProps) {
-  const [internalOpen, setInternalOpen] = useState(defaultOpen);
-  const open = openProp !== undefined ? openProp : internalOpen;
+  const [open, handleOpenChange] = useControllableOpen(openProp, defaultOpen, onOpenChange);
   const actionsRef = useRef<DropdownMenuActions | null>(null);
 
-  const handleOpenChange = useCallback(
-    (next: boolean) => {
-      if (openProp === undefined) setInternalOpen(next);
-      onOpenChange?.(next);
-    },
-    [openProp, onOpenChange]
-  );
 
   const ctx = useMemo(() => ({ open, actionsRef, sub: true }), [open]);
 
@@ -826,7 +812,10 @@ DropdownSubTrigger.displayName = "DropdownSubTrigger";
 type DropdownSubContentProps = Omit<DropdownContentProps, "side" | "align">;
 
 /** The submenu popup: DropdownContent beside its trigger row, the first row
- *  level with the trigger. */
+ *  level with the trigger. It opens toward the reading direction's end,
+ *  read from Base UI's DirectionProvider like Radix reads its own. The side
+ *  stays physical (not `inline-end`) so the popup's enter choreography,
+ *  keyed on `data-side`, still applies. */
 const DropdownSubContent = forwardRef<HTMLDivElement, DropdownSubContentProps>(
   (
     {
@@ -835,16 +824,19 @@ const DropdownSubContent = forwardRef<HTMLDivElement, DropdownSubContentProps>(
       ...props
     },
     ref
-  ) => (
-    <DropdownContent
-      ref={ref}
-      side="right"
-      align="start"
-      sideOffset={sideOffset}
-      alignOffset={alignOffset}
-      {...props}
-    />
-  )
+  ) => {
+    const direction = useDirection();
+    return (
+      <DropdownContent
+        ref={ref}
+        side={direction === "rtl" ? "left" : "right"}
+        align="start"
+        sideOffset={sideOffset}
+        alignOffset={alignOffset}
+        {...props}
+      />
+    );
+  }
 );
 
 DropdownSubContent.displayName = "DropdownSubContent";

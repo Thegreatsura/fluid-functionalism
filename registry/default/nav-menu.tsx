@@ -42,7 +42,12 @@ interface NavMenuProps extends HTMLAttributes<HTMLElement> {
 const NavMenu = forwardRef<HTMLElement, NavMenuProps>(
   ({ children, activeSlug, className, ...props }, ref) => {
     const containerRef = useRef<HTMLElement>(null);
-    const slugToIndexRef = useRef<Map<string, number>>(new Map());
+    // Route slug → item index, filled in as items register. State, so the
+    // active route below follows registration instead of whichever render
+    // happens to come after it.
+    const [slugToIndex, setSlugToIndex] = useState<ReadonlyMap<string, number>>(
+      () => new Map()
+    );
     const hover = useFluidHover(containerRef);
     const {
       activeIndex,
@@ -56,24 +61,28 @@ const NavMenu = forwardRef<HTMLElement, NavMenuProps>(
 
     const registerSlug = useCallback(
       (index: number, slug: string | null) => {
-        if (slug === null) {
-          // Find and remove this index
-          for (const [s, i] of slugToIndexRef.current) {
-            if (i === index) {
-              slugToIndexRef.current.delete(s);
-              break;
+        setSlugToIndex((prev) => {
+          const next = new Map(prev);
+          if (slug === null) {
+            // Find and remove this index
+            for (const [s, i] of next) {
+              if (i === index) {
+                next.delete(s);
+                break;
+              }
             }
+          } else {
+            next.set(slug, index);
           }
-        } else {
-          slugToIndexRef.current.set(slug, index);
-        }
+          return next;
+        });
       },
       []
     );
 
     // Derive the active route index from activeSlug
     const activeRouteIndex =
-      activeSlug !== null ? slugToIndexRef.current.get(activeSlug) ?? null : null;
+      activeSlug !== null ? slugToIndex.get(activeSlug) ?? null : null;
 
     const activeRouteRect =
       activeRouteIndex !== null ? itemRects[activeRouteIndex] : null;

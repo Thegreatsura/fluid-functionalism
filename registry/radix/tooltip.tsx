@@ -146,9 +146,9 @@ function Tooltip({
   const portalContainer = useContext(TooltipPortalContainerContext);
   const hasAmbientProvider = useContext(TooltipGroupContext);
 
-  useEffect(() => {
-    if (open) setMounted(true);
-  }, [open]);
+  // Set during the render that opens it, so the portal mounts in the same
+  // commit as `open` rather than one after.
+  if (open && !mounted) setMounted(true);
 
   // Fallback release for the deferred unmount: onAnimationComplete is the
   // primary signal, but rAF-driven animation callbacks can stall in

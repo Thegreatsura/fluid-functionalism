@@ -22,9 +22,13 @@ import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, typeClass, type SizeVariant } from "@/lib/size-context";
-import { useIcon } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
-import { useMergeSplitBlocks, SelectionBackgrounds } from "@/hooks/use-merge-split";
+import {
+  useMergeSplitBlocks,
+  useSelectionRuns,
+  SelectionBackgrounds,
+} from "@/hooks/use-merge-split";
 import { Button } from "@/components/ui/button";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
@@ -105,6 +109,10 @@ export interface AskUserQuestionsProps
    *  SizeProvider. */
   size?: SizeVariant;
 }
+
+// One empty list for a question without options, so `options` keeps its
+// identity across renders and the memos and effects keyed on it hold.
+const NO_OPTIONS: AskUserOption[] = [];
 
 function questionKey(q: AskUserQuestion, i: number) {
   return q.id ?? `q-${i}`;
@@ -194,8 +202,9 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     );
 
     const shape = useShape();
-    const ArrowLeft = useIcon("arrow-left");
-    const ArrowRight = useIcon("arrow-right");
+    const icons = useIcons();
+    const ArrowLeft = icons["arrow-left"];
+    const ArrowRight = icons["arrow-right"];
 
     // The footer ← / → icons hint at the ArrowLeft/ArrowRight keys, which
     // mobile has no equivalent for, so render them desktop-only. (The inline
@@ -261,7 +270,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     );
     const otherText = currentAnswer?.otherText ?? "";
 
-    const options = question?.options ?? [];
+    const options = question?.options ?? NO_OPTIONS;
     const otherIndex = allowOther ? options.length : -1;
     const rowCount = options.length + (allowOther ? 1 : 0);
 
@@ -282,9 +291,6 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     // The Other field is a multi-line textarea — it auto-resizes to fit
     // wrapped content and lets users press Enter for a newline.
     const otherInputRef = useRef<HTMLTextAreaElement>(null);
-    // Stable IDs for contiguous-selection runs (see selectedGroups below).
-    const groupIdCounterRef = useRef(0);
-    const prevGroupMapRef = useRef(new Map<number, number>());
     const hover = useFluidHover(rowsContainerRef);
     const {
       activeIndex,
@@ -313,9 +319,12 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     // stale `true` from the previous question's multi-line draft (which
     // would briefly apply `items-start` + the -5px chip nudge on an
     // empty single-line row before the resize effect below corrects it).
-    useEffect(() => {
+    // Done during render, so the stale value never reaches a commit.
+    const [multilineQId, setMultilineQId] = useState(qId);
+    if (multilineQId !== qId) {
+      setMultilineQId(qId);
       setIsOtherMultiline(false);
-    }, [qId]);
+    }
     useEffect(() => {
       const el = otherInputRef.current;
       if (!el) return;
@@ -372,12 +381,15 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
     // Validation message for the current freeText question (null = valid).
     const [freeTextError, setFreeTextError] = useState<string | null>(null);
 
-    // Reset transient state when question changes
-    useEffect(() => {
+    // Reset transient state when question changes, during render so the
+    // new question never commits with the last one's highlight or error.
+    const [transientIndex, setTransientIndex] = useState(safeIndex);
+    if (transientIndex !== safeIndex) {
+      setTransientIndex(safeIndex);
       setActiveIndex(null);
       setFocusedIndex(null);
       setFreeTextError(null);
-    }, [safeIndex, setActiveIndex]);
+    }
 
     // ── Keyboard focus restoration across question changes ───────
     // The question content remounts on qId, which destroys the focused row and
@@ -728,6 +740,36 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
       if (hasAnswer) handleMultiNext();
     };
 
+    // ── Selected-row grouping (merges contiguous selections) ─────
+    // Above the early return below: hooks run in the same order whether or
+    // not there is a question (with none, nothing is selected).
+    // Mirrors the CheckboxGroup pattern: contiguous selected indices
+    // collapse into a single rounded background block; stable IDs let
+    // framer-motion morph block size/position when neighbours toggle.
+    // The Other row gets its own input-field-style indicator (see below) and
+    // is intentionally excluded here so it doesn't merge into a contiguous
+    // bg-accent block with adjacent selected options.
+    // Include the Other row in selectedIndices when it has text. This lets
+    // it merge into the same morphing bg block as adjacent selected options
+    // (instead of looking like a disconnected input field next to them).
+    const selectedIndices = useMemo(() => {
+      const set = new Set<number>();
+      options.forEach((opt, i) => {
+        if (selectedIds.includes(optionKey(opt, i))) set.add(i);
+      });
+      if (allowOther && otherText.length > 0) set.add(otherIndex);
+      return set;
+    }, [options, selectedIds, allowOther, otherText, otherIndex]);
+
+    // Stable run IDs so a growing/shrinking run animates instead of
+    // exit+re-enter when neighbours flip.
+    const selectedGroups = useSelectionRuns([...selectedIndices]);
+
+    // Selected backgrounds, with the merge/split boundary animation when one
+    // unselected row bridges or splits two selected runs. Selected backgrounds
+    // use shape.bg, so corners animate around its radius.
+    const blocks = useMergeSplitBlocks(selectedGroups, itemRects, shape.bgRadius);
+
     if (!question) {
       return (
         <div
@@ -757,61 +799,6 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
       focusedIndex !== null && !(allowOther && focusedIndex === otherIndex)
         ? itemRects[focusedIndex]
         : null;
-
-    // ── Selected-row grouping (merges contiguous selections) ─────
-    // Mirrors the CheckboxGroup pattern: contiguous selected indices
-    // collapse into a single rounded background block; stable IDs let
-    // framer-motion morph block size/position when neighbours toggle.
-    // The Other row gets its own input-field-style indicator (see below) and
-    // is intentionally excluded here so it doesn't merge into a contiguous
-    // bg-accent block with adjacent selected options.
-    // Include the Other row in selectedIndices when it has text. This lets
-    // it merge into the same morphing bg block as adjacent selected options
-    // (instead of looking like a disconnected input field next to them).
-    const selectedIndices = useMemo(() => {
-      const set = new Set<number>();
-      options.forEach((opt, i) => {
-        if (selectedIds.includes(optionKey(opt, i))) set.add(i);
-      });
-      if (allowOther && otherText.length > 0) set.add(otherIndex);
-      return set;
-    }, [options, selectedIds, allowOther, otherText, otherIndex]);
-
-    const selectedGroups = useMemo(() => {
-      const runs: { start: number; end: number }[] = [];
-      const sorted = [...selectedIndices].sort((a, b) => a - b);
-      for (const idx of sorted) {
-        const last = runs[runs.length - 1];
-        if (last && idx === last.end + 1) last.end = idx;
-        else runs.push({ start: idx, end: idx });
-      }
-
-      // Stable run IDs so a growing/shrinking run animates instead of
-      // exit+re-enter when neighbours flip.
-      const usedIds = new Set<number>();
-      const nextGroupMap = new Map<number, number>();
-      const groups = runs.map((run) => {
-        let stableId: number | null = null;
-        for (let i = run.start; i <= run.end; i++) {
-          const prev = prevGroupMapRef.current.get(i);
-          if (prev !== undefined && !usedIds.has(prev)) {
-            stableId = prev;
-            break;
-          }
-        }
-        const id = stableId ?? ++groupIdCounterRef.current;
-        usedIds.add(id);
-        for (let i = run.start; i <= run.end; i++) nextGroupMap.set(i, id);
-        return { ...run, id };
-      });
-      prevGroupMapRef.current = nextGroupMap;
-      return groups;
-    }, [selectedIndices]);
-
-    // Selected backgrounds, with the merge/split boundary animation when one
-    // unselected row bridges or splits two selected runs. Selected backgrounds
-    // use shape.bg, so corners animate around its radius.
-    const blocks = useMergeSplitBlocks(selectedGroups, itemRects, shape.bgRadius);
 
     const showBack = total > 1 && safeIndex > 0;
     const showSkip = total > 1 && isSkippable;

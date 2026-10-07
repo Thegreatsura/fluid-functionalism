@@ -19,7 +19,7 @@ import { Collapsible } from "@base-ui/react/collapsible";
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 import { cn } from "@/lib/utils";
-import { useIcon } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import type { IconName } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
@@ -49,7 +49,8 @@ interface TriggerRowProps extends HTMLAttributes<HTMLButtonElement> {
  */
 const TriggerRow = forwardRef<HTMLButtonElement, TriggerRowProps>(
   ({ open, children, className, ...props }, ref) => {
-    const ChevronRight = useIcon("chevron-right");
+    const icons = useIcons();
+    const ChevronRight = icons["chevron-right"];
     const shape = useShape();
     const sizeClasses = useSize();
     const [isHovered, setIsHovered] = useState(false);
@@ -159,7 +160,7 @@ function CollapsePanel({ open, children }: CollapsePanelProps) {
   // Panels open at mount render `initial: "auto"` and receive their first
   // pixel target a commit later; that hand-off must SNAP (duration 0), not
   // spring. Panels that open later spring normally.
-  const needsSnap = useRef(open);
+  const [needsSnap, setNeedsSnap] = useState(open);
 
   const measureRef = useCallback((el: HTMLDivElement | null) => {
     roRef.current?.disconnect();
@@ -183,9 +184,13 @@ function CollapsePanel({ open, children }: CollapsePanelProps) {
     }
   }, [open]);
 
+  // Cleared a frame after the first measured height commits: the hand-off
+  // render keeps the snap, and height changes after it spring.
   useEffect(() => {
-    if (contentHeight !== null) needsSnap.current = false;
-  }, [contentHeight]);
+    if (!needsSnap || contentHeight === null) return;
+    const frame = requestAnimationFrame(() => setNeedsSnap(false));
+    return () => cancelAnimationFrame(frame);
+  }, [needsSnap, contentHeight]);
 
   const [exitComplete, setExitComplete] = useState(!open);
   if (open && exitComplete) {
@@ -217,7 +222,7 @@ function CollapsePanel({ open, children }: CollapsePanelProps) {
               animate={{ height: open ? contentHeight ?? 0 : 0 }}
               // bounce: 0 — pure height looks better without overshoot.
               transition={
-                needsSnap.current
+                needsSnap
                   ? { duration: 0 }
                   : { ...spring.moderate, bounce: 0 }
               }
@@ -379,7 +384,8 @@ function ThinkingStep({
   children,
   className,
 }: ThinkingStepProps) {
-    const Icon = useIcon(icon);
+    const icons = useIcons();
+    const Icon = icons[icon];
     const shape = useShape();
     const sizeClasses = useSize();
     const [stepRef, stepHeight] = useStepHeight();

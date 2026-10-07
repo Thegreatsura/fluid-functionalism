@@ -1,8 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type RefObject,
+} from "react";
 import { cn } from "@/lib/utils";
-import { useIcon } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import { useSize } from "@/lib/size-context";
 import type { UseFluidHoverReturn } from "@/hooks/use-fluid-hover";
 import type { MenuItemProps } from "@/components/ui/menu-item";
@@ -36,6 +42,9 @@ export type DropdownSubTriggerProps = Omit<
 
 const ROW_SELECTOR = "[data-fluid-hover-index]";
 
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 /**
  * The parent popup's side of its submenus. Use `onMouseEnter`,
  * `onMouseMove` and `onMouseLeave` in place of the hook's own, skip
@@ -57,9 +66,13 @@ export function useSubmenuHost(
     onMouseLeave: hoverLeave,
   } = hover.handlers;
   const openIndexRef = useRef<number | null>(null);
-  // Read when a submenu closes, after the commit that closed it.
+  // Read when a submenu closes, in its trigger's effect cleanup. A layout
+  // effect refreshes it in the commit's layout phase, before any passive
+  // cleanup runs, so a close in the same commit already sees the new value.
   const parentOpenRef = useRef(open);
-  parentOpenRef.current = open;
+  useIsoLayoutEffect(() => {
+    parentOpenRef.current = open;
+  }, [open]);
   // The pointer's last position. While a submenu is open it is read from the
   // document: Base UI switches pointer events off on the parent while the
   // pointer crosses to the submenu, so the parent hears no moves then.
@@ -159,7 +172,8 @@ export function useReportSubmenu(
 /** The trailing chevron on a submenu trigger row. It lights with the row,
  *  like the leading icon. */
 export function SubmenuChevron({ lit }: { lit: boolean }) {
-  const ChevronRight = useIcon("chevron-right");
+  const icons = useIcons();
+  const ChevronRight = icons["chevron-right"];
   const sizeClasses = useSize();
   return (
     <span aria-hidden="true" className="inline-grid shrink-0 rtl:-scale-x-100">

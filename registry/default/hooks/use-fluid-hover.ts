@@ -5,6 +5,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useLayoutEffect,
   type Dispatch,
   type RefObject,
   type SetStateAction,
@@ -57,6 +58,14 @@ export interface UseFluidHoverReturn {
    * reads as the highlight sliding in from another row.
    */
   isMeasured: boolean;
+  /**
+   * Counts pointer entries. It steps when the pointer, having entered the
+   * container, first moves the highlight, so the highlight keyed on it fades
+   * in at the new row instead of sliding over from where it was last (a row
+   * lit from the keyboard, or one still fading out).
+   */
+  session: number;
+  /** The same count as `session`, for code that reads it outside a render. */
   sessionRef: RefObject<number>;
   handlers: {
     /** Picks the item nearest the pointer. Moves that happened in a
@@ -223,6 +232,9 @@ function resolveActivator(element: HTMLElement): HTMLElement {
   return element.querySelector<HTMLElement>(ACTIVATOR_SELECTOR) ?? element;
 }
 
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 /**
  * How many frames the coalesced remeasure retries while the registered items
  * still have no layout box. A popup can be in the DOM one frame before it is
@@ -240,9 +252,13 @@ export function useFluidHover<T extends HTMLElement>(
     typeof gapClick === "object" ? (gapClick.maxDistance ?? Infinity) : Infinity;
   const itemsRef = useRef(new Map<number, HTMLElement>());
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  // Mirrored for handlers that read it outside a render (the gap click).
+  // Mirrored for handlers that read it outside a render (the gap click, a
+  // row registering). Written in a layout effect, which runs before any
+  // row's registration effect in the same commit.
   const activeIndexRef = useRef<number | null>(null);
-  activeIndexRef.current = activeIndex;
+  useIsoLayoutEffect(() => {
+    activeIndexRef.current = activeIndex;
+  }, [activeIndex]);
 
   // The state, in the DOM: `data-fluid-hover-active` on the highlighted item
   // and `data-fluid-hover-active-index` on the container. Devtools shows it
@@ -250,22 +266,29 @@ export function useFluidHover<T extends HTMLElement>(
   // manage these attributes, so it never clobbers them.
   useEffect(() => {
     const container = containerRef.current;
+    // The registry map itself, which is never replaced: the cleanup reads
+    // who holds the index by then, not who held it now.
+    const items = itemsRef.current;
     if (activeIndex === null) container?.removeAttribute(ACTIVE_INDEX_ATTR);
     else container?.setAttribute(ACTIVE_INDEX_ATTR, String(activeIndex));
-    const active = activeIndex === null ? undefined : itemsRef.current.get(activeIndex);
+    const active = activeIndex === null ? undefined : items.get(activeIndex);
     active?.setAttribute(ACTIVE_ATTR, "");
     return () => {
       active?.removeAttribute(ACTIVE_ATTR);
       // A row that re-registered under this index while it was highlighted
       // (a remount under a new key) was marked by registerItem, not by this
       // effect: drop the mark from whatever element holds the index now.
-      if (activeIndex !== null) itemsRef.current.get(activeIndex)?.removeAttribute(ACTIVE_ATTR);
+      if (activeIndex !== null) items.get(activeIndex)?.removeAttribute(ACTIVE_ATTR);
     };
   }, [activeIndex, containerRef]);
   const [itemRects, setItemRects] = useState<ItemRect[]>([]);
   const [isMeasured, setIsMeasured] = useState(false);
   const itemRectsRef = useRef<ItemRect[]>([]);
+  const [session, setSession] = useState(0);
   const sessionRef = useRef(0);
+  // Set when the pointer enters; the pointer's first change of highlight
+  // starts the new session, in the same update as the change itself.
+  const sessionPendingRef = useRef(false);
   const rafIdRef = useRef<number | null>(null);
   const remeasureRafIdRef = useRef<number | null>(null);
 
@@ -353,18 +376,21 @@ export function useFluidHover<T extends HTMLElement>(
    * true while another pass is still queued.
    */
   const scheduleMeasurement = useCallback(
-    (attemptsLeft: number) => {
-      if (remeasureRafIdRef.current !== null) {
-        cancelAnimationFrame(remeasureRafIdRef.current);
-      }
-      remeasureRafIdRef.current = requestAnimationFrame(() => {
-        remeasureRafIdRef.current = null;
-        if (runMeasurement()) {
-          setIsMeasured(true);
-        } else if (attemptsLeft > 1) {
-          scheduleMeasurement(attemptsLeft - 1);
+    (attempts: number) => {
+      const attempt = (attemptsLeft: number) => {
+        if (remeasureRafIdRef.current !== null) {
+          cancelAnimationFrame(remeasureRafIdRef.current);
         }
-      });
+        remeasureRafIdRef.current = requestAnimationFrame(() => {
+          remeasureRafIdRef.current = null;
+          if (runMeasurement()) {
+            setIsMeasured(true);
+          } else if (attemptsLeft > 1) {
+            attempt(attemptsLeft - 1);
+          }
+        });
+      };
+      attempt(attempts);
     },
     [runMeasurement]
   );
@@ -438,30 +464,34 @@ export function useFluidHover<T extends HTMLElement>(
         rafIdRef.current = null;
         const container = containerRef.current;
         if (!container) return;
-        setActiveIndex(
-          pickNearest({
-            axis,
-            point: { x: mouseX, y: mouseY },
-            rects: itemRectsRef.current,
-            containerRect: container.getBoundingClientRect(),
-            scroll: { x: container.scrollLeft, y: container.scrollTop },
-            border: { x: container.clientLeft, y: container.clientTop },
-            layoutSize: { width: container.offsetWidth, height: container.offsetHeight },
-            isDisabled: isItemDisabled
-              ? (index) => {
-                  const el = itemsRef.current.get(index);
-                  return !!el && isItemDisabled(el);
-                }
-              : undefined,
-          })
-        );
+        const next = pickNearest({
+          axis,
+          point: { x: mouseX, y: mouseY },
+          rects: itemRectsRef.current,
+          containerRect: container.getBoundingClientRect(),
+          scroll: { x: container.scrollLeft, y: container.scrollTop },
+          border: { x: container.clientLeft, y: container.clientTop },
+          layoutSize: { width: container.offsetWidth, height: container.offsetHeight },
+          isDisabled: isItemDisabled
+            ? (index) => {
+                const el = itemsRef.current.get(index);
+                return !!el && isItemDisabled(el);
+              }
+            : undefined,
+        });
+        if (sessionPendingRef.current && next !== activeIndexRef.current) {
+          sessionPendingRef.current = false;
+          sessionRef.current += 1;
+          setSession(sessionRef.current);
+        }
+        setActiveIndex(next);
       });
     },
     [axis, containerRef, isItemDisabled]
   );
 
   const handleMouseEnter = useCallback(() => {
-    sessionRef.current += 1;
+    sessionPendingRef.current = true;
   }, []);
 
   const handleMouseLeave = useCallback(() => {
@@ -544,6 +574,7 @@ export function useFluidHover<T extends HTMLElement>(
     setActiveIndex,
     itemRects,
     isMeasured,
+    session,
     sessionRef,
     handlers: {
       onMouseMove: handleMouseMove,

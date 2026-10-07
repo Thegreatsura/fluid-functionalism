@@ -1,6 +1,7 @@
 import tsParser from "@typescript-eslint/parser";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import nextPlugin from "@next/eslint-plugin-next";
+import reactHooks from "eslint-plugin-react-hooks";
 
 // Tailwind utilities reserved for the canonical-shadcn theme on /compare.
 // See app/compare/shadcn-theme.css. These render as transparent outside
@@ -194,5 +195,15 @@ export default [
     // The tailwind-merge list names the role utilities on purpose.
     ignores: ["registry/default/lib/utils.ts"],
     rules: registryRestrictedRules,
+  },
+  // Registry sources ship into other people's projects, and a fresh
+  // `create-next-app` lints them with eslint-plugin-react-hooks' full
+  // recommended set (the React Compiler rules: refs, immutability,
+  // static-components, set-state-in-effect, ...). Same rules here, so an
+  // install never opens with lint errors the site's own CI didn't see.
+  {
+    files: ["registry/**/*.{ts,tsx}"],
+    plugins: { "react-hooks": reactHooks },
+    rules: reactHooks.configs.recommended.rules,
   },
 ];

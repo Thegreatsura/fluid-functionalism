@@ -16,7 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useShape } from "@/lib/shape-context";
 import { useSize } from "@/lib/size-context";
-import { useIcon } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import { fontWeights } from "@/lib/font-weight";
 import { SIDEBAR_MENU_POPUP } from "@/lib/sidebar-menu-grid";
 
@@ -54,7 +54,8 @@ export function SidebarWorkspaceHeader({
   checkedIndex,
 }: SidebarWorkspaceHeaderProps) {
   const iconSize = useSize().icon;
-  const ChevronDown = useIcon("chevron-down");
+  const icons = useIcons();
+  const ChevronDown = icons["chevron-down"];
   const { isPeeking } = useSidebar();
 
   // The tile sits absolutely in the row's leading slot — 20px at left-1.5

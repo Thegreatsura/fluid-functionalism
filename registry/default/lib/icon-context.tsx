@@ -1,11 +1,17 @@
 "use client";
 
 // ---------------------------------------------------------------------------
-// Components never import an icon directly: they ask for one by the role it
-// plays (`useIcon("chevron-down")`). That keeps the icon set swappable in one
-// place, so an app on another library wraps its tree in IconProvider and
+// Components never import an icon directly: they look one up by the role it
+// plays (`useIcons()["chevron-down"]`). That keeps the icon set swappable in
+// one place, so an app on another library wraps its tree in IconProvider and
 // every component follows. Lucide is the default and the only icon library
 // this file depends on.
+//
+// Components read from the map rather than calling `useIcon(name)`: React
+// Compiler's lint (`react-hooks/static-components`, on in a fresh Next app)
+// takes a component returned by a hook call for one created during render,
+// and flags rendering it. A property read from the map is the same lookup
+// without the false alarm.
 // ---------------------------------------------------------------------------
 
 import { createContext, useContext, useMemo, type ComponentType, type ReactNode } from "react";
@@ -171,6 +177,9 @@ const IconContext = createContext<Record<IconName, IconComponent> | null>(null);
  * Returns a single icon component for the given name.
  * Falls back to the default (Lucide) set if no provider is present, so a
  * component works on its own before any IconProvider is set up.
+ *
+ * Fine for passing an icon on as a prop. To render it as `<Icon />`, take it
+ * from `useIcons()` instead (see the note at the top of this file).
  */
 function useIcon(name: IconName): IconComponent {
   const icons = useContext(IconContext);

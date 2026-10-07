@@ -156,8 +156,9 @@ Rules the hook enforces, worth knowing when you consume it:
   `<FluidHoverHighlight hover={hover} />` (`registry/default/fluid-hover-highlight.tsx`,
   shipped with the hook) instead of a `motion.div`. It reads the highlighted
   index, the measured rects, readiness, and the pointer session off the hook
-  (the session increments on `onMouseEnter`, so the highlight fades in at the
-  nearest row instead of sliding over from where it was last). `hidden` keeps
+  (the session steps when the pointer, having entered, first moves the
+  highlight, so it fades in at the nearest row instead of sliding over from
+  where it was last). `hidden` keeps
   the list's state but shows nothing (a closed popup). Optional `from` is where
   a fresh entry starts (dropdowns pass the checked row, the sidebar its level's
   active row), `className` carries radius and z-index, and `transition={false}`

@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -14,7 +15,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { cn } from "@/lib/utils";
-import { useIcon } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import { useSize } from "@/lib/size-context";
 import { useSurface } from "@/lib/surface-context";
 import { SURFACE_BG } from "@/lib/surface-classes";
@@ -41,6 +42,9 @@ import { SURFACE_BG } from "@/lib/surface-classes";
 // own. So Enter in the field picks nothing (only a row you arrowed onto
 // activates), and Escape closes the menu as usual.
 // ---------------------------------------------------------------------------
+
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 interface SearchHandle {
   input: HTMLInputElement | null;
@@ -216,7 +220,8 @@ const DropdownSearch = forwardRef<HTMLInputElement, DropdownSearchProps>(
     },
     ref
   ) => {
-    const SearchIcon = useIcon("search");
+    const icons = useIcons();
+    const SearchIcon = icons.search;
     const sizeClasses = useSize();
     const compact = sizeClasses.variant === "compact";
     const host = useContext(DropdownSearchHostContext);
@@ -229,15 +234,18 @@ const DropdownSearch = forwardRef<HTMLInputElement, DropdownSearchProps>(
     const inputRef = useRef<HTMLInputElement | null>(null);
 
     // Latest value / callback for the imperative handle and the unmount
-    // cleanup, without re-registering on every keystroke.
+    // cleanup, without re-registering on every keystroke. Refreshed after
+    // each commit, before any effect or handler reads them.
     const valueRef = useRef(value);
-    valueRef.current = value;
     const onValueChangeRef = useRef(onValueChange);
-    onValueChangeRef.current = onValueChange;
     const clearOnCloseRef = useRef(clearOnClose);
-    clearOnCloseRef.current = clearOnClose;
     const autoFocusRef = useRef(autoFocus);
-    autoFocusRef.current = autoFocus;
+    useIsoLayoutEffect(() => {
+      valueRef.current = value;
+      onValueChangeRef.current = onValueChange;
+      clearOnCloseRef.current = clearOnClose;
+      autoFocusRef.current = autoFocus;
+    });
 
     useEffect(() => {
       if (!host) return;

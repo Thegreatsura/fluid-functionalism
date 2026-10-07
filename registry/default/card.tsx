@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, typeClass, type SizeVariant } from "@/lib/size-context";
-import { useIcon, type IconComponent } from "@/lib/icon-context";
+import { useIcons, type IconComponent } from "@/lib/icon-context";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
@@ -276,7 +276,8 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
     const sizeClasses = useSize(size);
     const compact = sizeClasses.variant === "compact";
     const group = useContext(CardGroupContext);
-    const XIcon = useIcon("x");
+    const icons = useIcons();
+    const XIcon = icons.x;
 
     const orientation = group?.orientation ?? "card";
     const columns = group?.columns ?? 1;
@@ -937,7 +938,8 @@ function CardButton({
   disabled = false,
 }: CardButtonProps) {
   const shape = useShape();
-  const ArrowRight = useIcon("arrow-right");
+  const icons = useIcons();
+  const ArrowRight = icons["arrow-right"];
   const sizeClasses = useSize();
   const compact = sizeClasses.variant === "compact";
   const position = iconPosition ?? (external ? "end" : "start");

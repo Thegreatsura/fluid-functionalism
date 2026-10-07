@@ -20,7 +20,7 @@ import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion";
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 import { cn } from "@/lib/utils";
-import { useIcon } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
@@ -212,21 +212,19 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
             return v ? [v] : [];
           })();
 
-    // Keyed on the joined values so the Set (and the group context value
-    // below) keeps a stable identity across re-renders where the open values
-    // haven't actually changed.
-    const openValuesKey = openValuesList.join(",");
+    // Keyed on the serialized values so the Set (and the group context
+    // value below) keeps a stable identity across re-renders where the open
+    // values haven't actually changed.
+    const openValuesKey = JSON.stringify(openValuesList);
 
     const openValues = useMemo(
-      () => new Set(openValuesList),
-      // Deliberately keyed on the joined string, not the (fresh) array.
+      () => new Set(JSON.parse(openValuesKey) as string[]),
       [openValuesKey]
     );
 
     const handleSingleValueChange = useCallback(
       (value: string) => {
-        const sp = props as AccordionGroupSingleProps;
-        if (sp.onValueChange) sp.onValueChange(value);
+        if (singleOnValueChange) singleOnValueChange(value);
         else setInternalSingleValue(value);
       },
       [singleOnValueChange]
@@ -234,8 +232,7 @@ const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(
 
     const handleMultipleValueChange = useCallback(
       (value: string[]) => {
-        const mp = props as AccordionGroupMultipleProps;
-        if (mp.onValueChange) mp.onValueChange(value);
+        if (multipleOnValueChange) multipleOnValueChange(value);
         else setInternalMultipleValue(value);
       },
       [multipleOnValueChange]
@@ -716,7 +713,8 @@ interface AccordionTriggerProps
 
 const AccordionTrigger = forwardRef<HTMLButtonElement, AccordionTriggerProps>(
   ({ children, className, ...props }, ref) => {
-    const ChevronRight = useIcon("chevron-right");
+    const icons = useIcons();
+    const ChevronRight = icons["chevron-right"];
     const groupCtx = useAccordionGroup();
     const { index, isOpen, triggerRef, highlight } = useAccordionItemContext();
     const shape = useShape();
@@ -860,22 +858,21 @@ const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
     const innerRef = useRef<HTMLDivElement | null>(null);
     const roRef = useRef<ResizeObserver | null>(null);
     const [contentHeight, setContentHeight] = useState<number | null>(null);
-    // Items open at mount render `initial: "auto"` and receive their first
-    // pixel target a commit later; that hand-off must SNAP (duration 0), not
-    // spring — framer would measure the spring's numeric start visually
-    // (scaled) and play a shrink. Items that open later spring normally.
-    const needsSnap = useRef(isOpen);
     // Height springs only when THIS panel toggles. When contentHeight
     // changes underneath it instead — anything collapsible nested inside
     // the panel, another accordion included — it must snap: a spring
     // re-targeted every frame chases the child's own animation, lands
     // after it, and drags everything below the item along late. Same rule
     // as SidebarGroup / SidebarMenuSub; see motion-guidelines.md.
-    const prevOpenRef = useRef(isOpen);
-    const togglingRef = useRef(false);
-    if (prevOpenRef.current !== isOpen) {
-      prevOpenRef.current = isOpen;
-      togglingRef.current = true;
+    // Items open at mount render `initial: "auto"` and receive their first
+    // pixel target a commit later. That hand-off is not a toggle, so it
+    // snaps too — it must: framer would measure a spring's numeric start
+    // visually (scaled) and play a shrink. Items that open later spring.
+    const [prevOpen, setPrevOpen] = useState(isOpen);
+    const [toggling, setToggling] = useState(false);
+    if (prevOpen !== isOpen) {
+      setPrevOpen(isOpen);
+      setToggling(true);
     }
 
     const measureRef = useCallback((el: HTMLDivElement | null) => {
@@ -899,10 +896,6 @@ const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
         setContentHeight(innerRef.current.offsetHeight);
       }
     }, [isOpen]);
-
-    useEffect(() => {
-      if (contentHeight !== null) needsSnap.current = false;
-    }, [contentHeight]);
 
     // Whether the framer-motion height exit animation has fully finished.
     // Base UI's Panel would apply `hidden` the moment a controlled item
@@ -957,7 +950,7 @@ const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
                 // body dissolves rather than being sliced by the clip edge,
                 // which is what stops the rows below reading as shoved.
                 transition={
-                  needsSnap.current || reduceMotion || !togglingRef.current
+                  reduceMotion || !toggling
                     ? { duration: 0 }
                     : isOpen
                       ? { ...spring.fast, opacity: { duration: 0.06 } }
@@ -967,7 +960,7 @@ const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
                   groupCtx?.remeasure();
                 }}
                 onAnimationComplete={() => {
-                  togglingRef.current = false;
+                  setToggling(false);
                   groupCtx?.remeasure();
                   if (!isOpen) setExitComplete(true);
                 }}

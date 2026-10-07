@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Tooltip } from "@/components/ui/tooltip";
 import { MenuItem } from "@/components/ui/menu-item";
-import { useIcon, useIcons } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import {
   SidebarWorkspaceHeader,
   WorkspaceTile,
@@ -38,10 +38,10 @@ import { NAV_SECTIONS } from "@/components/sidebar-app/nav-data";
 export function AppSidebar(props: Omit<SidebarProps, "children">) {
   const [active, setActive] = useState("Home");
   const icons = useIcons();
-  const PlusIcon = useIcon("plus");
-  const UserIcon = useIcon("user");
-  const SettingsIcon = useIcon("settings");
-  const ArrowLeftIcon = useIcon("arrow-left");
+  const PlusIcon = icons.plus;
+  const UserIcon = icons.user;
+  const SettingsIcon = icons.settings;
+  const ArrowLeftIcon = icons["arrow-left"];
 
   return (
     <Sidebar variant="inset" {...props}>

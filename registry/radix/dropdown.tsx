@@ -390,6 +390,8 @@ type RadixContentProps = ComponentPropsWithoutRef<
   typeof DropdownMenuPrimitive.Content
 >;
 
+type LitBy = "open" | "pointer" | "keyboard";
+
 interface DropdownContentProps {
   children: ReactNode;
   className?: string;
@@ -469,9 +471,9 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
     // mounted (forceMount below) until the exit tween finishes.
     const [mounted, setMounted] = useState(false);
 
-    useEffect(() => {
-      if (open) setMounted(true);
-    }, [open]);
+    // Set during the render that opens it, so the portal mounts in the same
+    // commit as `open` rather than one after.
+    if (open && !mounted) setMounted(true);
 
     // Fallback release for the deferred unmount: onAnimationComplete on the
     // motion.div is the primary signal, but rAF-driven animation callbacks
@@ -500,10 +502,23 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
     // list (it rises from the checked row toward the cursor), not a row lit
     // by the open or by arrowing in from the search field: those would slide
     // over from the checked row, so they fade in where they are.
-    const litByRef = useRef<"open" | "pointer" | "keyboard">("open");
+    // The handlers read the ref: a key press updates it before the focus it
+    // moves arrives, in the same event. The render reads the state, which
+    // the highlight's `from` depends on. Each open starts over as "open".
+    const litByRef = useRef<LitBy>("open");
+    const [litBy, setLitBy] = useState<LitBy>("open");
+    const [litByOpen, setLitByOpen] = useState(open);
+    if (litByOpen !== open) {
+      setLitByOpen(open);
+      if (open) setLitBy("open");
+    }
     useEffect(() => {
       if (open) litByRef.current = "open";
     }, [open]);
+    const markLitBy = (by: LitBy) => {
+      litByRef.current = by;
+      setLitBy(by);
+    };
     // Multiple: one merged block per contiguous run of checked rows.
     const runs = useSelectionRuns(checkedIndices ?? []);
     const blocks = useMergeSplitBlocks(runs, open ? itemRects : [], shape.bgRadius);
@@ -605,15 +620,15 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                 shadowLevel={3}
                 ref={ref}
                 onKeyDownCapture={(e) => {
-                  litByRef.current = "keyboard";
+                  markLitBy("keyboard");
                   redirectTypingToSearch(e);
                 }}
                 onMouseEnter={() => {
-                  litByRef.current = "pointer";
+                  markLitBy("pointer");
                   handlers.onMouseEnter();
                 }}
                 onMouseMove={(e) => {
-                  litByRef.current = "pointer";
+                  markLitBy("pointer");
                   handlers.onMouseMove(e);
                 }}
                 onClick={handlers.onClick}
@@ -688,7 +703,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                 {/* Hover background */}
                 <FluidHoverHighlight
                   hover={hover}
-                  from={litByRef.current === "pointer" ? checkedRect : null}
+                  from={litBy === "pointer" ? checkedRect : null}
                   className={shape.bg}
                 />
 

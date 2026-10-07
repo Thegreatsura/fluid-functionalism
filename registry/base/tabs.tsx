@@ -184,9 +184,11 @@ type TabsListProps = ComponentPropsWithoutRef<typeof TabsPrimitive.List>;
 const TabsList = forwardRef<HTMLDivElement, TabsListProps>(
   ({ children, className, ...props }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    // A ref, not state: it's written on every mousemove, and blur and the hover
-    // pill's exit read it at the moment they run.
+    // Whether the pointer is over the list: a ref for blur, which reads it at
+    // the moment it runs, and the same flag as state for the render, which
+    // picks the hover pill's exit from it. Both flip in the same handlers.
     const isMouseInside = useRef(false);
+    const [mouseInside, setMouseInside] = useState(false);
     const shape = useShape();
     const sizeClasses = useSize();
     const substrate = useSurface();
@@ -195,21 +197,20 @@ const TabsList = forwardRef<HTMLDivElement, TabsListProps>(
     // Inside a dialog (substrate 5) it lifts to surface 8 instead of staying at 4.
     const indicatorLevel = Math.min(substrate + 3, 8);
     const valueOrderCtx = useContext(TabsValueOrderContext);
-    const [optimisticIdx, setOptimisticIdx] = useState<number | null>(null);
 
     // Derive value order from children synchronously
     const values = Children.toArray(children)
       .filter(isValidElement)
       .map((child) => (child.props as { value?: string }).value)
       .filter((v): v is string => typeof v === "string");
-    // `values` is a new array every render; the joined key is what the
+    // `values` is a new array every render; the serialized key is what the
     // layout effect compares, so it only re-reports on a real change.
-    const valueOrderKey = values.join(",");
+    const valueOrderKey = JSON.stringify(values);
     const setValueOrder = valueOrderCtx?.setValueOrder;
 
     // Report value order up to Tabs root
     useLayoutEffect(() => {
-      setValueOrder?.(values);
+      setValueOrder?.(JSON.parse(valueOrderKey) as string[]);
     }, [setValueOrder, valueOrderKey]);
 
     // Fluid hover
@@ -242,16 +243,17 @@ const TabsList = forwardRef<HTMLDivElement, TabsListProps>(
     const handleMouseMove = useCallback(
       (e: React.MouseEvent) => {
         isMouseInside.current = true;
+        setMouseInside(true);
         handlers.onMouseMove(e);
       },
       [handlers]
     );
 
-    // Flip the ref before clearing the hover index: the hover pill's exit is
-    // chosen in the render that removes it, and this ref decides whether it
-    // slides back into the selected pill or fades in place.
+    // Flip the flag before clearing the hover index: the hover pill's exit is
+    // chosen from it, sliding back into the selected pill or fading in place.
     const handleMouseLeave = useCallback(() => {
       isMouseInside.current = false;
+      setMouseInside(false);
       handlers.onMouseLeave();
     }, [handlers]);
 
@@ -262,11 +264,15 @@ const TabsList = forwardRef<HTMLDivElement, TabsListProps>(
       selectedValue !== undefined ? values.indexOf(selectedValue) : -1;
 
     // The pills follow optimisticIdx, not selectedIdx. A click sets it at once,
-    // so the pill moves before controlled state round-trips; this effect then
-    // resyncs it whenever the resolved selection changes (arrow keys, a parent).
-    useEffect(() => {
+    // so the pill moves before controlled state round-trips; it is then
+    // resynced, during render, whenever the resolved selection changes (arrow
+    // keys, a parent). The first render syncs too: syncedIdx starts unset.
+    const [optimisticIdx, setOptimisticIdx] = useState<number | null>(null);
+    const [syncedIdx, setSyncedIdx] = useState<number | undefined>(undefined);
+    if (syncedIdx !== selectedIdx) {
+      setSyncedIdx(selectedIdx);
       setOptimisticIdx(selectedIdx >= 0 ? selectedIdx : null);
-    }, [selectedIdx]);
+    }
 
     const activeSelectedIdx = optimisticIdx;
     const selectedRect =
@@ -407,7 +413,7 @@ const TabsList = forwardRef<HTMLDivElement, TabsListProps>(
                 // pill on spring.moderate while fading over 60ms. With it still
                 // inside (now over the selected tab), fade where it is.
                 exit={
-                  !isMouseInside.current && selectedRect
+                  !mouseInside && selectedRect
                     ? {
                         left: selectedRect.left,
                         width: selectedRect.width,

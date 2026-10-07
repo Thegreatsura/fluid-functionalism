@@ -48,7 +48,7 @@ function composerFile(p: InputMessagePreset): string {
     l.push(`  useQueueCardHeight,`);
     l.push(`} from "@/components/queued-stack";`);
   }
-  if (slots) l.push(`import { useIcon } from "@/lib/icon-context";`);
+  if (slots) l.push(`import { useIcons } from "@/lib/icon-context";`);
   l.push(`import { useShape } from "@/lib/shape-context";`);
   if (queueOn) l.push(`import { spring } from "@/lib/springs";`);
   l.push(``);
@@ -72,8 +72,9 @@ function composerFile(p: InputMessagePreset): string {
 
   l.push(`export function ChatComposer() {`);
   l.push(`  const shape = useShape();`);
-  if (p.leftSlot) l.push(`  const PlusIcon = useIcon("plus");`);
-  if (p.rightSlot) l.push(`  const ChevronDownIcon = useIcon("chevron-down");`);
+  if (slots) l.push(`  const icons = useIcons();`);
+  if (p.leftSlot) l.push(`  const PlusIcon = icons.plus;`);
+  if (p.rightSlot) l.push(`  const ChevronDownIcon = icons["chevron-down"];`);
   if (queueOn) l.push(`  const cardH = useQueueCardHeight();`);
   l.push(`  const [value, setValue] = useState("");`);
   const seed = queueOn

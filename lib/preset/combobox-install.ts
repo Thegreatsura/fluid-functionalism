@@ -34,7 +34,7 @@ function comboboxDemoFile(p: ComboboxPreset): string {
   l.push(`import {`);
   l.push(`  ${parts.join(",\n  ")},`);
   l.push(`} from "@/components/ui/combobox";`);
-  if (p.icon) l.push(`import { useIcon } from "@/lib/icon-context";`);
+  if (p.icon) l.push(`import { useIcons } from "@/lib/icon-context";`);
   l.push(``);
 
   // ── Demo content ──
@@ -48,7 +48,10 @@ function comboboxDemoFile(p: ComboboxPreset): string {
 
   // ── Component ──
   l.push(`export function ComboboxDemo() {`);
-  if (p.icon) l.push(`  const SearchIcon = useIcon("search");`);
+  if (p.icon) {
+    l.push(`  const icons = useIcons();`);
+    l.push(`  const SearchIcon = icons.search;`);
+  }
   // Creatable: the list is state, so a created row can join it.
   if (p.creatable) l.push(`  const [items, setItems] = useState(ITEMS);`);
   if (p.multiple) l.push(`  const [values, setValues] = useState<string[]>(${JSON.stringify(COMBOBOX_DEFAULT_VALUES)});`);

@@ -3,7 +3,6 @@
 import {
   useRef,
   useState,
-  useEffect,
   createContext,
   useContext,
   forwardRef,
@@ -16,7 +15,11 @@ import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
-import { useMergeSplitBlocks, SelectionBackgrounds } from "@/hooks/use-merge-split";
+import {
+  useMergeSplitBlocks,
+  useSelectionRuns,
+  SelectionBackgrounds,
+} from "@/hooks/use-merge-split";
 import { useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "@/lib/size-context";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
@@ -67,8 +70,6 @@ interface CheckboxGroupProps extends HTMLAttributes<HTMLDivElement> {
 const CheckboxGroup = forwardRef<HTMLDivElement, CheckboxGroupProps>(
   ({ children, checkedIndices, size, className, ...props }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const groupIdCounter = useRef(0);
-    const prevGroupMap = useRef(new Map<number, number>());
 
     const hover = useFluidHover(containerRef);
     const {
@@ -79,42 +80,11 @@ const CheckboxGroup = forwardRef<HTMLDivElement, CheckboxGroupProps>(
       registerItem,
     } = hover;
 
-    // Group contiguous checked indices into runs with stable IDs
-    const runs: { start: number; end: number }[] = [];
-    const sortedChecked = [...checkedIndices].sort((a, b) => a - b);
-    for (const idx of sortedChecked) {
-      const last = runs[runs.length - 1];
-      if (last && idx === last.end + 1) {
-        last.end = idx;
-      } else {
-        runs.push({ start: idx, end: idx });
-      }
-    }
-
-    // Assign stable IDs: reuse the previous ID if any member overlaps. The ID
-    // keys the background block, so keeping it lets framer grow or shrink the
-    // block in place when a neighbour is checked instead of exiting the old
-    // block and entering a new one. `usedIds` stops two runs claiming one ID
-    // after a split: the upper run keeps it, the lower run gets a new one.
-    const usedIds = new Set<number>();
-    const newGroupMap = new Map<number, number>();
-    const checkedGroups = runs.map((run) => {
-      let stableId: number | null = null;
-      for (let i = run.start; i <= run.end; i++) {
-        const prevId = prevGroupMap.current.get(i);
-        if (prevId !== undefined && !usedIds.has(prevId)) {
-          stableId = prevId;
-          break;
-        }
-      }
-      const id = stableId ?? ++groupIdCounter.current;
-      usedIds.add(id);
-      for (let i = run.start; i <= run.end; i++) {
-        newGroupMap.set(i, id);
-      }
-      return { ...run, id };
-    });
-    prevGroupMap.current = newGroupMap;
+    // Contiguous checked rows, each run with a stable ID. The ID keys the
+    // background block, so keeping it lets framer grow or shrink the block in
+    // place when a neighbour is checked instead of exiting the old block and
+    // entering a new one.
+    const checkedGroups = useSelectionRuns([...checkedIndices]);
 
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
@@ -256,19 +226,11 @@ interface CheckboxItemProps extends HTMLAttributes<HTMLDivElement> {
 const CheckboxItem = forwardRef<HTMLDivElement, CheckboxItemProps>(
   ({ label, index, checked, onToggle, className, ...props }, ref) => {
     const internalRef = useRef<HTMLDivElement>(null);
-    const hasMounted = useRef(false);
     const { registerItem, activeIndex } = useCheckboxGroup();
 
     useRegisterFluidHoverItem(registerItem, index, internalRef);
 
-    // Rows checked at mount show the finished check instead of drawing it, so
-    // default selections don't animate on page load.
-    useEffect(() => {
-      hasMounted.current = true;
-    }, []);
-
     const isActive = activeIndex === index;
-    const skipAnimation = !hasMounted.current;
     const shape = useShape();
     const sizeClasses = useSize();
     const compact = sizeClasses.variant === "compact";
@@ -364,7 +326,10 @@ const CheckboxItem = forwardRef<HTMLDivElement, CheckboxItemProps>(
           {/* keepMounted hands unmounting to AnimatePresence: without it Base UI
               drops the indicator as soon as the box unchecks and the retract
               never plays. */}
-          <AnimatePresence>
+          {/* initial={false}: a row checked at mount shows the finished
+              check instead of drawing it, so default selections don't
+              animate on page load. */}
+          <AnimatePresence initial={false}>
             {checked && (
               <CheckboxPrimitive.Indicator
                 keepMounted
@@ -400,7 +365,7 @@ const CheckboxItem = forwardRef<HTMLDivElement, CheckboxItemProps>(
                           easeIn on uncheck. */}
                       <motion.path
                         d="M6 12L10 16L18 8"
-                        initial={{ pathLength: skipAnimation ? 1 : 0 }}
+                        initial={{ pathLength: 0 }}
                         animate={{
                           pathLength: 1,
                           transition: { duration: 0.08, ease: "easeOut" },

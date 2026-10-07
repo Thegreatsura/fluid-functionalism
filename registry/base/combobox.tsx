@@ -4,6 +4,7 @@ import {
   forwardRef,
   useRef,
   useEffect,
+  useLayoutEffect,
   useState,
   useCallback,
   useMemo,
@@ -16,10 +17,14 @@ import {
 import { motion, AnimatePresence, animate, useMotionValue } from "framer-motion";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
-import { useIcon, type IconComponent } from "@/lib/icon-context";
+import { useIcons, type IconComponent } from "@/lib/icon-context";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
-import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
+import {
+  useFluidHover,
+  useRegisterFluidHoverItem,
+  type ItemRect,
+} from "@/hooks/use-fluid-hover";
 import {
   useMergeSplitBlocks,
   useSelectionRuns,
@@ -52,6 +57,9 @@ import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 // ComboboxList function child. String items are their own value and label;
 // object items carry `{ value, label }` plus anything else you need.
 // ---------------------------------------------------------------------------
+
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 type ComboboxItemData = string | { value: string; label: string };
 
@@ -249,7 +257,9 @@ function Combobox<
   // on the create row is not a selection: it asks the consumer for the item,
   // and selects whatever comes back.
   const onCreateRef = useRef(onCreate);
-  onCreateRef.current = onCreate;
+  useIsoLayoutEffect(() => {
+    onCreateRef.current = onCreate;
+  });
   const handleValueChange = useCallback(
     (next: T[] | T | null) => {
       const picked = Array.isArray(next) ? next : next == null ? [] : [next];
@@ -429,7 +439,8 @@ function FieldControls({
   compact: boolean;
   iconSize: number;
 }) {
-  const XIcon = useIcon("x");
+  const icons = useIcons();
+  const XIcon = icons.x;
   const pill = useShape().variant === "pill";
   return (
     <>
@@ -560,8 +571,10 @@ function useChipRowHeight(padY: number) {
   const height = useMotionValue<number | "auto">("auto");
   const roRef = useRef<ResizeObserver | null>(null);
   const padRef = useRef(padY);
-  padRef.current = padY;
-  const ref = useCallback(
+  useIsoLayoutEffect(() => {
+    padRef.current = padY;
+  });
+  const measure = useCallback(
     (el: HTMLDivElement | null) => {
       roRef.current?.disconnect();
       roRef.current = null;
@@ -579,7 +592,7 @@ function useChipRowHeight(padY: number) {
     },
     [height]
   );
-  return { ref, height };
+  return { measure, height };
 }
 
 const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
@@ -596,12 +609,15 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
     },
     ref
   ) => {
-    const XIcon = useIcon("x");
+    const icons = useIcons();
+    const XIcon = icons.x;
     const shape = useShape();
     const sizeClasses = useSize(size);
     const compact = sizeClasses.variant === "compact";
     const { anchorRef, open, disabled, inputValue, values } = useComboboxContext();
-    const rowHeight = useChipRowHeight(compact ? 8 : 12);
+    const { measure: measureChipRows, height: chipRowsHeight } = useChipRowHeight(
+      compact ? 8 : 12
+    );
 
     return (
       <div className="flex flex-col gap-1">
@@ -609,7 +625,7 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
           ref={anchorRef}
           // The field springs to the chip rows' measured height as they
           // wrap and unwrap, instead of snapping a row taller or shorter.
-          render={<motion.div style={{ height: rowHeight.height }} />}
+          render={<motion.div style={{ height: chipRowsHeight }} />}
           // Chips stamps no state attributes of its own (InputGroup does);
           // the field ladder and the chevron read these.
           data-disabled={disabled || undefined}
@@ -644,7 +660,7 @@ const ComboboxChips = forwardRef<HTMLInputElement, ComboboxChipsProps>(
             </span>
           )}
           <div
-            ref={rowHeight.ref}
+            ref={measureChipRows}
             className={cn(
               "relative flex min-w-0 flex-1 flex-wrap items-center gap-1",
               // A chip leads the field: the row pulls left so the chip sits
@@ -837,7 +853,8 @@ const ComboboxList = forwardRef<HTMLDivElement, ComboboxListProps>(
   ({ className, children }, ref) => {
     const { open, values, multiple, inputValue, createRow } = useComboboxContext();
     const highlight = useContext(ComboboxHighlightContext);
-    const PlusIcon = useIcon("plus");
+    const icons = useIcons();
+    const PlusIcon = icons.plus;
     const shape = popupShape;
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -871,19 +888,25 @@ const ComboboxList = forwardRef<HTMLDivElement, ComboboxListProps>(
     // keeping multiple mode's merge/split glide). The flag arms on the
     // query's render and holds until the rects measured from the new row
     // set land — measurement coalesces on a rAF, one render behind.
-    const reflowRef = useRef(false);
-    const prevQueryRef = useRef(inputValue);
-    const armedRectsRef = useRef(itemRects);
-    if (prevQueryRef.current !== inputValue) {
-      prevQueryRef.current = inputValue;
-      armedRectsRef.current = itemRects;
-      reflowRef.current = true;
+    // `armedRects` holds the rects of the old row set while armed; the flag
+    // clears a frame after rects from the new row set have rendered.
+    const [reflow, setReflow] = useState<{
+      query: string;
+      armedRects: ItemRect[] | null;
+    }>(() => ({ query: inputValue, armedRects: null }));
+    if (reflow.query !== inputValue) {
+      setReflow({ query: inputValue, armedRects: itemRects });
     }
-    const reflowSnap = reflowRef.current;
+    const reflowSnap = reflow.armedRects !== null;
+    const reflowLanded = reflow.armedRects !== null && itemRects !== reflow.armedRects;
     useEffect(() => {
-      if (reflowRef.current && itemRects !== armedRectsRef.current)
-        reflowRef.current = false;
-    });
+      if (!reflowLanded) return;
+      const armed = reflow.armedRects;
+      const frame = requestAnimationFrame(() =>
+        setReflow((r) => (r.armedRects === armed ? { ...r, armedRects: null } : r))
+      );
+      return () => cancelAnimationFrame(frame);
+    }, [reflowLanded, reflow.armedRects]);
 
     // Detect the checked rows. Their indices shift as the query filters the
     // list, so the typed value is a dependency too.
@@ -922,13 +945,16 @@ const ComboboxList = forwardRef<HTMLDivElement, ComboboxListProps>(
       else if (highlight.keyboard) setActiveIndex(highlight.index);
     }, [highlight, setActiveIndex]);
 
-    // Reset every overlay index as the close begins, so the reopen doesn't
-    // spring an overlay from a stale row.
-    useEffect(() => {
-      if (open) return;
-      setCheckedIndices([]);
-      setActiveIndex(null);
-    }, [open, setActiveIndex]);
+    // Reset every overlay index as the close begins (during the render that
+    // closes it), so the reopen doesn't spring an overlay from a stale row.
+    const [overlaysOpen, setOverlaysOpen] = useState(open);
+    if (overlaysOpen !== open) {
+      setOverlaysOpen(open);
+      if (!open) {
+        setCheckedIndices([]);
+        setActiveIndex(null);
+      }
+    }
 
     // Overlays read rects only once the hook reports the row set fully
     // measured — positioning one from an incomplete pass mounts it at the
@@ -1069,11 +1095,6 @@ const ComboboxItem = forwardRef<HTMLDivElement, ComboboxItemProps>(
     const shape = popupShape;
     const sizeClasses = useSize();
     const compact = sizeClasses.variant === "compact";
-    const hasMounted = useRef(false);
-
-    useEffect(() => {
-      hasMounted.current = true;
-    }, []);
 
     // Register with fluid hover. Depends on the (stable) registerItem
     // rather than the content context, which is rebuilt on every activeIndex
@@ -1083,7 +1104,6 @@ const ComboboxItem = forwardRef<HTMLDivElement, ComboboxItemProps>(
 
     const isActive = contentCtx?.activeIndex === index;
     const isChecked = comboboxCtx.values.includes(value);
-    const skipAnimation = !hasMounted.current;
     // Base UI matches rows to `items` by value, so the row hands back the
     // item it was rendered from.
     const item = comboboxCtx.itemsByValue.get(value) ?? value;
@@ -1138,7 +1158,10 @@ const ComboboxItem = forwardRef<HTMLDivElement, ComboboxItemProps>(
           aria-hidden
           className={cn("shrink-0", compact ? "w-3.5 h-3.5" : "w-4 h-4")}
         >
-          <AnimatePresence>
+          {/* initial={false}: a row checked at mount shows the finished
+              check instead of drawing it, so default selections don't
+              animate on page load. */}
+          <AnimatePresence initial={false}>
             {isChecked && (
               <motion.svg
                 key="check"
@@ -1157,7 +1180,7 @@ const ComboboxItem = forwardRef<HTMLDivElement, ComboboxItemProps>(
               >
                 <motion.path
                   d="M4 12L9 17L20 6"
-                  initial={{ pathLength: skipAnimation ? 1 : 0 }}
+                  initial={{ pathLength: 0 }}
                   animate={{
                     pathLength: 1,
                     transition: { duration: 0.08, ease: "easeOut" },

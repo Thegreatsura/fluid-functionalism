@@ -198,13 +198,18 @@ function ValueDisplay({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Seed the draft with the raw number, not formatValue's output, so a
-  // formatted "50%" never has to be parsed back. Keyed on editingIndex alone:
-  // value updates mid-edit don't overwrite what is being typed.
+  // formatted "50%" never has to be parsed back. Seeded during the render
+  // that starts the edit, keyed on editingIndex alone: value updates
+  // mid-edit don't overwrite what is being typed.
+  const [seededIndex, setSeededIndex] = useState<number | null>(null);
+  if (seededIndex !== editingIndex) {
+    setSeededIndex(editingIndex);
+    if (editingIndex !== null) setInputValue(String(values[editingIndex]));
+  }
   useEffect(() => {
-    if (editingIndex !== null) {
-      setInputValue(String(values[editingIndex]));
-      requestAnimationFrame(() => inputRef.current?.select());
-    }
+    if (editingIndex === null) return;
+    const frame = requestAnimationFrame(() => inputRef.current?.select());
+    return () => cancelAnimationFrame(frame);
   }, [editingIndex]);
 
   // Clamp to min/max, then snap to the nearest `steps` entry or the step
@@ -442,9 +447,11 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
     const valuesRef = useRef(values);
     const minRef = useRef(min);
     const maxRef = useRef(max);
-    valuesRef.current = values;
-    minRef.current = min;
-    maxRef.current = max;
+    useLayoutEffect(() => {
+      valuesRef.current = values;
+      minRef.current = min;
+      maxRef.current = max;
+    });
 
     // --- State ---
     const [isHovered, setIsHovered] = useState(false);
@@ -459,21 +466,19 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
       cursorX: number;
     } | null>(null);
     const [focusedThumb, setFocusedThumb] = useState<number | null>(null);
-    const [showHoverTooltip, setShowHoverTooltip] = useState(false);
-    const hoverDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Set 100ms into a hover; reset as soon as the hover ends.
+    const [hoverDelayDone, setHoverDelayDone] = useState(false);
 
     // Show hover tooltip after 100ms delay
     // The preview bar appears on the first move; only the tooltip waits, so
     // sweeping the cursor across the slider doesn't flash it.
+    if (!isHovered && hoverDelayDone) setHoverDelayDone(false);
     useEffect(() => {
-      if (isHovered) {
-        hoverDelayRef.current = setTimeout(() => setShowHoverTooltip(true), 100);
-      } else {
-        if (hoverDelayRef.current) clearTimeout(hoverDelayRef.current);
-        setShowHoverTooltip(false);
-      }
-      return () => { if (hoverDelayRef.current) clearTimeout(hoverDelayRef.current); };
+      if (!isHovered) return;
+      const id = setTimeout(() => setHoverDelayDone(true), 100);
+      return () => clearTimeout(id);
     }, [isHovered]);
+    const showHoverTooltip = isHovered && hoverDelayDone;
 
     // --- Motion values ---
     // Each thumb's left offset in layout px. Thumbs, fill, dot mask and
@@ -559,7 +564,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
     // --- Initial sync (before paint) ---
     // Places the thumbs from the measured width with no animation. The track
     // stays at opacity 0 until `ready`, so the first frame never shows thumbs
-    // parked at 0 sliding into place.
+    // parked at 0 sliding into place. Runs once: initialSyncDone turns the
+    // re-runs its deps trigger into no-ops (later changes spring instead).
     const initialSyncDone = useRef(false);
     const [ready, setReady] = useState(false);
     useLayoutEffect(() => {
@@ -575,7 +581,7 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
       }
       initialSyncDone.current = true;
       setReady(true);
-    }, []);
+    }, [values, min, max, isRange, motionX0, motionX1]);
 
     // --- Track width measurement (resize only) ---
     // On resize the thumbs spring (spring.moderate) to their new pixel spots
@@ -1288,22 +1294,20 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
       snappedValue: number;
       cursorX: number;
     } | null>(null);
-    const [showHoverTooltip, setShowHoverTooltip] = useState(false);
-    const hoverDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Set 100ms into a hover; reset as soon as the hover ends.
+    const [hoverDelayDone, setHoverDelayDone] = useState(false);
     const shape = useShape();
 
     // Show hover tooltip after 100ms delay
     // The preview bar appears on the first move; only the tooltip waits, so
     // sweeping the cursor across the slider doesn't flash it.
+    if (!isHovered && hoverDelayDone) setHoverDelayDone(false);
     useEffect(() => {
-      if (isHovered) {
-        hoverDelayRef.current = setTimeout(() => setShowHoverTooltip(true), 100);
-      } else {
-        if (hoverDelayRef.current) clearTimeout(hoverDelayRef.current);
-        setShowHoverTooltip(false);
-      }
-      return () => { if (hoverDelayRef.current) clearTimeout(hoverDelayRef.current); };
+      if (!isHovered) return;
+      const id = setTimeout(() => setHoverDelayDone(true), 100);
+      return () => clearTimeout(id);
     }, [isHovered]);
+    const showHoverTooltip = isHovered && hoverDelayDone;
 
     // The forwarded ref and rest props land on the bordered row, not the outer
     // wrapper; containerRef keeps a local handle for measuring.

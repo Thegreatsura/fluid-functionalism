@@ -237,7 +237,7 @@ function appSidebarFile(p: SidebarPreset): string {
     l.push(`import { motion } from "framer-motion";`);
     l.push(`import { spring } from "@/lib/springs";`);
   }
-  l.push(`import { useIcon, useIcons } from "@/lib/icon-context";`);
+  l.push(`import { useIcons } from "@/lib/icon-context";`);
   if (p.headerPrimary !== "none") {
     l.push(
       `import { SidebarWorkspaceHeader, WorkspaceTile } from "@/components/sidebar-app/workspace-header";`
@@ -291,27 +291,27 @@ function appSidebarFile(p: SidebarPreset): string {
       l.push(`  const expandedH = callouts.length * cardH + (callouts.length - 1) * 4;`);
     }
   }
-  if (menuRows && p.l1Primary === "menu") l.push(`  const icons = useIcons();`);
-  l.push(`  const PlusIcon = useIcon("plus");`);
-  if (anyRowActions || p.sectionActions > 1) l.push(`  const PencilIcon = useIcon("pencil");`);
+  l.push(`  const icons = useIcons();`);
+  l.push(`  const PlusIcon = icons.plus;`);
+  if (anyRowActions || p.sectionActions > 1) l.push(`  const PencilIcon = icons.pencil;`);
   if (anyRowActions) {
-    l.push(`  const MoreVerticalIcon = useIcon("more-vertical");`);
-    l.push(`  const LinkIcon = useIcon("link");`);
+    l.push(`  const MoreVerticalIcon = icons["more-vertical"];`);
+    l.push(`  const LinkIcon = icons.link;`);
   }
-  if (p.sectionActions > 1) l.push(`  const SlidersIcon = useIcon("sliders-horizontal");`);
-  if (p.sectionActions > 2) l.push(`  const SectionMoreIcon = useIcon("more-vertical");`);
-  if (nests) l.push(`  const ChevronRightIcon = useIcon("chevron-right");`);
-  if (headerHorizontal && p.headerActions > 1) l.push(`  const UsersIcon = useIcon("users");`);
-  if (!headerHorizontal && p.headerActions > 1) l.push(`  const UsersIcon = useIcon("users");`);
+  if (p.sectionActions > 1) l.push(`  const SlidersIcon = icons["sliders-horizontal"];`);
+  if (p.sectionActions > 2) l.push(`  const SectionMoreIcon = icons["more-vertical"];`);
+  if (nests) l.push(`  const ChevronRightIcon = icons["chevron-right"];`);
+  if (headerHorizontal && p.headerActions > 1) l.push(`  const UsersIcon = icons.users;`);
+  if (!headerHorizontal && p.headerActions > 1) l.push(`  const UsersIcon = icons.users;`);
   if (p.footerPrimary === "dropdown") {
-    l.push(`  const UserIcon = useIcon("user");`);
-    l.push(`  const SettingsIcon = useIcon("settings");`);
-    l.push(`  const ArrowLeftIcon = useIcon("arrow-left");`);
+    l.push(`  const UserIcon = icons.user;`);
+    l.push(`  const SettingsIcon = icons.settings;`);
+    l.push(`  const ArrowLeftIcon = icons["arrow-left"];`);
   }
-  if (p.footerActions > 0) l.push(`  const FooterSettingsIcon = useIcon("settings");`);
-  if (p.footerActions > 1) l.push(`  const MoonIcon = useIcon("moon");`);
-  if (hasCallout && p.footerCallout === "inline") l.push(`  const CalloutIcon = useIcon("panel-left");`);
-  if (headerHorizontal) l.push(`  const SearchIcon = useIcon("search");`);
+  if (p.footerActions > 0) l.push(`  const FooterSettingsIcon = icons.settings;`);
+  if (p.footerActions > 1) l.push(`  const MoonIcon = icons.moon;`);
+  if (hasCallout && p.footerCallout === "inline") l.push(`  const CalloutIcon = icons["panel-left"];`);
+  if (headerHorizontal) l.push(`  const SearchIcon = icons.search;`);
   l.push(``);
   l.push(`  return (`);
   l.push(`    <Sidebar${p.design !== "sidebar" ? ` variant="${p.design}"` : ""} {...props}>`);

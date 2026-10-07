@@ -36,7 +36,7 @@ const hookReturn: PropDef[] = [
   { name: "itemRects", type: "ItemRect[]", description: "Each item's box inside the container. Survives a parent scale, not a rotation." },
   { name: "isMeasured", type: "boolean", description: "True once every item has a box. Measured again on register and on resize." },
   { name: "remeasure", type: "() => void", description: "Measure again and hide the highlight until done. Call it when a popup opens." },
-  { name: "sessionRef", type: "RefObject<number>", description: "Counts pointer entries. The highlight fades in fresh on each one." },
+  { name: "session", type: "number", description: "Counts pointer entries. The highlight fades in fresh on each one." },
 ];
 
 const highlightProps: PropDef[] = [

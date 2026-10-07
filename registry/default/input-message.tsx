@@ -22,7 +22,7 @@ import { fontWeights } from "@/lib/font-weight";
 import { spring } from "@/lib/springs";
 import { nestedRadius, useShape } from "@/lib/shape-context";
 import { SizeProvider, useSize, fieldTouchClass, type SizeVariant } from "@/lib/size-context";
-import { useIcon } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import { surfaceClasses } from "@/lib/surface-classes";
 import { SurfaceProvider } from "@/lib/surface-context";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
@@ -100,6 +100,19 @@ interface InputMessageSlotContext {
 type InputMessageSlot =
   | ReactNode
   | ((ctx: InputMessageSlotContext) => ReactNode);
+
+/** Renders a slot. A function slot is called here, in its own component,
+ *  so InputMessage's render never hands consumer code the context's
+ *  ref-reading callbacks (openFilePicker) mid-render. */
+function InputMessageSlotContent({
+  slot,
+  ctx,
+}: {
+  slot: InputMessageSlot;
+  ctx: InputMessageSlotContext;
+}) {
+  return <>{typeof slot === "function" ? slot(ctx) : slot}</>;
+}
 
 /** A message held in the queue while the assistant is responding. Carries the
  *  trimmed text plus a snapshot of the files attached when it was queued, so
@@ -206,7 +219,8 @@ interface FilePreviewTileProps {
 }
 
 function FilePreviewTile({ file, onRemove, size }: FilePreviewTileProps) {
-  const XIcon = useIcon("x");
+  const icons = useIcons();
+  const XIcon = icons.x;
   const shape = useShape();
   // The tile sits 8px inside the composer's container edge. Derive its curve
   // from that actual inset instead of reusing the popup-specific 4px pair.
@@ -275,8 +289,9 @@ function QueuedRow({
   onRemove,
   onMove,
 }: QueuedRowProps) {
-  const XIcon = useIcon("x");
-  const ImageIcon = useIcon("image");
+  const icons = useIcons();
+  const XIcon = icons.x;
+  const ImageIcon = icons.image;
   const compactStep = useSize().variant === "compact";
   const fileCount = item.files.length;
   const label =
@@ -390,8 +405,9 @@ function SuggestionRow({
   registerItem,
   onSelect,
 }: SuggestionRowProps) {
-  const EnterIcon = useIcon("corner-down-left");
-  const ArrowDownIcon = useIcon("arrow-down");
+  const icons = useIcons();
+  const EnterIcon = icons["corner-down-left"];
+  const ArrowDownIcon = icons["arrow-down"];
   const compactStep = useSize().variant === "compact";
   const ref = useRef<HTMLDivElement>(null);
 
@@ -480,7 +496,8 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
   ) => {
     const shape = useShape();
     const compactStep = useSize(size).variant === "compact";
-    const ArrowUpIcon = useIcon("arrow-up");
+    const icons = useIcons();
+    const ArrowUpIcon = icons["arrow-up"];
     const reduceMotion = useReducedMotion() ?? false;
     const isTouch = useIsTouch();
 
@@ -511,7 +528,9 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
     // latest value even if a handler closure is stale (e.g. two submits land
     // before the controlled `queue` prop round-trips back).
     const queueRef = useRef(queueArr);
-    queueRef.current = queueArr;
+    useIsoLayoutEffect(() => {
+      queueRef.current = queueArr;
+    });
     const supportsQueue = status !== undefined && onQueueChange !== undefined;
     const streaming = status === "streaming";
     const [liveMsg, setLiveMsg] = useState("");
@@ -981,10 +1000,8 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
       () => ({ openFilePicker, files: filesArr }),
       [openFilePicker, filesArr]
     );
-    const leftContent =
-      typeof leftSlot === "function" ? leftSlot(slotCtx) : leftSlot;
-    const rightContent =
-      typeof rightSlot === "function" ? rightSlot(slotCtx) : rightSlot;
+    const leftContent = <InputMessageSlotContent slot={leftSlot} ctx={slotCtx} />;
+    const rightContent = <InputMessageSlotContent slot={rightSlot} ctx={slotCtx} />;
 
     // ── Drag-and-drop ────────────────────────────────────────────────
     const handleDragOver = useCallback(

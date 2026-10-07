@@ -12,7 +12,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { fontWeights } from "@/lib/font-weight";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { useIcon } from "@/lib/icon-context";
+import { useIcons } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
 import { useShape } from "@/lib/shape-context";
 import { useSize, useSizeVariant, typeClass } from "@/lib/size-context";
@@ -125,7 +125,8 @@ interface DialogContentProps extends HTMLAttributes<HTMLDivElement> {
 
 const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
   ({ className, children, size = "sm", container, showCloseButton = true, position = "center", ...props }, ref) => {
-    const XIcon = useIcon("x");
+    const icons = useIcons();
+    const XIcon = icons.x;
     const shape = useShape();
     const substrate = useSurface();
     const dialogLevel = Math.min(substrate + DIALOG_OFFSET, 8);

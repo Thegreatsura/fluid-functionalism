@@ -14,7 +14,7 @@ vi.mock("framer-motion", async (importOriginal) => {
     AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
     motion: {
       ...actual.motion,
-      div: ({ initial, animate, children, className, "data-slot": slot }: HTMLMotionProps<"div"> & { "data-slot"?: string }) => {
+      div: ({ initial, animate, transition, children, className, "data-slot": slot }: HTMLMotionProps<"div"> & { "data-slot"?: string }) => {
         const start = useRef(initial);
         return createElement("div", {
           children,
@@ -22,6 +22,7 @@ vi.mock("framer-motion", async (importOriginal) => {
           "data-slot": slot,
           "data-start": JSON.stringify(start.current),
           "data-target": JSON.stringify(animate),
+          "data-transition": JSON.stringify(transition),
         });
       },
     },
@@ -101,4 +102,39 @@ it("starts each sidebar hover session at the pointer, even with another route ac
   moveTo(90);
   expect(overlay()).not.toBe(first);
   expect(start(overlay())).toMatchObject({ y: 80, opacity: 0 });
+});
+
+it("springs the active background to a new row, snaps it when only its row moves", () => {
+  const rows = (extra: boolean, active: string) => (
+    <SidebarMenu aria-label="Components">
+      {extra && (
+        <SidebarMenuItem key="new"><SidebarMenuButton data-top="40">New</SidebarMenuButton></SidebarMenuItem>
+      )}
+      {["Accordion", "Button", "Card"].map((label, i) => (
+        <SidebarMenuItem key={label}>
+          <SidebarMenuButton data-top={String(40 * (i + (extra ? 2 : 1)))} isActive={label === active}>
+            {label}
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  );
+  const { container, rerender } = render(rows(false, "Button"));
+  flushFrame();
+  const active = () => container.querySelector<HTMLElement>(".bg-active")!;
+  const target = () => JSON.parse(active().dataset.target!);
+  const springs = () => JSON.parse(active().dataset.transition!).duration !== 0;
+  expect(target()).toMatchObject({ top: 80 });
+
+  // A row lands above: the active row itself moved, so the background snaps.
+  rerender(rows(true, "Button"));
+  flushFrame();
+  expect(target()).toMatchObject({ top: 120 });
+  expect(springs()).toBe(false);
+
+  // The selection moves: a different row, so the background glides.
+  rerender(rows(true, "Card"));
+  flushFrame();
+  expect(target()).toMatchObject({ top: 160 });
+  expect(springs()).toBe(true);
 });

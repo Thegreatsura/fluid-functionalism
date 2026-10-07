@@ -47,7 +47,7 @@ function dropdownDemoFile(p: DropdownPreset): string {
     l.push(
       p.icons
         ? `import { useIcons, type IconName } from "@/lib/icon-context";`
-        : `import { useIcon } from "@/lib/icon-context";`
+        : `import { useIcons } from "@/lib/icon-context";`
     );
   }
   l.push(``);
@@ -76,8 +76,8 @@ function dropdownDemoFile(p: DropdownPreset): string {
 
   // ── Component ──
   l.push(`export function DropdownDemo() {`);
-  if (p.icons) l.push(`  const icons = useIcons();`);
-  else if (isMenu) l.push(`  const ChevronDown = useIcon("chevron-down");`);
+  if (isMenu || p.icons) l.push(`  const icons = useIcons();`);
+  if (isMenu && !p.icons) l.push(`  const ChevronDown = icons["chevron-down"];`);
   if (p.selection === "single") {
     l.push(`  const [selected, setSelected] = useState<string | null>(${JSON.stringify(DROPDOWN_DEFAULT_SELECTED)});`);
   } else if (p.selection === "multiple") {

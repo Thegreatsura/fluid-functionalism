@@ -24,7 +24,15 @@ A [shadcn/ui](https://ui.shadcn.com) registry of components, the systems they sh
 
 ## Install
 
-Add the registry to your project once:
+A new app can start with every component installed and wired, from one command:
+
+```bash
+npx shadcn@latest create -n my-app -t next https://www.fluidfunctionalism.com/r/starter/default.json
+```
+
+Replace `default` with the settings you want, joined by dashes: `radix`, `pill`, `compact`, `lucide`/`tabler`/`phosphor`/`hugeicons`, `light`/`dark`. The home page builds this command from your Make them yours settings.
+
+In an existing project, add the registry once:
 
 ```bash
 npx shadcn@latest registry add @fluid
@@ -174,7 +182,7 @@ import { CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
 </IconProvider>
 ```
 
-The icon-library switcher on the docs site is a preview tool only. None of that machinery ships with installed components.
+Or install a whole set (`@fluid/icons-tabler`, `@fluid/icons-phosphor`, `@fluid/icons-hugeicons`, `@fluid/icons-untitledui`) and pass its map to `IconProvider`.
 
 ## What makes these different
 

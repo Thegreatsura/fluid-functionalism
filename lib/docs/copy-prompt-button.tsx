@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils";
 interface CopyPromptButtonProps {
   /** The prompt text written to the clipboard. */
   prompt: string;
+  /** Button text. Defaults to "Copy prompt". */
+  label?: string;
   /** Button size; omitted, it follows the SizeProvider. */
   size?: ButtonSize;
   className?: string;
@@ -76,7 +78,7 @@ function CopyPromptIcon({ size = 16, strokeWidth, className }: IconComponentProp
  *  page. Copies a self-contained brief for an AI coding agent (see
  *  `install-prompt.ts`). The label never changes; only the leading icon
  *  turns into a check for 2s, and a visually hidden "Copied" is read out. */
-export function CopyPromptButton({ prompt, size, className, onCopy }: CopyPromptButtonProps) {
+export function CopyPromptButton({ prompt, label = "Copy prompt", size, className, onCopy }: CopyPromptButtonProps) {
   const [copied, setCopied] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
@@ -130,7 +132,7 @@ export function CopyPromptButton({ prompt, size, className, onCopy }: CopyPrompt
         className={cn("w-fit shrink-0", className)}
         aria-live="polite"
       >
-        Copy prompt
+        {label}
         {copied && <span className="sr-only">Copied</span>}
       </Button>
     </CopiedContext.Provider>

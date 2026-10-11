@@ -22,14 +22,16 @@ function useStarterSettings(): StarterSettings {
 }
 
 /**
- * Home page Copy prompt: a brief that has a coding agent start a new app
- * from the starter, with every component and the visitor's "Make them yours"
- * settings. The prompt follows the settings live (panel or T, R, S, I).
+ * Home page "Copy install prompt": a brief that has a coding agent start a
+ * new app from the starter, with every component and the visitor's "Make
+ * them yours" settings. The prompt follows the settings live (panel or T,
+ * R, S, I).
  */
 export function StarterPromptButton({ size }: { size?: ButtonSize }) {
   const settings = useStarterSettings();
   return (
     <CopyPromptButton
+      label="Copy install prompt"
       prompt={buildStarterPrompt(settings)}
       size={size}
       onCopy={() => track("Starter prompt copied", { base: settings.base })}

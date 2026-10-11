@@ -686,6 +686,121 @@
       ]
     },
     {
+      "name": "icons-tabler",
+      "type": "registry:lib",
+      "title": "Tabler Icon Set",
+      "description": "Tabler glyphs for every icon slot the components look up. Pass the map to IconProvider (or FluidProvider's icons prop) and every component draws Tabler.",
+      "dependencies": [
+        "@tabler/icons-react"
+      ],
+      "registryDependencies": [
+        "https://www.fluidfunctionalism.com/r/icon-context.json"
+      ],
+      "files": [
+        {
+          "path": "registry/default/lib/icons-tabler.tsx",
+          "type": "registry:lib"
+        }
+      ],
+      "docs": "Docs: https://www.fluidfunctionalism.com/docs (Icons). Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
+      "categories": [
+        "lib"
+      ]
+    },
+    {
+      "name": "icons-phosphor",
+      "type": "registry:lib",
+      "title": "Phosphor Icon Set",
+      "description": "Phosphor glyphs for every icon slot the components look up. Pass the map to IconProvider (or FluidProvider's icons prop) and every component draws Phosphor.",
+      "dependencies": [
+        "@phosphor-icons/react"
+      ],
+      "registryDependencies": [
+        "https://www.fluidfunctionalism.com/r/icon-context.json"
+      ],
+      "files": [
+        {
+          "path": "registry/default/lib/icons-phosphor.tsx",
+          "type": "registry:lib"
+        }
+      ],
+      "docs": "Docs: https://www.fluidfunctionalism.com/docs (Icons). Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
+      "categories": [
+        "lib"
+      ]
+    },
+    {
+      "name": "icons-hugeicons",
+      "type": "registry:lib",
+      "title": "HugeIcons Icon Set",
+      "description": "HugeIcons glyphs for every icon slot the components look up. Pass the map to IconProvider (or FluidProvider's icons prop) and every component draws HugeIcons.",
+      "dependencies": [
+        "@hugeicons/react",
+        "@hugeicons/core-free-icons",
+        "lucide-react"
+      ],
+      "registryDependencies": [
+        "https://www.fluidfunctionalism.com/r/icon-context.json"
+      ],
+      "files": [
+        {
+          "path": "registry/default/lib/icons-hugeicons.tsx",
+          "type": "registry:lib"
+        }
+      ],
+      "docs": "Docs: https://www.fluidfunctionalism.com/docs (Icons). Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
+      "categories": [
+        "lib"
+      ]
+    },
+    {
+      "name": "icons-untitledui",
+      "type": "registry:lib",
+      "title": "Untitled UI Icon Set",
+      "description": "Untitled UI glyphs for every icon slot the components look up. Pass the map to IconProvider (or FluidProvider's icons prop) and every component draws Untitled UI.",
+      "dependencies": [
+        "@untitledui/icons",
+        "lucide-react"
+      ],
+      "registryDependencies": [
+        "https://www.fluidfunctionalism.com/r/icon-context.json"
+      ],
+      "files": [
+        {
+          "path": "registry/default/lib/icons-untitledui.tsx",
+          "type": "registry:lib"
+        }
+      ],
+      "docs": "Docs: https://www.fluidfunctionalism.com/docs (Icons). Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
+      "categories": [
+        "lib"
+      ]
+    },
+    {
+      "name": "fluid-provider",
+      "type": "registry:lib",
+      "title": "Fluid Provider",
+      "description": "One wrapper for the whole system: reduced motion that follows the OS, the radius (rounded or pill), the size step (default or compact), and the icon set.",
+      "dependencies": [
+        "motion"
+      ],
+      "registryDependencies": [
+        "https://www.fluidfunctionalism.com/r/shape-context.json",
+        "https://www.fluidfunctionalism.com/r/size-context.json",
+        "https://www.fluidfunctionalism.com/r/icon-context.json"
+      ],
+      "files": [
+        {
+          "path": "registry/default/lib/fluid-provider.tsx",
+          "type": "registry:lib"
+        }
+      ],
+      "docs": "Part of Fluid Functionalism — https://www.fluidfunctionalism.com",
+      "categories": [
+        "lib"
+      ]
+    },
+    {
       "name": "use-fluid-hover",
       "type": "registry:hook",
       "title": "useFluidHover + FluidHoverHighlight",

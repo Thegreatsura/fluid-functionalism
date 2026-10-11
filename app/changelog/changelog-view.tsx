@@ -341,13 +341,14 @@ function KindGroup({ kind, entries, month }: { kind: ChangeKind; entries: EntryV
  *  in a `relative` name line. */
 function KindDot({ kind }: { kind: ChangeKind }) {
   return (
+    // The outer span is the page color, so Updated's translucent gray reads
+    // as the line's own color instead of letting the line show through.
     <span
       aria-hidden
-      className={cn(
-        "absolute -left-6 top-1/2 size-[5px] -translate-y-1/2 rounded-full ring-[3px] ring-background",
-        KIND_DOT[kind]
-      )}
-    />
+      className="absolute -left-6 top-1/2 size-[5px] -translate-y-1/2 rounded-full bg-background ring-[3px] ring-background"
+    >
+      <span className={cn("block size-full rounded-full", KIND_DOT[kind])} />
+    </span>
   );
 }
 

@@ -42,8 +42,9 @@ import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 // flipping, anchor tracking), dismissal (outside press, focus-out, Escape
 // nesting inside dialogs), list keyboard navigation + typeahead, combobox
 // ARIA, and the hidden form input. This layer keeps the
-// fluid-hover overlays, the spring open/close animation (via actionsRef
-// deferred unmount), and the animated checkmark.
+// fluid-hover overlays, the spring open/close animation (every close calls
+// preventUnmountOnClose, and the content releases the unmount through
+// actionsRef once the exit spring ends), and the animated checkmark.
 // ---------------------------------------------------------------------------
 
 // How long a selection holds the popup open before closing, so the
@@ -55,7 +56,7 @@ const selectionAckMs = 300;
 interface SelectContextValue {
   value: string;
   open: boolean;
-  actionsRef: React.RefObject<{ unmount: () => void } | null>;
+  actionsRef: React.RefObject<{ unmount: () => void; close: () => void } | null>;
 }
 
 const SelectContext = createContext<SelectContextValue | null>(null);
@@ -140,7 +141,7 @@ function Select({
 }: SelectProps) {
   const [internalValue, setInternalValue] = useState(defaultValue ?? "");
   const [open, setOpen] = useState(false);
-  const actionsRef = useRef<{ unmount: () => void } | null>(null);
+  const actionsRef = useRef<{ unmount: () => void; close: () => void } | null>(null);
   const currentValue = value !== undefined ? value : internalValue;
 
   const items = useMemo(() => collectSelectItems(children), [children]);
@@ -168,8 +169,14 @@ function Select({
   // to the picked row are seen. Every other close reason (Escape, outside
   // press, trigger toggle, focus-out) closes immediately and cancels any
   // pending acknowledgment; re-picking within the window restarts it.
+  // Every close holds Base UI's unmount for the exit spring. The deferred one
+  // holds it now: the opt-out carries over to the close applied later.
   const handleOpenChange = useCallback(
-    (nextOpen: boolean, eventDetails: { reason: string }) => {
+    (
+      nextOpen: boolean,
+      eventDetails: { reason: string; preventUnmountOnClose: () => void }
+    ) => {
+      if (!nextOpen) eventDetails.preventUnmountOnClose();
       if (!nextOpen && eventDetails.reason === "item-press") {
         cancelAckClose();
         ackTimeoutRef.current = window.setTimeout(() => {
@@ -469,7 +476,7 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
                 : { opacity: 0, y: "var(--popup-enter-y)", scaleY: 0.96 }
             }
             transition={open ? spring.fast : spring.fast.exit}
-            // Base UI defers unmount while actionsRef is set; release it once
+            // The close held Base UI's unmount (preventUnmountOnClose); release it once
             // the exit spring has finished so the close animation fully plays.
             onAnimationComplete={() => {
               if (!open) actionsRef.current?.unmount();

@@ -297,10 +297,13 @@ describe.each(flavors)("%s submenu side", (_name, F) => {
         </BaseDirectionProvider>
       </RadixDirectionProvider>
     );
-    await waitFor(() => expect(view.getAllByRole("menu")).toHaveLength(2));
-    const sub = view.getAllByRole("menu")[1];
-    await waitFor(() =>
-      expect(sub.closest("[data-side]")?.getAttribute("data-side")).toBe(side)
-    );
+    // One read: with both menus open from mount, Radix's focus handling can
+    // close and reopen the sub between two separate reads, which left the
+    // second one holding a menu that no longer exists.
+    await waitFor(() => {
+      const menus = view.getAllByRole("menu");
+      expect(menus).toHaveLength(2);
+      expect(menus[1].closest("[data-side]")?.getAttribute("data-side")).toBe(side);
+    });
   });
 });

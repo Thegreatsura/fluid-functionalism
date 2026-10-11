@@ -218,7 +218,7 @@ Guides in the repo: [motion-guidelines.md](motion-guidelines.md), [component-doc
 
 ## Contributing
 
-Open an issue before a pull request, so the direction is agreed before the work starts. Contributions then follow [component-documentation-guidelines.md](component-documentation-guidelines.md) and the Development section above.
+Open an issue before a pull request, so the direction is agreed before the work starts. [CONTRIBUTING.md](CONTRIBUTING.md) has the setup, the rules every change follows, and the checks to run.
 
 ## License
 

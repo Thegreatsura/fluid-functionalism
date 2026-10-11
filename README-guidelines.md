@@ -39,7 +39,7 @@ the site.
 | Principles | the docs Introduction, `app/docs/page.tsx` | stable; changes only with the site |
 | Tech stack | `package.json` | routine, major versions only |
 | Development: scripts, the `public/r` commit rule, guide links | `package.json` scripts, `.github/workflows/ci.yml`, the root `*-guidelines.md` files | routine |
-| Contributing: issue first, then the checklist | this file | stable |
+| Contributing: issue first, then a link to CONTRIBUTING.md | `CONTRIBUTING.md` | stable |
 | License | `LICENSE` | stable |
 
 
@@ -53,6 +53,9 @@ the site.
 - Plans and migration records (`*-PLAN.md`): history, not linked.
 - Changelogs: git history and the routine's pull requests. A CHANGELOG
   earns its place once versions are tagged, not before.
+- Community files: `CONTRIBUTING.md` is linked from Contributing, and links
+  `SECURITY.md` and `CODE_OF_CONDUCT.md` itself. The Development section's
+  guide list doesn't repeat them.
 - Media: none. The README is text-only; the site shows the motion. The
   one exception is the wordmark at the top: tracked capitals between two
   rules, in a code block padded with 5 empty rows above and below. It is
@@ -79,7 +82,8 @@ the site.
    another.
 7. **Edit the minimum.** A section that is still accurate is not rewritten.
 8. **Contributions:** open an issue before a pull request. The README says
-   so in 2 sentences and points at `component-documentation-guidelines.md`.
+   so in 2 sentences and points at `CONTRIBUTING.md`, which holds the
+   setup, the rules and the checks.
 
 
 ## Guards

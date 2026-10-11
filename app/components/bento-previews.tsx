@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { slideVariants, useSlideDirection } from "@/lib/docs/slide-direction";
 import { CarouselDots } from "@/registry/default/carousel-dots";
 import Image from "next/image";

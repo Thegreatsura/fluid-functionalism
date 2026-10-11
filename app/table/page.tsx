@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { useIcon } from "@/lib/icon-context";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import {
   TabsSubtle,
   TabsSubtleItem,

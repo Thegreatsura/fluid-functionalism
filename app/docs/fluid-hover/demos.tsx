@@ -18,7 +18,7 @@ import {
   useReducedMotion,
   type AnimationPlaybackControls,
   type MotionValue,
-} from "framer-motion";
+} from "motion/react";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { FakeCursor } from "@/lib/docs/fake-cursor";
 import { fontWeights } from "@/registry/default/lib/font-weight";

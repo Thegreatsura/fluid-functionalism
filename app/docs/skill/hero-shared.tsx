@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FocusEvent, type ReactNode, type RefObject, type SyntheticEvent } from "react";
-import { animate, motion, useInView, useMotionValue, useReducedMotion, type MotionValue } from "framer-motion";
+import { animate, motion, useInView, useMotionValue, useReducedMotion, type MotionValue } from "motion/react";
 import { cn } from "@/registry/default/lib/utils";
 import { usePreviewPlayback } from "@/lib/docs/preview-playback";
 import { useShape } from "@/registry/default/lib/shape-context";

@@ -9,7 +9,7 @@ import { useIcon } from "@/registry/default/lib/icon-context";
 import { TabsSubtle, TabsSubtleItem } from "@/components/flavored/tabs-subtle";
 import { Tooltip } from "@/registry/radix/tooltip";
 import { Switch } from "@/registry/radix/switch";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "motion/react";
 import { InspectOverlay } from "./InspectOverlay";
 
 export interface PlaybackButton {

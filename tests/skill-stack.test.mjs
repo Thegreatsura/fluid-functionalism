@@ -164,7 +164,7 @@ describe("readStack on a project", () => {
         dependencies: {
           next: "15.5.0",
           react: "^19.1.0",
-          "framer-motion": "^12.34.0",
+          motion: "^14.1.0",
           "@base-ui/react": "^1.4.1",
         },
         devDependencies: { tailwindcss: "^4.1.0" },
@@ -177,7 +177,7 @@ describe("readStack on a project", () => {
       "tsconfig.json": `{\n  // jsonc, as tsconfig usually is\n  "compilerOptions": { "paths": { "@/*": ["./src/*"], }, },\n}`,
       "src/app/globals.css": `@import "tailwindcss";\n:root { --background: white; --hover: rgb(0 0 0 / 0.04); }`,
       "src/app/layout.tsx": `import { Inter } from "next/font/google";\nimport { Providers } from "@/components/providers";\nconst inter = Inter({ axes: ["opsz"] });\nexport default function L({ children }) { return <Providers>{children}</Providers>; }`,
-      "src/components/providers.tsx": `import { MotionConfig } from "framer-motion";\nexport function Providers({ children }) {\n  return <MotionConfig reducedMotion="user">{children}</MotionConfig>;\n}`,
+      "src/components/providers.tsx": `import { MotionConfig } from "motion/react";\nexport function Providers({ children }) {\n  return <MotionConfig reducedMotion="user">{children}</MotionConfig>;\n}`,
       "src/components/ui/select.tsx": `import { Select } from "@base-ui/react/select";\nimport { spring } from "@/lib/springs";`,
       "src/components/ui/card.tsx": `import { cn } from "@/lib/utils";`,
       "src/components/ui/avatar.tsx": `import { cn } from "@/lib/utils";`,
@@ -236,7 +236,7 @@ describe("readStack on a project", () => {
     const s = readStack(
       project({
         "package.json": {
-          dependencies: { react: "^18.3.1", motion: "^12.0.0", "@radix-ui/react-dialog": "^1.1.0" },
+          dependencies: { react: "^18.3.1", motion: "^11.0.0", "@radix-ui/react-dialog": "^1.1.0" },
           devDependencies: { tailwindcss: "^3.4.0", vite: "^6.0.0" },
         },
         "src/index.css": `@tailwind base;\n:root { --background: white; }`,
@@ -251,7 +251,7 @@ describe("readStack on a project", () => {
     const blocked = s.requirements.filter((r) => r.ok === false).map((r) => r.text);
     expect(blocked.some((t) => t.startsWith("react ^18"))).toBe(true);
     expect(blocked.some((t) => t.startsWith("tailwindcss ^3"))).toBe(true);
-    expect(blocked.some((t) => t.startsWith("motion ^12"))).toBe(true);
+    expect(blocked.some((t) => t.startsWith("motion ^11"))).toBe(true);
     expect(blocked.some((t) => t.startsWith("no components.json"))).toBe(true);
     // A MotionConfig in a demo does not cover the app: not a pass, not a miss.
     expect(s.wiring[0]).toMatchObject({ ok: null });
@@ -315,11 +315,26 @@ describe("readStack on a project", () => {
     expect(s.wiring[0].text).toContain("src/components/providers.tsx:3");
   });
 
-  it("ignores a motion copy the project does not declare", () => {
+  it("ignores the framer-motion copy motion carries inside", () => {
     const dir = ready();
+    mkdirSync(join(dir, "node_modules/framer-motion"), { recursive: true });
+    writeFileSync(join(dir, "node_modules/framer-motion/package.json"), JSON.stringify({ name: "framer-motion", version: "14.1.0" }));
+    expect(readStack(dir).requirements.some((r) => r.text.startsWith("framer-motion "))).toBe(false);
+  });
+
+  it("flags a direct framer-motion that is not the copy motion pins", () => {
+    const dir = ready();
+    const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+    pkg.dependencies["framer-motion"] = "^12.34.0";
+    writeFileSync(join(dir, "package.json"), JSON.stringify(pkg));
     mkdirSync(join(dir, "node_modules/motion"), { recursive: true });
-    writeFileSync(join(dir, "node_modules/motion/package.json"), JSON.stringify({ name: "motion", version: "12.0.0" }));
-    expect(readStack(dir).requirements.some((r) => r.text.startsWith("motion "))).toBe(false);
+    writeFileSync(
+      join(dir, "node_modules/motion/package.json"),
+      JSON.stringify({ name: "motion", version: "14.1.0", dependencies: { "framer-motion": "14.1.0" } }),
+    );
+    const split = readStack(dir).requirements.find((r) => r.text.startsWith("framer-motion "));
+    expect(split).toMatchObject({ ok: false });
+    expect(split.text).toContain("motion pins 14.1.0");
   });
 
   it("lists the parts a block installs one folder down", () => {
@@ -334,7 +349,7 @@ describe("readStack on a project", () => {
 
   it("finds the fluid hover highlight in components/, where use-fluid-hover installs it", () => {
     const dir = ready();
-    writeFileSync(join(dir, "src/components/fluid-hover-highlight.tsx"), `import { motion } from "framer-motion";`);
+    writeFileSync(join(dir, "src/components/fluid-hover-highlight.tsx"), `import { motion } from "motion/react";`);
     expect(readStack(dir).installed.fluid).toContain("fluid-hover-highlight");
   });
 
@@ -342,7 +357,7 @@ describe("readStack on a project", () => {
     const s = readStack(
       project({
         "package.json": { dependencies: { next: "15.5.0", react: "^19.1.0" } },
-        "src/app/layout.js": `import { MotionConfig } from "framer-motion";\nexport default function L({ children }) {\n  return <MotionConfig reducedMotion="user">{children}</MotionConfig>;\n}`,
+        "src/app/layout.js": `import { MotionConfig } from "motion/react";\nexport default function L({ children }) {\n  return <MotionConfig reducedMotion="user">{children}</MotionConfig>;\n}`,
       }),
     );
     expect(s.framework.roots).toEqual(["src/app/layout.js"]);

@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useMemo,
   createContext,
@@ -13,7 +14,7 @@ import {
   type HTMLAttributes,
   type ComponentProps,
 } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { Menu } from "@base-ui/react/menu";
 import type { MenuTriggerProps } from "@base-ui/react/menu";
 import { useDirection } from "@base-ui/react/direction-provider";
@@ -259,14 +260,45 @@ Dropdown.displayName = "Dropdown";
 // Built on Base UI's Menu primitive, which owns the trigger wiring,
 // positioning (collision flipping, anchor tracking), dismissal (outside
 // press, focus-out, Escape), roving highlight, typeahead, and close-on-select.
-// This layer keeps the fluid-hover overlays and the
-// spring open/close animation (via actionsRef deferred unmount) — the same
-// verified pattern as select.tsx.
+// This layer keeps the fluid-hover overlays and the spring open/close
+// animation (Base UI's unmount held back through actionsRef, see
+// usePopupExit).
 // ---------------------------------------------------------------------------
 
 interface DropdownMenuActions {
   unmount: () => void;
   close: () => void;
+}
+
+// Base UI unmounts a closing popup once the animations it can detect on the
+// popup element end. It misses the Motion exit spring, which it cuts.
+// A close that calls preventUnmountOnClose() in onOpenChange stays mounted
+// until the content calls actionsRef.unmount(). A close made by setting
+// `open` never reaches onOpenChange, so the root stays open until that close
+// is replayed through actionsRef.close(), which does.
+function usePopupExit(open: boolean, setOpen: (open: boolean) => void) {
+  const actionsRef = useRef<DropdownMenuActions | null>(null);
+  const [rootOpen, setRootOpen] = useState(open);
+  if (open && !rootOpen) setRootOpen(true);
+  useLayoutEffect(() => {
+    if (open || !rootOpen) return;
+    // The root fills actionsRef before this effect runs; without it, close
+    // straight away rather than stay open.
+    if (actionsRef.current) actionsRef.current.close();
+    else setRootOpen(false);
+  }, [open, rootOpen]);
+  const onOpenChange = (
+    next: boolean,
+    details: { preventUnmountOnClose: () => void }
+  ) => {
+    if (!next) {
+      details.preventUnmountOnClose();
+      setRootOpen(false);
+    }
+    // A replayed close finds `open` already false: nothing to report.
+    if (next !== open) setOpen(next);
+  };
+  return { actionsRef, rootOpen: open || rootOpen, onOpenChange };
 }
 
 interface DropdownMenuContextValue {
@@ -307,18 +339,20 @@ function DropdownMenu({
   disabled = false,
   size,
 }: DropdownMenuProps) {
-  const [open, handleOpenChange] = useControllableOpen(openProp, defaultOpen, onOpenChange);
-  const actionsRef = useRef<DropdownMenuActions | null>(null);
+  const [open, setOpen] = useControllableOpen(openProp, defaultOpen, onOpenChange);
+  const { actionsRef, rootOpen, onOpenChange: handleOpenChange } = usePopupExit(
+    open,
+    setOpen
+  );
 
-
-  const ctx = useMemo(() => ({ open, actionsRef, sub: false }), [open]);
+  const ctx = useMemo(() => ({ open, actionsRef, sub: false }), [open, actionsRef]);
 
   // A size prop pins the whole compound (trigger content + portalled popup —
   // React context crosses portals) to one ladder step.
   const root = (
     <DropdownMenuContext.Provider value={ctx}>
       <Menu.Root
-        open={open}
+        open={rootOpen}
         onOpenChange={handleOpenChange}
         actionsRef={actionsRef}
         disabled={disabled}
@@ -594,7 +628,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
                 : { opacity: 0, y: "var(--popup-enter-y)", scaleY: 0.96 }
             }
             transition={open ? spring.fast : spring.fast.exit}
-            // Base UI defers unmount while actionsRef is set; release it once
+            // The close held Base UI's unmount (preventUnmountOnClose); release it once
             // the exit spring has finished so the close animation fully plays.
             onAnimationComplete={() => {
               if (!open) actionsRef.current?.unmount();
@@ -768,16 +802,18 @@ function DropdownSub({
   defaultOpen = false,
   onOpenChange,
 }: DropdownSubProps) {
-  const [open, handleOpenChange] = useControllableOpen(openProp, defaultOpen, onOpenChange);
-  const actionsRef = useRef<DropdownMenuActions | null>(null);
+  const [open, setOpen] = useControllableOpen(openProp, defaultOpen, onOpenChange);
+  const { actionsRef, rootOpen, onOpenChange: handleOpenChange } = usePopupExit(
+    open,
+    setOpen
+  );
 
-
-  const ctx = useMemo(() => ({ open, actionsRef, sub: true }), [open]);
+  const ctx = useMemo(() => ({ open, actionsRef, sub: true }), [open, actionsRef]);
 
   return (
     <DropdownMenuContext.Provider value={ctx}>
       <Menu.SubmenuRoot
-        open={open}
+        open={rootOpen}
         onOpenChange={handleOpenChange}
         actionsRef={actionsRef}
       >

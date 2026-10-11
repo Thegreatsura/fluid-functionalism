@@ -9,7 +9,7 @@ import {
   type ReactNode,
   type HTMLAttributes,
 } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox";
 import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
@@ -300,12 +300,10 @@ const CheckboxItem = forwardRef<HTMLDivElement, CheckboxItemProps>(
             "relative shrink-0 appearance-none bg-transparent p-0 border-0 outline-none cursor-pointer",
             compact ? "w-[14px] h-[14px]" : "w-[16px] h-[16px]"
           )}
-          // Base UI swallows a click on the square and replays it on its
-          // hidden input, which sits inside this row, so the replay bubbles
-          // to the row's onClick. Stop the original click here so the row
-          // sees one click and toggles once. Listening to onCheckedChange as
-          // well would toggle a second time and undo the first.
-          onClick={(e) => e.stopPropagation()}
+          // A click on the square reaches the row's onClick once: Base UI
+          // replays it on its hidden input but stops that copy there (since
+          // 1.7), so the original must bubble. Listening to onCheckedChange
+          // as well would toggle a second time and undo the first.
         >
           {/* Border */}
           {/* Checked: the border turns transparent and the check alone marks

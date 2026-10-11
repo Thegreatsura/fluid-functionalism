@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/registry/radix/button";
 import { spring } from "@/lib/springs";

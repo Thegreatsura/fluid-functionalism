@@ -1,0 +1,69 @@
+name: Bug report
+description: A component doesn't behave the way its docs page shows.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: The details below let the maintainer rebuild your setup in a fresh app. For a security problem, use a private report instead.
+  - type: input
+    id: component
+    attributes:
+      label: Component
+      placeholder: dropdown
+    validations:
+      required: true
+  - type: dropdown
+    id: flavor
+    attributes:
+      label: Flavor
+      options:
+        - Base UI
+        - Radix
+        - Both
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: install
+    attributes:
+      label: Install command
+      description: The command you ran, or the Copy prompt you used.
+      placeholder: npx shadcn@latest add @fluid/base/dropdown --overwrite
+    validations:
+      required: true
+  - type: textarea
+    id: what-happens
+    attributes:
+      label: What happens
+      description: The steps, and what you see. A screen recording helps for anything that moves.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions
+      description: From your package.json, or `npm ls next react motion @base-ui/react`.
+      value: |
+        next:
+        react:
+        motion:
+        @base-ui/react or @radix-ui/react-*:
+        shadcn CLI:
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: Safari 26, macOS 26
+  - type: input
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: A repo or a sandbox link. Optional, and the fastest way to a fix.

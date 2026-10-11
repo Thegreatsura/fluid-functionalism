@@ -9,7 +9,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { spring } from "@/lib/springs";
 import { useSizeVariant } from "@/lib/size-context";

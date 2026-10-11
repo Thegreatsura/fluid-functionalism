@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type ReactNode, type CSSProperties, createContext } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { cn } from "@/registry/default/lib/utils";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { spring } from "@/lib/springs";

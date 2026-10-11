@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { motion, useReducedMotion, type Transition } from "framer-motion";
+import { motion, useReducedMotion, type Transition } from "motion/react";
 import { Button, type ButtonSize } from "@/registry/radix/button";
 import { useIcon, type IconComponentProps } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
@@ -17,13 +17,13 @@ import { cn } from "@/lib/utils";
 interface CopyPromptButtonProps {
   /** The prompt text written to the clipboard. */
   prompt: string;
+  /** Button text. Defaults to "Copy prompt". */
+  label?: string;
   /** Button size; omitted, it follows the SizeProvider. */
   size?: ButtonSize;
   className?: string;
   /** Runs after a successful copy, e.g. for analytics. */
   onCopy?: () => void;
-  /** The button text. @default "Copy prompt" */
-  label?: string;
   /** @default "primary" */
   variant?: "primary" | "secondary" | "ghost";
 }
@@ -82,10 +82,10 @@ function CopyPromptIcon({ size = 16, strokeWidth, className }: IconComponentProp
  *  turns into a check for 2s, and a visually hidden "Copied" is read out. */
 export function CopyPromptButton({
   prompt,
+  label = "Copy prompt",
   size,
   className,
   onCopy,
-  label = "Copy prompt",
   variant = "primary",
 }: CopyPromptButtonProps) {
   const [copied, setCopied] = useState(false);

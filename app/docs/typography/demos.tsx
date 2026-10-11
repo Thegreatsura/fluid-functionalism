@@ -13,7 +13,7 @@ import {
   useTransform,
   type AnimationPlaybackControls,
   type MotionValue,
-} from "framer-motion";
+} from "motion/react";
 import { cn } from "@/lib/utils";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 import type { ItemRect } from "@/registry/default/hooks/use-fluid-hover";

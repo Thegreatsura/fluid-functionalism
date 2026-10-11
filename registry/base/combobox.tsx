@@ -14,7 +14,7 @@ import {
   type HTMLAttributes,
   type InputHTMLAttributes,
 } from "react";
-import { motion, AnimatePresence, animate, useMotionValue } from "framer-motion";
+import { motion, AnimatePresence, animate, useMotionValue } from "motion/react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 import { useIcons, type IconComponent } from "@/lib/icon-context";
@@ -50,8 +50,9 @@ import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 // (aria-activedescendant — the input keeps focus while arrows move a
 // highlight through the rows), positioning, dismissal, and the hidden form
 // input. This layer keeps the fluid-hover overlays, the spring open/
-// close animation (via actionsRef deferred unmount), and the animated
-// checkmark — the same visuals as Select.
+// close animation (every close calls preventUnmountOnClose, and the content
+// releases the unmount through actionsRef once the exit spring ends), and
+// the animated checkmark — the same visuals as Select.
 //
 // Items are data: pass `items` to the root and render rows from the
 // ComboboxList function child. String items are their own value and label;
@@ -94,7 +95,7 @@ interface ComboboxContextValue {
   multiple: boolean;
   inputValue: string;
   open: boolean;
-  actionsRef: React.RefObject<{ unmount: () => void } | null>;
+  actionsRef: React.RefObject<{ unmount: () => void; close: () => void } | null>;
   /** The field (input group or chips container) the popup anchors to. */
   anchorRef: React.RefObject<HTMLDivElement | null>;
   disabled: boolean;
@@ -211,7 +212,7 @@ function Combobox<
   const [inputValue, setInputValue] = useState("");
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState<Highlight | null>(null);
-  const actionsRef = useRef<{ unmount: () => void } | null>(null);
+  const actionsRef = useRef<{ unmount: () => void; close: () => void } | null>(null);
   const anchorRef = useRef<HTMLDivElement | null>(null);
   // Memoized on the prop identity: a string value is stable by nature and a
   // consumer's array is state, so the derived array (and everything keyed on
@@ -328,7 +329,11 @@ function Combobox<
         itemToStringValue={itemValue}
         filter={filterFn}
         open={open}
-        onOpenChange={(next) => setOpen(next)}
+        onOpenChange={(next, details) => {
+          // Hold the unmount for the exit spring; the content releases it.
+          if (!next) details.preventUnmountOnClose();
+          setOpen(next);
+        }}
         onInputValueChange={(next) => setInputValue(next)}
         actionsRef={actionsRef}
         autoHighlight={ALWAYS_HIGHLIGHT}
@@ -812,7 +817,7 @@ const ComboboxContent = forwardRef<HTMLDivElement, ComboboxContentProps>(
                 : { opacity: 0, y: "var(--popup-enter-y)", scaleY: 0.96 }
             }
             transition={open ? spring.fast : spring.fast.exit}
-            // Base UI defers unmount while actionsRef is set; release it once
+            // The close held Base UI's unmount (preventUnmountOnClose); release it once
             // the exit spring has finished so the close animation fully plays.
             onAnimationComplete={() => {
               if (!open) actionsRef.current?.unmount();

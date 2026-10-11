@@ -13,7 +13,7 @@ import {
   type ReactNode,
   type HTMLAttributes,
 } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 
 // SSR-safe layout effect (client components still server-render in Next).

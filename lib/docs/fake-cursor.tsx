@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type MotionValue } from "framer-motion";
+import { motion, type MotionValue } from "motion/react";
 
 /** A scripted pointer for demos, so a behaviour shows without the reader
  *  moving. The arrow's tip sits at (x, y) in the positioned parent. */

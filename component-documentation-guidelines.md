@@ -40,7 +40,7 @@ Add an item to the `items` array:
   "type": "registry:ui",               // or registry:lib / registry:hook
   "title": "Component Name",           // human-readable
   "description": "One-two sentence description of what it does and key features.",
-  "dependencies": ["framer-motion"],   // npm packages (only those not already in the project)
+  "dependencies": ["motion"],   // npm packages (only those not already in the project)
   "registryDependencies": ["utils"],   // other registry items this depends on
   "files": [
     { "path": "registry/default/component-name.tsx", "type": "registry:ui" }
@@ -50,7 +50,7 @@ Add an item to the `items` array:
 ```
 
 **Field rules:**
-- `dependencies` = external npm packages (framer-motion, @radix-ui/*, lucide-react, class-variance-authority)
+- `dependencies` = external npm packages (motion, @radix-ui/*, lucide-react, class-variance-authority)
 - `registryDependencies` = other items in this registry (utils, springs, font-weight, shape-context, icon-context, use-fluid-hover, or other components like button)
 - Components that render icons depend on `icon-context` only — never add icon packages beyond `lucide-react` as `dependencies` (consumers bring their own via IconProvider)
 - Multi-file components list all files in the `files` array

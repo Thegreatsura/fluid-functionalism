@@ -2,7 +2,7 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "springs",
   "title": "Spring Animations",
-  "description": "Spring animation token presets for Framer Motion (fast, moderate, slow).",
+  "description": "Spring animation token presets for Motion (fast, moderate, slow).",
   "files": [
     {
       "path": "registry/default/lib/springs.ts",

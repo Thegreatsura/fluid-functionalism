@@ -9,7 +9,8 @@
 //
 //   cut         gone within 30ms (or 3 frames) of the close while still at
 //               full opacity
-//   stuck       still rendered 700ms after the close
+//   stuck       still rendered 700ms after the close, or after the case's
+//               own limit (1500ms for a select pick, which holds on purpose)
 //   not opened  the popup never appeared
 //   error       a page error or console error during the case
 //
@@ -45,8 +46,8 @@ const CUT_OPACITY = 0.95;
 const STUCK_MS = 700;
 
 // Runs in the page. Finds the popup (the last visible match: portals mount at
-// the end of <body>), then samples it every frame until STUCK_MS after the
-// close action. The close time is the first `on` event after arming, caught
+// the end of <body>), then samples it every frame until the case's stuck
+// limit after the close action. The close time is the first `on` event after arming, caught
 // in the capture phase so it lands before any handler reacts.
 function arm({ selector, on, keepParent, stuckMs }) {
   const visible = (el) =>
@@ -91,7 +92,7 @@ function arm({ selector, on, keepParent, stuckMs }) {
 }
 
 /** Reads the sampler once it has run its course and turns it into a verdict. */
-async function readout(page, armed, { keepParent = false } = {}) {
+async function readout(page, armed, { keepParent = false, stuckMs = STUCK_MS } = {}) {
   if (!armed.opened) return { verdict: "FAIL", detail: "not opened" };
   await page.waitForFunction(() => window.__dw?.done, null, { timeout: 10000 });
   const { armedAt, closeAt, samples } = await page.evaluate(() => window.__dw);
@@ -114,8 +115,8 @@ async function readout(page, armed, { keepParent = false } = {}) {
   const notes = [];
   if (closeAt === null) notes.push("close event not seen, timed from arming");
 
-  if (after.some(([t, op]) => t >= STUCK_MS && op !== null)) {
-    return { ...result, verdict: "FAIL", detail: ["stuck: still rendered after 700ms", ...notes].join("; ") };
+  if (after.some(([t, op]) => t >= stuckMs && op !== null)) {
+    return { ...result, verdict: "FAIL", detail: [`stuck: still rendered after ${stuckMs}ms`, ...notes].join("; ") };
   }
   // On a slow machine a cut lands later than 30ms but still within a frame
   // or two of the close, while a played exit renders several frames.
@@ -159,16 +160,18 @@ for (const flavor of flavors) {
     // Hydration and the docs chrome settle after the network does.
     await page.waitForTimeout(1200);
   };
-  const sampler = (popup) => page.evaluate(arm, { stuckMs: STUCK_MS, keepParent: false, on: "keydown", ...popup });
+  const sampler = (popup) => page.evaluate(arm, { keepParent: false, on: "keydown", ...popup });
 
-  /** Opens a popup with `open`, then closes it with `close` and reads the sampler. */
+  /** Opens a popup with `open`, then closes it with `close` and reads the
+   *  sampler. `popup.stuckMs` overrides the stuck limit for this case. */
   const closeCase = async ({ path, open, popup, close, keepParent }) => {
+    const stuckMs = popup.stuckMs ?? STUCK_MS;
     await go(path);
     await open();
     await page.waitForTimeout(600);
-    const armed = await sampler({ ...popup, keepParent });
+    const armed = await sampler({ ...popup, keepParent, stuckMs });
     if (armed.opened) await close();
-    const out = await readout(page, armed, { keepParent });
+    const out = await readout(page, armed, { keepParent, stuckMs });
     return { ...out, drawnBy: armed.drawnBy ?? null };
   };
 
@@ -257,12 +260,14 @@ for (const flavor of flavors) {
     }),
   );
 
-  // Picking holds the popup about 300ms to acknowledge the choice, then fades.
+  // Picking holds the popup about 300ms to acknowledge the choice, then fades,
+  // so it closes around 400ms (600ms on a slow machine): it gets a longer
+  // stuck limit.
   await run("select: pick an item", flavor, () =>
     closeCase({
       path: "/docs/select",
       open: () => selectTrigger().click(),
-      popup: { selector: '[role="listbox"]', on: "pointerup" },
+      popup: { selector: '[role="listbox"]', on: "pointerup", stuckMs: 1500 },
       close: () => page.locator('[role="listbox"] [role="option"]').nth(1).click(),
     }),
   );

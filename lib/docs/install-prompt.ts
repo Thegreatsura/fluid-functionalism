@@ -12,7 +12,7 @@ const SITE = "https://www.fluidfunctionalism.com";
  *  existing file (default No), so a person keeps the stock file next to the
  *  new ones, and an agent's non-interactive shell exits at the question after
  *  the CSS and npm dependencies were already written. */
-const OVERWRITE_NOTE =
+export const OVERWRITE_NOTE =
   "--overwrite replaces same-named stock shadcn files (button.tsx, dialog.tsx, ...) with this library's versions. Without it the CLI prompts per existing file and exits in a non-interactive shell before any component is written.";
 
 interface BuildInstallPromptOptions {

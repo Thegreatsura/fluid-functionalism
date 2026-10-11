@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { spring } from "@/registry/default/lib/springs";
 import { fontWeights } from "@/registry/default/lib/font-weight";
@@ -321,6 +322,9 @@ export function RightPanel() {
   }, []);
 
   const PanelRightIcon = useIcon("panel-right");
+  // The changelog's rail holds its Releases index alone: nothing on that
+  // page reacts to the settings, which stay a ⌘K or a shortcut away.
+  const showSettings = usePathname() !== "/changelog";
 
   return (
     <>
@@ -405,6 +409,7 @@ export function RightPanel() {
           under the mask, never outside pushing the gradient down. */}
       <ScrollArea viewportClassName="scroll-fade max-h-[calc(100svh-2rem)]">
       <div className="flex flex-col gap-3">
+        {showSettings && (
         <aside className="p-4 rounded-lg bg-muted">
           <SurfaceProvider value={2}>
             <div className="flex items-center justify-between pt-2 pb-2">
@@ -419,6 +424,7 @@ export function RightPanel() {
             <SettingsContent tooltipSide="left" />
           </SurfaceProvider>
         </aside>
+        )}
 
         {/* Page-owned slot — e.g. the Card doc's Playground controls. */}
         <RightRailTarget />

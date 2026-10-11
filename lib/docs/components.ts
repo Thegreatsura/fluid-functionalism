@@ -4,8 +4,6 @@ export interface ComponentEntry {
   description: string;
   isNew?: boolean;
   isUpdated?: boolean;
-  /** Tailwind bg class overriding the default blue `isNew` / `isUpdated` dot in the sidebar. */
-  dotColor?: string;
   gridSize?: "large" | "medium" | "small";
 }
 
@@ -15,8 +13,6 @@ export interface SystemEntry {
   description: string;
   isNew?: boolean;
   isUpdated?: boolean;
-  /** Tailwind bg class overriding the default blue `isNew` / `isUpdated` dot in the sidebar. */
-  dotColor?: string;
 }
 
 export const systemList: SystemEntry[] = [
@@ -25,7 +21,7 @@ export const systemList: SystemEntry[] = [
   { slug: "scrollbars", name: "Scrollbars", description: "A scrollbar that stays out of the way but never disappears, over shadcn's scroll-fade baseline — restyled to the shape system, native scroll on touch." },
   { slug: "sizes", name: "Sizes", description: "A two-step size ladder — a 36px default and a 28px compact — shared by buttons, inputs, selects, tabs, and rows." },
   { slug: "surfaces", name: "Surfaces", description: "Eight-level surface and shadow ladder for elevation in light and dark mode." },
-  { slug: "typography", name: "Typography", description: "Bold rules that create consistency across the whole component library.", isNew: true, dotColor: "bg-[var(--warning)]" },
+  { slug: "typography", name: "Typography", description: "Bold rules that create consistency across the whole component library.", isNew: true },
 ];
 
 export const componentList: ComponentEntry[] = [
@@ -66,8 +62,7 @@ export const skillEntry: SystemEntry = {
   slug: "skill",
   name: "Skill",
   description: "Gives your coding agent the components and the craft behind them, then puts both to work on your project.",
-  isNew: true,
-  dotColor: "bg-[var(--warning)]",
+  isUpdated: true,
 };
 
 /** The sidebar's System group, in its order: the systems plus the skill
@@ -78,7 +73,7 @@ export const systemNavList: SystemEntry[] = [...systemList, skillEntry].sort((a,
 
 /** Combined prev/next navigation order for doc pages.
  *  Used by DocPage's arrow nav. Keep in sync with the sidebar order in
- *  `app/components/sidebar.tsx` (Introduction → systemNavList → componentList). */
+ *  `app/components/sidebar.tsx` (Introduction → Changelog → systemNavList → componentList). */
 export const docOrder: Array<{ slug: string; name: string }> = [
   ...systemNavList.map((s) => ({ slug: s.slug, name: s.name })),
   ...componentList.map((c) => ({ slug: c.slug, name: c.name })),

@@ -90,6 +90,7 @@ const TABS = [
 const PAGES: { href: string; label: string; icon: IconName; keywords: string[] }[] = [
   { href: "/", label: "Showcase", icon: "home", keywords: ["home", "bento", "gallery"] },
   { href: "/docs", label: "Introduction", icon: "square-library", keywords: ["docs", "getting started", "install"] },
+  { href: "/changelog", label: "Changelog", icon: "clock", keywords: ["releases", "what's new", "updates", "breaking"] },
   { href: "/demo", label: "Demo", icon: "play", keywords: ["slides", "playground"] },
   { href: "/compare", label: "Compare with shadcn", icon: "scaling", keywords: ["shadcn", "side by side"] },
 ];
@@ -97,6 +98,7 @@ const PAGES: { href: string; label: string; icon: IconName; keywords: string[] }
 const PAGE_ORDER = [
   "/",
   "/docs",
+  "/changelog",
   ...systemNavList.map((s) => `/docs/${s.slug}`),
   ...componentList.map((c) => `/docs/${c.slug}`),
 ];

@@ -15,6 +15,7 @@ import {
   useSidebar,
 } from "@/components/flavored/sidebar";
 import { componentList, systemNavList } from "@/lib/docs/components";
+import { KIND_DOT } from "@/lib/changelog/kind-style";
 import { GitHubStarButton, SettingsContent } from "@/app/components/right-panel";
 import { SiteCommandMenuTrigger } from "@/app/components/site-command-menu";
 
@@ -23,22 +24,20 @@ interface NavEntry {
   name: string;
   isNew?: boolean;
   isUpdated?: boolean;
-  dotColor?: string;
 }
 
-/** The isNew/isUpdated dot, rendered as a trailing child inside the row's
- *  weight-animated label span (same markup the old NavItem used). */
+/** The isNew/isUpdated dot, in the changelog's colors: blue for New, gray
+ *  for Updated (see lib/changelog/kind-style.ts). */
 function StatusDot({ entry }: { entry: NavEntry }) {
   // Rendered as a flex sibling of the weight-animated label (the row's gap
   // provides the spacing), matching the old NavItem dot's visual position.
-  if (entry.isUpdated || entry.isNew) {
-    return (
-      <span
-        className={`inline-block size-1.5 shrink-0 rounded-full ${entry.dotColor ?? "bg-blue-500"}`}
-      />
-    );
-  }
-  return null;
+  const kind = entry.isUpdated ? "updated" : entry.isNew ? "new" : null;
+  if (!kind) return null;
+  return (
+    <span className={`inline-block size-1.5 shrink-0 rounded-full ${KIND_DOT[kind]}`}>
+      <span className="sr-only">{kind === "new" ? "New" : "Updated"}</span>
+    </span>
+  );
 }
 
 function NavGroup({
@@ -105,6 +104,11 @@ export function SiteSidebar() {
             <SidebarMenuItem>
               <SidebarMenuButton render={<Link href="/docs" />} isActive={pathname === "/docs"}>
                 Introduction
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton render={<Link href="/changelog" />} isActive={pathname === "/changelog"}>
+                Changelog
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

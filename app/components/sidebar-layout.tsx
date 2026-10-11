@@ -20,6 +20,7 @@ import { systemNavList, componentList } from "@/lib/docs/components";
 const pageOrder = [
   "/",
   "/docs",
+  "/changelog",
   ...systemNavList.map((s) => `/docs/${s.slug}`),
   ...componentList.map((c) => `/docs/${c.slug}`),
 ];

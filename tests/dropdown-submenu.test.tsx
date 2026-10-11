@@ -297,10 +297,13 @@ describe.each(flavors)("%s submenu side", (_name, F) => {
         </BaseDirectionProvider>
       </RadixDirectionProvider>
     );
-    await waitFor(() => expect(view.getAllByRole("menu")).toHaveLength(2));
-    const sub = view.getAllByRole("menu")[1];
-    await waitFor(() =>
-      expect(sub.closest("[data-side]")?.getAttribute("data-side")).toBe(side)
-    );
+    // One waitFor: Radix can close a defaultOpen submenu on the parent's
+    // focus-outside a tick after both mount, so a submenu read in one step can
+    // be gone by the next.
+    await waitFor(() => {
+      const menus = view.getAllByRole("menu");
+      expect(menus).toHaveLength(2);
+      expect(menus[1].closest("[data-side]")?.getAttribute("data-side")).toBe(side);
+    });
   });
 });

@@ -5,7 +5,7 @@
   "description": "Grouped input fields with fluid hover highlighting, animated label transitions, optional icons, and error states.",
   "dependencies": [
     "lucide-react",
-    "@base-ui/react"
+    "@base-ui/react@^1.9.0"
   ],
   "registryDependencies": [
     "utils",

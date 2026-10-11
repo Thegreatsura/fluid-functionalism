@@ -1,8 +1,15 @@
 "use client";
 
 import {
+  createContext,
   forwardRef,
   isValidElement,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
   type ButtonHTMLAttributes,
   type ReactElement,
   type ReactNode,
@@ -13,7 +20,7 @@ import { fontWeights } from "@/lib/font-weight";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useIcons } from "@/lib/icon-context";
-import { spring } from "@/lib/springs";
+import { spring, exitFallbackMs } from "@/lib/springs";
 import { useShape } from "@/lib/shape-context";
 import { useSize, useSizeVariant, typeClass } from "@/lib/size-context";
 import { SurfaceProvider, useSurface } from "@/lib/surface-context";
@@ -30,24 +37,71 @@ interface DialogProps {
   children?: ReactNode;
 }
 
+type DialogActions = DialogPrimitive.Root.Actions;
+
+// Base UI unmounts a closing popup once the animations it can detect on the
+// popup element end. It misses the framer-motion exit spring, which it cuts.
+// A close that calls preventUnmountOnClose() in onOpenChange stays mounted
+// until the content calls actionsRef.unmount(). A close made by setting
+// `open` never reaches onOpenChange, so the root stays open until that close
+// is replayed through actionsRef.close(), which does.
+function usePopupExit(open: boolean, setOpen: (open: boolean) => void) {
+  const actionsRef = useRef<DialogActions | null>(null);
+  const [rootOpen, setRootOpen] = useState(open);
+  if (open && !rootOpen) setRootOpen(true);
+  useLayoutEffect(() => {
+    if (!open && rootOpen) actionsRef.current?.close();
+  }, [open, rootOpen]);
+  const onOpenChange = (
+    next: boolean,
+    details: { preventUnmountOnClose: () => void }
+  ) => {
+    if (!next) {
+      details.preventUnmountOnClose();
+      setRootOpen(false);
+    }
+    // A replayed close finds `open` already false: nothing to report.
+    if (next !== open) setOpen(next);
+  };
+  return { actionsRef, rootOpen: open || rootOpen, onOpenChange };
+}
+
+// Lets DialogContent release the held unmount once its exit spring ends.
+const DialogExitContext = createContext<{
+  open: boolean;
+  actionsRef: React.RefObject<DialogActions | null>;
+} | null>(null);
+
 function Dialog({
   children,
-  open,
-  defaultOpen,
+  open: openProp,
+  defaultOpen = false,
   onOpenChange,
   modal,
 }: DialogProps) {
-  // Base UI's Root handles controlled/uncontrolled state internally. We only
-  // narrow the (open, eventDetails) callback to (open) for our public prop.
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+  const open = openProp ?? uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (openProp === undefined) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
+  const { actionsRef, rootOpen, onOpenChange: handleOpenChange } = usePopupExit(
+    open,
+    setOpen
+  );
+  const exit = useMemo(() => ({ open, actionsRef }), [open, actionsRef]);
+
   return (
-    <DialogPrimitive.Root
-      open={open}
-      defaultOpen={defaultOpen}
-      onOpenChange={(next) => onOpenChange?.(next)}
-      modal={modal}
-    >
-      {children}
-    </DialogPrimitive.Root>
+    <DialogExitContext.Provider value={exit}>
+      <DialogPrimitive.Root
+        open={rootOpen}
+        onOpenChange={handleOpenChange}
+        actionsRef={actionsRef}
+        modal={modal}
+      >
+        {children}
+      </DialogPrimitive.Root>
+    </DialogExitContext.Provider>
   );
 }
 
@@ -134,10 +188,23 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
     // width only, the padding stays put (see /docs/sizes).
     const compact = useSize().variant === "compact";
 
-    // No `if (!open) return null` here — Base UI's `<DialogPrimitive.Popup>`
-    // handles mount/unmount itself, and waits for the framer-motion opacity
-    // tween below to finish (via `element.getAnimations()`) before unmounting.
-    // Returning null early would short-circuit the closing animation.
+    // No `if (!open) return null` here: Base UI's `<DialogPrimitive.Popup>`
+    // handles mount/unmount itself. The close holds the unmount (see
+    // usePopupExit) and the popup's onAnimationComplete releases it once the
+    // exit spring ends. This timeout is the fallback for throttled tabs,
+    // where rAF-driven animation callbacks can stall.
+    const exit = useContext(DialogExitContext);
+    const exitOpen = exit?.open ?? true;
+    const exitActionsRef = exit?.actionsRef;
+    useEffect(() => {
+      if (exitOpen) return;
+      const id = setTimeout(
+        () => exitActionsRef?.current?.unmount(),
+        exitFallbackMs(spring.slow)
+      );
+      return () => clearTimeout(id);
+    }, [exitOpen, exitActionsRef]);
+
     return (
       <DialogPrimitive.Portal container={container ?? undefined}>
         <DialogPrimitive.Backdrop
@@ -220,6 +287,9 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   y: position === "top" ? 0 : "-50%",
                 }}
                 transition={exiting ? spring.slow.exit : spring.slow}
+                onAnimationComplete={() => {
+                  if (exiting) exitActionsRef?.current?.unmount();
+                }}
               >
                 <SurfaceProvider value={dialogLevel}>
                   {children}

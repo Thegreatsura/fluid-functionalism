@@ -4,13 +4,15 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import { motion, useMotionValue } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { spring } from "@/lib/springs";
+import { spring, exitFallbackMs } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
 
@@ -125,6 +127,33 @@ function getSlideOffset(side: TooltipSide) {
 // Tooltip
 // ---------------------------------------------------------------------------
 
+// Base UI unmounts a closing popup once the animations it can detect on the
+// popup element end. It misses the framer-motion exit spring, which it cuts.
+// A close that calls preventUnmountOnClose() in onOpenChange stays mounted
+// until the content calls actionsRef.unmount(). A close made by setting
+// `open` never reaches onOpenChange, so the root stays open until that close
+// is replayed through actionsRef.close(), which does.
+function usePopupExit(open: boolean, setOpen: (open: boolean) => void) {
+  const actionsRef = useRef<TooltipPrimitive.Root.Actions | null>(null);
+  const [rootOpen, setRootOpen] = useState(open);
+  if (open && !rootOpen) setRootOpen(true);
+  useLayoutEffect(() => {
+    if (!open && rootOpen) actionsRef.current?.close();
+  }, [open, rootOpen]);
+  const onOpenChange = (
+    next: boolean,
+    details: { preventUnmountOnClose: () => void }
+  ) => {
+    if (!next) {
+      details.preventUnmountOnClose();
+      setRootOpen(false);
+    }
+    // A replayed close finds `open` already false: nothing to report.
+    if (next !== open) setOpen(next);
+  };
+  return { actionsRef, rootOpen: open || rootOpen, onOpenChange };
+}
+
 function Tooltip({
   content,
   children,
@@ -139,6 +168,21 @@ function Tooltip({
 }: TooltipProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = forceOpen !== undefined ? forceOpen : internalOpen;
+  const { actionsRef, rootOpen, onOpenChange } = usePopupExit(open, (v) => {
+    setInternalOpen(v);
+    onOpenChangeProp?.(v);
+  });
+  // Fallback release for the held unmount: the popup's onAnimationComplete is
+  // the primary signal, but rAF-driven animation callbacks can stall in
+  // throttled/background tabs.
+  useEffect(() => {
+    if (open) return;
+    const id = setTimeout(
+      () => actionsRef.current?.unmount(),
+      exitFallbackMs(spring.fast)
+    );
+    return () => clearTimeout(id);
+  }, [open, actionsRef]);
   const shape = useShape();
   const portalContainer = useContext(TooltipPortalContainerContext);
   const hasAmbientProvider = useContext(TooltipGroupContext);
@@ -165,11 +209,9 @@ function Tooltip({
 
   const tooltip = (
     <TooltipPrimitive.Root
-      open={open}
-      onOpenChange={(v) => {
-        setInternalOpen(v);
-        onOpenChangeProp?.(v);
-      }}
+      open={rootOpen}
+      onOpenChange={onOpenChange}
+      actionsRef={actionsRef}
     >
       {/* An explicit delayDuration overrides the ambient provider's delay;
           left undefined, the trigger inherits it from the provider. */}
@@ -227,12 +269,18 @@ function Tooltip({
                     )}
                     style={{ fontVariationSettings: fontWeights.normal }}
                     initial={{ opacity: 0, ...slideOffset }}
+                    // Both targets name x and y: an exit target without one
+                    // starts a separate, instant animation back to 0 whose
+                    // completion would release the unmount below too early.
                     animate={
                       exiting
-                        ? { opacity: 0, ...slideOffset }
+                        ? { opacity: 0, x: 0, y: 0, ...slideOffset }
                         : { opacity: 1, x: 0, y: 0 }
                     }
                     transition={exiting ? spring.fast.exit : spring.fast}
+                    onAnimationComplete={() => {
+                      if (exiting) actionsRef.current?.unmount();
+                    }}
                   >
                     {contentChildren}
                   </motion.div>

@@ -4,7 +4,7 @@
   "title": "Tabs Subtle",
   "description": "Horizontal tab navigation with fluid hover, animated pill selection indicator, and fluid font-weight transitions. Base UI flavor.",
   "dependencies": [
-    "@base-ui/react",
+    "@base-ui/react@^1.9.0",
     "framer-motion",
     "lucide-react"
   ],

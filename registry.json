@@ -808,7 +808,7 @@
       "description": "Collapsible accordion with animated height transitions, spring-animated chevron, and fluid hover in grouped mode. Base UI flavor.",
       "dependencies": [
         "framer-motion",
-        "@base-ui/react",
+        "@base-ui/react@^1.9.0",
         "lucide-react"
       ],
       "registryDependencies": [
@@ -840,7 +840,7 @@
       "description": "Stepped question flow with numbered options, keyboard shortcuts (1–9), single or multi-select, inline 'other' text input, optional skip, fluid hover, and multi-question navigation. Auto-advances on selection in single-select.",
       "dependencies": [
         "framer-motion",
-        "@base-ui/react"
+        "@base-ui/react@^1.9.0"
       ],
       "registryDependencies": [
         "utils",
@@ -986,7 +986,7 @@
       "description": "Animated button with variants (primary, secondary, tertiary, ghost), icon support, loading spinner, and fluid font-weight transitions on hover. Base UI flavor.",
       "dependencies": [
         "framer-motion",
-        "@base-ui/react",
+        "@base-ui/react@^1.9.0",
         "class-variance-authority",
         "lucide-react"
       ],
@@ -1085,7 +1085,7 @@
       "title": "Dropdown",
       "description": "Dropdown menu with fluid hover, animated selection indicator, inline panel or triggered popup with collision-aware positioning, typeahead, and close-on-select. Includes MenuItem, DropdownSearch (a search field inside the popup), submenus (DropdownSub) whose trigger row stays lit across the safe area, and multiple selection with merged backgrounds. Base UI flavor.",
       "dependencies": [
-        "@base-ui/react",
+        "@base-ui/react@^1.9.0",
         "framer-motion"
       ],
       "registryDependencies": [
@@ -1170,7 +1170,7 @@
       "description": "Animated checkbox group with fluid hover, contiguous selection merging, and spring-animated check marks. Base UI flavor.",
       "dependencies": [
         "framer-motion",
-        "@base-ui/react"
+        "@base-ui/react@^1.9.0"
       ],
       "registryDependencies": [
         "utils",
@@ -1231,7 +1231,7 @@
       "description": "Animated radio group with fluid hover, spring-animated selection dot. Base UI flavor.",
       "dependencies": [
         "framer-motion",
-        "@base-ui/react"
+        "@base-ui/react@^1.9.0"
       ],
       "registryDependencies": [
         "utils",
@@ -1294,7 +1294,7 @@
       "description": "Animated modal dialog with spring-based scale and opacity transitions in three widths (sm, lg, and an xl canvas for composed layouts such as a sidebar), plus a container prop to scope it to a region. Base UI flavor.",
       "dependencies": [
         "framer-motion",
-        "@base-ui/react",
+        "@base-ui/react@^1.9.0",
         "lucide-react"
       ],
       "registryDependencies": [
@@ -1352,7 +1352,7 @@
       "title": "Mobile Drawer",
       "description": "Slide-in navigation drawer with scrim, focus trap, and scroll lock. Base UI flavor.",
       "dependencies": [
-        "@base-ui/react",
+        "@base-ui/react@^1.9.0",
         "framer-motion"
       ],
       "registryDependencies": [
@@ -1409,7 +1409,7 @@
       "description": "Grouped input fields with fluid hover highlighting, animated label transitions, optional icons, and error states.",
       "dependencies": [
         "lucide-react",
-        "@base-ui/react"
+        "@base-ui/react@^1.9.0"
       ],
       "registryDependencies": [
         "utils",
@@ -1596,7 +1596,7 @@
       "title": "Tabs Subtle",
       "description": "Horizontal tab navigation with fluid hover, animated pill selection indicator, and fluid font-weight transitions. Base UI flavor.",
       "dependencies": [
-        "@base-ui/react",
+        "@base-ui/react@^1.9.0",
         "framer-motion",
         "lucide-react"
       ],
@@ -1666,7 +1666,7 @@
       "description": "Animated toggle switch with spring-based thumb animation and fluid font-weight label transitions. Base UI flavor.",
       "dependencies": [
         "framer-motion",
-        "@base-ui/react"
+        "@base-ui/react@^1.9.0"
       ],
       "registryDependencies": [
         "utils",
@@ -1824,7 +1824,7 @@
       "title": "Sidebar",
       "description": "Refined, composable app sidebar with offcanvas collapse, floating and inset variants, a mobile drawer, cookie-persisted state, keyboard shortcut, and fluid-hover menus with traveling selection, hover, and focus indicators. Base UI flavor.",
       "dependencies": [
-        "@base-ui/react",
+        "@base-ui/react@^1.9.0",
         "framer-motion",
         "lucide-react",
         "class-variance-authority"
@@ -2080,7 +2080,7 @@
       "description": "Animated slider with spring-snapped thumb, step dots, range mode, and click-to-edit value display. Base UI flavor.",
       "dependencies": [
         "framer-motion",
-        "@base-ui/react"
+        "@base-ui/react@^1.9.0"
       ],
       "registryDependencies": [
         "utils",
@@ -2144,7 +2144,7 @@
       "description": "Segmented control tabs with sliding active indicator, fluid hover, and spring animations. Base UI flavor.",
       "dependencies": [
         "framer-motion",
-        "@base-ui/react",
+        "@base-ui/react@^1.9.0",
         "lucide-react"
       ],
       "registryDependencies": [
@@ -2380,7 +2380,7 @@
       "title": "Scroll Area (Base UI)",
       "description": "Scroll container with a restyled overlay scrollbar that stays discoverable on hover and follows the shape system. Falls back to native overflow scrolling on touch-primary devices. Base UI flavor; adapted from Lina (https://lina.sameer.sh).",
       "dependencies": [
-        "@base-ui/react"
+        "@base-ui/react@^1.9.0"
       ],
       "registryDependencies": [
         "utils",
@@ -2579,7 +2579,7 @@
       "title": "Select",
       "description": "Animated select menu with collision-aware positioning, typeahead, fluid hover, spring-animated popover, and animated checkmark. Base UI flavor.",
       "dependencies": [
-        "@base-ui/react",
+        "@base-ui/react@^1.9.0",
         "framer-motion",
         "class-variance-authority",
         "lucide-react"
@@ -2658,7 +2658,7 @@
       "title": "Combobox",
       "description": "Type-to-filter combobox with single or multiple (chips, merged selection backgrounds) selection: a text field that filters a list as you type, with keyboard highlight, fluid hover, spring-animated popover, animated checkmark, and clear/chevron controls. Optional create-from-query row (onCreate) and hideSelected for chips fields. Base UI flavor.",
       "dependencies": [
-        "@base-ui/react",
+        "@base-ui/react@^1.9.0",
         "framer-motion",
         "class-variance-authority",
         "lucide-react"
@@ -2764,7 +2764,7 @@
       "description": "Floating tooltip with spring-based animations, configurable placement, and rich content support. Base UI flavor.",
       "dependencies": [
         "framer-motion",
-        "@base-ui/react"
+        "@base-ui/react@^1.9.0"
       ],
       "registryDependencies": [
         "utils",
@@ -2842,7 +2842,7 @@
       "title": "Thinking Steps",
       "description": "Collapsible AI reasoning steps with animated expand/collapse, per-step icons, sources, and nested details. Base UI flavor.",
       "dependencies": [
-        "@base-ui/react",
+        "@base-ui/react@^1.9.0",
         "framer-motion",
         "lucide-react"
       ],
@@ -2893,7 +2893,7 @@
       "title": "Color Picker",
       "description": "Color picker with HEX, RGB, HSL, and OKLCH formats, alpha channel, optional swatches, and a popover trigger. Built on Base UI's Popover, Menu, and NumberField primitives with native EyeDropper support.",
       "dependencies": [
-        "@base-ui/react",
+        "@base-ui/react@^1.9.0",
         "framer-motion"
       ],
       "registryDependencies": [

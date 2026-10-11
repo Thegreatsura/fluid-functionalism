@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { motion } from "framer-motion";
 import { spring, exitFallbackMs } from "@/lib/springs";
@@ -35,6 +42,33 @@ type MotionSafeDivProps = Omit<
   | "onAnimationIteration"
 >;
 
+// Base UI unmounts a closing popup once the animations it can detect on the
+// popup element end. It misses the framer-motion exit spring, which it cuts.
+// A close that calls preventUnmountOnClose() in onOpenChange stays mounted
+// until the content calls actionsRef.unmount(). A close made by setting
+// `open` never reaches onOpenChange, so the root stays open until that close
+// is replayed through actionsRef.close(), which does.
+function usePopupExit(open: boolean, setOpen: (open: boolean) => void) {
+  const actionsRef = useRef<DialogPrimitive.Root.Actions | null>(null);
+  const [rootOpen, setRootOpen] = useState(open);
+  if (open && !rootOpen) setRootOpen(true);
+  useLayoutEffect(() => {
+    if (!open && rootOpen) actionsRef.current?.close();
+  }, [open, rootOpen]);
+  const onOpenChange = (
+    next: boolean,
+    details: { preventUnmountOnClose: () => void }
+  ) => {
+    if (!next) {
+      details.preventUnmountOnClose();
+      setRootOpen(false);
+    }
+    // A replayed close finds `open` already false: nothing to report.
+    if (next !== open) setOpen(next);
+  };
+  return { actionsRef, rootOpen: open || rootOpen, onOpenChange };
+}
+
 export function MobileDrawer({
   open,
   onClose,
@@ -44,10 +78,12 @@ export function MobileDrawer({
   const substrate = useSurface();
   const level = Math.min(substrate + 2, 8);
 
-  // With `actionsRef` set, Base UI defers unmounting the portal on close
-  // until `actionsRef.current.unmount()` is called, letting the
-  // framer-motion exit tween below play out first.
-  const actionsRef = useRef<DialogPrimitive.Root.Actions | null>(null);
+  // A close holds Base UI's unmount until the framer-motion exit tween below
+  // has played (see usePopupExit). The drawer only reports closes: opening
+  // is the parent's job.
+  const { actionsRef, rootOpen, onOpenChange } = usePopupExit(open, (next) => {
+    if (!next) onClose();
+  });
 
   // Fallback release for the deferred unmount: onAnimationComplete on the
   // panel is the primary signal, but rAF-driven animation callbacks can
@@ -61,14 +97,12 @@ export function MobileDrawer({
       exitFallbackMs(spring.moderate)
     );
     return () => clearTimeout(id);
-  }, [open]);
+  }, [open, actionsRef]);
 
   return (
     <DialogPrimitive.Root
-      open={open}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) onClose();
-      }}
+      open={rootOpen}
+      onOpenChange={onOpenChange}
       actionsRef={actionsRef}
     >
       <DialogPrimitive.Portal>

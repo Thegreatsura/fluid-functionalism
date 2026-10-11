@@ -10,7 +10,7 @@ import {
   useReducedMotion,
   useTransform,
   type AnimationPlaybackControls,
-} from "framer-motion";
+} from "motion/react";
 import { useShape } from "@/registry/default/lib/shape-context";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { ScrollArea } from "@/registry/base/scroll-area";

@@ -59,7 +59,7 @@ node <skill>/scripts/stack.mjs [apps/web]
 ```
 
 It needs only Node, finishes in under a second, and writes nothing. It reads
-the dependencies FF needs (React 19, Tailwind v4, framer-motion, shadcn
+the dependencies FF needs (React 19, Tailwind v4, motion, shadcn
 wiring), settles the flavor verdict, checks the two silent quality killers
 (`MotionConfig reducedMotion="user"` around the app, Inter without the `opsz`
 axis), and lists which FF pieces are installed and which same-named files are
@@ -152,12 +152,12 @@ The stack read tells you which of these are already done. Skip those.
    ThemeProvider:
 
    ```tsx
-   import { MotionConfig } from "framer-motion";
+   import { MotionConfig } from "motion/react";
 
    <MotionConfig reducedMotion="user">{/* providers + app */}</MotionConfig>
    ```
 
-   This makes every framer-motion component honour the OS
+   This makes every Motion component honour the OS
    `prefers-reduced-motion` setting: transforms and layout animations drop,
    opacity and colour fades stay (they aid comprehension).
 
@@ -292,8 +292,9 @@ written down. In order of reach:
   prefix. Single-source items (badge, card, table, input-group, chat-message,
   thinking-indicator, the libs and hooks) have one name for both kinds of
   project.
-- The registry expects Tailwind CSS v4, React 19, and framer-motion. On older
-  stacks, flag the mismatch to the user before installing half a tree.
+- The registry expects Tailwind CSS v4, React 19, and `motion` (imported as
+  `motion/react`). On older stacks, flag the mismatch to the user before
+  installing half a tree.
 - If an install fails on a name, check the catalog in
   [references/components.md](references/components.md) — the registry name is
   not always the component's display name (e.g. TabsSubtle → `tabs-subtle`,

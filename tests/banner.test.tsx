@@ -129,6 +129,24 @@ describe("Banner gap", () => {
     );
   });
 
+  it("takes the gap back on the first frame even when the open is held", async () => {
+    const { getByText, getByTestId } = render(<Toggle initial={false} />);
+    await act(async () => fireEvent.click(getByText("Open")));
+    // Motion holds an animation's start while the main thread is busy, so
+    // the row may not have moved by the first frame. The margin has to come
+    // from the measured gap alone; it used to read 0 here, because the gap
+    // was set before the margin's transform subscribed to it.
+    const until = performance.now() + 150;
+    while (performance.now() < until) {
+      // a long task between the open and the first frame
+    }
+    await act(() => new Promise<void>((r) => requestAnimationFrame(() => r())));
+    const el = row(getByTestId("column"));
+    const open = parseFloat(el.style.gridTemplateRows);
+    expect(parseFloat(el.style.marginBottom)).toBeCloseTo((open - 1) * parseFloat(column.rowGap), 5);
+    expect(parseFloat(el.style.marginBottom)).toBeLessThan(-parseFloat(column.rowGap) / 2);
+  });
+
   it("takes nothing back when the banner is the only child", async () => {
     const { getByText, getByTestId } = render(<Toggle initial={false} alone />);
     await act(async () => fireEvent.click(getByText("Open")));

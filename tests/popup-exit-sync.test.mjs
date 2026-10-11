@@ -1,5 +1,5 @@
 /**
- * Base UI popups keep their framer-motion exit through a local
+ * Base UI popups keep their Motion exit through a local
  * `usePopupExit` hook. Registry files install one by one, so each popup file
  * carries its own copy: these checks keep the copies identical, and keep the
  * registry on the Base UI release whose close cycle the hook relies on.

@@ -8,6 +8,7 @@ import { fontWeights } from "@/registry/default/lib/font-weight";
 import { useIcon } from "@/lib/icon-context";
 import { useSizeVariant } from "@/lib/size-context";
 import { Tooltip } from "@/registry/radix/tooltip";
+import { StarterPromptButton } from "@/app/components/starter-install";
 
 export default function Page() {
   const ArrowRight = useIcon("arrow-right");
@@ -30,11 +31,12 @@ export default function Page() {
               Refined UI components with satisfying hover.
             </p>
             <div className="flex items-center gap-2 mt-2">
+              <StarterPromptButton size="sm" />
               <Link href="/docs" className="outline-none" tabIndex={-1}>
-                <Button variant="primary" size="sm">Learn more</Button>
+                <Button variant="secondary" size="sm">Learn more</Button>
               </Link>
               <Link href="/demo" className="outline-none" tabIndex={-1}>
-                <Button variant="tertiary" size="sm">See demo</Button>
+                <Button variant="ghost" size="sm">See demo</Button>
               </Link>
             </div>
           </div>

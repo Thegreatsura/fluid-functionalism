@@ -77,7 +77,7 @@ would invert that order, and blur is a `filter` string a spring cannot drive
 anyway. Reduced motion swaps the glyphs in place.
 
 ```tsx
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { spring } from "@/lib/springs";
 
 const SHOWN = { opacity: 1, scale: 1, filter: "blur(0px)" };
@@ -238,7 +238,7 @@ The whole system is switched on at the root in
 </MotionConfig>
 ```
 
-`reducedMotion="user"` makes **every** framer-motion component honour the OS
+`reducedMotion="user"` makes **every** Motion component honour the OS
 setting automatically: it disables animations of `transform` (`scale`, `x`,
 `y`, `rotate`) and `layout`, while letting `opacity` and colour keep animating.
 A dialog opens by fading in instead of scaling; a drawer appears in place

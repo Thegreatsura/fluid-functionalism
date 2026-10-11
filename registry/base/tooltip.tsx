@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
-import { motion, useMotionValue } from "framer-motion";
+import { motion, useMotionValue } from "motion/react";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
@@ -128,7 +128,7 @@ function getSlideOffset(side: TooltipSide) {
 // ---------------------------------------------------------------------------
 
 // Base UI unmounts a closing popup once the animations it can detect on the
-// popup element end. It misses the framer-motion exit spring, which it cuts.
+// popup element end. It misses the Motion exit spring, which it cuts.
 // A close that calls preventUnmountOnClose() in onOpenChange stays mounted
 // until the content calls actionsRef.unmount(). A close made by setting
 // `open` never reaches onOpenChange, so the root stays open until that close

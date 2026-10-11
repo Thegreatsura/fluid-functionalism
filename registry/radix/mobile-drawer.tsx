@@ -2,14 +2,14 @@
 
 import { useEffect, useState, type ReactNode, type RefObject } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { spring, exitFallbackMs } from "@/lib/springs";
 import { useSurface, SurfaceProvider } from "@/lib/surface-context";
 import { surfaceClasses } from "@/lib/surface-classes";
 
 // Built on Radix Dialog: it provides scroll lock, focus trap, focus restore,
 // Esc + outside-click dismissal, while leaving the slide animation to
-// framer-motion. Radix has no actionsRef-style deferred unmount, so the
+// Motion. Radix has no actionsRef-style deferred unmount, so the
 // portal lifetime is managed with local `mounted` state (the same pattern
 // the Dialog component uses): mount on open, keep the portal alive with
 // `forceMount` through the exit tween, and unmount once the panel's exit

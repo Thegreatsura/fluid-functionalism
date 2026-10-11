@@ -17,7 +17,7 @@ import {
 } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { fontWeights } from "@/lib/font-weight";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { useIcons } from "@/lib/icon-context";
 import { spring, exitFallbackMs } from "@/lib/springs";
@@ -40,7 +40,7 @@ interface DialogProps {
 type DialogActions = DialogPrimitive.Root.Actions;
 
 // Base UI unmounts a closing popup once the animations it can detect on the
-// popup element end. It misses the framer-motion exit spring, which it cuts.
+// popup element end. It misses the Motion exit spring, which it cuts.
 // A close that calls preventUnmountOnClose() in onOpenChange stays mounted
 // until the content calls actionsRef.unmount(). A close made by setting
 // `open` never reaches onOpenChange, so the root stays open until that close

@@ -15,7 +15,7 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { Popover } from "@base-ui/react/popover";
 import { Menu } from "@base-ui/react/menu";
 import { NumberField } from "@base-ui/react/number-field";
@@ -762,7 +762,7 @@ function AlphaSlider({
 type PopupActions = { unmount: () => void; close: () => void };
 
 // Base UI unmounts a closing popup once the animations it can detect on the
-// popup element end. It misses the framer-motion exit spring, which it cuts.
+// popup element end. It misses the Motion exit spring, which it cuts.
 // A close that calls preventUnmountOnClose() in onOpenChange stays mounted
 // until the content calls actionsRef.unmount(). A close made by setting
 // `open` never reaches onOpenChange, so the root stays open until that close

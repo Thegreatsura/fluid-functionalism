@@ -10,7 +10,7 @@ import {
 } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { fontWeights } from "@/lib/font-weight";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { useIcons } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";
@@ -135,7 +135,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
     const compact = useSize().variant === "compact";
 
     // No `if (!open) return null` here — Base UI's `<DialogPrimitive.Popup>`
-    // handles mount/unmount itself, and waits for the framer-motion opacity
+    // handles mount/unmount itself, and waits for the Motion opacity
     // tween below to finish (via `element.getAnimations()`) before unmounting.
     // Returning null early would short-circuit the closing animation.
     return (

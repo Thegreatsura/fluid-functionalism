@@ -12,7 +12,7 @@ import {
 } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { fontWeights } from "@/lib/font-weight";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { useIcons } from "@/lib/icon-context";
 import { spring, exitFallbackMs } from "@/lib/springs";

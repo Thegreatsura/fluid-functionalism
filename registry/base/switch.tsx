@@ -9,7 +9,7 @@ import {
   useId,
   type HTMLAttributes,
 } from "react";
-import { motion, useMotionValue, animate, type Transition } from "framer-motion";
+import { motion, useMotionValue, animate, type Transition } from "motion/react";
 import { Switch as SwitchPrimitive } from "@base-ui/react/switch";
 import { cn } from "@/lib/utils";
 import { spring } from "@/lib/springs";
@@ -307,7 +307,7 @@ const Switch = forwardRef<HTMLDivElement, SwitchProps>(
           onClick={(e) => e.stopPropagation()}
         >
           <SwitchPrimitive.Thumb
-            // Renders Base UI's thumb as the motion.span. framer-motion claims
+            // Renders Base UI's thumb as the motion.span. Motion claims
             // onDrag* and onAnimationStart for its own callbacks, so the DOM drag
             // and animation handlers are dropped before spreading the rest; Base
             // UI's style is kept and x is layered on top.

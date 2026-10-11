@@ -74,7 +74,7 @@ function List({ rows }: { rows: string[] }) {
       "Never stack two measured-height collapses: a wrapper animating to a ResizeObserver-measured height springs only when it itself toggles and snaps (`{duration: 0}`) when a child's collapse changed the measurement \u2014 before the guard, the sub-menu landed in 218ms while its group wrapper took 326ms, diverging ~80px mid-flight.",
       "Animate `transform` and `opacity`, never `top`/`left`/`width`/`height`: that keeps motion on the compositor AND lets root MotionConfig auto-reduce it \u2014 a component that animates layout properties gets neither.",
     ],
-    usage: `import { motion } from "framer-motion";
+    usage: `import { motion } from "motion/react";
 import { spring } from "@/lib/springs";
 
 // fast: 0.08s, bounce 0. Hover, fades, tooltips, focus rings.
@@ -97,7 +97,7 @@ import { spring } from "@/lib/springs";
     craft: [
       "On touch-primary devices the custom scrollbar machinery is skipped entirely for native overflow scrolling \u2014 better physics, momentum, and rubber-banding beat any custom scrollbar; the exported ScrollBar no-ops there.",
       "The thumb rests narrow and low-contrast (4px wide, 8% overlay tint), then widens to 6px and darkens on hover (12%, 16% while dragging), \"so it gets out of the way until you reach for it\"; the 10px track stays as a comfortable hit target.",
-      "Show/hide is a plain CSS opacity fade matching the cue fade: 160ms in, 120ms out \u2014 exits faster, per the animation guidelines; spring tokens are framer-motion configs and don't apply to CSS. On hide, a 160ms delay waits out the thumb shrink first so the thumb visibly narrows back rather than the fade masking it.",
+      "Show/hide is a plain CSS opacity fade matching the cue fade: 160ms in, 120ms out \u2014 exits faster, per the animation guidelines; spring tokens are Motion configs and don't apply to CSS. On hide, a 160ms delay waits out the thumb shrink first so the thumb visibly narrows back rather than the fade masking it.",
       "The thumb is nudged 2px off the container edge with a `-translate`, but the track (and its 10px hit target) stays flush with the edge so edge-throws still land.",
       "The baseline edge treatment is a vendored shadcn `scroll-fade`: a 48px mask dissolves content toward edges that have more to scroll, and CSS scroll-driven animations keep the true start/end edge crisp until you scroll past it \u2014 no JavaScript; browsers without scroll-driven animations (Firefox) get no fade, since a static one would sit on edges with nothing past them.",
       "`scroll-divider` draws the hairline the fade can't: the line lives on the parent's pseudo-elements (inside the scroller the fade's own mask would erase it at exactly the edge it marks) and borrows the scroller's timeline by name; a region flush with the panel's top suppresses its start line, which would otherwise read as a stray border.",

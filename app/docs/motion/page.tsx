@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence, type Transition } from "framer-motion";
+import { motion, AnimatePresence, type Transition } from "motion/react";
 import { DocPage, DocSection } from "@/lib/docs/DocPage";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { spring } from "@/registry/default/lib/springs";
@@ -23,7 +23,7 @@ function Code({ children }: { children: ReactNode }) {
 // Code snippets (shown in the Code tab of each ComponentPreview)
 // ---------------------------------------------------------------------------
 
-const SPRING_TOKENS_CODE = `import { motion } from "framer-motion";
+const SPRING_TOKENS_CODE = `import { motion } from "motion/react";
 import { spring } from "@/lib/springs";
 
 // fast     — 0.08s, bounce 0.    Hover, fades, tooltips, focus rings.

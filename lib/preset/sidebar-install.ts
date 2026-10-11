@@ -234,7 +234,7 @@ function appSidebarFile(p: SidebarPreset): string {
   }
   if (nests) {
     l.push(`import { type CSSProperties } from "react";`);
-    l.push(`import { motion } from "framer-motion";`);
+    l.push(`import { motion } from "motion/react";`);
     l.push(`import { spring } from "@/lib/springs";`);
   }
   l.push(`import { useIcons } from "@/lib/icon-context";`);
@@ -255,7 +255,7 @@ function appSidebarFile(p: SidebarPreset): string {
     );
     l.push(`import { surfaceClasses, surfaceHoverClasses } from "@/lib/surface-classes";`);
     l.push(`import { useSurface } from "@/lib/surface-context";`);
-    if (p.footerCalloutStacked) l.push(`import { AnimatePresence, motion as m } from "framer-motion";`);
+    if (p.footerCalloutStacked) l.push(`import { AnimatePresence, motion as m } from "motion/react";`);
     if (p.footerCalloutStacked && !nests) l.push(`import { spring } from "@/lib/springs";`);
   }
   l.push(`import { NAV_SECTIONS } from "@/components/sidebar-preset/nav-data";`);
@@ -753,7 +753,7 @@ export function presetRegistryDeps(p: SidebarPreset): string[] {
 export function presetNpmDeps(p: SidebarPreset): string[] {
   const deps = new Set<string>(["lucide-react"]);
   if ((p.l1Primary === "menu" && p.l1Children) || p.footerCalloutStacked) {
-    deps.add("framer-motion");
+    deps.add("motion");
   }
   return [...deps];
 }

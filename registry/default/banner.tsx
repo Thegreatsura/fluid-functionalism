@@ -2,9 +2,9 @@
 
 import {
   forwardRef,
-  useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -21,7 +21,7 @@ import {
   useReducedMotion,
   useTransform,
   type ValueAnimationTransition,
-} from "framer-motion";
+} from "motion/react";
 import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";
@@ -58,6 +58,10 @@ type BannerVariant = "inline" | "fixed";
 // light mode, where they carry the light mark cut into a filled glyph, and
 // 300s in dark mode, where the mark turns dark. Error reuses --destructive,
 // so it matches the app's other error states.
+// useLayoutEffect warns when rendered on the server; the effect only
+// measures, so the server can skip it.
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 const TONE: Record<BannerStatus, string> = {
   default: "var(--foreground)",
   info: "var(--info)",
@@ -256,20 +260,23 @@ function BannerMotion({ fixed, reduceMotion, config, children }: BannerMotionPro
   const pointerEvents = useTransform(shown, (v) => (v > 0.5 ? "auto" : "none"));
 
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const measure = useCallback(
-    (el: HTMLDivElement | null) => {
-      rootRef.current = el;
-      const parent = el?.parentElement;
-      if (!parent) return;
-      const style = getComputedStyle(parent);
-      const column =
-        parent.children.length > 1 &&
-        style.display.endsWith("flex") &&
-        style.flexDirection.startsWith("column");
-      gap.set(column ? parseFloat(style.rowGap) || 0 : 0);
-    },
-    [gap]
-  );
+  // Measured in a layout effect, not a ref callback: React attaches refs
+  // before it runs layout effects, so a gap set from the ref came before
+  // marginBottom's useTransform subscribed to it (in a layout effect above)
+  // and never reached the margin until the row moved. Motion holds an
+  // animation's start while the main thread is busy, so the first frame
+  // then painted with no margin and the content below jumped by the gap.
+  // Set here, it lands on the next frame, which runs before the first paint.
+  useIsoLayoutEffect(() => {
+    const parent = rootRef.current?.parentElement;
+    if (!parent) return;
+    const style = getComputedStyle(parent);
+    const column =
+      parent.children.length > 1 &&
+      style.display.endsWith("flex") &&
+      style.flexDirection.startsWith("column");
+    gap.set(column ? parseFloat(style.rowGap) || 0 : 0);
+  }, [gap]);
 
   useEffect(() => {
     const { appear: enter, dismiss: leave } = configRef.current;
@@ -333,7 +340,7 @@ function BannerMotion({ fixed, reduceMotion, config, children }: BannerMotionPro
 
   return (
     <motion.div
-      ref={measure}
+      ref={rootRef}
       style={{ gridTemplateRows, marginBottom, overflow }}
       // w-full: the banner is a container (for its narrow layout), so it
       // can't size to its content and has to take the full row.

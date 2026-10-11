@@ -24,6 +24,7 @@ the site.
 |---|---|---|
 | Wordmark: tracked caps between two rules, top of the file | this file | test: present, first thing in the file |
 | Tagline and intro | `app/page.tsx` tagline; the docs Introduction for the principles | routine |
+| Starter command and its settings words | `lib/starter/settings.ts`, `app/r/starter/[slug]/route.ts` | routine |
 | Install: `registry add @fluid`, `@fluid/<name>`, the URL form | shadcn CLI; the registry is listed in shadcn's directory | routine |
 | Flavor rule: the `base/` prefix | `lib/dual-flavor-slugs.mjs` | test: names resolve to `public/r` |
 | `--overwrite` note | `lib/docs/install-prompt.ts` | routine |
@@ -34,7 +35,7 @@ the site.
 | Systems table | `systemList` in `lib/docs/components.ts`; `installSlug` on each system page | test |
 | Blocks table: top-level compositions only | `registry:block` items in `registry.json`, minus the parts of `sidebar-app` | test: names resolve |
 | Presets: the named playgrounds and the URL shapes | `lib/preset/*-options.ts`, `app/r/preset/[code]/route.ts` | routine |
-| Icons: the `IconProvider` example | `registry/default/lib/icon-context.tsx` | routine |
+| Icons: the `IconProvider` example and the icon sets | `registry/default/lib/icon-context.tsx`, `registry/default/lib/icons-*.tsx` | routine |
 | Principles | the docs Introduction, `app/docs/page.tsx` | stable; changes only with the site |
 | Tech stack | `package.json` | routine, major versions only |
 | Development: scripts, the `public/r` commit rule, guide links | `package.json` scripts, `.github/workflows/ci.yml`, the root `*-guidelines.md` files | routine |

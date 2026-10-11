@@ -61,7 +61,7 @@ const STAGE_PADDING: Record<string, string> = {
 /**
  * Column count driven from React state (not just CSS breakpoints) so the
  * cards can FLIP-animate between grid layouts. A pure media-query change
- * reflows the grid outside React's commit, which means framer-motion never
+ * reflows the grid outside React's commit, which means Motion never
  * sees the "before" positions and the re-slot snaps. By applying the column
  * template in the render that follows the matchMedia flip, the layout change
  * happens inside the commit and each card animates from its old slot.

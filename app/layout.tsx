@@ -12,6 +12,8 @@ import { ShapeShortcut } from "@/lib/docs/shape-shortcut";
 import { SizeShortcut } from "@/lib/docs/size-shortcut";
 import { SizeAttribute } from "@/lib/docs/size-attribute";
 import { SettingsToast } from "@/lib/docs/settings-toast";
+import { SettingsPersistence } from "@/lib/docs/settings-persistence";
+import { readSettings } from "@/lib/docs/site-settings";
 import { BaseProvider } from "@/lib/base-context";
 import { SidebarLayout } from "@/app/components/sidebar-layout";
 
@@ -53,9 +55,19 @@ export default async function RootLayout({
   // cookie means open — the component's own default.
   const cookieStore = await cookies();
   const sidebarDefaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
+  // The "Make them yours" settings, saved one cookie each by
+  // SettingsPersistence: rendering them here means a reload paints the
+  // visitor's theme, radius, size, icons and primitive from the first frame.
+  const settings = readSettings((name) => cookieStore.get(name)?.value);
 
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      // Mirrors what ThemeProvider and SizeAttribute apply on the client, so
+      // a saved dark theme or compact size never paints the default first.
+      className={settings.theme === "system" ? undefined : settings.theme}
+      data-size={settings.size}
+    >
       {/* Font smoothing (antialiased/grayscale) is set globally in globals.css */}
       <body>
         {/* reducedMotion="user" makes every Motion component honor the
@@ -63,14 +75,15 @@ export default async function RootLayout({
             animations are dropped, opacity and color fades are kept. One switch
             for the whole system — see motion-guidelines.md. */}
         <MotionConfig reducedMotion="user">
-          <ShapeProvider defaultShape="rounded">
+          <ShapeProvider defaultShape={settings.shape}>
             <ShapeShortcut />
-            <SizeProvider>
+            <SizeProvider defaultSize={settings.size}>
               <SizeShortcut />
               <SizeAttribute />
-              <ThemeProvider>
-                <IconPlaygroundProvider defaultLibrary="untitledui">
-                  <BaseProvider>
+              <ThemeProvider defaultTheme={settings.theme}>
+                <IconPlaygroundProvider defaultLibrary={settings.icons}>
+                  <BaseProvider defaultBase={settings.base}>
+                    <SettingsPersistence />
                     <SidebarLayout defaultOpen={sidebarDefaultOpen}>{children}</SidebarLayout>
                     <SettingsToast />
                     <Analytics />

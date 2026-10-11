@@ -21,7 +21,7 @@ import {
   useReducedMotion,
   useTransform,
   type ValueAnimationTransition,
-} from "framer-motion";
+} from "motion/react";
 import { cn } from "@/lib/utils";
 import { fontWeights } from "@/lib/font-weight";
 import { useShape } from "@/lib/shape-context";

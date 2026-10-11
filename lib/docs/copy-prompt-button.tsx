@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { motion, useReducedMotion, type Transition } from "framer-motion";
+import { motion, useReducedMotion, type Transition } from "motion/react";
 import { Button, type ButtonSize } from "@/registry/radix/button";
 import { useIcon, type IconComponentProps } from "@/lib/icon-context";
 import { spring } from "@/lib/springs";

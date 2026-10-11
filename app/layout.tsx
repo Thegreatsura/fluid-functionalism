@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { MotionConfig } from "framer-motion";
+import { MotionConfig } from "motion/react";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -58,7 +58,7 @@ export default async function RootLayout({
     <html lang="en">
       {/* Font smoothing (antialiased/grayscale) is set globally in globals.css */}
       <body>
-        {/* reducedMotion="user" makes every framer-motion component honor the
+        {/* reducedMotion="user" makes every Motion component honor the
             OS "reduce motion" setting: transform / scale / position / layout
             animations are dropped, opacity and color fades are kept. One switch
             for the whole system — see motion-guidelines.md. */}

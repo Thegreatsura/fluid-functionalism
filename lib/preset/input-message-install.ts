@@ -33,7 +33,7 @@ function composerFile(p: InputMessagePreset): string {
   l.push(`"use client";`);
   l.push(``);
   l.push(`import { useEffect, useRef, useState } from "react";`);
-  if (queueOn) l.push(`import { motion } from "framer-motion";`);
+  if (queueOn) l.push(`import { motion } from "motion/react";`);
   l.push(
     `import { InputMessage${queueOn ? ", type QueuedMessage" : ""} } from "@/components/ui/input-message";`
   );
@@ -470,7 +470,7 @@ export function inputMessagePresetRegistryDeps(
 /** npm dependencies beyond what registryDependencies pull transitively. */
 export function inputMessagePresetNpmDeps(p: InputMessagePreset): string[] {
   const deps = new Set<string>(["lucide-react"]);
-  if (p.status !== "off") deps.add("framer-motion");
+  if (p.status !== "off") deps.add("motion");
   return [...deps];
 }
 

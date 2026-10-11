@@ -189,7 +189,7 @@ The icon-library switcher on the docs site is a preview tool only. None of that 
 
 - [Next.js](https://nextjs.org) 15 + React 19 (docs site)
 - [Tailwind CSS](https://tailwindcss.com) v4
-- [Framer Motion](https://www.framer.com/motion/)
+- [Motion](https://motion.dev)
 - [Radix UI](https://www.radix-ui.com) and [Base UI](https://base-ui.com) primitives
 - [shadcn/ui](https://ui.shadcn.com) registry protocol, shadcn CLI 3
 

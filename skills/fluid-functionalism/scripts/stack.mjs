@@ -67,7 +67,7 @@ export const FF_PARTS = [
 export const SHARED_BASE_UI = ["ask-user-questions", "color-picker", "input-group"];
 
 /** Lowest major each requirement accepts. */
-export const REQUIRED_MAJOR = { react: 19, tailwindcss: 4, "framer-motion": 12 };
+export const REQUIRED_MAJOR = { react: 19, tailwindcss: 4, motion: 12 };
 
 const FF_IMPORT = new RegExp(`(^|/)(${FF_MODULES.join("|")})$`);
 const BASE_IMPORT = /^@base-ui(-components)?\/react($|\/)/;
@@ -242,6 +242,15 @@ function installedVersion(root, name) {
   for (const dir of ancestors(root)) {
     const pkg = readJsonc(join(dir, "node_modules", name, "package.json"));
     if (pkg?.version) return pkg.version;
+  }
+  return null;
+}
+
+/** The framer-motion version the installed `motion` package pins. */
+function motionPin(root) {
+  for (const dir of ancestors(root)) {
+    const pkg = readJsonc(join(dir, "node_modules", "motion", "package.json"));
+    if (pkg) return pkg.dependencies?.["framer-motion"] ?? null;
   }
   return null;
 }
@@ -529,9 +538,13 @@ export function readStack(input = ".") {
 
   const react = version("react");
   const tailwind = version("tailwindcss");
-  const fm = version("framer-motion");
-  // Declared only: a copy some dependency pulled in is not the project's pick.
-  const motion = declared.motion ? version("motion") : null;
+  const motion = version("motion");
+  // Declared only: the copy `motion` carries inside is not the project's pick.
+  const fm = declared["framer-motion"] ? version("framer-motion") : null;
+  // `motion` pins one exact framer-motion. A direct dependency on any other
+  // version installs a second copy, and a MotionConfig imported from one
+  // never reaches components animated by the other.
+  const pinned = motion ? motionPin(root) : null;
   const v4Import = /@import\s+["']tailwindcss["']/.test(css);
   const check = (ok, text) => ({ ok, text });
   const requirements = [
@@ -542,10 +555,12 @@ export function readStack(input = ".") {
       ? check(tailwind.major >= REQUIRED_MAJOR.tailwindcss && (v4Import || !entryCss),
           `tailwindcss ${tailwind.version}${entryCss ? `; ${rel(entryCss)} ${v4Import ? 'imports "tailwindcss"' : "has no v4 @import"}` : ""}`)
       : check(false, "tailwindcss not found in package.json"),
-    fm
-      ? check(fm.major >= REQUIRED_MAJOR["framer-motion"], `framer-motion ${fm.version}`)
-      : check(null, "framer-motion not installed yet; arrives with the first component"),
-    ...(motion ? [check(false, `motion ${motion.version} is a dependency: an FF install adds framer-motion beside it, 2 copies of 1 library`)] : []),
+    motion
+      ? check(motion.major >= REQUIRED_MAJOR.motion, `motion ${motion.version}`)
+      : check(null, "motion not installed yet; arrives with the first component"),
+    ...(fm && fm.version !== pinned
+      ? [check(false, `framer-motion ${fm.version} is a direct dependency${pinned ? ` but motion pins ${pinned}` : ""}: 2 copies of 1 library split MotionConfig; import from motion/react and drop framer-motion`)]
+      : []),
     !shadcn
       ? check(false, "no components.json: run shadcn init first")
       : check(resolved.ui.viaPaths,

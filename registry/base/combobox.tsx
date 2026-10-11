@@ -14,7 +14,7 @@ import {
   type HTMLAttributes,
   type InputHTMLAttributes,
 } from "react";
-import { motion, AnimatePresence, animate, useMotionValue } from "framer-motion";
+import { motion, AnimatePresence, animate, useMotionValue } from "motion/react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 import { useIcons, type IconComponent } from "@/lib/icon-context";

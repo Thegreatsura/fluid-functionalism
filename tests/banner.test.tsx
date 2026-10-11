@@ -143,8 +143,11 @@ describe("Banner gap", () => {
     await act(() => new Promise<void>((r) => requestAnimationFrame(() => r())));
     const el = row(getByTestId("column"));
     const open = parseFloat(el.style.gridTemplateRows);
+    // How far the row got depends on the runner: a busy CI runner reached
+    // 95% by this frame. While it is still opening, a margin of 0 can't match
+    // the gap it should be taking back.
+    expect(open).toBeLessThan(1);
     expect(parseFloat(el.style.marginBottom)).toBeCloseTo((open - 1) * parseFloat(column.rowGap), 5);
-    expect(parseFloat(el.style.marginBottom)).toBeLessThan(-parseFloat(column.rowGap) / 2);
   });
 
   it("takes nothing back when the banner is the only child", async () => {

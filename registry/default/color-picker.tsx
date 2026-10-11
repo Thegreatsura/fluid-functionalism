@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useMemo,
   useSyncExternalStore,
@@ -754,9 +755,42 @@ function AlphaSlider({
 // coordinates once on open and detached from the trigger on scroll),
 // dismissal, roving highlight, and typeahead. Menu.RadioGroup/RadioItem carry
 // the radio semantics. This layer keeps the fluid-hover
-// overlays and the spring open/close animation (actionsRef deferred unmount —
-// the same verified pattern as Select / Dropdown).
+// overlays and the spring open/close animation (Base UI's unmount held back
+// through actionsRef, see usePopupExit, as in Select and Dropdown).
 // ---------------------------------------------------------------------------
+
+type PopupActions = { unmount: () => void; close: () => void };
+
+// Base UI unmounts a closing popup once the animations it can detect on the
+// popup element end. It misses the Motion exit spring, which it cuts.
+// A close that calls preventUnmountOnClose() in onOpenChange stays mounted
+// until the content calls actionsRef.unmount(). A close made by setting
+// `open` never reaches onOpenChange, so the root stays open until that close
+// is replayed through actionsRef.close(), which does.
+function usePopupExit(open: boolean, setOpen: (open: boolean) => void) {
+  const actionsRef = useRef<PopupActions | null>(null);
+  const [rootOpen, setRootOpen] = useState(open);
+  if (open && !rootOpen) setRootOpen(true);
+  useLayoutEffect(() => {
+    if (open || !rootOpen) return;
+    // The root fills actionsRef before this effect runs; without it, close
+    // straight away rather than stay open.
+    if (actionsRef.current) actionsRef.current.close();
+    else setRootOpen(false);
+  }, [open, rootOpen]);
+  const onOpenChange = (
+    next: boolean,
+    details: { preventUnmountOnClose: () => void }
+  ) => {
+    if (!next) {
+      details.preventUnmountOnClose();
+      setRootOpen(false);
+    }
+    // A replayed close finds `open` already false: nothing to report.
+    if (next !== open) setOpen(next);
+  };
+  return { actionsRef, rootOpen: open || rootOpen, onOpenChange };
+}
 
 const FORMAT_LABELS: Record<ColorFormat, string> = {
   hex: "HEX",
@@ -873,7 +907,9 @@ function FormatDropdown({
     openWithPageRef.current = false;
   };
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const actionsRef = useRef<{ unmount: () => void; close: () => void } | null>(null);
+  const { actionsRef, rootOpen, onOpenChange } = usePopupExit(open, (next) => {
+    if (!isControlled) setInternalOpen(next);
+  });
   const shape = useShape();
   const sizeClasses = useSize();
   const portalContainer = useContext(ColorPickerPortalContainerContext);
@@ -904,7 +940,7 @@ function FormatDropdown({
     if (open) return;
     const id = setTimeout(() => actionsRef.current?.unmount(), 120);
     return () => clearTimeout(id);
-  }, [open]);
+  }, [open, actionsRef]);
 
   // The popup keeps its rows registered between opens, so their rects
   // were taken while it was hidden: re-measure once it is open and laid out.
@@ -923,10 +959,10 @@ function FormatDropdown({
 
   return (
     <Menu.Root
-      open={open}
-      onOpenChange={(next) => {
+      open={rootOpen}
+      onOpenChange={(next, details) => {
         releaseFocus();
-        if (!isControlled) setInternalOpen(next);
+        onOpenChange(next, details);
       }}
       actionsRef={actionsRef}
       // Non-modal: the page keeps scrolling and the Positioner tracks the
@@ -975,7 +1011,7 @@ function FormatDropdown({
             }
             transition={open ? spring.fast : spring.fast.exit}
             style={{ transformOrigin: "top center" }}
-            // Base UI defers unmount while actionsRef is set; release it once
+            // The close held Base UI's unmount (preventUnmountOnClose); release it once
             // the exit spring has finished so the close animation fully plays.
             onAnimationComplete={() => {
               if (!open) actionsRef.current?.unmount();
@@ -2171,8 +2207,8 @@ function AlphaInput({ value, onCommit }: { value: number; onCommit: (n: number) 
 // captured rect and could overflow the viewport bottom), dismissal (outside
 // press, focus-out, Escape only while focus is relevant), and focus
 // management (focus moves into the panel on open and restores to the trigger
-// on close). The spring open/close animation stays via the actionsRef
-// deferred-unmount pattern (same as Select); the previous conditional
+// on close). The spring open/close animation stays via the held unmount
+// (usePopupExit, released through actionsRef); the previous conditional
 // portal unmounted the AnimatePresence container itself, so the exit
 // animation never played.
 // ---------------------------------------------------------------------------
@@ -2197,7 +2233,6 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
     const isOpenControlled = openProp !== undefined;
     const [internalOpen, setInternalOpen] = useState(defaultOpen);
     const open = isOpenControlled ? openProp : internalOpen;
-    const actionsRef = useRef<{ unmount: () => void; close: () => void } | null>(null);
     const [panelEl, setPanelEl] = useState<HTMLDivElement | null>(null);
     const shape = useShape();
     // Resolved with the override directly: this component's own hooks run
@@ -2218,6 +2253,11 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
       },
       [isOpenControlled, onOpenChange]
     );
+    const {
+      actionsRef,
+      rootOpen,
+      onOpenChange: handleRootOpenChange,
+    } = usePopupExit(open, handleOpenChange);
 
     // The popover owns the value (unless controlled) because the trigger
     // shows it too. The panel inside is always controlled with currentValue;
@@ -2244,7 +2284,7 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
       if (open) return;
       const id = setTimeout(() => actionsRef.current?.unmount(), 150);
       return () => clearTimeout(id);
-    }, [open]);
+    }, [open, actionsRef]);
 
     const icons = useIcons();
     const XIcon = icons.x;
@@ -2262,8 +2302,8 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
     // context crosses portals) to one step of the ladder.
     const root = (
       <Popover.Root
-        open={open}
-        onOpenChange={handleOpenChange}
+        open={rootOpen}
+        onOpenChange={handleRootOpenChange}
         actionsRef={actionsRef}
         // Non-modal: the page keeps scrolling and the Positioner tracks the
         // anchor, so the panel follows its trigger instead of detaching.
@@ -2340,7 +2380,7 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
                 // Top-left origin matches align="start": the panel unfolds
                 // from the trigger's corner.
                 style={{ transformOrigin: "top left" }}
-                // Base UI defers unmount while actionsRef is set; release it
+                // The close held Base UI's unmount (preventUnmountOnClose); release it
                 // once the exit spring has finished so the close animation
                 // fully plays.
                 onAnimationComplete={() => {

@@ -5,7 +5,7 @@
   "description": "Animated toggle switch with spring-based thumb animation and fluid font-weight label transitions. Base UI flavor.",
   "dependencies": [
     "motion",
-    "@base-ui/react"
+    "@base-ui/react@^1.9.0"
   ],
   "registryDependencies": [
     "utils",

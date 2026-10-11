@@ -24,4 +24,4 @@ The registry has no versions yet: every install takes the current `main`. A fix 
 
 - Dependabot opens a pull request when a package in the lockfile gets a security advisory.
 - A weekly check upgrades every package the registry installs, runs the site's checks and a fresh install in both flavors, and opens a pull request when something needs a fix. `scripts/deps-watch/README.md` describes it.
-- Every npm dependency in `registry.json` has a `^` floor at the version the site was tested on, so an install never gets an older one.
+- The weekly check also raises each package's `^` floor in `registry.json` to the version it tested, so an install never gets an older one.

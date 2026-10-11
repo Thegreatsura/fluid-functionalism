@@ -1,10 +1,9 @@
 "use client";
 
 import { track } from "@vercel/analytics";
-import { InputCopy } from "@/registry/default/input-copy";
+import type { ButtonSize } from "@/registry/radix/button";
 import { CopyPromptButton } from "@/lib/docs/copy-prompt-button";
-import { buildStarterPrompt, starterCommand } from "@/lib/docs/install-prompt";
-import { describeSettings } from "@/lib/starter/install";
+import { buildStarterPrompt } from "@/lib/docs/install-prompt";
 import { useThemeContext } from "@/registry/default/lib/theme-context";
 import { useShapeContext } from "@/lib/shape-context";
 import { useSizeContext } from "@/lib/size-context";
@@ -23,36 +22,17 @@ function useStarterSettings(): StarterSettings {
 }
 
 /**
- * Home page install: one command that scaffolds a new app with every
- * component, and a Copy prompt for coding agents. Both follow the "Make them
- * yours" settings, so changing one in the panel (or with T, R, S, I) changes
- * what gets installed.
+ * Home page Copy prompt: a brief that has a coding agent start a new app
+ * from the starter, with every component and the visitor's "Make them yours"
+ * settings. The prompt follows the settings live (panel or T, R, S, I).
  */
-export function StarterInstall() {
+export function StarterPromptButton({ size }: { size?: ButtonSize }) {
   const settings = useStarterSettings();
-  const command = starterCommand(settings);
-  const prompt = buildStarterPrompt(settings);
-
   return (
-    <div className="flex flex-col gap-3">
-      <p className="text-site-body text-muted-foreground">
-        Start a new app with every component, set to your choices:{" "}
-        {describeSettings(settings)}.
-      </p>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <InputCopy
-          value={command}
-          align="left"
-          className="min-w-0 sm:flex-1"
-          aria-label="Starter install command"
-          onCopy={() => track("Starter command copied", { base: settings.base })}
-        />
-        <CopyPromptButton
-          prompt={prompt}
-          className="shrink-0"
-          onCopy={() => track("Starter prompt copied", { base: settings.base })}
-        />
-      </div>
-    </div>
+    <CopyPromptButton
+      prompt={buildStarterPrompt(settings)}
+      size={size}
+      onCopy={() => track("Starter prompt copied", { base: settings.base })}
+    />
   );
 }

@@ -138,7 +138,11 @@ function usePopupExit(open: boolean, setOpen: (open: boolean) => void) {
   const [rootOpen, setRootOpen] = useState(open);
   if (open && !rootOpen) setRootOpen(true);
   useLayoutEffect(() => {
-    if (!open && rootOpen) actionsRef.current?.close();
+    if (open || !rootOpen) return;
+    // The root fills actionsRef before this effect runs; without it, close
+    // straight away rather than stay open.
+    if (actionsRef.current) actionsRef.current.close();
+    else setRootOpen(false);
   }, [open, rootOpen]);
   const onOpenChange = (
     next: boolean,
@@ -174,9 +178,16 @@ function Tooltip({
   });
   // Fallback release for the held unmount: the popup's onAnimationComplete is
   // the primary signal, but rAF-driven animation callbacks can stall in
-  // throttled/background tabs.
+  // throttled/background tabs. Armed only by a close, so a page of tooltips
+  // that never opened holds no timers.
+  const openedRef = useRef(open);
   useEffect(() => {
-    if (open) return;
+    if (open) {
+      openedRef.current = true;
+      return;
+    }
+    if (!openedRef.current) return;
+    openedRef.current = false;
     const id = setTimeout(
       () => actionsRef.current?.unmount(),
       exitFallbackMs(spring.fast)

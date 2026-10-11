@@ -281,7 +281,11 @@ function usePopupExit(open: boolean, setOpen: (open: boolean) => void) {
   const [rootOpen, setRootOpen] = useState(open);
   if (open && !rootOpen) setRootOpen(true);
   useLayoutEffect(() => {
-    if (!open && rootOpen) actionsRef.current?.close();
+    if (open || !rootOpen) return;
+    // The root fills actionsRef before this effect runs; without it, close
+    // straight away rather than stay open.
+    if (actionsRef.current) actionsRef.current.close();
+    else setRootOpen(false);
   }, [open, rootOpen]);
   const onOpenChange = (
     next: boolean,

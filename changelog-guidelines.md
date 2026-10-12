@@ -108,7 +108,9 @@ One optional line that says what the month was about.
   readers will notice (a new default, a change across components). Commas
   between items, `and` before the last one, no period. When the New items
   don't fit, count them: `5 components`.
-- **Intro**: optional, one line, under the frontmatter.
+- **Intro**: optional, one line under the frontmatter that adds to the title
+  instead of repeating it: what the month changes for someone using the
+  library, ending on how many entries need a migration when any do.
 - **Sections**: only `## New`, `## Breaking`, `## Updated`, in that order.
   Leave out a section with no entries.
 - **Order**: inside a section, system pages first (the sidebar's System

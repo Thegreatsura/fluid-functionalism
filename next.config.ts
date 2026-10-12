@@ -26,6 +26,11 @@ const nextConfig: NextConfig = {
       fallback: [],
     };
   },
+  // Caching: /docs/<slug> answers HTML or Markdown by Accept. The Markdown
+  // (static, cacheable) carries `Vary: Accept` from app/md/[slug]/route.ts.
+  // The HTML can't: Next replaces a rendered page's Vary with its router
+  // headers. It doesn't need to either: it is sent `private, no-store` (the
+  // root layout reads cookies), so no shared cache keeps it.
   async redirects() {
     return [
       // The fluid hover hook was published as `use-proximity-hover` until

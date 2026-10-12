@@ -19,6 +19,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
   return new Response(body, {
     headers: {
       "Content-Type": "text/markdown; charset=utf-8",
+      // /docs/<slug> serves this or the HTML page depending on Accept.
+      Vary: "Accept",
       // The HTML page stays the one search engines index.
       Link: `<${page}>; rel="canonical"`,
     },

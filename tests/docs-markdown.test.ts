@@ -16,6 +16,7 @@ import { API_REFERENCE } from "@/lib/docs/api";
 import { PROMPT_ENTRIES } from "@/lib/docs/prompt-entries";
 import { DUAL_FLAVOR_SLUGS } from "@/lib/install-url";
 import { docMetadata } from "@/lib/docs/metadata";
+import { plainDescription } from "@/lib/docs/install-brief";
 import robots from "@/app/robots";
 
 const root = new URL("..", import.meta.url).pathname;
@@ -130,6 +131,17 @@ describe("llms.txt", () => {
 
   it("follows the tone of voice: no em dashes", () => {
     expect(txt).not.toContain("—");
+  });
+
+  // plainDescription turns a lone dash into a colon, so a description that
+  // already has a colon before it would read "X: a: b". None does today.
+  it.each(
+    [...MARKDOWN_PAGES.map((p) => p.description), ...MARKDOWN_PAGES.map((p) => ("installNote" in p ? p.installNote : undefined))]
+      .filter((s): s is string => !!s),
+  )("rewrites %s without em dashes or a second colon", (description) => {
+    const plain = plainDescription(description);
+    expect(plain).not.toContain("—");
+    expect(plain.split(": ").length - 1).toBeLessThanOrEqual(1);
   });
 
   it("llms-full.txt carries every page", () => {

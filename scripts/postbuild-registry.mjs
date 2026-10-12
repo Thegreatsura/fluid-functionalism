@@ -203,8 +203,11 @@ export async function processRegistry(registryDir = REGISTRY_DIR) {
     if (Array.isArray(data.items)) {
       for (const item of data.items) {
         rewriteDeps(item, flavorForItem(item));
-        if (typeof item.name === "string" && item.name.endsWith("-base")) {
-          item.name = `base/${item.name.replace(/-base$/, "")}`;
+        // Only declared flavours: an item that merely ends in "-base" keeps
+        // its name (registry-consistency also refuses such an item).
+        const flavourOf = typeof item.name === "string" ? item.name.replace(/-base$/, "") : "";
+        if (item.name !== flavourOf && DUAL_FLAVOR_ITEMS.has(flavourOf)) {
+          item.name = `base/${flavourOf}`;
         }
       }
       await writeJson(filePath, data);

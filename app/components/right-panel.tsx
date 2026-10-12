@@ -372,14 +372,13 @@ export function RightPanel() {
           </motion.div>
         )}
       </AnimatePresence>
-    {/* max-xl:fixed — during the xl-fade-block fade-out the panel keeps
-        display:block for the transition (allow-discrete), which would hold its
-        264px of flex space and make the content reflow a second time when
-        display finally flips to none. Fixed positioning below xl removes it
-        from flow at the breakpoint (single reflow) while it fades in place:
-        top-0/right-0 + mt-4 and the animated 16px marginRight land on the
-        same 16px inset as the pinned sticky state. The wrapper carries the fade/sticky so pages can stack a
-        second panel (RightRailTarget) below the settings.
+    {/* Below xl the panel fades out where it stands: xl-fade-block keeps
+        display:block through the fade (allow-discrete), so the panel holds
+        its space and never covers the page, and the content widens into it
+        once the fade ends. (Fixed positioning during the fade saved that
+        second reflow, but left the panel over the content as the left
+        sidebar collapsed under it.) The wrapper carries the fade/sticky so
+        pages can stack a second panel (RightRailTarget) below the settings.
         xl-fade-block sets display:block at ≥xl, so the flex column lives on an
         inner wrapper (else it would override `flex` and drop the gap).
         The "]" toggle animates width/margin (the sidebar-shell technique: the
@@ -389,7 +388,7 @@ export function RightPanel() {
         xl-fade-block's, and the panel would pop out below xl at full
         opacity instead of fading. */}
     <motion.div
-      className="shrink-0 overflow-hidden sticky top-4 self-start mt-4 xl-fade-block max-xl:fixed max-xl:top-0 max-xl:right-0 max-xl:z-40 max-xl:pointer-events-none"
+      className="shrink-0 overflow-hidden sticky top-4 self-start mt-4 xl-fade-block max-xl:pointer-events-none"
       initial={false}
       animate={{
         width: open ? 256 : 0,

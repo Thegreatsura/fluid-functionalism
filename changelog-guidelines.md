@@ -142,7 +142,10 @@ One optional line that says what the month was about.
 - **Markers**: the latest release drives every New and Updated marker on
   the site. A `/docs/` label under New dots its sidebar row and badges its
   Showcase card; one under Updated or Breaking reads Updated in ⌘K. The
-  markers move on when the next release merges.
+  markers move on when the next release merges. A page that lands after a
+  release can keep its New badge (not its sidebar dot) through
+  `AHEAD_OF_RELEASE` in `lib/changelog/load.ts`; its entry lapses once the
+  release for its month exists, and the routine deletes it in its PR.
 
 
 ## Voice
@@ -172,7 +175,8 @@ follows the same ones.
    `registry.json`, `lib/docs/components.ts`, and `README.md` across the
    month to find what shipped publicly, which is what can be New. Read the
    previous month's file so nothing is listed as New twice.
-5. Sort every reader-facing change into a kind, write the file, and run
+5. Sort every reader-facing change into a kind, write the file, delete any
+   `AHEAD_OF_RELEASE` entry for the month (`lib/changelog/load.ts`), and run
    `npx vitest run tests/changelog.test.ts`.
 6. Open a PR from `changelog/<month>` titled `Changelog: <Month YYYY>`. Its
    body lists the entries whose kind was a judgment call, and every left-out

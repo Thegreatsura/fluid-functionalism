@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { parseRelease, releaseEntries, type Inline } from "@/lib/changelog/parse";
-import { latestMarks, loadReleases } from "@/lib/changelog/load";
+import { AHEAD_OF_RELEASE, latestMarks, loadReleases } from "@/lib/changelog/load";
 import { buildMigrationPrompt } from "@/lib/changelog/migration-prompt";
 import { highlightDiff } from "@/lib/docs/highlight";
 import { releasesToMarkdown } from "@/lib/changelog/markdown";
@@ -311,9 +311,33 @@ describe("latestMarks", () => {
       ),
     });
     try {
-      expect(latestMarks(dir)).toEqual({ new: ["combobox"], updated: ["select"] });
+      expect(latestMarks(dir, [])).toEqual({ new: ["combobox"], updated: ["select"], ahead: [] });
     } finally {
       rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("badges pages listed ahead of the next release, until that release lands", () => {
+    const ahead = [{ month: "2026-10", slugs: ["banner"] }];
+    const september = release("2026-09", "## Updated\n\n- [Banner](/docs/banner): A fix. (#1)\n");
+    const october = release("2026-10", "## New\n\n- [Banner](/docs/banner): A status message. (#2)\n");
+    const before = dirWith({ "2026-09.md": september });
+    const after = dirWith({ "2026-09.md": september, "2026-10.md": october });
+    try {
+      // Ahead of its release it is New, not Updated; once October lands, the
+      // release marks it and the ahead list lapses.
+      expect(latestMarks(before, ahead)).toEqual({ new: [], updated: [], ahead: ["banner"] });
+      expect(latestMarks(after, ahead)).toEqual({ new: ["banner"], updated: [], ahead: [] });
+    } finally {
+      rmSync(before, { recursive: true, force: true });
+      rmSync(after, { recursive: true, force: true });
+    }
+  });
+
+  it("lists only real docs pages ahead of a release", () => {
+    for (const { month, slugs } of AHEAD_OF_RELEASE) {
+      expect(month).toMatch(/^\d{4}-(0[1-9]|1[0-2])$/);
+      for (const slug of slugs) expect(docSlugs.has(slug), slug).toBe(true);
     }
   });
 
@@ -321,7 +345,7 @@ describe("latestMarks", () => {
     const dir = dirWith({ "2026-09.md": "no frontmatter" });
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
-      expect(latestMarks(dir)).toEqual({ new: [], updated: [] });
+      expect(latestMarks(dir)).toEqual({ new: [], updated: [], ahead: [] });
       expect(error).toHaveBeenCalledOnce();
     } finally {
       error.mockRestore();

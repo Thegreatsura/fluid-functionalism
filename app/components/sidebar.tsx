@@ -48,9 +48,13 @@ function NavGroup({
   pathname: string;
   ariaLabel: string;
 }) {
-  const { isNew } = useReleaseMarks();
+  // Release-only: pages listed ahead of the next release get their badge
+  // elsewhere, and their dot once the release lands.
+  const { isReleaseNew } = useReleaseMarks();
   return (
-    <SidebarGroup>
+    // A labelled group (System, Components) gets 16px above it instead of
+    // the group's 8px, so each section starts clear of the one before.
+    <SidebarGroup className={label ? "pt-4" : undefined}>
       {label && (
         // Foreground, not the component's muted default: on the site the
         // group names are wayfinding, and the counts beside them stay muted.
@@ -63,6 +67,11 @@ function NavGroup({
           </span>
         </SidebarGroupLabel>
       )}
+      {/* A hairline under the label, from the name's first letter (the
+          label's 8px padding) to the count's last digit (12px in: the count
+          box's 4px padding on top), with 4px before the first row so its
+          hover fill clears the line. */}
+      {label && <div aria-hidden className="mb-1 ml-2 mr-3 h-px shrink-0 bg-border" />}
       <SidebarMenu aria-label={ariaLabel}>
         {entries.map((entry) => {
           const href = `/docs/${entry.slug}`;
@@ -70,7 +79,7 @@ function NavGroup({
             <SidebarMenuItem key={entry.slug}>
               <SidebarMenuButton render={<Link href={href} />} isActive={pathname === href}>
                 {entry.name}
-                {isNew(entry.slug) && <NewDot />}
+                {isReleaseNew(entry.slug) && <NewDot />}
               </SidebarMenuButton>
             </SidebarMenuItem>
           );

@@ -101,7 +101,7 @@ function CloseSheetOnNavigate() {
   return null;
 }
 
-const NO_MARKS: ReleaseMarks = { new: [], updated: [] };
+const NO_MARKS: ReleaseMarks = { new: [], updated: [], ahead: [] };
 
 interface SidebarLayoutProps {
   children: ReactNode;

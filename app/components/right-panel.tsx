@@ -384,7 +384,10 @@ export function RightPanel() {
         inner wrapper (else it would override `flex` and drop the gap).
         The "]" toggle animates width/margin (the sidebar-shell technique: the
         outer collapses while the inner keeps its true width) so the page
-        content reflows into the space instead of snapping. */}
+        content reflows into the space instead of snapping. Its fade runs on
+        the inner wrapper: an inline opacity on the outer one would outrank
+        xl-fade-block's, and the panel would pop out below xl at full
+        opacity instead of fading. */}
     <motion.div
       className="shrink-0 overflow-hidden sticky top-4 self-start mt-4 xl-fade-block max-xl:fixed max-xl:top-0 max-xl:right-0 max-xl:z-40 max-xl:pointer-events-none"
       initial={false}
@@ -393,7 +396,6 @@ export function RightPanel() {
         // 16px on the right, matching the 16px top (sticky top-4) and the
         // 16px the max-h calc leaves at the bottom — one even inset.
         marginRight: open ? 16 : 0,
-        opacity: open ? 1 : 0,
       }}
       transition={
         reduceMotion ? { duration: 0 } : open ? spring.slow : spring.slow.exit
@@ -403,7 +405,14 @@ export function RightPanel() {
       // inert every control inside would stay tabbable and announced.
       inert={open ? undefined : true}
     >
-      <div className="w-64">
+      <motion.div
+        className="w-64"
+        initial={false}
+        animate={{ opacity: open ? 1 : 0 }}
+        transition={
+          reduceMotion ? { duration: 0 } : open ? spring.slow : spring.slow.exit
+        }
+      >
       {/* Taller stacks (settings + playground controls) scroll within the
           viewport instead of running past it — the house ScrollArea (quiet
           thumb on the overlay ramp), scroll-fade dissolving the clipped
@@ -433,7 +442,7 @@ export function RightPanel() {
         <RightRailTarget />
       </div>
       </ScrollArea>
-      </div>
+      </motion.div>
     </motion.div>
     </>
   );

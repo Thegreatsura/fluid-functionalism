@@ -29,6 +29,10 @@ interface BuildInstallPromptOptions {
 
 /** The craft (exact behaviors and values) ships in the skill, not in the
  *  brief: one pointer instead of a page of bullets. */
+/** Where an agent checks for changes later: every month's release, with an
+ *  install URL per entry and migration steps for anything breaking. */
+const CHANGELOG_LINE = `Changelog (what changed each month, how to update): ${SITE}/changelog.md`;
+
 const SKILL_LINE =
   "For the design details behind it (exact behaviors and values), add the Fluid Functionalism skill: npx skills add mickadesign/fluid-functionalism";
 
@@ -90,6 +94,7 @@ export function buildInstallPrompt({ slug, installSlug, base }: BuildInstallProm
   );
   lines.push(about.join(" "));
   lines.push(`Docs: ${SITE}/docs/${slug}`);
+  lines.push(CHANGELOG_LINE);
 
   return lines.join("\n");
 }
@@ -161,6 +166,7 @@ export function buildPresetPrompt({ def, code, base }: BuildPresetPromptOptions)
   lines.push(about.join(" "));
   lines.push(`Reopen or tweak this configuration: ${SITE}${def.docsPath}?preset=${code}`);
   lines.push(`Docs: ${SITE}/docs/${slug}`);
+  lines.push(CHANGELOG_LINE);
 
   return lines.join("\n");
 }
@@ -206,6 +212,7 @@ export function buildStarterPrompt(settings: StarterSettings): string {
   lines.push("");
   lines.push(SKILL_LINE);
   lines.push(`Docs: ${SITE}/docs`);
+  lines.push(CHANGELOG_LINE);
   return lines.join("\n");
 }
 

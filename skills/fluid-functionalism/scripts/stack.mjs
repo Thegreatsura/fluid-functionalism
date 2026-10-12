@@ -512,6 +512,10 @@ export function readStack(input = ".") {
     }
   }
 
+  // Where each installed FF item lives, for scripts/upgrade.mjs to compare
+  // with the registry.
+  installed.files = Object.fromEntries([...ffFiles.keys()].map((path) => [basename(path, extname(path)), rel(path)]));
+
   // Primitive imports. Installed FF items are flavor evidence, minus the
   // shared ones that import Base UI under both flavors; every other file,
   // code built on FF included, is the app's own.

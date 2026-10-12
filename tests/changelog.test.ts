@@ -3,6 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseRelease, releaseEntries, type Inline } from "@/lib/changelog/parse";
 import { releasesToMarkdown } from "@/lib/changelog/markdown";
+import { entryInstall } from "@/lib/changelog/install";
+import { buildUpgradePrompt } from "@/lib/changelog/upgrade-prompt";
 import { SHOWCASE_PREVIEW_SLUGS } from "@/app/changelog/previews";
 import { componentList, systemNavList } from "@/lib/docs/components";
 
@@ -110,10 +112,38 @@ describe("/changelog.md", () => {
     expect(md).not.toContain("\u2014");
   });
 
+  it("names what each entry installs, under the registry's own names", () => {
+    const withInstall = releasesToMarkdown(releases, entryInstall);
+    const SITE = "https://www.fluidfunctionalism.com";
+    // A system page installs under another name; a flavored component lists
+    // both URLs; the skill page installs the skill.
+    expect(withInstall).toContain(`Install: \`${SITE}/r/use-fluid-hover.json\``);
+    expect(withInstall).toContain(`\`${SITE}/r/combobox.json\`, or \`${SITE}/r/base/combobox.json\``);
+    expect(withInstall).toContain("Install: `npx skills add mickadesign/fluid-functionalism`.");
+    // Every entry gets a line, and every Breaking entry its steps.
+    const entries = releases.flatMap(releaseEntries);
+    expect(withInstall.match(/^ {2}Install: /gm)?.length).toBe(entries.length);
+    expect(withInstall.match(/^ {2}Migrate:$/gm)?.length).toBe(entries.filter((e) => e.diff).length);
+  });
+
   it("keeps each Breaking diff", () => {
     for (const entry of releases.flatMap(releaseEntries)) {
       if (entry.diff) expect(md).toContain(entry.diff.split("\n")[0]);
     }
+  });
+});
+
+describe("the Copy upgrade prompt", () => {
+  const prompt = buildUpgradePrompt();
+
+  it("leads with the skill, then the same job by hand from the changelog", () => {
+    expect(prompt.indexOf("npx skills add mickadesign/fluid-functionalism")).toBeLessThan(prompt.indexOf("Without the skill"));
+    expect(prompt).toContain("https://www.fluidfunctionalism.com/changelog.md");
+    expect(prompt).toContain("--overwrite");
+  });
+
+  it("follows the tone of voice: no em dashes", () => {
+    expect(prompt).not.toContain("\u2014");
   });
 });
 

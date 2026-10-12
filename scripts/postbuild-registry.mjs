@@ -166,7 +166,8 @@ export function neutralizeComponentImports(content) {
 
 /** Pick the right flavour to use when rewriting an individual item. */
 export function flavorForItem(item) {
-  return typeof item.name === "string" && item.name.endsWith("-base") ? "base" : "flat";
+  if (typeof item.name !== "string") return "flat";
+  return item.name.endsWith("-base") || item.name.startsWith("base/") ? "base" : "flat";
 }
 
 async function readJson(path) {
@@ -194,8 +195,18 @@ export async function processRegistry(registryDir = REGISTRY_DIR) {
     // Top-level registry index file (`registry.json` mirror) — rewrite each
     // item's deps using the flavour matching that item's name. `dialog-base`
     // entries get base/* URLs; everything else gets back-compat URLs.
+    // Then rename `dialog-base` to `base/dialog`: the namespace URL template
+    // (`/r/{name}.json`) resolves names from this index, and `base/dialog`
+    // is where the per-item file lives after the move below. Left as
+    // `dialog-base`, every Base UI entry 404s for the shadcn MCP server and
+    // the public registry's health check.
     if (Array.isArray(data.items)) {
-      for (const item of data.items) rewriteDeps(item, flavorForItem(item));
+      for (const item of data.items) {
+        rewriteDeps(item, flavorForItem(item));
+        if (typeof item.name === "string" && item.name.endsWith("-base")) {
+          item.name = `base/${item.name.replace(/-base$/, "")}`;
+        }
+      }
       await writeJson(filePath, data);
       console.log(`  ✓ ${file} (index)`);
       continue;

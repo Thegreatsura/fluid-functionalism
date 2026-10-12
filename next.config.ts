@@ -1,6 +1,31 @@
 import type { NextConfig } from "next";
 
+// A request that asks for Markdown first (coding agents send
+// `Accept: text/markdown`) gets the page's Markdown at the same URL.
+const acceptsMarkdown = [{ type: "header" as const, key: "accept", value: "(.*)text/markdown(.*)" }];
+
 const nextConfig: NextConfig = {
+  // The docs render on demand (the root layout reads the settings cookies),
+  // and Next then streams <title> and <link rel="alternate"> to the end of
+  // the body for any user agent it doesn't list as a bot, including agents
+  // like Claude-User and ChatGPT-User. Every page's metadata is static, so
+  // waiting for it costs nothing: keep it in <head> for everyone.
+  htmlLimitedBots: /.*/,
+  async rewrites() {
+    // Every doc page as Markdown, for coding agents (app/md/[slug]/route.ts,
+    // built from lib/docs/markdown.ts). beforeFiles, so the negotiated
+    // versions win over the HTML pages at the same paths.
+    return {
+      beforeFiles: [
+        { source: "/docs.md", destination: "/md/index" },
+        { source: "/docs/:slug.md", destination: "/md/:slug" },
+        { source: "/docs", has: acceptsMarkdown, destination: "/md/index" },
+        { source: "/docs/:slug", has: acceptsMarkdown, destination: "/md/:slug" },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
   async redirects() {
     return [
       // The fluid hover hook was published as `use-proximity-hover` until

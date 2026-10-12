@@ -123,7 +123,8 @@ One optional line that says what the month was about.
     `**Copy prompt**`.
   - Sentence: starts with a capital, a digit, or inline code, and ends with a
     period. Inline code for anything the reader types. Nothing else inline:
-    no links, no bold.
+    no links, no bold. Keys read as the reader presses them (`⌘K`,
+    `Enter`), not as the string an API takes (`mod+k`).
   - Refs: 1 to 3, comma-separated. `#52` for a merged PR, a 7-character SHA
     for a commit that went straight to `main` (a merge commit is fine). Prefer
     the PR; otherwise cite the commits that carry what the sentence says, not

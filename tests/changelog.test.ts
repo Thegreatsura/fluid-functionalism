@@ -12,6 +12,15 @@ import { componentList, systemNavList } from "@/lib/docs/components";
 
 const root = join(__dirname, "..");
 const docSlugs = new Set([...componentList, ...systemNavList].map((e) => e.slug));
+const systemSlugs = new Set(systemNavList.map((e) => e.slug));
+
+/** Where an entry's label sorts inside its section (changelog-guidelines.md). */
+function entryRank(href: string | null): number {
+  if (href === null) return 3;
+  const slug = /^\/docs\/([^/#]+)$/.exec(href)?.[1];
+  if (!slug) return 2;
+  return systemSlugs.has(slug) ? 0 : 1;
+}
 
 function routeExists(href: string): boolean {
   const path = href.split("#")[0].replace(/\/$/, "");
@@ -50,7 +59,7 @@ describe("changelog releases", () => {
     expect(files.length).toBeGreaterThan(0);
   });
 
-  it.each(files)("%s follows the format, links to pages that exist, lists each label once per kind, A to Z", (name) => {
+  it.each(files)("%s follows the format, links to pages that exist, lists each label once per kind, in order", (name) => {
     const release = parseRelease(readFileSync(join(dir, name), "utf8"), `content/changelog/${name}`);
     expect(release.month).toBe(name.slice(0, 7));
     for (const entry of releaseEntries(release)) {
@@ -59,9 +68,10 @@ describe("changelog releases", () => {
     for (const group of release.groups) {
       const names = group.entries.map((e) => e.name);
       expect(new Set(names).size, `${group.kind}: ${names.join(", ")}`).toBe(names.length);
-      // Linked labels A to Z, then bold labels A to Z.
+      // System pages A to Z, then component pages, then other site
+      // routes, then bold labels, each A to Z.
       const sorted = [...group.entries]
-        .sort((a, b) => Number(a.href === null) - Number(b.href === null) || a.name.localeCompare(b.name))
+        .sort((a, b) => entryRank(a.href) - entryRank(b.href) || a.name.localeCompare(b.name))
         .map((e) => e.name);
       expect(names, `${group.kind} order`).toEqual(sorted);
     }
@@ -166,8 +176,8 @@ One line about the month.
     ["a missing period", valid.replace("on reopen. (#22", "on reopen (#22"), /ends with a period/],
     ["an external label link", valid.replace("(/docs/select)", "(https://example.com)"), /use a site route/],
     ["a link inside the sentence", valid.replace("stops sliding", "stops [sliding](/x)"), /only plain text and inline code/],
-    ["a long title", valid.replace("Springs, Select", "x".repeat(61)), /60 characters/],
-    ["a title with and", valid.replace("Springs, Select", "Springs and Select"), /"and"/],
+    ["a long title", valid.replace("Springs, Select", "x".repeat(91)), /90 characters/],
+    ["a title ending in a period", valid.replace("Springs, Select", "Springs, Select."), /ends with a period/],
     ["an early release date", valid.replace("2026-08-07", "2026-07-31"), /before the month ended/],
     ["an unknown frontmatter key", valid.replace("title:", "author: me\ntitle:"), /unknown frontmatter key/],
   ];

@@ -98,9 +98,8 @@ export function parseRelease(source: string, file = "release.md"): Release {
   const { month, released, title } = meta;
   if (!month || !MONTH.test(month)) fail(2, "`month` must be YYYY-MM");
   if (!title) fail(2, "`title` is required");
-  if (title.length > 60) fail(2, "`title` runs past 60 characters");
+  if (title.length > 90) fail(2, "`title` runs past 90 characters");
   if (/\.$/.test(title)) fail(2, "`title` ends with a period");
-  if (/\band\b/.test(title)) fail(2, "`title` uses \"and\"; separate names with commas");
   if (released !== undefined) {
     if (!DAY.test(released)) fail(2, "`released` must be YYYY-MM-DD");
     if (released < `${nextMonth(month)}-01`) fail(2, "`released` falls before the month ended");

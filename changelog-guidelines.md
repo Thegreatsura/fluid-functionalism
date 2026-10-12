@@ -76,7 +76,7 @@ The example shows the shape, not real history.
 ---
 month: 2026-09
 released: 2026-10-02
-title: Fluid Hover, Combobox, CommandMenu
+title: Combobox, the agent skill, and one fluid hover for every list
 ---
 
 One optional line that says what the month was about.
@@ -103,12 +103,17 @@ One optional line that says what the month was about.
 - **Frontmatter**: `month` (`YYYY-MM`, matches the file name), `title`, and
   `released` (`YYYY-MM-DD`, the Friday it shipped). Backfilled months leave
   `released` out. Nothing else.
-- **Title**: names the 1 to 3 changes a reader cares about most,
-  comma-separated. 60 characters at most. No "and", no period.
+- **Title**: a headline for the whole month, 90 characters at most. Name
+  every New item, system pages before components, then the change most
+  readers will notice (a new default, a change across components). Commas
+  between items, `and` before the last one, no period. When the New items
+  don't fit, count them: `5 components`.
 - **Intro**: optional, one line, under the frontmatter.
 - **Sections**: only `## New`, `## Breaking`, `## Updated`, in that order.
   Leave out a section with no entries.
-- **Order**: inside a section, linked labels A to Z, then bold labels A to Z.
+- **Order**: inside a section, system pages first (the sidebar's System
+  group: Fluid Hover, Motion, Skill, ...), then component pages, then other
+  site routes, then bold labels, each A to Z.
 - **Entry**: one list item: a label, a colon, one or two sentences, then the
   refs in parentheses.
   - Label: `[Name](/docs/slug)` when the change has a page, with `Name` as the

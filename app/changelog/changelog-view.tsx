@@ -22,7 +22,6 @@ import { docOrder } from "@/lib/docs/components";
 import { CopyPromptButton } from "@/lib/docs/copy-prompt-button";
 import { cn } from "@/lib/utils";
 import {
-  CHANGE_KINDS,
   KIND_LABEL,
   type ChangeEntry,
   type ChangeKind,
@@ -605,7 +604,6 @@ function IndexRow({
   const ref = useRef<HTMLAnchorElement>(null);
   useRegisterFluidHoverItem(registerItem, index, ref);
   const reduceMotion = useReducedMotion() ?? false;
-  const kinds = CHANGE_KINDS.filter((kind) => release.groups.some((g) => g.kind === kind));
 
   return (
     <a
@@ -621,7 +619,7 @@ function IndexRow({
         window.history.replaceState(window.history.state, "", `${window.location.search}#${release.month}`);
       }}
       className={cn(
-        "relative z-10 flex h-8 items-center justify-between gap-3 px-2 text-site-body outline-none transition-[color,opacity] duration-80",
+        "relative z-10 flex h-8 items-center px-2 text-site-body outline-none transition-[color,opacity] duration-80",
         "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)] rounded-lg",
         active ? "text-foreground" : "text-muted-foreground"
       )}
@@ -641,12 +639,6 @@ function IndexRow({
           {monthLabel(release.month)}
         </span>
       </span>
-      <span aria-hidden className="flex items-center gap-1">
-        {kinds.map((kind) => (
-          <span key={kind} className={cn("size-1.5 rounded-full", KIND_DOT[kind])} />
-        ))}
-      </span>
-      <span className="sr-only">{kinds.map((k) => KIND_LABEL[k]).join(", ")}</span>
     </a>
   );
 }

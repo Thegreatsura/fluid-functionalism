@@ -33,7 +33,7 @@ import {
 import { KIND_DOT } from "@/lib/changelog/kind-style";
 import { BentoTileContext } from "@/app/components/bento-card";
 import { PreviewPlaybackContext } from "@/lib/docs/preview-playback";
-import { ANIMATED_PREVIEWS, changelogPreviews, STAGE_PADDING } from "@/app/changelog/previews";
+import { ANIMATED_PREVIEWS, ChangelogPreview, hasPreview, STAGE_PADDING } from "@/app/changelog/previews";
 import { buildMigrationPrompt, monthLabel } from "@/lib/changelog/migration-prompt";
 
 export type EntryView = ChangeEntry & {
@@ -368,13 +368,16 @@ function Entry({ entry, month, first }: { entry: EntryView; month: string; first
   const stageRef = useRef<HTMLDivElement>(null);
   const inView = useInView(stageRef, { amount: 0.35 });
   const playing = inView && !paused;
+  // The preview's code loads once its stage is within 600px of the
+  // viewport, so it is ready by the time it scrolls in.
+  const near = useInView(stageRef, { once: true, margin: "600px 0px" });
   const PlayIcon = useIcon("play");
   const PauseIcon = useIcon("pause");
   const ArrowRight = useIcon("arrow-right");
   const iconSize =
     useSizeVariant() === "compact" ? ("icon-compact" as const) : ("icon" as const);
   const slug = entry.href ? /^\/docs\/([^/#]+)$/.exec(entry.href)?.[1] : undefined;
-  const Preview = entry.kind === "new" && slug ? changelogPreviews[slug] : undefined;
+  const staged = entry.kind === "new" && slug !== undefined && hasPreview(slug);
   const animated = slug ? ANIMATED_PREVIEWS.has(slug) : false;
 
   return (
@@ -418,7 +421,7 @@ function Entry({ entry, month, first }: { entry: EntryView; month: string; first
           />
         </div>
       )}
-      {Preview && (
+      {staged && (
         <div ref={stageRef} className={cn("bento-card-border relative mt-3 overflow-hidden border", shape.container)}>
           {animated && (
             <Tooltip content={paused ? "Play all previews" : "Pause all previews"} side="top">
@@ -438,7 +441,7 @@ function Entry({ entry, month, first }: { entry: EntryView; month: string; first
           <BentoTileContext.Provider value>
             <PreviewPlaybackContext.Provider value={playing}>
               <div className={cn("flex min-h-[260px] items-center justify-center", STAGE_PADDING[slug!] ?? "px-6 py-12")}>
-                <Preview />
+                {near && <ChangelogPreview slug={slug!} />}
               </div>
             </PreviewPlaybackContext.Provider>
           </BentoTileContext.Provider>

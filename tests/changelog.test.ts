@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseRelease, releaseEntries, type Inline } from "@/lib/changelog/parse";
 import { releasesToMarkdown } from "@/lib/changelog/markdown";
+import { SHOWCASE_PREVIEW_SLUGS } from "@/app/changelog/previews";
 import { componentList, systemNavList } from "@/lib/docs/components";
 
 // The release files in content/changelog/ follow changelog-guidelines.md.
@@ -73,6 +74,16 @@ describe("changelog releases", () => {
     );
     if (release.intro) problems.push(...voiceProblems(release.intro, 1).map((p) => `intro: ${p}`));
     expect(problems).toEqual([]);
+  });
+});
+
+describe("lazy previews", () => {
+  it("lists exactly the slugs the Showcase's previewMap covers", () => {
+    const source = readFileSync(join(root, "app", "components", "bento-previews.tsx"), "utf8");
+    const map = /export const previewMap[^{]*\{([\s\S]*?)\n\};/.exec(source)?.[1] ?? "";
+    const keys = [...map.matchAll(/^\s+"?([a-z-]+)"?:/gm)].map((m) => m[1]).sort();
+    expect(keys.length).toBeGreaterThan(0);
+    expect([...SHOWCASE_PREVIEW_SLUGS].sort()).toEqual(keys);
   });
 });
 

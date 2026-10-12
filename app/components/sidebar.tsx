@@ -52,7 +52,9 @@ function NavGroup({
   return (
     <SidebarGroup>
       {label && (
-        <SidebarGroupLabel>
+        // Foreground, not the component's muted default: on the site the
+        // group names are wayfinding, and the counts beside them stay muted.
+        <SidebarGroupLabel className="text-foreground">
           {label}
           {/* Styled like the "⌘K" badge in the Search row, so the counts line
               up in the same right-hand column. */}

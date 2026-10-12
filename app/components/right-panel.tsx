@@ -322,6 +322,9 @@ export function RightPanel() {
   }, []);
 
   const PanelRightIcon = useIcon("panel-right");
+  // The rail's cards take the shape's container radius, so they round with
+  // the pill and rounded settings like the items inside them.
+  const shape = useShape();
   // The changelog's rail holds its Releases index alone: nothing on that
   // page reacts to the settings, which stay a ⌘K or a shortcut away.
   const showSettings = usePathname() !== "/changelog";
@@ -410,7 +413,7 @@ export function RightPanel() {
       <ScrollArea viewportClassName="scroll-fade max-h-[calc(100svh-2rem)]">
       <div className="flex flex-col gap-3">
         {showSettings && (
-        <aside className="p-4 rounded-lg bg-muted">
+        <aside className={`p-4 ${shape.container} bg-muted`}>
           <SurfaceProvider value={2}>
             <div className="flex items-center justify-between pt-2 pb-2">
               <h2

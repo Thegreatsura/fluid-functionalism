@@ -556,7 +556,9 @@ function ReleaseIndexCard({
   const activeRect = activeIndex >= 0 && hover.isMeasured ? hover.itemRects[activeIndex] : null;
 
   return (
-    <aside aria-label="Releases" className="p-4 rounded-lg bg-muted">
+    // The shape's container radius, like the settings card it replaces, so
+    // the card rounds with the pill and rounded settings.
+    <aside aria-label="Releases" className={cn("p-4 bg-muted", shape.container)}>
       <h2
         className="pb-2 text-site-title text-foreground"
         style={{ fontVariationSettings: fontWeights.semibold }}

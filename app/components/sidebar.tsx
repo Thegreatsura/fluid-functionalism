@@ -108,6 +108,9 @@ export function SiteSidebar({ newSlugs = [] }: { newSlugs?: string[] }) {
             <SidebarMenuItem>
               <SidebarMenuButton render={<Link href="/changelog" />} isActive={pathname === "/changelog"}>
                 Changelog
+                {/* The page itself is new: dotted by hand, unlike the docs
+                    rows, which follow the latest release. */}
+                <NewDot />
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

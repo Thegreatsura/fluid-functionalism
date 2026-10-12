@@ -559,13 +559,20 @@ function ReleaseIndexCard({
     // The shape's container radius, like the settings card it replaces, so
     // the card rounds with the pill and rounded settings.
     <aside aria-label="Releases" className={cn("p-4 bg-muted", shape.container)}>
-      <h2
-        className="pb-2 text-site-title text-foreground"
-        style={{ fontVariationSettings: fontWeights.semibold }}
-      >
-        Releases
-      </h2>
-      <div ref={containerRef} className="relative -mx-2 flex flex-col" {...hover.handlers}>
+      {/* The same header as "Make them yours": 8px above and below a 28px
+          row (the height of its star button), the title centered in it. */}
+      <div className="py-2">
+        <h2
+          className="flex h-7 items-center text-site-title text-foreground"
+          style={{ fontVariationSettings: fontWeights.semibold }}
+        >
+          Releases
+        </h2>
+      </div>
+      {/* mt-2.5: "Make them yours" starts its 28px rows 12px under the
+          header; these rows are 32px, so 10px puts the first month's text as
+          far under the title as "Theme" sits. */}
+      <div ref={containerRef} className="relative -mx-2 mt-2.5 flex flex-col" {...hover.handlers}>
         {/* The month in view: a filled pill that glides as the page scrolls,
             under the hover highlight's lighter fill. */}
         {activeRect && (

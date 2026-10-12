@@ -5,14 +5,16 @@
 // changelog, and the user's edits, then decides what to re-install.
 //
 //   node <skill>/scripts/upgrade.mjs [app-dir]              # the report
-//   node <skill>/scripts/upgrade.mjs [app-dir] --diff select # one file's diff
+//   node <skill>/scripts/upgrade.mjs [app-dir] --diff select # one file's diff (name or path)
 //   node <skill>/scripts/upgrade.mjs [app-dir] --json
 //   --registry <url or dir>  compare with another registry (tests, mirrors)
 //
 // The shadcn CLI rewrites imports to the project's aliases when it installs,
-// so specifiers are compared by their last segment only. A difference can be
-// the registry moving on or a local edit; the script can't tell which, and
-// says so. The changelog can.
+// so specifiers are compared by their last segment only, and it drops the
+// "use client" line in a project without React Server Components, so that
+// line is set aside too. Each file is compared with the flavor its own
+// imports show. A difference can be the registry moving on or a local edit;
+// the script can't tell which, and says so. The changelog can.
 import { readFileSync, realpathSync } from "node:fs";
 import { basename, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -39,10 +41,13 @@ async function readJson(registry, path) {
 }
 
 /** A file's text with what an install legitimately changes taken out: line
- *  endings, trailing spaces, and the alias part of import specifiers. */
+ *  endings, trailing spaces, a leading "use client" (removed when
+ *  components.json sets `rsc: false`), and the alias part of import
+ *  specifiers. */
 export function normalize(text) {
   return text
     .replace(/\r\n?/g, "\n")
+    .replace(/^\uFEFF?\s*(["'])use client\1;?[ \t]*\n?/, "")
     .replace(/((?:from|import)\s*\(?\s*)(["'])([^"']+)\2/g, (_, lead, quote, spec) =>
       /^(@\/|~\/|\.{1,2}\/)/.test(spec) ? `${lead}${quote}${spec.split("/").pop()}${quote}` : `${lead}${quote}${spec}${quote}`,
     )
@@ -108,14 +113,26 @@ function itemFor(index, name) {
   return owner?.name ?? null;
 }
 
+/** The item names an item's registryDependencies point at: `utils`, or the
+ *  last segment of a full URL (`.../r/springs.json` is `springs`). */
+function dependencyNames(item) {
+  return (item.registryDependencies ?? []).map((dep) => basename(dep, ".json"));
+}
+
 /** Compares every installed FF file with the registry. */
 export async function checkUpgrade(input = ".", { registry = REGISTRY } = {}) {
   const stack = readStack(input);
-  const flavor = stack.flavor.flavor === "base" ? "base" : "radix";
   const index = await readJson(registry, "registry.json");
+  // Without the index no file can be matched to its item, and every one
+  // would read as "leave it alone": fail instead of reporting that.
+  if (!index?.items) throw new Error(`${registry}/registry.json: no registry index to match installed files against.`);
+  // A file whose imports show no flavor (single-source, or shared) takes the
+  // project's; a mixed project leans Radix for those, which ship one file.
+  const projectFlavor = stack.flavor.flavor === "base" ? "base" : "radix";
   const items = new Map();
-  const fetchItem = async (name) => {
-    if (!items.has(name)) {
+  const fetchItem = async (name, flavor) => {
+    const key = `${flavor}:${name}`;
+    if (!items.has(key)) {
       // The Base UI build of an item lives at base/<name>; single-source
       // items have one file for both flavors.
       const tries = flavor === "base" ? [`base/${name}`, name] : [name];
@@ -127,15 +144,17 @@ export async function checkUpgrade(input = ".", { registry = REGISTRY } = {}) {
           break;
         }
       }
-      items.set(name, found);
+      items.set(key, found);
     }
-    return items.get(name);
+    return items.get(key);
   };
 
+  const files = [...(stack.installed.files ?? [])].sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path));
   const results = [];
-  for (const [name, path] of Object.entries(stack.installed.files ?? {}).sort()) {
+  for (const { name, path, primitive } of files) {
+    const flavor = primitive ?? projectFlavor;
     const itemName = itemFor(index, name);
-    const found = itemName ? await fetchItem(itemName) : null;
+    const found = itemName ? await fetchItem(itemName, flavor) : null;
     const file = found?.item.files?.find((f) => basename(f.target ?? f.path, extname(f.target ?? f.path)) === name);
     if (!file?.content) {
       results.push({ name, path, status: "unmatched" });
@@ -153,13 +172,21 @@ export async function checkUpgrade(input = ".", { registry = REGISTRY } = {}) {
       path,
       item: itemName,
       url: found.url,
+      dependencies: dependencyNames(found.item),
       status: "differs",
       removed: ops.filter(([op]) => op === "-").length,
       added: ops.filter(([op]) => op === "+").length,
       diff: formatDiff(ops),
     });
   }
-  return { root: stack.root, flavor: stack.flavor, registry, changelog: CHANGELOG, results };
+  return {
+    root: stack.root,
+    flavor: stack.flavor,
+    rewrites: stack.installed.rewrites ?? [],
+    registry,
+    changelog: CHANGELOG,
+    results,
+  };
 }
 
 function report(check) {
@@ -167,7 +194,10 @@ function report(check) {
   const current = by("current");
   const differs = by("differs");
   const unmatched = by("unmatched");
-  const reinstall = [...new Set(differs.map((r) => r.url))];
+  // One line per item, never one command for all: each re-install is a
+  // decision, and --overwrite also rewrites the item's dependencies.
+  const reinstall = [...new Map(differs.map((r) => [r.url, r])).values()];
+  const installedNames = new Set(check.results.map((r) => r.name));
   const lines = [
     `Fluid Functionalism upgrade check: ${check.root}`,
     `Compared with ${check.registry}. Nothing is written.`,
@@ -181,12 +211,25 @@ function report(check) {
   } else lines.push("DIFFERS   none: every installed file matches the registry");
   if (unmatched.length)
     lines.push(`UNMATCHED ${unmatched.map((r) => r.name).join(", ")}: no registry item ships a file of that name; leave these alone`);
+  if (check.rewrites.length)
+    lines.push(
+      `REWRITES  components.json sets ${check.rewrites.join(" and ")}: the CLI rewrites every file it installs that way, so expect every file to differ and compare by hand.`,
+    );
   if (differs.length) {
     lines.push(
       "",
       `CHANGELOG ${check.changelog}: read the entries for each DIFFERS item, Breaking first. A difference the changelog explains is the registry moving on; one it doesn't is a local edit to keep or ask about.`,
       `NEXT      node <skill>/scripts/upgrade.mjs [dir] --diff <name> shows one file's difference.`,
-      `          Re-install what should take the registry's version: npx shadcn@latest add ${reinstall.join(" ")} --overwrite`,
+      "          Re-install only the items that should take the registry's version, one at a time. Leave out one whose difference is a local edit to keep.",
+    );
+    for (const r of reinstall) {
+      const also = r.dependencies.filter((d) => installedNames.has(d));
+      lines.push(
+        `          ${r.item}: npx shadcn@latest add ${r.url} --overwrite${also.length ? `  (also rewrites ${also.join(", ")})` : ""}`,
+      );
+    }
+    lines.push(
+      "          --overwrite rewrites each item's registry dependencies too (lib/utils.ts included): check the ones named for local edits first, then run this check again.",
     );
   }
   return lines.join("\n");
@@ -215,9 +258,14 @@ if (process.argv[1] && isMain()) {
     const check = await checkUpgrade(dir, { registry: registry ? (isRemote(registry) ? registry : resolve(registry)) : REGISTRY });
     if (args.includes("--json")) console.log(JSON.stringify(check, null, 2));
     else if (diffName) {
-      const r = check.results.find((x) => x.name === diffName);
-      if (!r) throw new Error(`${diffName} is not an installed Fluid Functionalism file here.`);
-      console.log(r.status === "differs" ? `${r.path} (-) against ${r.url} (+)\n\n${r.diff}` : `${r.path}: ${r.status}`);
+      // By name, or by path when two folders hold a file of that name.
+      const matches = check.results.filter((x) => x.name === diffName || x.path === diffName);
+      if (!matches.length) throw new Error(`${diffName} is not an installed Fluid Functionalism file here.`);
+      console.log(
+        matches
+          .map((r) => (r.status === "differs" ? `${r.path} (-) against ${r.url} (+)\n\n${r.diff}` : `${r.path}: ${r.status}`))
+          .join("\n\n"),
+      );
     } else console.log(report(check));
   } catch (error) {
     console.error(error.message);

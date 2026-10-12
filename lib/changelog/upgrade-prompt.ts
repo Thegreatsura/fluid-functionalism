@@ -16,7 +16,7 @@ export function buildUpgradePrompt(): string {
     "Without the skill:",
     `1. Read the changelog: ${SITE}/changelog.md. Every entry names its install URL, and every Breaking entry carries migration steps and a before/after diff.`,
     "2. Find the installed items: files in components/ui, components, hooks, and lib that import springs, use-fluid-hover, font-weight, or size-context are Fluid Functionalism code. Note the flavor: @base-ui/react imports mean the /r/base/ URLs, @radix-ui imports mean the bare /r/ ones.",
-    `3. For each installed item, fetch ${SITE}/r/<name>.json (or /r/base/<name>.json) and compare its files with the local ones. Same: leave it. Different: if the local file has edits of its own, show me the diff and ask; otherwise re-install it with npx shadcn@latest add <url> --overwrite.`,
+    `3. For each installed item, fetch ${SITE}/r/<name>.json (or /r/base/<name>.json) and compare its files with the local ones. Same: leave it. Different: if the local file has edits of its own, show me the diff and ask; otherwise re-install it with npx shadcn@latest add <url> --overwrite. That also rewrites the item's registryDependencies, so check those for local edits first.`,
     "4. Apply every Breaking entry that changes an item the project uses: rewrite each call site from the diff's - lines to its + lines.",
     "5. Run the type checker and the build, then list what changed, item by item.",
   ].join("\n");

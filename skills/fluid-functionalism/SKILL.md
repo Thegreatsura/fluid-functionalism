@@ -135,8 +135,8 @@ on their own, and only declined ones need a decision to stay settled.
 When the user asks to update or upgrade Fluid Functionalism, or what changed
 since they installed it:
 
-1. **Read the stack** (above). Its flavor verdict decides every URL below;
-   never mix flavors.
+1. **Read the stack** (above). An update never moves a file to the other
+   flavor: each file stays on the primitive its imports show.
 2. **Check what's behind:**
 
    ```bash
@@ -144,19 +144,23 @@ since they installed it:
    ```
 
    It compares every installed FF file with the item the registry ships
-   today, in the project's flavor, ignoring what an install rewrites (import
-   aliases, line endings). `CURRENT` files need nothing. `DIFFERS` lists the
-   rest with their line counts; `--diff <name>` prints one, local on the `-`
-   side, registry on the `+`. It writes nothing and needs network access to
-   fluidfunctionalism.com.
+   today, in the flavor the file's own imports show, ignoring what an
+   install rewrites (import aliases, line endings, the `"use client"` line).
+   `CURRENT` files need nothing. `DIFFERS` lists the rest with their line
+   counts; `--diff <name>` (or a path) prints one, local on the `-` side,
+   registry on the `+`. A `REWRITES` line means the CLI rewrites more than
+   that (JavaScript output, a Tailwind prefix): compare those by hand. It
+   writes nothing and needs network access to fluidfunctionalism.com.
 3. **Read the changelog:** <https://www.fluidfunctionalism.com/changelog.md>,
    newest month first. Every entry names its install URL; every Breaking
    entry carries migration steps and a before/after diff.
 4. **Sort each difference.** A change the changelog explains is the registry
-   moving on: re-install that item with `--overwrite`. A change it doesn't
-   explain is a local edit: show it and ask before overwriting. Both in one
-   file: re-install, then re-apply the edit, or better, move it into a
-   wrapper so the next update keeps it (see Gotchas).
+   moving on: re-install that item with its line from the report. A change
+   it doesn't explain is a local edit: show it and ask before overwriting.
+   Both in one file: re-install, then re-apply the edit, or better, move it
+   into a wrapper so the next update keeps it (see Gotchas). `--overwrite`
+   also rewrites the item's dependencies, which its line names: check those
+   for local edits before running it.
 5. **Migrate call sites** for every Breaking entry that touches an item the
    project uses: find the diff's `-` lines across the app and rewrite them to
    its `+` lines. Renames fail the type checker, so let it find them.

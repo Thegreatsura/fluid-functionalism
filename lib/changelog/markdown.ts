@@ -37,6 +37,14 @@ function installLine(install: EntryInstall): string {
   }
 }
 
+/** Step 1 of a Breaking entry's migration, by what the entry installs. */
+const MIGRATE_STEP: Record<EntryInstall["kind"], string> = {
+  item: "  1. Re-install it with `--overwrite`, in the project's flavor (the install line above).",
+  skill: "  1. Update the skill (the install line above).",
+  all: "  1. Re-install every Fluid Functionalism item the project uses, with `--overwrite`, in its flavor.",
+  none: "  1. Re-install the items the sentence names, with `--overwrite`, in the project's flavor.",
+};
+
 function entry(e: ChangeEntry, install: EntryInstall): string {
   const label = e.href ? `[${e.name}](${SITE}${e.href})` : `**${e.name}**`;
   const lines = [`- ${label}: ${inline(e.text)} (${e.refs.map(ref).join(", ")})`, "", `  ${installLine(install)}`];
@@ -45,9 +53,7 @@ function entry(e: ChangeEntry, install: EntryInstall): string {
       "",
       "  Migrate:",
       "",
-      install.kind === "all"
-        ? "  1. Re-install every Fluid Functionalism item the project uses, with `--overwrite`, in its flavor."
-        : "  1. Re-install it with `--overwrite`, in the project's flavor (the install line above).",
+      MIGRATE_STEP[install.kind],
       "  2. Find each call site matching the `-` lines below and rewrite it to the `+` lines.",
       "  3. Run the type checker.",
       "",

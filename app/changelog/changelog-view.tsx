@@ -34,13 +34,15 @@ import { BentoTileContext } from "@/app/components/bento-card";
 import { PreviewPlaybackContext } from "@/lib/docs/preview-playback";
 import { ANIMATED_PREVIEWS, ChangelogPreview, hasPreview, STAGE_PADDING } from "@/app/changelog/previews";
 import { buildMigrationPrompt, monthLabel } from "@/lib/changelog/migration-prompt";
+import type { EntryInstall } from "@/lib/changelog/install";
 import { buildUpgradePrompt } from "@/lib/changelog/upgrade-prompt";
 
 export type EntryView = ChangeEntry & {
   id: string;
   /** The Breaking diff, highlighted at build time. */
   diffHtml: string | null;
-  installSlug: string | null;
+  /** What the entry installs, for the Copy migration prompt. */
+  install: EntryInstall;
 };
 
 export type ReleaseView = Omit<Release, "groups"> & {
@@ -311,7 +313,7 @@ function MonthHeading({ release }: { release: ReleaseView }) {
 }
 
 // ---------------------------------------------------------------------------
-// A kind group: one fluid hover scope, rows stacked gap-0
+// A kind group: a hairline, the kind's name, then its entries
 // ---------------------------------------------------------------------------
 
 function KindGroup({ kind, entries, month }: { kind: ChangeKind; entries: EntryView[]; month: string }) {
@@ -425,7 +427,7 @@ function Entry({ entry, month, first }: { entry: EntryView; month: string; first
           <CopyPromptButton
             label="Copy migration prompt"
             variant="ghost"
-            prompt={buildMigrationPrompt({ entry, month, installSlug: entry.installSlug, base })}
+            prompt={buildMigrationPrompt({ entry, month, install: entry.install, base })}
           />
         </div>
       )}
@@ -530,7 +532,7 @@ function useScrollSpy(
 }
 
 // ---------------------------------------------------------------------------
-// The Releases index, parked in the right rail under "Make them yours"
+// The Releases index: the right rail's only card on this page
 // ---------------------------------------------------------------------------
 
 function ReleaseIndex({
@@ -622,6 +624,8 @@ function IndexRow({
   const ref = useRef<HTMLAnchorElement>(null);
   useRegisterFluidHoverItem(registerItem, index, ref);
   const reduceMotion = useReducedMotion() ?? false;
+  // The ring takes the highlight's radius, so it follows the shape setting.
+  const shape = useShape();
 
   return (
     <a
@@ -638,7 +642,8 @@ function IndexRow({
       }}
       className={cn(
         "relative z-10 flex h-8 items-center px-2 text-site-body outline-none transition-[color,opacity] duration-80",
-        "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)] rounded-lg",
+        "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
+        shape.item,
         active ? "text-foreground" : "text-muted-foreground"
       )}
     >

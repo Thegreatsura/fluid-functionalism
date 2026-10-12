@@ -1,4 +1,4 @@
-import { componentList, systemList } from "@/lib/docs/components";
+import { componentList, plainDescription, systemList } from "@/lib/docs/components";
 import { installUrl, DUAL_FLAVOR_SLUGS, type Base } from "@/lib/base-context";
 import { PROMPT_ENTRIES, type PromptEntry } from "@/lib/docs/prompt-entries";
 import { decodePreset, type PresetComponentDef } from "@/lib/preset/components";
@@ -47,8 +47,7 @@ export function buildInstallPrompt({ slug, installSlug, base }: BuildInstallProm
   const system = systemList.find((c) => c.slug === slug);
   const entry = system ?? componentList.find((c) => c.slug === slug);
   const name = entry?.name ?? slug;
-  // Site copy allows a spaced em dash in descriptions; the prompt does not.
-  const description = (entry?.description ?? "").replace(/\s+\u2014\s+/g, ": ");
+  const description = plainDescription(entry?.description ?? "");
   const details: PromptEntry | undefined = PROMPT_ENTRIES[slug];
   const dual = DUAL_FLAVOR_SLUGS.has(registrySlug);
 
@@ -115,7 +114,7 @@ export function buildPresetPrompt({ def, code, base }: BuildPresetPromptOptions)
   const slug = def.docsPath.split("/").pop() ?? "";
   const entry = componentList.find((c) => c.slug === slug);
   const name = entry?.name ?? def.label;
-  const description = (entry?.description ?? "").replace(/\s+\u2014\s+/g, ": ");
+  const description = plainDescription(entry?.description ?? "");
   const details = PROMPT_ENTRIES[slug];
   const dual = DUAL_FLAVOR_SLUGS.has(slug);
 

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { entryInstall } from "@/lib/changelog/install";
 import { loadReleases } from "@/lib/changelog/load";
 import { highlightDiff } from "@/lib/docs/highlight";
 import { ChangelogView, type ReleaseView } from "@/app/changelog/changelog-view";
@@ -15,15 +14,6 @@ export const metadata: Metadata = {
   openGraph: { title: "Changelog · Fluid Functionalism", description: DESCRIPTION },
 };
 
-/** The registry item a doc page installs, when it installs one under its own
- *  name. The migration prompt re-installs it; anything else gets the
- *  generic "re-install what you use" step. */
-function installSlugFor(href: string | null): string | null {
-  const slug = href ? /^\/docs\/([^/#]+)$/.exec(href)?.[1] : undefined;
-  if (!slug) return null;
-  return existsSync(join(process.cwd(), "public", "r", `${slug}.json`)) ? slug : null;
-}
-
 export default async function ChangelogPage() {
   const releases: ReleaseView[] = await Promise.all(
     loadReleases().map(async (release) => ({
@@ -35,8 +25,10 @@ export default async function ChangelogPage() {
             group.entries.map(async (entry, i) => ({
               ...entry,
               id: `${release.month}-${group.kind}-${i}`,
-              diffHtml: entry.diff ? await highlightDiff(entry.diff) : null,
-              installSlug: installSlugFor(entry.href),
+              diffHtml: entry.diff ? await highlightDiff(entry.diff, entry.diffLang ?? "tsx") : null,
+              // The same answer /changelog.md gives, so the Copy migration
+              // prompt re-installs exactly the item the Markdown names.
+              install: entryInstall(entry),
             }))
           ),
         }))

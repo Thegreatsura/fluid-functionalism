@@ -32,6 +32,9 @@ export interface ChangeEntry {
   refs: ChangeRef[];
   /** The ```diff block a Breaking entry carries, without its fence. */
   diff: string | null;
+  /** The language the diff's lines are in: ```diff alone is TSX, and
+   *  ```diff css (or ts, json, bash) names another. Null without a diff. */
+  diffLang: DiffLang | null;
 }
 
 export interface ChangeGroup {
@@ -55,6 +58,10 @@ export class ChangelogFormatError extends Error {
     this.name = "ChangelogFormatError";
   }
 }
+
+/** The languages a Breaking diff can be highlighted in, TSX first. */
+export const DIFF_LANGS = ["tsx", "ts", "css", "json", "bash"] as const;
+export type DiffLang = (typeof DIFF_LANGS)[number];
 
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 const DAY = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
@@ -102,6 +109,10 @@ export function parseRelease(source: string, file = "release.md"): Release {
   if (/\.$/.test(title)) fail(2, "`title` ends with a period");
   if (released !== undefined) {
     if (!DAY.test(released)) fail(2, "`released` must be YYYY-MM-DD");
+    // The pattern lets 2026-02-31 through; Date would roll it into March.
+    if (new Date(`${released}T00:00:00Z`).toISOString().slice(0, 10) !== released) {
+      fail(2, `\`released\` is not a real day: ${released}`);
+    }
     if (released < `${nextMonth(month)}-01`) fail(2, "`released` falls before the month ended");
   }
 
@@ -167,13 +178,19 @@ function parseEntry(
   const paragraph = first as Paragraph;
 
   let diff: string | null = null;
+  let diffLang: DiffLang | null = null;
   for (const extra of rest) {
     if (extra.type !== "code") fail(lineOf(extra), "an entry holds one line, plus a diff block when Breaking");
     const code = extra as Code;
     if (kind !== "breaking") fail(lineOf(extra), "only Breaking entries carry a code block");
     if (code.lang !== "diff") fail(lineOf(extra), "the migration block must be fenced as ```diff");
     if (diff !== null) fail(lineOf(extra), "a Breaking entry carries exactly one diff block");
+    const lang = code.meta?.trim() || "tsx";
+    if (!(DIFF_LANGS as readonly string[]).includes(lang)) {
+      fail(lineOf(extra), `\`\`\`diff ${lang}\` is not a diff language; use ${DIFF_LANGS.join(", ")}`);
+    }
     diff = code.value;
+    diffLang = lang as DiffLang;
   }
   if (kind === "breaking" && diff === null) fail(line, "a Breaking entry needs a ```diff block");
 
@@ -184,7 +201,8 @@ function parseEntry(
   if (label?.type === "link") {
     name = plainText(label.children);
     href = label.url;
-    if (!href.startsWith("/")) fail(line, `label links to \`${href}\`; use a site route`);
+    // A site route: one leading slash. `//host` and `/\host` leave the site.
+    if (!/^\/(?![/\\])/.test(href)) fail(line, `label links to \`${href}\`; use a site route`);
   } else if (label?.type === "strong") {
     name = plainText(label.children);
     href = null;
@@ -224,7 +242,7 @@ function parseEntry(
     fail(line, "the sentence starts with a capital");
   }
 
-  return { kind, name: name!, href: href!, text, refs, diff };
+  return { kind, name: name!, href: href!, text, refs, diff, diffLang };
 }
 
 function plainText(nodes: PhrasingContent[]): string {

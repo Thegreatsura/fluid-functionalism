@@ -1,5 +1,6 @@
-import { installUrl, type Base } from "@/lib/base-context";
+import type { Base } from "@/lib/base-context";
 import { OVERWRITE_NOTE } from "@/lib/docs/install-prompt";
+import type { EntryInstall } from "@/lib/changelog/install";
 import type { ChangeEntry, Inline } from "@/lib/changelog/parse";
 
 const SITE = "https://www.fluidfunctionalism.com";
@@ -20,18 +21,39 @@ export function monthLabel(month: string): string {
 interface BuildMigrationPromptOptions {
   entry: ChangeEntry;
   month: string;
-  /** The registry item to re-install, or null when the page has none of its
-   *  own (a system page that installs under another name, a change that
-   *  spans many components). */
-  installSlug: string | null;
+  /** What the entry installs, from entryInstall() in lib/changelog/install.ts:
+   *  the same answer /changelog.md gives. */
+  install: EntryInstall;
   base: Base;
+}
+
+/** Step 1: get the new code, in the project's flavor. */
+function reinstallStep(install: EntryInstall, base: Base): string[] {
+  switch (install.kind) {
+    case "item": {
+      const url = `${SITE}/r/${install.base && base === "base" ? "base/" : ""}${install.name}.json`;
+      return ["1. Re-install it (shadcn CLI):", `npx shadcn@latest add ${url} --overwrite`, OVERWRITE_NOTE];
+    }
+    case "skill":
+      return ["1. Update the agent skill:", "npx skills add mickadesign/fluid-functionalism"];
+    case "all":
+      return [
+        `1. Re-install every Fluid Functionalism component this project uses, with the shadcn CLI and --overwrite, from the same URLs they came from (${SITE}/r/<name>.json, or /r/base/<name>.json for the Base UI flavor).`,
+        OVERWRITE_NOTE,
+      ];
+    case "none":
+      return [
+        `1. Re-install the Fluid Functionalism items the sentence above names, with the shadcn CLI and --overwrite, from the same URLs they came from (${SITE}/r/<name>.json, or /r/base/<name>.json for the Base UI flavor).`,
+        OVERWRITE_NOTE,
+      ];
+  }
 }
 
 /** The text behind a Breaking entry's "Copy migration prompt": a brief an
  *  AI coding agent can act on without opening the changelog. It re-installs
  *  the component, then rewrites call sites from the diff's `-` lines to its
  *  `+` lines. */
-export function buildMigrationPrompt({ entry, month, installSlug, base }: BuildMigrationPromptOptions): string {
+export function buildMigrationPrompt({ entry, month, install, base }: BuildMigrationPromptOptions): string {
   const lines: string[] = [];
   lines.push(
     `Migrate my React app to the ${monthLabel(month)} release of ${entry.name} from Fluid Functionalism. It has a breaking change.`,
@@ -39,15 +61,7 @@ export function buildMigrationPrompt({ entry, month, installSlug, base }: BuildM
   lines.push("");
   lines.push(`What changed: ${inlineToText(entry.text)}`);
   lines.push("");
-  if (installSlug) {
-    lines.push("1. Re-install it (shadcn CLI):");
-    lines.push(`npx shadcn@latest add ${installUrl(installSlug, base)} --overwrite`);
-  } else {
-    lines.push(
-      "1. Re-install every Fluid Functionalism component this project uses, with the shadcn CLI and --overwrite, from the same URLs they came from (https://www.fluidfunctionalism.com/r/<name>.json, or /r/base/<name>.json for the Base UI flavor).",
-    );
-  }
-  lines.push(OVERWRITE_NOTE);
+  lines.push(...reinstallStep(install, base));
   lines.push("");
   lines.push(
     "2. Find every call site that matches the - lines below and rewrite it to the + lines. Leave everything else as it is, then run the type checker.",

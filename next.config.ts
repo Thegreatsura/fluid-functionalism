@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // The root layout reads content/changelog/ on every route (the sidebar's
-  // New dots, lib/changelog/load.ts). File tracing only finds those files
-  // for /changelog itself, so every route ships them explicitly.
+  // The root layout reads content/changelog/ on every route (the site's New
+  // and Updated markers, lib/changelog/load.ts). File tracing only finds
+  // those files for /changelog itself, so every route ships them explicitly.
   outputFileTracingIncludes: {
     "/**": ["./content/changelog/**/*"],
   },

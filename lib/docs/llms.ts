@@ -1,16 +1,13 @@
-import { componentList, skillEntry, systemList } from "@/lib/docs/components";
+import { componentList, plainDescription, skillEntry, systemList } from "@/lib/docs/components";
 
 // /llms.txt: the site's front door for agents (https://llmstxt.org). Built
 // from the same lists as the sidebar, so it can't drift from the docs.
 
 const SITE = "https://www.fluidfunctionalism.com";
 
-// Site copy allows a spaced em dash in a description; agent text does not.
-const plain = (text: string) => text.replace(/\s+—\s+/g, ": ");
-
 export function buildLlmsTxt(): string {
   const link = (name: string, slug: string, description: string) =>
-    `- [${name}](${SITE}/docs/${slug}): ${plain(description)}`;
+    `- [${name}](${SITE}/docs/${slug}): ${plainDescription(description)}`;
   return [
     "# Fluid Functionalism",
     "",

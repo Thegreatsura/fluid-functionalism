@@ -16,6 +16,7 @@ import {
 } from "@/components/flavored/sidebar";
 import { componentList, systemNavList } from "@/lib/docs/components";
 import { KIND_DOT } from "@/lib/changelog/kind-style";
+import { useReleaseMarks } from "@/lib/changelog/marks";
 import { GitHubStarButton, SettingsContent } from "@/app/components/right-panel";
 import { SiteCommandMenuTrigger } from "@/app/components/site-command-menu";
 
@@ -41,14 +42,13 @@ function NavGroup({
   entries,
   pathname,
   ariaLabel,
-  newSlugs,
 }: {
   label?: string;
   entries: NavEntry[];
   pathname: string;
   ariaLabel: string;
-  newSlugs: Set<string>;
 }) {
+  const { isNew } = useReleaseMarks();
   return (
     <SidebarGroup>
       {label && (
@@ -70,7 +70,7 @@ function NavGroup({
             <SidebarMenuItem key={entry.slug}>
               <SidebarMenuButton render={<Link href={href} />} isActive={pathname === href}>
                 {entry.name}
-                {newSlugs.has(entry.slug) && <NewDot />}
+                {isNew(entry.slug) && <NewDot />}
               </SidebarMenuButton>
             </SidebarMenuItem>
           );
@@ -81,9 +81,8 @@ function NavGroup({
 }
 
 /** The site's own navigation rail — the Sidebar component, dogfooded. */
-export function SiteSidebar({ newSlugs = [] }: { newSlugs?: string[] }) {
+export function SiteSidebar() {
   const pathname = usePathname();
-  const newSet = new Set(newSlugs);
   const { isMobile } = useSidebar();
 
   return (
@@ -123,14 +122,12 @@ export function SiteSidebar({ newSlugs = [] }: { newSlugs?: string[] }) {
           entries={systemNavList}
           pathname={pathname}
           ariaLabel="System navigation"
-          newSlugs={newSet}
         />
         <NavGroup
           label="Components"
           entries={componentList}
           pathname={pathname}
           ariaLabel="Component navigation"
-          newSlugs={newSet}
         />
       </SidebarContent>
 

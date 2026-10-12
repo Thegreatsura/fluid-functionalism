@@ -136,7 +136,13 @@ One optional line that says what the month was about.
   item: the call site before (`-`) and after (`+`). When the migration is not
   a call site (a token to add, an install command), the diff shows that line,
   and a diff with only `+` lines is fine. The page builds the Copy migration
-  prompt from the label, the sentence, and this diff.
+  prompt from the label, the sentence, and this diff. The fence is
+  ` ```diff ` for TSX; name another language after it when the lines are
+  CSS, TS, JSON, or a shell command: ` ```diff css `.
+- **Markers**: the latest release drives every New and Updated marker on
+  the site. A `/docs/` label under New dots its sidebar row and badges its
+  Showcase card; one under Updated or Breaking reads Updated in ⌘K. The
+  markers move on when the next release merges.
 
 
 ## Voice

@@ -14,6 +14,7 @@ import { SiteSidebar } from "@/app/components/sidebar";
 import { SiteCommandMenu, SiteCommandMenuProvider } from "@/app/components/site-command-menu";
 import { RightPanel } from "@/app/components/right-panel";
 import { RightRailProvider } from "@/lib/right-rail";
+import { ReleaseMarksProvider, type ReleaseMarks } from "@/lib/changelog/marks";
 import { showShortcutToast } from "@/lib/docs/settings-toast";
 import { systemNavList, componentList } from "@/lib/docs/components";
 
@@ -100,16 +101,18 @@ function CloseSheetOnNavigate() {
   return null;
 }
 
+const NO_MARKS: ReleaseMarks = { new: [], updated: [] };
+
 interface SidebarLayoutProps {
   children: ReactNode;
   /** Server-read sidebar_state cookie value (see app/layout.tsx). */
   defaultOpen?: boolean;
-  /** Doc slugs the latest changelog release lists as New (see
-   *  latestNewSlugs in lib/changelog/load.ts): the sidebar dots them. */
-  newSlugs?: string[];
+  /** What the latest changelog release marks New and Updated (see
+   *  latestMarks in lib/changelog/load.ts), for every marker on the site. */
+  marks?: ReleaseMarks;
 }
 
-export function SidebarLayout({ children, defaultOpen = true, newSlugs = [] }: SidebarLayoutProps) {
+export function SidebarLayout({ children, defaultOpen = true, marks = NO_MARKS }: SidebarLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const isFullscreen =
@@ -167,16 +170,19 @@ export function SidebarLayout({ children, defaultOpen = true, newSlugs = [] }: S
 
   if (isFullscreen) {
     return (
+      <ReleaseMarksProvider marks={marks}>
       <SiteCommandMenuProvider>
         <SiteCommandMenu />
         <main className="min-h-screen">
           {children}
         </main>
       </SiteCommandMenuProvider>
+      </ReleaseMarksProvider>
     );
   }
 
   return (
+    <ReleaseMarksProvider marks={marks}>
     <SiteCommandMenuProvider>
     {/* ⌘K anywhere: every page and setting in one field. */}
     <SiteCommandMenu />
@@ -186,7 +192,7 @@ export function SidebarLayout({ children, defaultOpen = true, newSlugs = [] }: S
           mobile sheet. The site switches rail ↔ sheet at xl, so the
           breakpoint is 1280 instead of the component's 768 default. */}
       <SidebarProvider defaultOpen={defaultOpen} mobileBreakpoint={1280} className="min-h-screen [&:has([data-not-found])_[data-site-right-panel]]:hidden">
-        <SiteSidebar newSlugs={newSlugs} />
+        <SiteSidebar />
         <CloseSheetOnNavigate />
 
         {/* Mobile trigger for the sheet; desktop collapse uses [ or the rail */}
@@ -209,6 +215,7 @@ export function SidebarLayout({ children, defaultOpen = true, newSlugs = [] }: S
       </SidebarProvider>
     </RightRailProvider>
     </SiteCommandMenuProvider>
+    </ReleaseMarksProvider>
   );
 }
 

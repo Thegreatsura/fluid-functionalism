@@ -1,7 +1,11 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { parseRelease, releaseEntries, type Inline } from "@/lib/changelog/parse";
+import { latestMarks, loadReleases } from "@/lib/changelog/load";
+import { buildMigrationPrompt } from "@/lib/changelog/migration-prompt";
+import { highlightDiff } from "@/lib/docs/highlight";
 import { releasesToMarkdown } from "@/lib/changelog/markdown";
 import { entryInstall } from "@/lib/changelog/install";
 import { buildUpgradePrompt } from "@/lib/changelog/upgrade-prompt";
@@ -205,6 +209,9 @@ One line about the month.
     ["more than 3 refs", valid.replace("(#22, #23)", "(#22, #23, #24, #25)"), /3 refs at most/],
     ["a missing period", valid.replace("on reopen. (#22", "on reopen (#22"), /ends with a period/],
     ["an external label link", valid.replace("(/docs/select)", "(https://example.com)"), /use a site route/],
+    ["a protocol-relative label link", valid.replace("(/docs/select)", "(//example.com/x)"), /use a site route/],
+    ["an impossible release day", valid.replace("2026-08-07", "2026-09-31"), /not a real day/],
+    ["an unknown diff language", valid.replace("```diff\n", "```diff python\n"), /not a diff language/],
     ["a link inside the sentence", valid.replace("stops sliding", "stops [sliding](/x)"), /only plain text and inline code/],
     ["a long title", valid.replace("Springs, Select", "x".repeat(91)), /90 characters/],
     ["a title ending in a period", valid.replace("Springs, Select", "Springs, Select."), /ends with a period/],
@@ -214,5 +221,111 @@ One line about the month.
 
   it.each(broken)("rejects %s", (_, source, message) => {
     expect(() => parseRelease(source)).toThrow(message);
+  });
+
+  it("reads the diff's language from the fence, TSX by default", () => {
+    expect(parseRelease(valid).groups[0].entries[0].diffLang).toBe("tsx");
+    const css = parseRelease(valid.replace("```diff\n", "```diff css\n"));
+    expect(css.groups[0].entries[0].diffLang).toBe("css");
+    expect(css.groups[1].entries[0].diffLang).toBeNull();
+  });
+});
+
+describe("highlightDiff", () => {
+  const lines = (html: string) =>
+    html
+      .replace(/<[^>]+>/g, "")
+      .replace(/&#x3C;/g, "<")
+      .split("\n");
+
+  it("drops the space after each marker, so code starts at the gutter", async () => {
+    const html = await highlightDiff("- <A size=\"md\" />\n+ <A size=\"default\" />\n");
+    expect(html).toContain("diff remove");
+    expect(html).toContain("diff add");
+    expect(lines(html)).toEqual(['<A size="md" />', '<A size="default" />']);
+  });
+
+  it("keeps a plain unified diff's indentation", async () => {
+    // `-code`: no space after the marker on the first line, so the second
+    // line's spaces are indentation.
+    expect(lines(await highlightDiff("-if (a) {\n+  b();"))).toEqual(["if (a) {", "  b();"]);
+  });
+
+  it("highlights in the fence's language", async () => {
+    const html = await highlightDiff("- --overlay: 0 0 0;\n+ --overlay: 255 255 255;", "css");
+    expect(lines(html)).toEqual(["--overlay: 0 0 0;", "--overlay: 255 255 255;"]);
+  });
+});
+
+describe("Copy migration prompt", () => {
+  const breaking = loadReleases().flatMap(releaseEntries).filter((e) => e.kind === "breaking");
+
+  it("re-installs the item /changelog.md names, system pages included", () => {
+    const fluidHover = breaking.find((e) => e.href === "/docs/fluid-hover")!;
+    const scrollbars = breaking.find((e) => e.href === "/docs/scrollbars")!;
+    for (const [entry, url] of [
+      [fluidHover, "/r/use-fluid-hover.json"],
+      [scrollbars, "/r/scroll-area.json"],
+    ] as const) {
+      const prompt = buildMigrationPrompt({ entry, month: "2026-09", install: entryInstall(entry), base: "radix" });
+      expect(prompt).toContain(`npx shadcn@latest add https://www.fluidfunctionalism.com${url} --overwrite`);
+      expect(prompt).not.toContain("every Fluid Functionalism component");
+    }
+  });
+
+  it("takes the Base UI URL only for an item that has one", () => {
+    for (const entry of breaking) {
+      const install = entryInstall(entry);
+      if (install.kind !== "item") continue;
+      const prompt = buildMigrationPrompt({ entry, month: "2026-09", install, base: "base" });
+      expect(prompt).toContain(`/r/${install.base ? "base/" : ""}${install.name}.json --overwrite`);
+    }
+  });
+});
+
+describe("latestMarks", () => {
+  const release = (month: string, body: string) => `---\nmonth: ${month}\ntitle: A month\n---\n\n${body}`;
+  const dirWith = (files: Record<string, string>) => {
+    const dir = mkdtempSync(join(tmpdir(), "ff-marks-"));
+    for (const [name, text] of Object.entries(files)) writeFileSync(join(dir, name), text);
+    return dir;
+  };
+
+  it("marks the latest release's docs pages: New, then Updated and Breaking", () => {
+    const dir = dirWith({
+      "2026-08.md": release("2026-08", "## New\n\n- [Badge](/docs/badge): Old news. (#1)\n"),
+      "2026-09.md": release(
+        "2026-09",
+        [
+          "## New",
+          "",
+          "- [Combobox](/docs/combobox): A field. (#2)",
+          "",
+          "## Updated",
+          "",
+          "- [Select](/docs/select#sizes): A fix. (#3)",
+          "- [Combobox](/docs/combobox): Counted once, as New. (#4)",
+          "- [Showcase](/): Not a docs page. (#5)",
+          "",
+        ].join("\n"),
+      ),
+    });
+    try {
+      expect(latestMarks(dir)).toEqual({ new: ["combobox"], updated: ["select"] });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("costs the site its markers, never the page, on a malformed release", () => {
+    const dir = dirWith({ "2026-09.md": "no frontmatter" });
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect(latestMarks(dir)).toEqual({ new: [], updated: [] });
+      expect(error).toHaveBeenCalledOnce();
+    } finally {
+      error.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

@@ -2,8 +2,6 @@ export interface ComponentEntry {
   slug: string;
   name: string;
   description: string;
-  isNew?: boolean;
-  isUpdated?: boolean;
   gridSize?: "large" | "medium" | "small";
 }
 
@@ -11,32 +9,36 @@ export interface SystemEntry {
   slug: string;
   name: string;
   description: string;
-  isNew?: boolean;
-  isUpdated?: boolean;
+}
+
+/** A description as agent text: site copy allows a spaced em dash, prompts
+ *  and /llms.txt do not, so it becomes a colon. */
+export function plainDescription(text: string): string {
+  return text.replace(/\s+\u2014\s+/g, ": ");
 }
 
 export const systemList: SystemEntry[] = [
-  { slug: "fluid-hover", name: "Fluid Hover", description: "Hover that never blinks and always follows your cursor to the nearest item.", isNew: true },
+  { slug: "fluid-hover", name: "Fluid Hover", description: "Hover that never blinks and always follows your cursor to the nearest item." },
   { slug: "motion", name: "Motion", description: "Spring tokens, faster exits, fluid hover, and reflow-free weight animation — the motion rules shared by every component." },
   { slug: "scrollbars", name: "Scrollbars", description: "A scrollbar that stays out of the way but never disappears, over shadcn's scroll-fade baseline — restyled to the shape system, native scroll on touch." },
   { slug: "sizes", name: "Sizes", description: "A two-step size ladder — a 36px default and a 28px compact — shared by buttons, inputs, selects, tabs, and rows." },
   { slug: "surfaces", name: "Surfaces", description: "Eight-level surface and shadow ladder for elevation in light and dark mode." },
-  { slug: "typography", name: "Typography", description: "Bold rules that create consistency across the whole component library.", isNew: true },
+  { slug: "typography", name: "Typography", description: "Bold rules that create consistency across the whole component library." },
 ];
 
 export const componentList: ComponentEntry[] = [
   { slug: "accordion", name: "Accordion", description: "Collapsible sections with animated expand/collapse and fluid hover in grouped mode.", gridSize: "medium" },
   { slug: "ask-user-questions", name: "AskUserQuestions", description: "Stepped question flow with single/multi-select, optional 'other' input, and skip.", gridSize: "large" },
   { slug: "badge", name: "Badge", description: "Compact label with solid and dot variants, Tailwind color palette, and the two-step size ladder.", gridSize: "small" },
-  { slug: "banner", name: "Banner", description: "Status message in 5 statuses and 2 contrasts: a status icon, a title, up to 3 actions, and a dismiss that collapses its height. Inline, or fixed full-bleed at the top of the page.", isNew: true, gridSize: "medium" },
+  { slug: "banner", name: "Banner", description: "Status message in 5 statuses and 2 contrasts: a status icon, a title, up to 3 actions, and a dismiss that collapses its height. Inline, or fixed full-bleed at the top of the page.", gridSize: "medium" },
   { slug: "button", name: "Button", description: "Versatile button with variants, sizes, loading state, and icon support.", gridSize: "small" },
   { slug: "card", name: "Card", description: "shadcn's compositional card, dressed in Fluid Functionalism — stacked, inline, and grid layouts, borderless dividers, and 2-D fluid hover.", gridSize: "medium" },
-  { slug: "carousel-dots", name: "CarouselDots", description: "Dots for a carousel, static or on autoplay: fluid-hover click areas, and a current pill that fills over each slide.", isNew: true, gridSize: "medium" },
+  { slug: "carousel-dots", name: "CarouselDots", description: "Dots for a carousel, static or on autoplay: fluid-hover click areas, and a current pill that fills over each slide.", gridSize: "medium" },
   { slug: "chat-message", name: "ChatMessage", description: "Chat transcript bubble with baked-in motion, user/assistant alignment, and file attachments.", gridSize: "small" },
   { slug: "checkbox-group", name: "CheckboxGroup", description: "Checkbox group with merged backgrounds for contiguous selections.", gridSize: "small" },
   { slug: "color-picker", name: "ColorPicker", description: "Color picker with HEX/RGB/HSL/OKLCH formats, alpha, swatches, and popover trigger.", gridSize: "large" },
-  { slug: "combobox", name: "Combobox", description: "Type-to-filter field with keyboard highlight, fluid hover, and a spring-animated list — items are data, rows are yours.", isNew: true, gridSize: "small" },
-  { slug: "command-menu", name: "CommandMenu", description: "Type to filter a list of actions, arrow through them, press Enter to run: rows with shortcut caps, groups, suggestions, and a dialog shell on a global shortcut.", isNew: true, gridSize: "large" },
+  { slug: "combobox", name: "Combobox", description: "Type-to-filter field with keyboard highlight, fluid hover, and a spring-animated list — items are data, rows are yours.", gridSize: "small" },
+  { slug: "command-menu", name: "CommandMenu", description: "Type to filter a list of actions, arrow through them, press Enter to run: rows with shortcut caps, groups, suggestions, and a dialog shell on a global shortcut.", gridSize: "large" },
   { slug: "dialog", name: "Dialog", description: "Modal dialog with smooth enter/exit animations and overlay — three widths, the largest a canvas for a sidebar.", gridSize: "small" },
   { slug: "dropdown", name: "Dropdown", description: "Menu-style dropdown with fluid hover, animated backgrounds, and an optional search field inside the popup.", gridSize: "small" },
   { slug: "input-copy", name: "InputCopy", description: "Read-only input with copy-to-clipboard button and animated feedback.", gridSize: "small" },
@@ -62,7 +64,6 @@ export const skillEntry: SystemEntry = {
   slug: "skill",
   name: "Skill",
   description: "Gives your coding agent the components and the craft behind them, then puts both to work on your project.",
-  isUpdated: true,
 };
 
 /** The sidebar's System group, in its order: the systems plus the skill

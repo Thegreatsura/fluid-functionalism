@@ -22,20 +22,16 @@ import { SiteCommandMenuTrigger } from "@/app/components/site-command-menu";
 interface NavEntry {
   slug: string;
   name: string;
-  isNew?: boolean;
-  isUpdated?: boolean;
 }
 
-/** The isNew/isUpdated dot, in the changelog's colors: blue for New, gray
- *  for Updated (see lib/changelog/kind-style.ts). */
-function StatusDot({ entry }: { entry: NavEntry }) {
+/** The New dot, in the changelog's blue: on what the latest release lists as
+ *  New, so the dots move on with each month's release. */
+function NewDot() {
   // Rendered as a flex sibling of the weight-animated label (the row's gap
   // provides the spacing), matching the old NavItem dot's visual position.
-  const kind = entry.isUpdated ? "updated" : entry.isNew ? "new" : null;
-  if (!kind) return null;
   return (
-    <span className={`inline-block size-1.5 shrink-0 rounded-full ${KIND_DOT[kind]}`}>
-      <span className="sr-only">{kind === "new" ? "New" : "Updated"}</span>
+    <span className={`inline-block size-1.5 shrink-0 rounded-full ${KIND_DOT.new}`}>
+      <span className="sr-only">New</span>
     </span>
   );
 }
@@ -45,11 +41,13 @@ function NavGroup({
   entries,
   pathname,
   ariaLabel,
+  newSlugs,
 }: {
   label?: string;
   entries: NavEntry[];
   pathname: string;
   ariaLabel: string;
+  newSlugs: Set<string>;
 }) {
   return (
     <SidebarGroup>
@@ -70,7 +68,7 @@ function NavGroup({
             <SidebarMenuItem key={entry.slug}>
               <SidebarMenuButton render={<Link href={href} />} isActive={pathname === href}>
                 {entry.name}
-                <StatusDot entry={entry} />
+                {newSlugs.has(entry.slug) && <NewDot />}
               </SidebarMenuButton>
             </SidebarMenuItem>
           );
@@ -81,8 +79,9 @@ function NavGroup({
 }
 
 /** The site's own navigation rail — the Sidebar component, dogfooded. */
-export function SiteSidebar() {
+export function SiteSidebar({ newSlugs = [] }: { newSlugs?: string[] }) {
   const pathname = usePathname();
+  const newSet = new Set(newSlugs);
   const { isMobile } = useSidebar();
 
   return (
@@ -119,12 +118,14 @@ export function SiteSidebar() {
           entries={systemNavList}
           pathname={pathname}
           ariaLabel="System navigation"
+          newSlugs={newSet}
         />
         <NavGroup
           label="Components"
           entries={componentList}
           pathname={pathname}
           ariaLabel="Component navigation"
+          newSlugs={newSet}
         />
       </SidebarContent>
 

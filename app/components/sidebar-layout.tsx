@@ -104,9 +104,12 @@ interface SidebarLayoutProps {
   children: ReactNode;
   /** Server-read sidebar_state cookie value (see app/layout.tsx). */
   defaultOpen?: boolean;
+  /** Doc slugs the latest changelog release lists as New (see
+   *  latestNewSlugs in lib/changelog/load.ts): the sidebar dots them. */
+  newSlugs?: string[];
 }
 
-export function SidebarLayout({ children, defaultOpen = true }: SidebarLayoutProps) {
+export function SidebarLayout({ children, defaultOpen = true, newSlugs = [] }: SidebarLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const isFullscreen =
@@ -183,7 +186,7 @@ export function SidebarLayout({ children, defaultOpen = true }: SidebarLayoutPro
           mobile sheet. The site switches rail ↔ sheet at xl, so the
           breakpoint is 1280 instead of the component's 768 default. */}
       <SidebarProvider defaultOpen={defaultOpen} mobileBreakpoint={1280} className="min-h-screen [&:has([data-not-found])_[data-site-right-panel]]:hidden">
-        <SiteSidebar />
+        <SiteSidebar newSlugs={newSlugs} />
         <CloseSheetOnNavigate />
 
         {/* Mobile trigger for the sheet; desktop collapse uses [ or the rail */}

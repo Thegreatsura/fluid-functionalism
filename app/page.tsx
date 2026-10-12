@@ -47,16 +47,15 @@ export default function Page() {
         <p className="mt-2 text-site-body text-muted-foreground">
           Refined UI components with satisfying hover.
         </p>
-        {/* gap-1: the buttons are the compact step, and the size ladder puts
-            4px between compact controls (sizeMap.compact.gap), which keeps
-            all 3 on one line on a 375px phone. flex-wrap: a narrower screen
-            moves a whole button down rather than breaking its label. */}
-        <div className="mt-4 flex flex-wrap items-center gap-1">
+        {/* flex-wrap: a narrow screen moves a whole button down; a label
+            never breaks (Button is whitespace-nowrap). */}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <StarterPromptButton size="sm" />
           <Link href="/docs" className="outline-none" tabIndex={-1}>
             <Button variant="secondary" size="sm">Learn more</Button>
           </Link>
-          <Link href="/demo" className="outline-none" tabIndex={-1}>
+          {/* The demo is a desktop stage: phones skip the button. */}
+          <Link href="/demo" className="outline-none max-sm:hidden" tabIndex={-1}>
             <Button variant="ghost" size="sm">See demo</Button>
           </Link>
         </div>

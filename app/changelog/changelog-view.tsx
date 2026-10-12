@@ -34,6 +34,7 @@ import { BentoTileContext } from "@/app/components/bento-card";
 import { PreviewPlaybackContext } from "@/lib/docs/preview-playback";
 import { ANIMATED_PREVIEWS, ChangelogPreview, hasPreview, STAGE_PADDING } from "@/app/changelog/previews";
 import { buildMigrationPrompt, monthLabel } from "@/lib/changelog/migration-prompt";
+import { buildUpgradePrompt } from "@/lib/changelog/upgrade-prompt";
 
 export type EntryView = ChangeEntry & {
   id: string;
@@ -122,6 +123,14 @@ export function ChangelogView({ releases }: { releases: ReleaseView[] }) {
             </a>
             .
           </p>
+          {/* For an agent doing the upgrade: the skill first, then the same
+              job by hand (lib/changelog/upgrade-prompt.ts). */}
+          <CopyPromptButton
+            label="Copy upgrade prompt"
+            variant="secondary"
+            prompt={buildUpgradePrompt()}
+            className="mt-4"
+          />
         </div>
 
         <div className="flex flex-col">

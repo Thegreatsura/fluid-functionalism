@@ -17,15 +17,21 @@ export interface SystemEntry {
   isUpdated?: boolean;
   /** Tailwind bg class overriding the default blue `isNew` / `isUpdated` dot in the sidebar. */
   dotColor?: string;
+  /** Registry item the page's install advertises, when it isn't the slug
+   *  (the Motion page installs `springs`). */
+  installSlug?: string;
+  /** What the install adds, shown under the Installation title in place of
+   *  the flavor note, and in the page's Markdown. */
+  installNote?: string;
 }
 
 export const systemList: SystemEntry[] = [
-  { slug: "fluid-hover", name: "Fluid Hover", description: "Hover that never blinks and always follows your cursor to the nearest item.", isNew: true },
-  { slug: "motion", name: "Motion", description: "Spring tokens, faster exits, fluid hover, and reflow-free weight animation — the motion rules shared by every component." },
-  { slug: "scrollbars", name: "Scrollbars", description: "A scrollbar that stays out of the way but never disappears, over shadcn's scroll-fade baseline — restyled to the shape system, native scroll on touch." },
-  { slug: "sizes", name: "Sizes", description: "A two-step size ladder — a 36px default and a 28px compact — shared by buttons, inputs, selects, tabs, and rows." },
-  { slug: "surfaces", name: "Surfaces", description: "Eight-level surface and shadow ladder for elevation in light and dark mode." },
-  { slug: "typography", name: "Typography", description: "Bold rules that create consistency across the whole component library.", isNew: true, dotColor: "bg-[var(--warning)]" },
+  { slug: "fluid-hover", name: "Fluid Hover", description: "Hover that never blinks and always follows your cursor to the nearest item.", installSlug: "use-fluid-hover", installNote: "The useFluidHover hook and its highlight, already in every list and menu.", isNew: true },
+  { slug: "motion", name: "Motion", description: "Spring tokens, faster exits, fluid hover, and reflow-free weight animation — the motion rules shared by every component.", installSlug: "springs", installNote: "Installs the springs lib — the fast / moderate / slow spring presets every component animates with." },
+  { slug: "scrollbars", name: "Scrollbars", description: "A scrollbar that stays out of the way but never disappears, over shadcn's scroll-fade baseline — restyled to the shape system, native scroll on touch.", installSlug: "scroll-area", installNote: "Installs the ScrollArea component with the shape-system scrollbar and the scroll-fade edge treatment." },
+  { slug: "sizes", name: "Sizes", description: "A two-step size ladder — a 36px default and a 28px compact — shared by buttons, inputs, selects, tabs, and rows.", installSlug: "size-context", installNote: "Installs the size-context lib: SizeProvider, the useSize and useTypeScale hooks, the token maps behind both steps, and the type-scale tokens." },
+  { slug: "surfaces", name: "Surfaces", description: "Eight-level surface and shadow ladder for elevation in light and dark mode.", installSlug: "elevated", installNote: "Installs the Elevated primitive plus the surface-context and surface-classes libs — the elevation ladder as code." },
+  { slug: "typography", name: "Typography", description: "Bold rules that create consistency across the whole component library.", installSlug: "typography", installNote: "The 5 styles for any text, markdown included.", isNew: true, dotColor: "bg-[var(--warning)]" },
 ];
 
 export const componentList: ComponentEntry[] = [

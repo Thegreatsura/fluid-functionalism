@@ -1,21 +1,19 @@
-import { componentList, plainDescription, systemList } from "@/lib/docs/components";
-import { installUrl, DUAL_FLAVOR_SLUGS, type Base } from "@/lib/base-context";
+import { componentList, systemList } from "@/lib/docs/components";
+import { installUrl, DUAL_FLAVOR_SLUGS, type Base } from "@/lib/install-url";
 import { PROMPT_ENTRIES, type PromptEntry } from "@/lib/docs/prompt-entries";
 import { decodePreset, type PresetComponentDef } from "@/lib/preset/components";
 import { PRESET_GENERATORS } from "@/lib/preset/generators";
 import { SETTING_LABELS, describeSettings } from "@/lib/starter/install";
 import { starterSlug, type StarterSettings } from "@/lib/starter/settings";
-
-const SITE = "https://www.fluidfunctionalism.com";
-
-/** Why the install command carries --overwrite: a stock shadcn project already
- *  has button.tsx, dialog.tsx, tooltip.tsx and friends, and this library's
- *  files install under the same names. Without the flag the CLI asks per
- *  existing file (default No), so a person keeps the stock file next to the
- *  new ones, and an agent's non-interactive shell exits at the question after
- *  the CSS and npm dependencies were already written. */
-export const OVERWRITE_NOTE =
-  "--overwrite replaces same-named stock shadcn files (button.tsx, dialog.tsx, ...) with this library's versions. Without it the CLI prompts per existing file and exits in a non-interactive shell before any component is written.";
+import {
+  SITE,
+  OVERWRITE_NOTE,
+  SKILL_LINE,
+  PROJECT_NEEDS,
+  INSTALLED_FILES,
+  CHANGELOG_LINE,
+  plainDescription,
+} from "@/lib/docs/install-brief";
 
 interface BuildInstallPromptOptions {
   /** Doc page slug (matches `componentList` / `systemList`). */
@@ -26,15 +24,6 @@ interface BuildInstallPromptOptions {
    *  flavor sentence. */
   base: Base;
 }
-
-/** The craft (exact behaviors and values) ships in the skill, not in the
- *  brief: one pointer instead of a page of bullets. */
-/** Where an agent checks for changes later: every month's release, with an
- *  install URL per entry and migration steps for anything breaking. */
-const CHANGELOG_LINE = `Changelog (what changed each month, how to update): ${SITE}/changelog.md`;
-
-const SKILL_LINE =
-  "For the design details behind it (exact behaviors and values), add the Fluid Functionalism skill: npx skills add mickadesign/fluid-functionalism";
 
 /** Builds the text behind the "Copy prompt" button on every doc page: a
  *  self-contained brief a visitor pastes into an AI coding agent. It carries
@@ -89,7 +78,7 @@ export function buildInstallPrompt({ slug, installSlug, base }: BuildInstallProm
   }
   if (details?.flavorNote) about.push(details.flavorNote);
   about.push(
-    "Needs a shadcn-style project: Tailwind v4, the `@/` alias, and the Inter variable font loaded for the weight animations. Installed files land in components/ui, components, lib, and hooks. Compose with props and className rather than editing them.",
+    `${PROJECT_NEEDS} ${INSTALLED_FILES}`,
   );
   lines.push(about.join(" "));
   lines.push(`Docs: ${SITE}/docs/${slug}`);
@@ -160,7 +149,7 @@ export function buildPresetPrompt({ def, code, base }: BuildPresetPromptOptions)
   if (description) about.push(stripTrailingPeriod(description) + ".");
   if (dual) about.push(base === "base" ? "Base UI flavor." : "Radix flavor.");
   about.push(
-    "Needs a shadcn-style project: Tailwind v4, the `@/` alias, and the Inter variable font loaded for the weight animations.",
+    PROJECT_NEEDS,
   );
   lines.push(about.join(" "));
   lines.push(`Reopen or tweak this configuration: ${SITE}${def.docsPath}?preset=${code}`);

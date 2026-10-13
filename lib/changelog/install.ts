@@ -1,6 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { ChangeEntry } from "@/lib/changelog/parse";
+import { systemList } from "@/lib/docs/components";
 
 // Server only: what an entry installs, read from the repo at build time, so
 // /changelog.md can tell an agent exactly what to re-install.
@@ -19,15 +20,11 @@ export type EntryInstall =
 const ROOT = process.cwd();
 const has = (...parts: string[]) => existsSync(join(ROOT, ...parts));
 
-/** The registry name a doc page installs: the page's own `installSlug` when
- *  it sets one (Surfaces installs `elevated`), else the slug itself. */
+/** The registry name a doc page installs: its system entry's `installSlug`
+ *  when it has one (Surfaces installs `elevated`), else the slug itself. The
+ *  same lookup the page's install section and its Markdown use. */
 function installNameForPage(slug: string): string {
-  try {
-    const page = readFileSync(join(ROOT, "app", "docs", slug, "page.tsx"), "utf8");
-    return /installSlug="([a-z0-9-]+)"/.exec(page)?.[1] ?? slug;
-  } catch {
-    return slug;
-  }
+  return systemList.find((s) => s.slug === slug)?.installSlug ?? slug;
 }
 
 const item = (name: string): EntryInstall =>

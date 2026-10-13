@@ -5,7 +5,7 @@ import { DocPage, DocSection } from "@/lib/docs/DocPage";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { InspectOverlay, type InspectRaw } from "@/lib/docs/InspectOverlay";
 import { useShape } from "@/registry/default/lib/shape-context";
-import { PropsTable, type PropDef } from "@/lib/docs/PropsTable";
+import { PropsTable } from "@/lib/docs/PropsTable";
 import { ScrollArea } from "@/registry/base/scroll-area";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import {
@@ -28,6 +28,7 @@ import { MenuItem } from "@/registry/default/menu-item";
 import { cn } from "@/registry/default/lib/utils";
 import { ChevronDown, ListFilter, Plus } from "lucide-react";
 import { SORT_OPTIONS, ToolbarDemo } from "@/app/docs/sizes/toolbar-demo";
+import { PROVIDER_PROPS, CONSUMER_PROPS } from "@/lib/docs/api/sizes";
 
 /** Inline code chip used throughout the prose. */
 function Code({ children }: { children: ReactNode }) {
@@ -409,36 +410,6 @@ function TokenInspectorDemo() {
 }
 
 // ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
-
-const PROVIDER_PROPS: PropDef[] = [
-  {
-    name: "size",
-    type: '"default" | "compact"',
-    description:
-      "Controlled variant — pins every control in the subtree to one step.",
-  },
-  {
-    name: "defaultSize",
-    type: '"default" | "compact"',
-    default: '"default"',
-    description:
-      "Uncontrolled initial variant, switchable via useSizeContext().setSize.",
-  },
-];
-
-const CONSUMER_PROPS: PropDef[] = [
-  {
-    name: "size",
-    type: '"default" | "compact"',
-    default: "from provider",
-    description:
-      "Per-component override on Button, Badge, Select, Tabs, TabsSubtle, Dropdown, DropdownMenu, CheckboxGroup, RadioGroup, InputGroup, InputCopy, InputMessage, Table, Switch, Slider, Accordion, AccordionGroup, AskUserQuestions, Card, ChatMessage, ColorPicker, ThinkingIndicator, and ThinkingSteps. Wins over the surrounding SizeProvider.",
-  },
-];
-
-// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
@@ -453,8 +424,6 @@ export default function SizesPage() {
         </>
       }
       slug="sizes"
-      installSlug="size-context"
-      installNote="Installs the size-context lib: SizeProvider, the useSize and useTypeScale hooks, the token maps behind both steps, and the type-scale tokens."
     >
       <DocSection title="The principle">
         <p className="text-site-body text-muted-foreground">

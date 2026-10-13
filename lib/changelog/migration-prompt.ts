@@ -1,9 +1,7 @@
-import type { Base } from "@/lib/base-context";
-import { OVERWRITE_NOTE } from "@/lib/docs/install-prompt";
+import type { Base } from "@/lib/install-url";
+import { OVERWRITE_NOTE, SITE } from "@/lib/docs/install-brief";
 import type { EntryInstall } from "@/lib/changelog/install";
 import type { ChangeEntry, Inline } from "@/lib/changelog/parse";
-
-const SITE = "https://www.fluidfunctionalism.com";
 
 export function inlineToText(inline: Inline[]): string {
   return inline.map((part) => (part.type === "code" ? `\`${part.value}\`` : part.value)).join("");

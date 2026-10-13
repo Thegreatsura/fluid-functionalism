@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import type { ReactNode } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 import { cn } from "@/lib/utils";
 import { useBase, type Base } from "@/lib/base-context";

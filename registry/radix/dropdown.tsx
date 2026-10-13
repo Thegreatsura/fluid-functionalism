@@ -15,7 +15,7 @@ import {
   type HTMLAttributes,
   type ComponentPropsWithoutRef,
 } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { cn } from "@/lib/utils";
 import { spring, exitFallbackMs } from "@/lib/springs";
@@ -183,7 +183,7 @@ const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
           }}
           role="group"
           className={cn(
-            `relative flex flex-col w-72 max-w-full  p-1 select-none`,
+            `relative flex flex-col w-72 max-w-full ${shape.container} p-1 select-none`,
             className
           )}
           {...props}

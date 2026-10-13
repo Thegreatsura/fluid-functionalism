@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, type ReactNode } from "react";
-import { animate, motion, useMotionValue, type MotionValue } from "framer-motion";
+import { animate, motion, useMotionValue, type MotionValue } from "motion/react";
 import { cn } from "@/registry/default/lib/utils";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { spring } from "@/registry/default/lib/springs";

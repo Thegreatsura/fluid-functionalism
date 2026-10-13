@@ -18,7 +18,7 @@ import {
   animate,
   AnimatePresence,
   type MotionValue,
-} from "framer-motion";
+} from "motion/react";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { cn } from "@/lib/utils";
 import { useSizeVariant, fieldTouchClass, type SizeVariant } from "@/lib/size-context";

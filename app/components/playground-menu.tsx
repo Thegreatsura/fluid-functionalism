@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Button } from "@/registry/radix/button";
 import { Elevated } from "@/lib/elevated";
 import { ScrollArea } from "@/registry/radix/scroll-area";

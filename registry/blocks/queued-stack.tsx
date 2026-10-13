@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { fontWeights } from "@/lib/font-weight";
-import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
+import { AnimatePresence, motion, useAnimationControls } from "motion/react";
 import { FileThumbnail } from "@/components/ui/file-thumbnail";
 import { Tooltip } from "@/components/ui/tooltip";
 import { type QueuedMessage } from "@/components/ui/input-message";

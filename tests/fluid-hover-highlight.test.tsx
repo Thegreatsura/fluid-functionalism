@@ -9,8 +9,8 @@ import { render, waitFor } from "@testing-library/react";
 
 const motionState = vi.hoisted(() => ({ reduced: false }));
 
-vi.mock("framer-motion", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("framer-motion")>();
+vi.mock("motion/react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("motion/react")>();
   return { ...actual, useReducedMotion: () => motionState.reduced };
 });
 

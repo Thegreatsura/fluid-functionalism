@@ -3,7 +3,7 @@
 import { Fragment, createElement, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useInView, useReducedMotion } from "motion/react";
 import { spring } from "@/lib/springs";
 import {
   SidebarProvider,

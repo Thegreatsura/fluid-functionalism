@@ -196,7 +196,7 @@ const [messages, setMessages] = useState<string[]>([]);
 </div>`;
 
 const queuedCode = `import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
+import { AnimatePresence, motion, useAnimationControls } from "motion/react";
 import { spring } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { useIcon } from "@/lib/icon-context";

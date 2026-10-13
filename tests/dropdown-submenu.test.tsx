@@ -297,10 +297,9 @@ describe.each(flavors)("%s submenu side", (_name, F) => {
         </BaseDirectionProvider>
       </RadixDirectionProvider>
     );
-    // One waitFor, so the side is read while the submenu is up. Radix
-    // closes a submenu on focus outside it, and the parent menu focuses
-    // itself on open: with both defaultOpen, a slow runner can close the
-    // submenu between two separate queries.
+    // One read: with both menus open from mount, Radix's focus handling can
+    // close and reopen the sub between two separate reads, which left the
+    // second one holding a menu that no longer exists.
     await waitFor(() => {
       const menus = view.getAllByRole("menu");
       expect(menus).toHaveLength(2);

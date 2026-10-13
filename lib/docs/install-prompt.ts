@@ -11,6 +11,7 @@ import {
   SKILL_LINE,
   PROJECT_NEEDS,
   INSTALLED_FILES,
+  CHANGELOG_LINE,
   plainDescription,
 } from "@/lib/docs/install-brief";
 
@@ -81,6 +82,7 @@ export function buildInstallPrompt({ slug, installSlug, base }: BuildInstallProm
   );
   lines.push(about.join(" "));
   lines.push(`Docs: ${SITE}/docs/${slug}`);
+  lines.push(CHANGELOG_LINE);
 
   return lines.join("\n");
 }
@@ -152,6 +154,7 @@ export function buildPresetPrompt({ def, code, base }: BuildPresetPromptOptions)
   lines.push(about.join(" "));
   lines.push(`Reopen or tweak this configuration: ${SITE}${def.docsPath}?preset=${code}`);
   lines.push(`Docs: ${SITE}/docs/${slug}`);
+  lines.push(CHANGELOG_LINE);
 
   return lines.join("\n");
 }
@@ -197,6 +200,7 @@ export function buildStarterPrompt(settings: StarterSettings): string {
   lines.push("");
   lines.push(SKILL_LINE);
   lines.push(`Docs: ${SITE}/docs`);
+  lines.push(CHANGELOG_LINE);
   return lines.join("\n");
 }
 

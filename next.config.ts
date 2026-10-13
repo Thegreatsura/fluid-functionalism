@@ -5,6 +5,12 @@ import type { NextConfig } from "next";
 const acceptsMarkdown = [{ type: "header" as const, key: "accept", value: "(.*)text/markdown(.*)" }];
 
 const nextConfig: NextConfig = {
+  // The root layout reads content/changelog/ on every route (the site's New
+  // and Updated markers, lib/changelog/load.ts). File tracing only finds
+  // those files for /changelog itself, so every route ships them explicitly.
+  outputFileTracingIncludes: {
+    "/**": ["./content/changelog/**/*"],
+  },
   // The docs render on demand (the root layout reads the settings cookies),
   // and Next then streams <title> and <link rel="alternate"> to the end of
   // the body for any user agent it doesn't list as a bot, including agents

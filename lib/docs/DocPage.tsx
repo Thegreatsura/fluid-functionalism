@@ -61,10 +61,12 @@ export function DocPage({
     useSizeVariant() === "compact" ? ("icon-compact" as const) : ("icon" as const);
 
   const currentIndex = slug ? docOrder.findIndex((c) => c.slug === slug) : -1;
+  // The first doc page steps back to the Changelog, which sits between the
+  // Introduction and the systems in the sidebar.
   const prev = currentIndex > 0
-    ? docOrder[currentIndex - 1]
+    ? { href: `/docs/${docOrder[currentIndex - 1].slug}`, name: docOrder[currentIndex - 1].name }
     : currentIndex === 0
-      ? { slug: "", name: "Introduction" }
+      ? { href: "/changelog", name: "Changelog" }
       : null;
   const next = currentIndex >= 0 && currentIndex < docOrder.length - 1 ? docOrder[currentIndex + 1] : null;
 
@@ -90,7 +92,7 @@ export function DocPage({
               {prev ? (
                 <Tooltip content={<span>{prev.name} &ensp;<kbd className="font-mono opacity-50">&larr;</kbd></span>}>
                   <Button asChild variant="ghost" size={iconSize}>
-                    <Link href={`/docs/${prev.slug}`} aria-label={`Previous: ${prev.name}`}>
+                    <Link href={prev.href} aria-label={`Previous: ${prev.name}`}>
                       <ArrowRight className="rotate-180" />
                     </Link>
                   </Button>

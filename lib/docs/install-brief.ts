@@ -19,6 +19,10 @@ export const OVERWRITE_NOTE =
 export const SKILL_LINE =
   "For the design details behind it (exact behaviors and values), add the Fluid Functionalism skill: npx skills add mickadesign/fluid-functionalism";
 
+/** Where an agent checks for changes later: every month's release, with an
+ *  install URL per entry and migration steps for anything breaking. */
+export const CHANGELOG_LINE = `Changelog (what changed each month, how to update): ${SITE}/changelog.md`;
+
 /** The skill page's install: a prompt rather than the bare command, so the
  *  agent goes on to run the skill once on the project. It names the skill,
  *  so an agent that already has it skips the install. Global (-g) keeps the

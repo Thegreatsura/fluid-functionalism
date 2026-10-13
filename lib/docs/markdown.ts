@@ -104,6 +104,9 @@ export function llmsTxt(): string {
   );
   lines.push(`- Registry index: ${SITE}/r/registry.json`);
   lines.push(
+    `- Changelog: every change, month by month, with an install URL per entry and migration steps for breaking changes: ${SITE}/changelog.md`,
+  );
+  lines.push(
     `- For a whole project, the agent skill carries the craft behind every component: \`npx skills add mickadesign/fluid-functionalism\` (${SITE}/docs/skill.md)`,
   );
   lines.push("");

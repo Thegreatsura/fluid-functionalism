@@ -129,6 +129,10 @@ describe("llms.txt", () => {
     for (const page of MARKDOWN_PAGES) expect(txt).toContain(`](${markdownUrl(page.slug)})`);
   });
 
+  it("points agents at the changelog, where updates and migrations live", () => {
+    expect(txt).toContain("https://www.fluidfunctionalism.com/changelog.md");
+  });
+
   it("follows the tone of voice: no em dashes", () => {
     expect(txt).not.toContain("—");
   });

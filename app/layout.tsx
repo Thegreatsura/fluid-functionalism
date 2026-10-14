@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Fluid Functionalism",
     description: "Open Source UI components created by @micka_design",
-    images: [{ url: "/metadata/og.png", width: 1200, height: 630 }],
+    images: [{ url: "/metadata/og.png", width: 2400, height: 1260 }],
   },
   twitter: {
     card: "summary_large_image",

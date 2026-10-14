@@ -119,6 +119,7 @@ export function SidebarLayout({ children, defaultOpen = true, marks = NO_MARKS }
     pathname === "/demo" ||
     pathname === "/compare" ||
     pathname === "/stars" ||
+    pathname === "/og" ||
     pathname.startsWith("/concepts");
 
   // Arrow key navigation between pages — ref-based so held keys keep advancing

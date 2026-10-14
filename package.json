@@ -13,7 +13,8 @@
     "registry:build": "npm run type-scale && shadcn build && node scripts/postbuild-registry.mjs",
     "deps:inventory": "node scripts/deps-watch/inventory.mjs",
     "deps:popups": "node scripts/deps-watch/verify-popups.mjs",
-    "deps:install": "node scripts/deps-watch/install-check.mjs"
+    "deps:install": "node scripts/deps-watch/install-check.mjs",
+    "og": "node scripts/og-export.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

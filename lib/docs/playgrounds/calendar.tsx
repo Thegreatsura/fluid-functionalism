@@ -23,7 +23,8 @@ interface PlayState {
   mode: "single" | "range";
   months: "1" | "2";
   orientation: "auto" | "horizontal" | "vertical";
-  cellSize: "32" | "36" | "40" | "44";
+  /** "auto" leaves cellSize unset, so the site size picks 36 or 32. */
+  cellSize: "auto" | "40" | "44" | "48";
   weekNumbers: boolean;
   days: Days;
 }
@@ -32,7 +33,7 @@ const DEFAULT_STATE: PlayState = {
   mode: "range",
   months: "1",
   orientation: "auto",
-  cellSize: "36",
+  cellSize: "auto",
   weekNumbers: false,
   days: "booked",
 };
@@ -58,7 +59,7 @@ export function buildCalendarPlaygroundCode(o: PlayState): string {
     `onSelect={${range ? "setRange" : "setDate"}}`,
     ...(o.months === "2" ? [`numberOfMonths={2}`] : []),
     ...(o.months === "2" && o.orientation !== "auto" ? [`orientation="${o.orientation}"`] : []),
-    ...(o.cellSize !== "36" ? [`cellSize={${o.cellSize}}`] : []),
+    ...(o.cellSize !== "auto" ? [`cellSize={${o.cellSize}}`] : []),
     ...(o.weekNumbers ? ["showWeekNumber"] : []),
     ...(o.days === "booked" ? ["booked={booked}", "disabled={{ before: new Date() }}"] : []),
     ...(o.days === "weekdays" ? ["available={{ dayOfWeek: [1, 2, 3, 4, 5] }}"] : []),
@@ -90,7 +91,7 @@ export function CalendarPlayground({ children }: PlaygroundProps) {
       mode: pick(["single", "range", "range"] as const),
       months: pick(["1", "2"] as const),
       orientation: pick(["auto", "horizontal", "vertical"] as const),
-      cellSize: pick(["32", "36", "40", "44"] as const),
+      cellSize: pick(["auto", "auto", "40", "44", "48"] as const),
       weekNumbers: Math.random() > 0.6,
       days: pick(["all", "booked", "weekdays"] as const),
     });
@@ -106,7 +107,7 @@ export function CalendarPlayground({ children }: PlaygroundProps) {
     ...dayProps,
     numberOfMonths: Number(state.months) as 1 | 2,
     orientation: state.orientation,
-    cellSize: Number(state.cellSize),
+    cellSize: state.cellSize === "auto" ? undefined : Number(state.cellSize),
     showWeekNumber: state.weekNumbers,
   };
   const calendar =
@@ -154,10 +155,10 @@ export function CalendarPlayground({ children }: PlaygroundProps) {
           value={state.cellSize}
           onChange={(v) => set("cellSize", v as PlayState["cellSize"])}
           options={[
-            { value: "32", label: "32px" },
-            { value: "36", label: "36px" },
+            { value: "auto", label: "Size" },
             { value: "40", label: "40px" },
             { value: "44", label: "44px" },
+            { value: "48", label: "48px" },
           ]}
         />
       </PlayField>

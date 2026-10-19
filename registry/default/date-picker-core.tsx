@@ -1028,7 +1028,8 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
     >
       <div
         className={cn(
-          "flex bg-inherit p-1",
+          // Same box as the popup: its corners follow the popup's 12px.
+          "flex rounded-[inherit] bg-inherit p-1",
           showPresets && stacked ? "flex-col" : "flex-row",
           stacked && numberOfMonths > 1 &&
             "max-h-[min(560px,var(--popup-available-height,560px))] overflow-y-auto"
@@ -1052,7 +1053,8 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
             />
           </div>
         )}
-        <div className="bg-inherit">{calendar}</div>
+        {/* 4px in from the popup's 12px corners: 8px keeps them concentric. */}
+        <div className="rounded-lg bg-inherit">{calendar}</div>
       </div>
     </Popover>
   );

@@ -197,6 +197,17 @@ const PanelPresentContext = createContext(true);
 
 const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
+/**
+ * True for a month panel that is sliding out of one slot while the same month
+ * slides into the neighbouring slot. Both copies share a path, and their
+ * translucent range bands and text would stack into a darker blink, so the
+ * outgoing copy hides and the incoming one carries the month.
+ */
+function useShownElsewhere(monthTime: number, present: boolean, stride: number | null) {
+  const { months } = useDayPicker();
+  return !present && stride !== null && months.some((m) => m.date.getTime() === monthTime);
+}
+
 const INDEX_ATTR = "data-calendar-index";
 
 /**
@@ -570,17 +581,20 @@ function NavSlot({
  *  leaves the live region, so a month change is announced once. */
 function CaptionText({
   compact,
+  monthTime,
   offset,
   stride,
   children,
 }: {
   compact: boolean;
+  monthTime: number;
   offset: number;
   stride: number | null;
   children: ReactNode;
 }) {
   const present = useIsPresent();
   const { direction } = useGridContext();
+  const shownElsewhere = useShownElsewhere(monthTime, present, stride);
   return (
     <motion.span
       role={present ? "status" : undefined}
@@ -588,6 +602,7 @@ function CaptionText({
       aria-hidden={present ? undefined : true}
       className={cn(
         "col-start-1 row-start-1 justify-self-center whitespace-nowrap text-foreground [text-box:trim-both_cap_alphabetic]",
+        shownElsewhere && "invisible",
         typeClass("body", compact ? "compact" : "default")
       )}
       style={{ fontVariationSettings: fontWeights.semibold }}
@@ -647,7 +662,13 @@ function MonthCaption({ calendarMonth, displayIndex, className, style, ...props 
       )}
       <span className={cn("relative inline-grid", grid.stride === null && "overflow-hidden")}>
         <AnimatePresence initial={false} custom={grid.direction}>
-          <CaptionText key={key} compact={cal.compact} offset={offset} stride={grid.stride}>
+          <CaptionText
+            key={key}
+            monthTime={key}
+            compact={cal.compact}
+            offset={offset}
+            stride={grid.stride}
+          >
             {formatters.formatCaption(
               calendarMonth.date,
               calendarMonth.weeks[0]?.days[0]?.dateLib.options,
@@ -788,6 +809,7 @@ function Weeks({ className, style, children }: HTMLAttributes<HTMLElement>) {
       <AnimatePresence initial={false} custom={grid.direction}>
         <WeeksPanel
           key={key}
+          monthTime={key}
           className={className}
           style={style}
           offset={offset}
@@ -805,6 +827,7 @@ function WeeksPanel({
   className,
   style,
   children,
+  monthTime,
   offset,
   stride,
   onHeight,
@@ -812,12 +835,14 @@ function WeeksPanel({
   className?: string;
   style?: CSSProperties;
   children: ReactNode;
+  monthTime: number;
   offset: number;
   stride: number | null;
   onHeight: (h: number) => void;
 }) {
   const present = useIsPresent();
   const { direction } = useGridContext();
+  const shownElsewhere = useShownElsewhere(monthTime, present, stride);
   const ref = useRef<HTMLDivElement>(null);
   useIsoLayoutEffect(() => {
     const el = ref.current;
@@ -837,6 +862,7 @@ function WeeksPanel({
         className={cn(
           "col-start-1 row-start-1 flex flex-col self-start",
           !present && "pointer-events-none",
+          shownElsewhere && "invisible",
           className
         )}
         style={style}
@@ -1300,7 +1326,7 @@ function Calendar(props: CalendarProps) {
       <div
         ref={wrapperRef}
         data-slot="calendar-root"
-        className={cn("bg-inherit", fill ? "w-full" : "w-fit")}
+        className={cn("rounded-[inherit] bg-inherit", fill ? "w-full" : "w-fit")}
         style={{ "--cell-size": `${cellSize}px`, ...style } as CSSProperties}
         onKeyDown={handleKeyDown}
       >

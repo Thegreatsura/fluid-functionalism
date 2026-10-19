@@ -302,6 +302,11 @@ interface TimeFieldProps {
   segmentClass: string;
   /** Where the list opens when there is no value (now, or the start). */
   fallback: number;
+  /** An icon inside the field, before the time (the start's clock, the
+   *  end's arrow), so it shares the field's hover and click target. */
+  prefix?: ReactNode;
+  /** A muted note after the time, inside the field (the end's duration). */
+  suffix?: ReactNode;
 }
 
 function TimeField({
@@ -318,6 +323,8 @@ function TimeField({
   index,
   segmentClass,
   fallback,
+  prefix,
+  suffix,
 }: TimeFieldProps) {
   const sizeClasses = useSize();
   const compact = sizeClasses.variant === "compact";
@@ -437,11 +444,13 @@ function TimeField({
       data-slot="date-picker-time"
       className={cn(
         segmentClass,
-        "inline-grid cursor-text has-[input:focus-visible]:ring-1 has-[input:focus-visible]:ring-[color:var(--focus-ring,#6B97FF)]",
+        "cursor-text gap-1.5 has-[input:focus-visible]:ring-1 has-[input:focus-visible]:ring-[color:var(--focus-ring,#6B97FF)]",
         sizeClasses.field
       )}
       onClick={() => inputRef.current?.focus()}
     >
+      {prefix}
+      <span className="inline-grid">
       <span aria-hidden className="invisible col-start-1 row-start-1 whitespace-pre tabular-nums">
         {text || placeholder}
       </span>
@@ -490,6 +499,8 @@ function TimeField({
       }}
       onKeyDown={onKeyDown}
     />
+      </span>
+      {suffix}
     </span>
   );
 
@@ -863,6 +874,17 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
   const compact = sizeClasses.variant === "compact";
   const icons = useIcons();
   const CalendarIcon = icons.calendar;
+  const ClockIcon = icons.clock;
+  const ArrowIcon = icons["arrow-right"];
+  // Time fields lead with a decorative icon, drawn like the date's calendar.
+  const timeIcon = (Icon: typeof CalendarIcon) => (
+    <Icon
+      aria-hidden
+      size={sizeClasses.icon}
+      strokeWidth={1.5}
+      className="shrink-0 text-muted-foreground"
+    />
+  );
   const ClearIcon = icons.x;
   const hourCycle = useMemo(() => resolveHourCycle(locale, hourCycleProp), [locale, hourCycleProp]);
 
@@ -1085,6 +1107,7 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
       index={1}
       segmentClass={segmentClass}
       fallback={nowMinutes}
+      prefix={timeIcon(ClockIcon)}
     />
   ) : hasTimeRange ? (
     <>
@@ -1109,8 +1132,8 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
         index={1}
         segmentClass={segmentClass}
         fallback={nowMinutes}
+        prefix={timeIcon(ClockIcon)}
       />
-      <span aria-hidden className="relative z-[1] text-muted-foreground">→</span>
       <TimeField
         Popover={Popover}
         value={endMinutes}
@@ -1129,18 +1152,18 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
         index={2}
         segmentClass={segmentClass}
         fallback={(startMinutes ?? nowMinutes) + 60}
+        prefix={timeIcon(ArrowIcon)}
+        suffix={
+          startMinutes !== null && endMinutes !== null && endMinutes > startMinutes ? (
+            <span
+              data-slot="date-picker-duration"
+              className="whitespace-nowrap text-muted-foreground"
+            >
+              {formatDuration(endMinutes - startMinutes)}
+            </span>
+          ) : undefined
+        }
       />
-      {startMinutes !== null && endMinutes !== null && endMinutes > startMinutes && (
-        <span
-          data-slot="date-picker-duration"
-          className={cn(
-            "relative z-[1] whitespace-nowrap text-muted-foreground",
-            compact ? "pr-1.5" : "pr-2"
-          )}
-        >
-          {formatDuration(endMinutes - startMinutes)}
-        </span>
-      )}
     </>
   ) : null;
 

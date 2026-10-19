@@ -474,7 +474,10 @@ function TimeField({
       value={text}
       className={cn(
         "col-start-1 row-start-1 w-full min-w-0 bg-transparent p-0 text-center tabular-nums text-inherit outline-none placeholder:text-muted-foreground",
-        sizeClasses.field
+        sizeClasses.field,
+        // The field's shape radius would clip the text selection's corners;
+        // the rounded focus ring belongs to the whole segment instead.
+        "rounded-none"
       )}
       onFocus={(e) => {
         e.currentTarget.select();
@@ -500,7 +503,16 @@ function TimeField({
       onKeyDown={onKeyDown}
     />
       </span>
-      {suffix}
+      {/* The note steps aside while the time is being edited, keeping its
+          space so the field doesn't shrink under the cursor. */}
+      {suffix && (
+        <span
+          data-editing={open || draft !== null || undefined}
+          className={cn("inline-flex", (open || draft !== null) && "invisible")}
+        >
+          {suffix}
+        </span>
+      )}
     </span>
   );
 

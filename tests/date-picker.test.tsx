@@ -268,4 +268,29 @@ describe.each(flavors)("%s flavor", (_name, mod) => {
     expect(value).toBe("11:30");
     expect((input as HTMLInputElement).value).toBe("11:30");
   });
+
+  it("hides the duration while the end time is being edited, keeping its width", async () => {
+    render(
+      <DatePicker
+        value={new Date(2026, 9, 21)}
+        timeRange={{ start: "11:00", end: "12:45" }}
+        onTimeRangeChange={() => {}}
+        hourCycle={24}
+      />
+    );
+    const duration = () => document.querySelector("[data-slot=date-picker-duration]")!;
+    // Hidden but still laid out, so the field keeps its width.
+    const hidden = () => duration().parentElement!.classList.contains("invisible");
+    expect(duration().textContent).toBe("1h 45min");
+    expect(hidden()).toBe(false);
+    const end = screen.getByRole("combobox", { name: "End time" });
+    await act(async () => {
+      fireEvent.focus(end);
+    });
+    expect(hidden()).toBe(true);
+    await act(async () => {
+      fireEvent.keyDown(end, { key: "Escape" });
+    });
+    expect(hidden()).toBe(false);
+  });
 });

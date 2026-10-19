@@ -197,6 +197,16 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
 
   const controls = (
     <PlaygroundPanel onShuffle={randomize}>
+      <PlayField label="Design">
+        <PlaySelect
+          value={state.variant}
+          onChange={(v) => set("variant", v as PlayState["variant"])}
+          options={[
+            { value: "outline", label: "Outline" },
+            { value: "ghost", label: "Ghost" },
+          ]}
+        />
+      </PlayField>
       <PlayField label="Mode">
         <PlaySelect
           value={state.mode}
@@ -208,16 +218,6 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
           options={[
             { value: "single", label: "Date" },
             { value: "range", label: "Range" },
-          ]}
-        />
-      </PlayField>
-      <PlayField label="Design">
-        <PlaySelect
-          value={state.variant}
-          onChange={(v) => set("variant", v as PlayState["variant"])}
-          options={[
-            { value: "outline", label: "Outline" },
-            { value: "ghost", label: "Ghost" },
           ]}
         />
       </PlayField>

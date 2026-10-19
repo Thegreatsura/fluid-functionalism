@@ -768,7 +768,9 @@ function PresetRow({
       <span className="inline-grid">
         <span
           aria-hidden
-          className="invisible col-start-1 row-start-1"
+          // Trimmed like the visible label, so both boxes match and the
+          // label sits centered in the row.
+          className="invisible col-start-1 row-start-1 [text-box:trim-both_cap_alphabetic]"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           {preset.label}

@@ -593,6 +593,9 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
           <div
             ref={stripRef}
             className="flex flex-col gap-4 [clip-path:inset(var(--strip-clip-top,0px)_-4px_-8px_-4px)]"
+            // Seeded here; the effect above keeps it on the weekday row's edge
+            // (React leaves it alone while this seed doesn't change).
+            style={{ "--strip-clip-top": "0px" } as CSSProperties}
           >
             {children}
           </div>

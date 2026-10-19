@@ -44,11 +44,11 @@ interface PlayState {
 
 const DEFAULT_STATE: PlayState = {
   mode: "single",
-  variant: "outline",
-  time: "none",
+  variant: "ghost",
+  time: "timeRange",
   presets: false,
-  months: "1",
-  orientation: "auto",
+  months: "2",
+  orientation: "horizontal",
   step: "15",
   clock: "locale",
   weekNumbers: false,

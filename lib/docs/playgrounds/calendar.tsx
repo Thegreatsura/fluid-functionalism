@@ -31,11 +31,11 @@ interface PlayState {
 
 const DEFAULT_STATE: PlayState = {
   mode: "range",
-  months: "1",
+  months: "2",
   orientation: "auto",
   cellSize: "auto",
   weekNumbers: false,
-  days: "booked",
+  days: "all",
 };
 
 function pick<T>(options: readonly T[]): T {

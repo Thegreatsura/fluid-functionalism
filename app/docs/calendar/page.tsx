@@ -33,15 +33,13 @@ const [range, setRange] = useState<DateRange | undefined>();
 
 const verticalCode = `import { Calendar, type DateRange } from "./components";
 
-<div className="h-[360px] overflow-y-auto">
-  <Calendar
-    mode="range"
-    numberOfMonths={2}
-    orientation="vertical"
-    selected={range}
-    onSelect={setRange}
-  />
-</div>`;
+<Calendar
+  mode="range"
+  numberOfMonths={2}
+  orientation="vertical"
+  selected={range}
+  onSelect={setRange}
+/>`;
 
 const bookingCode = `import { Calendar, type DateRange } from "./components";
 
@@ -66,12 +64,7 @@ const availableCode = `import { Calendar } from "./components";
 const sizeCode = `import { Calendar } from "./components";
 
 {/* Bigger cells add air; the numbers stay on the type scale */}
-<Calendar cellSize={48} selected={date} onSelect={setDate} />
-
-{/* fill: columns stretch to the container, cellSize caps the row height */}
-<div className="w-full max-w-[480px]">
-  <Calendar fill cellSize={44} selected={date} onSelect={setDate} />
-</div>`;
+<Calendar cellSize={48} selected={date} onSelect={setDate} />`;
 
 const weekNumbersCode = `import { Calendar } from "./components";
 
@@ -103,7 +96,6 @@ export default function CalendarDoc() {
   const [booking, setBooking] = useState<DateRange | undefined>(undefined);
   const [weekday, setWeekday] = useState<Date | undefined>(undefined);
   const [big, setBig] = useState<Date | undefined>(() => new Date());
-  const [filled, setFilled] = useState<Date | undefined>(() => new Date());
   const [week, setWeek] = useState<Date | undefined>(() => new Date());
   const booked = useMemo(() => demoBookedDays(), []);
 
@@ -143,18 +135,16 @@ export default function CalendarDoc() {
 
       <DocSection title="Stacked months">
         <p className="text-site-body text-muted-foreground">
-          <code>orientation=&quot;vertical&quot;</code> stacks the months under one weekday row that stays while they scroll. <code>auto</code> picks this when 2 months don&apos;t fit side by side.
+          <code>orientation=&quot;vertical&quot;</code> stacks the months under one weekday row, which stays put when they scroll in a shorter box. <code>auto</code> picks this when 2 months don&apos;t fit side by side.
         </p>
         <ComponentPreview code={verticalCode}>
-          <div className="h-[360px] overflow-y-auto rounded-lg bg-background">
-            <Calendar
-              mode="range"
-              numberOfMonths={2}
-              orientation="vertical"
-              selected={stacked}
-              onSelect={setStacked}
-            />
-          </div>
+          <Calendar
+            mode="range"
+            numberOfMonths={2}
+            orientation="vertical"
+            selected={stacked}
+            onSelect={setStacked}
+          />
         </ComponentPreview>
       </DocSection>
 
@@ -185,15 +175,10 @@ export default function CalendarDoc() {
 
       <DocSection title="Cell size">
         <p className="text-site-body text-muted-foreground">
-          <code>cellSize</code> sets the cell in px. <code>fill</code> stretches the columns to the container.
+          <code>cellSize</code> sets the cell in px. Bigger cells add room around the numbers; the numbers keep their size.
         </p>
         <ComponentPreview code={sizeCode} minHeightClass="min-h-[420px]">
-          <div className="flex w-full flex-col items-center gap-8">
-            <Calendar cellSize={48} selected={big} onSelect={setBig} />
-            <div className="w-full max-w-[480px]">
-              <Calendar fill cellSize={44} selected={filled} onSelect={setFilled} />
-            </div>
-          </div>
+          <Calendar cellSize={48} selected={big} onSelect={setBig} />
         </ComponentPreview>
       </DocSection>
 

@@ -1080,7 +1080,7 @@ function DayButton({ day, modifiers, className, style, children, ...props }: Day
         // highlight's: cells only swap their number's color, faded over the
         // highlight's arrival so the number never shows on the wrong fill.
         cal.picking
-          ? "transition-[color] duration-100"
+          ? "transition-[color] duration-80"
           : "transition-[color,background-color,font-variation-settings] duration-80",
         cal.fill ? "aspect-square h-full max-w-full" : "size-[var(--cell-size)]",
         cal.pill ? "rounded-full" : "rounded-lg",

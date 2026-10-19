@@ -211,12 +211,12 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
           ]}
         />
       </PlayField>
-      <PlayField label="Trigger">
+      <PlayField label="Design">
         <PlaySelect
           value={state.variant}
           onChange={(v) => set("variant", v as PlayState["variant"])}
           options={[
-            { value: "field", label: "Field" },
+            { value: "field", label: "Outline" },
             { value: "ghost", label: "Ghost" },
           ]}
         />

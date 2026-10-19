@@ -119,7 +119,7 @@ No brand color: the palette stays neutral.
 
 ### 6.1 Trigger
 
-- Default: field trigger matching `Select` (height, radius, size scale, focus ring). Leading calendar icon from `useIcons()`, formatted value or placeholder, clear button once a value is set.
+- Default `variant="outline"`: trigger matching `Select` (height, radius, size scale, focus ring). Leading calendar icon from `useIcons()`, formatted value or placeholder, clear button once a value is set.
 - `variant="ghost"`: inline text look (Notion ref), fluid hover background like menu rows.
 - Labels (via `Intl`):
   - single: `Wed Oct 21`; `Wed Oct 21, 2027` when the year is not the current one.

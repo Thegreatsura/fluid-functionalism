@@ -28,7 +28,7 @@ type Time = "none" | "time" | "timeRange";
 
 interface PlayState {
   mode: "single" | "range";
-  variant: "field" | "ghost";
+  variant: "outline" | "ghost";
   time: Time;
   presets: boolean;
   months: "1" | "2";
@@ -44,7 +44,7 @@ interface PlayState {
 
 const DEFAULT_STATE: PlayState = {
   mode: "single",
-  variant: "field",
+  variant: "outline",
   time: "none",
   presets: false,
   months: "1",
@@ -100,7 +100,7 @@ export function buildDatePickerPlaygroundCode(o: PlayState): string {
     ...(o.months !== defaultMonths(o.mode) ? [`numberOfMonths={${o.months}}`] : []),
     ...(o.months === "2" && o.orientation !== "auto" ? [`orientation="${o.orientation}"`] : []),
     ...(calendarProps.length ? [`calendarProps={{ ${calendarProps.join(", ")} }}`] : []),
-    ...(o.variant === "field" && !o.clearable ? ["clearable={false}"] : []),
+    ...(o.variant === "outline" && !o.clearable ? ["clearable={false}"] : []),
     ...(o.disabled ? ["disabled"] : []),
     ...(o.size !== "site" ? [`size="${o.size}"`] : []),
   ];
@@ -139,7 +139,7 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
     const mode = pick(["single", "range"] as const);
     setState({
       mode,
-      variant: pick(["field", "ghost"] as const),
+      variant: pick(["outline", "ghost"] as const),
       time: pick(["none", "time", "timeRange"] as const),
       presets: Math.random() > 0.5,
       months: Math.random() > 0.7 ? (mode === "range" ? "1" : "2") : defaultMonths(mode),
@@ -216,7 +216,7 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
           value={state.variant}
           onChange={(v) => set("variant", v as PlayState["variant"])}
           options={[
-            { value: "field", label: "Outline" },
+            { value: "outline", label: "Outline" },
             { value: "ghost", label: "Ghost" },
           ]}
         />
@@ -248,7 +248,7 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
           value={state.clock}
           onChange={(v) => set("clock", v as PlayState["clock"])}
           options={[
-            { value: "locale", label: "Locale" },
+            { value: "locale", label: "Auto" },
             { value: "12", label: "12h" },
             { value: "24", label: "24h" },
           ]}
@@ -314,7 +314,7 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
       <Switch
         label="Clearable"
         checked={state.clearable}
-        disabled={state.variant !== "field"}
+        disabled={state.variant !== "outline"}
         onToggle={() => set("clearable", !state.clearable)}
         className={PLAY_SWITCH}
       />

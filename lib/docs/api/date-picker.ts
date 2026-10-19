@@ -21,8 +21,8 @@ export const datePickerProps: PropDef[] = [
   },
   {
     name: "variant",
-    type: '"field" | "ghost"',
-    default: '"field"',
+    type: '"outline" | "ghost"',
+    default: '"outline"',
     description: "A bordered field that matches Select, or inline text with a hover fill.",
   },
   {
@@ -65,7 +65,7 @@ export const datePickerProps: PropDef[] = [
   {
     name: "hourCycle",
     type: "12 | 24",
-    description: "Overrides the locale's clock.",
+    description: "Overrides the clock. Unset, it follows `locale` (or the browser's language): 12h for en-US, 24h for fr-FR.",
   },
   {
     name: "locale",
@@ -93,7 +93,7 @@ export const datePickerProps: PropDef[] = [
     name: "clearable",
     type: "boolean",
     default: "true",
-    description: "Field variant: a clear button once a value is set.",
+    description: "Outline variant: a clear button once a value is set.",
   },
   {
     name: "open / defaultOpen / onOpenChange",

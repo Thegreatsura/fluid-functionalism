@@ -857,8 +857,8 @@ type CalendarPassThrough = Omit<
 >;
 
 interface DatePickerBaseProps {
-  /** "field" matches Select; "ghost" is inline text with a hover fill. */
-  variant?: "field" | "ghost";
+  /** "outline" matches Select; "ghost" is inline text with a hover fill. */
+  variant?: "outline" | "ghost";
   /** Pins the trigger and popovers to one step of the size ladder. */
   size?: SizeVariant;
   placeholder?: string;
@@ -937,7 +937,7 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
   const {
     Popover,
     mode = "single",
-    variant = "field",
+    variant = "outline",
     size,
     placeholder,
     disabled,
@@ -1092,7 +1092,7 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
     [registerSegment]
   );
 
-  const field = variant === "field";
+  const field = variant === "outline";
   // Segments sit 2px inside the field (plus its 1px border); their corners
   // nest inside its radius: 8 - 3 = 5px rounded, 20 - 3 = 17px pill.
   const innerRadius = field

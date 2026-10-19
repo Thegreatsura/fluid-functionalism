@@ -734,7 +734,7 @@ const [value, setValue] = useState("");
   },
   "date-picker": {
     craft: [
-      "The field trigger matches Select: the control height, the shape's input radius, a 1px border, and the focus ring. Its parts (the date, each time, the clear button) sit 2px inside the border and share one fluid hover scope along `x`, with corners nested in the field's radius (5px rounded, 17px pill). `variant=\"ghost\"` drops the border for inline use.",
+      "The outline trigger (the default `variant`) matches Select: the control height, the shape's input radius, a 1px border, and the focus ring. Its parts (the date, each time, the clear button) sit 2px inside the border and share one fluid hover scope along `x`, with corners nested in the field's radius (5px rounded, 17px pill). `variant=\"ghost\"` drops the border for inline use.",
       "Labels come from `Intl`, no date library: `Wed Oct 21`, the year added outside the current one; ranges read `Oct 21 → Oct 24`. Times follow the locale's 12 or 24 hour clock unless `hourCycle` says otherwise.",
       "The date popover opens on the selected day (or today) with focus on it; Escape closes it and focus returns to the trigger. A single pick holds the popover 200ms so the fill is seen landing, then closes. A range closes once its end is picked, and only complete ranges reach `onValueChange`: the half-picked one lives in the picker, and closing mid-pick drops it.",
       "Escape mid-pick restores the previous range and keeps the popover open; the next Escape closes it. Range mode shows 2 months, side by side when the viewport has room, stacked and scrolling under one weekday row when it doesn't.",
@@ -766,7 +766,7 @@ export function EventWhen() {
       "mode: \"single\" | \"range\" (default \"single\"). One date, or a start and an end.",
       "value / defaultValue: Date | DateRange. A range reaches onValueChange only once both ends are set.",
       "onValueChange: (value) => void. Called on a pick, a complete range, or a clear.",
-      "variant: \"field\" | \"ghost\" (default \"field\"). A bordered field like Select, or inline text with a hover fill.",
+      "variant: \"outline\" | \"ghost\" (default \"outline\"). A bordered field like Select, or inline text with a hover fill.",
       "placeholder: string (default \"Pick a date\" / \"Pick dates\").",
       "presets: { label, range }[]. Range mode: ranges listed beside the calendar.",
       "time / defaultTime / onTimeChange: string | null. One \"HH:mm\" time on the same day.",
@@ -776,7 +776,7 @@ export function EventWhen() {
       "locale: string. BCP 47 locale for labels and times.",
       "numberOfMonths: 1 | 2 (default 1 single, 2 range). orientation: \"auto\" | \"horizontal\" | \"vertical\".",
       "calendarProps: Partial<CalendarProps>. booked, available, disabled, cellSize, showWeekNumber, weekStartsOn, locale.",
-      "clearable: boolean (default true). Field variant: clear button once a value is set.",
+      "clearable: boolean (default true). Outline variant: clear button once a value is set.",
       "open / defaultOpen / onOpenChange: the date popover. disabled: boolean. size: \"default\" | \"compact\".",
     ],
   },

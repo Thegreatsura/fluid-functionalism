@@ -179,6 +179,8 @@ interface GridContextValue {
   /** Side by side months: how far one month travels on a month change (its
    *  width plus the gap), so the grids move as one strip. Null otherwise. */
   stride: number | null;
+  /** Two months stacked: the slide and the chevrons go up and down. */
+  stacked: boolean;
   /** The day a range end was just committed on: it takes the gliding
    *  highlight's fill in the same frame, with no fade. */
   committedEnd: number | null;
@@ -220,16 +222,18 @@ const INDEX_ATTR = "data-calendar-index";
  * strip sliding under the clip. `custom` is the direction of travel, read
  * from AnimatePresence so an exiting panel always gets the latest one.
  */
-function slideVariants(offset: number, stride: number | null) {
+function slideVariants(offset: number, stride: number | null, axis: "x" | "y" = "x") {
   const carousel = stride !== null && offset > 0;
   const distance = carousel ? stride : offset;
   const exitTransition = carousel ? spring.moderate : spring.moderate.exit;
+  // Stacked months travel up and down, like the layout they sit in.
+  const at = (v: number) => (axis === "x" ? { x: v } : { y: v });
   return {
-    enter: (d: number) => ({ opacity: carousel ? 1 : 0, x: d * distance }),
-    center: { opacity: 1, x: 0, transition: spring.moderate },
+    enter: (d: number) => ({ opacity: carousel ? 1 : 0, ...at(d * distance) }),
+    center: { opacity: 1, x: 0, y: 0, transition: spring.moderate },
     exit: (d: number) => ({
       opacity: carousel ? 1 : 0,
-      x: -d * distance,
+      ...at(-d * distance),
       transition: exitTransition,
     }),
   };
@@ -404,6 +408,8 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
     return () => clearTimeout(id);
   }, [committedEnd, clearCommittedEnd]);
 
+  const stacked = cal.numberOfMonths > 1 && cal.orientation === "vertical";
+
   const gridCtx = useMemo(
     () => ({
       registerItem,
@@ -413,6 +419,7 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
       direction,
       reduceMotion,
       stride,
+      stacked,
       committedEnd,
     }),
     // band is rebuilt each render; compare its parts.
@@ -426,6 +433,7 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
       direction,
       reduceMotion,
       stride,
+      stacked,
       committedEnd,
     ]
   );
@@ -574,6 +582,7 @@ function Month({ calendarMonth, displayIndex, className, style, children, ...pro
 }
 
 function NavButton({ direction }: { direction: "previous" | "next" }) {
+  const cal = useCalendarContext();
   const { previousMonth, nextMonth, goToMonth, labels, dayPickerProps } = useDayPicker();
   const icons = useIcons();
   const Chevron = icons["chevron-right"];
@@ -584,6 +593,8 @@ function NavButton({ direction }: { direction: "previous" | "next" }) {
       : labels.labelNext(nextMonth);
   const tooltip = direction === "previous" ? "Previous month" : "Next month";
   const flip = (direction === "previous") !== (dayPickerProps.dir === "rtl");
+  // Stacked months page up and down, so the chevrons point that way.
+  const stacked = cal.numberOfMonths > 1 && cal.orientation === "vertical";
   return (
     <Tooltip content={tooltip}>
       <Button
@@ -604,7 +615,12 @@ function NavButton({ direction }: { direction: "previous" | "next" }) {
         // hover fill stays off; the press feedback is kept.
         className="relative z-[1] !size-[calc(var(--cell-size)*0.78)] group-hover:[&>span:first-child]:!bg-transparent group-hover:[&>span:first-child]:!shadow-none"
       >
-        <Chevron size={16} className={cn(flip && "rotate-180")} />
+        <Chevron
+          size={16}
+          className={cn(
+            stacked ? (direction === "previous" ? "-rotate-90" : "rotate-90") : flip && "rotate-180"
+          )}
+        />
       </Button>
     </Tooltip>
   );
@@ -675,7 +691,7 @@ function CaptionText({
   children: ReactNode;
 }) {
   const present = useIsPresent();
-  const { direction } = useGridContext();
+  const { direction, stacked } = useGridContext();
   const shownElsewhere = useShownElsewhere(monthTime, present, stride);
   return (
     <motion.span
@@ -688,7 +704,7 @@ function CaptionText({
         typeClass("body", compact ? "compact" : "default")
       )}
       style={{ fontVariationSettings: fontWeights.semibold }}
-      variants={slideVariants(offset, stride)}
+      variants={slideVariants(offset, stride, stacked ? "y" : "x")}
       custom={direction}
       initial="enter"
       animate="center"
@@ -959,7 +975,7 @@ function WeeksPanel({
   onHeight: (h: number) => void;
 }) {
   const present = useIsPresent();
-  const { direction } = useGridContext();
+  const { direction, stacked } = useGridContext();
   const shownElsewhere = useShownElsewhere(monthTime, present, stride);
   const ref = useRef<HTMLDivElement>(null);
   useIsoLayoutEffect(() => {
@@ -984,7 +1000,7 @@ function WeeksPanel({
           className
         )}
         style={style}
-        variants={slideVariants(offset, stride)}
+        variants={slideVariants(offset, stride, stacked ? "y" : "x")}
         custom={direction}
         initial="enter"
         animate="center"

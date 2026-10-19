@@ -175,36 +175,88 @@ export function nearestSlotIndex(slots: TimeSlot[], minutes: number): number {
 // Date labels (exported for the unit tests)
 // ---------------------------------------------------------------------------
 
-/** `Wed Oct 21`, or `Wed Oct 21, 2027` outside the current year. */
-export function formatDateLabel(date: Date, locale?: string, now = new Date()): string {
-  const withYear = date.getFullYear() !== now.getFullYear();
-  const parts = new Intl.DateTimeFormat(locale, {
+interface LabelPart {
+  type: Intl.DateTimeFormatPartTypes;
+  value: string;
+}
+
+function singleLabelOptions(withYear: boolean): Intl.DateTimeFormatOptions {
+  return {
     weekday: "short",
     month: "short",
     day: "numeric",
     ...(withYear ? { year: "numeric" } : {}),
-  }).formatToParts(date);
-  return parts
-    .map((part, i) =>
+  };
+}
+
+function rangeLabelOptions(withYear: boolean): Intl.DateTimeFormatOptions {
+  return { month: "short", day: "numeric", ...(withYear ? { year: "numeric" } : {}) };
+}
+
+/** A date's label as parts, in the locale's order. */
+function labelParts(date: Date, locale: string | undefined, options: Intl.DateTimeFormatOptions) {
+  const parts = new Intl.DateTimeFormat(locale, options).formatToParts(date);
+  return parts.map(
+    (part, i): LabelPart =>
       // Drop the comma English puts after the weekday: "Wed Oct 21".
-      part.type === "literal" && parts[i - 1]?.type === "weekday" ? part.value.replace(",", "") : part.value
-    )
+      part.type === "literal" && parts[i - 1]?.type === "weekday"
+        ? { type: part.type, value: part.value.replace(",", "") }
+        : { type: part.type, value: part.value }
+  );
+}
+
+/** `Wed Oct 21`, or `Wed Oct 21, 2027` outside the current year. */
+export function formatDateLabel(date: Date, locale?: string, now = new Date()): string {
+  const withYear = date.getFullYear() !== now.getFullYear();
+  return labelParts(date, locale, singleLabelOptions(withYear))
+    .map((part) => part.value)
     .join("");
 }
 
 /** `Oct 21 → Oct 24`, with years when the range leaves the current year. */
 export function formatRangeLabel(range: DateRange, locale?: string, now = new Date()): string {
   if (!range.from) return "";
-  const year = now.getFullYear();
-  const withYear =
-    range.from.getFullYear() !== year || (!!range.to && range.to.getFullYear() !== year);
-  const fmt = new Intl.DateTimeFormat(locale, {
-    month: "short",
-    day: "numeric",
-    ...(withYear ? { year: "numeric" } : {}),
-  });
+  const withYear = rangeWithYear(range, now);
+  const fmt = new Intl.DateTimeFormat(locale, rangeLabelOptions(withYear));
   if (!range.to) return `${fmt.format(range.from)} →`;
   return `${fmt.format(range.from)} → ${fmt.format(range.to)}`;
+}
+
+function rangeWithYear(range: DateRange, now: Date) {
+  const year = now.getFullYear();
+  return (
+    (!!range.from && range.from.getFullYear() !== year) ||
+    (!!range.to && range.to.getFullYear() !== year)
+  );
+}
+
+/**
+ * The label's widest form, part by part: every weekday name stacked in one
+ * cell, every month name in another, a two-digit day, the rest as written.
+ * Laid out invisibly under the label, it fixes the trigger's width for any
+ * date in that format, in any locale and font. Exported for the unit test.
+ */
+export function widestLabelParts(
+  sample: LabelPart[],
+  locale: string | undefined,
+  options: Intl.DateTimeFormatOptions
+): string[][] {
+  const fmt = new Intl.DateTimeFormat(locale, options);
+  const pick = (date: Date, type: Intl.DateTimeFormatPartTypes) =>
+    fmt.formatToParts(date).find((part) => part.type === type)?.value ?? "";
+  const weekdays = Array.from({ length: 7 }, (_, i) => pick(new Date(2026, 0, 4 + i), "weekday"));
+  const months = Array.from({ length: 12 }, (_, m) => pick(new Date(2026, m, 28), "month"));
+  // Digits are tabular in the label, so any two-digit day is the widest.
+  const day = [pick(new Date(2026, 0, 28), "day")];
+  return sample.map((part) =>
+    part.type === "weekday"
+      ? [...new Set(weekdays)]
+      : part.type === "month"
+        ? [...new Set(months)]
+        : part.type === "day"
+          ? day
+          : [part.value]
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -994,6 +1046,36 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
         ? formatDateLabel(single, locale)
         : (placeholder ?? "Pick a date");
 
+  // The date keeps the width of its widest possible label (and of the
+  // placeholder), so picking Oct 1 or Oct 31 never moves what follows.
+  const year = now.getFullYear();
+  const singleTime = single?.getTime();
+  const fromTime = range?.from?.getTime();
+  const toTime = range?.to?.getTime();
+  const labelSizer = useMemo(() => {
+    if (mode === "range") {
+      const from = fromTime !== undefined ? new Date(fromTime) : new Date(year, 0, 1);
+      const to = toTime !== undefined ? new Date(toTime) : from;
+      const options = rangeLabelOptions(
+        rangeWithYear(
+          { from: fromTime !== undefined ? from : undefined, to: toTime !== undefined ? to : undefined },
+          new Date(year, 0, 1)
+        )
+      );
+      const sample: LabelPart[] = [
+        ...labelParts(from, locale, options),
+        { type: "literal", value: " → " },
+        ...labelParts(to, locale, options),
+      ];
+      return widestLabelParts(sample, locale, options);
+    }
+    const date = singleTime !== undefined ? new Date(singleTime) : new Date(year, 0, 1);
+    const options = singleLabelOptions(date.getFullYear() !== year);
+    return widestLabelParts(labelParts(date, locale, options), locale, options);
+  }, [mode, fromTime, toTime, singleTime, year, locale]);
+  const labelPlaceholder =
+    placeholder ?? (mode === "range" ? "Pick dates" : "Pick a date");
+
   // Segment hover scope: date, time(s), clear.
   const segmentsRef = useRef<HTMLDivElement>(null);
   const segmentHover = useFluidHover(segmentsRef, { axis: "x", gapClick: false });
@@ -1049,7 +1131,35 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
           className="shrink-0 text-muted-foreground"
         />
       )}
-      <span className="[text-box:trim-both_cap_alphabetic]">{dateLabel}</span>
+      <span className="inline-grid tabular-nums">
+        <span className="col-start-1 row-start-1 [text-box:trim-both_cap_alphabetic]">
+          {dateLabel}
+        </span>
+        <span
+          aria-hidden
+          className="invisible col-start-1 row-start-1 inline-flex whitespace-pre"
+        >
+          {labelSizer.map((options, i) => (
+            <span key={i} className="inline-grid">
+              {options.map((option) => (
+                <span
+                  key={option}
+                  // Trimmed per part: text-box trim skips flex containers.
+                  className="col-start-1 row-start-1 [text-box:trim-both_cap_alphabetic]"
+                >
+                  {option}
+                </span>
+              ))}
+            </span>
+          ))}
+        </span>
+        <span
+          aria-hidden
+          className="invisible col-start-1 row-start-1 whitespace-pre [text-box:trim-both_cap_alphabetic]"
+        >
+          {labelPlaceholder}
+        </span>
+      </span>
     </button>
   );
 

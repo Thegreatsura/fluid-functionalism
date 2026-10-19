@@ -22,6 +22,7 @@ import {
   resolveHourCycle,
   shiftEnd,
   timeToMinutes,
+  widestLabelParts,
 } from "@/registry/default/date-picker-core";
 
 afterEach(cleanup);
@@ -132,6 +133,27 @@ describe("12h and 24h", () => {
     expect(formatTime(810, 24, "en-US")).toBe("13:30");
     expect(plain(formatTime(690, 12, "en-US"))).toBe("11:30 AM");
     expect(plain(formatTime(0, 12, "en-US"))).toBe("12:00 AM");
+  });
+});
+
+describe("date label width", () => {
+  it("stacks every weekday and month so any date fits the same width", () => {
+    const options = { weekday: "short", month: "short", day: "numeric" } as const;
+    const sample = [
+      { type: "weekday", value: "Thu" },
+      { type: "literal", value: " " },
+      { type: "month", value: "Oct" },
+      { type: "literal", value: " " },
+      { type: "day", value: "1" },
+    ] as const;
+    const cells = widestLabelParts([...sample], "en-US", options);
+    expect(cells).toHaveLength(5);
+    expect(cells[0]).toHaveLength(7);
+    expect(cells[0]).toContain("Wed");
+    expect(cells[2]).toHaveLength(12);
+    expect(cells[2]).toContain("Sep");
+    expect(cells[4]).toEqual(["28"]);
+    expect(cells[1]).toEqual([" "]);
   });
 });
 

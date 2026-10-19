@@ -238,6 +238,30 @@ function slideVariants(offset: number, stride: number | null, axis: "x" | "y" = 
     }),
   };
 }
+/**
+ * The stacked strip's mask, the scroll-fade recipe twice over: content fades
+ * out over 16px under the sticky weekday row, and a soft hole sits where the
+ * chevrons float (16px fade on its left, 8px at the bottom of the caption
+ * row, which it never passes), so a month sliding up
+ * goes under both instead of showing through. The hole is the left-fade and
+ * bottom-fade gradients intersected, subtracted from the top fade.
+ */
+const STACKED_NAV_WIDTH = "calc(var(--cell-size) * 1.56 + 4px)";
+const stackedStripMask: CSSProperties = (() => {
+  const fade = "linear-gradient(to bottom, transparent var(--strip-clip-top), #000 calc(var(--strip-clip-top) + 16px))";
+  const holeLeft = "linear-gradient(to left, #000 calc(100% - 16px), transparent)";
+  const holeBottom = "linear-gradient(to bottom, #000 calc(100% - 8px), transparent)";
+  // The caption row and its 4px margin: the first week below stays whole.
+  const holeSize = `calc(${STACKED_NAV_WIDTH} + 16px) calc(var(--cell-size) + 4px)`;
+  return {
+    maskImage: `${fade}, ${holeLeft}, ${holeBottom}`,
+    maskSize: `100% 100%, ${holeSize}, ${holeSize}`,
+    maskPosition: "0 0, right 4px top 0, right 4px top 0",
+    maskRepeat: "no-repeat",
+    maskComposite: "subtract, intersect",
+  };
+})();
+
 /** Parts the pointer passes over without lighting a day (captions, the
  *  weekday row, week numbers, booked days). */
 const INERT_ATTR = "data-calendar-inert";
@@ -597,16 +621,34 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
           <span className="sr-only">{labels.labelWeekNumberHeader?.()}</span>
         </div>
       )}
+      {vertical && !cal.navHidden && (
+        // Stacked, the chevrons float over the first caption row, outside the
+        // masked strip (whose hole fades the sliding months under them).
+        <div
+          {...{ [INERT_ATTR]: "" }}
+          className="absolute right-0 z-[5] flex h-[var(--cell-size)] items-center"
+          style={{ top: "calc(var(--cell-size) * 0.8 + 16px)" }}
+        >
+          <NavGroup buttons={["previous", "next"]} />
+        </div>
+      )}
       <GridContext.Provider value={gridCtx}>
         {vertical ? (
           // Stacked, the strip's clip starts under the weekday row, so a
           // month sliding up leaves at its edge instead of passing behind it.
           <div
             ref={stripRef}
-            className="flex flex-col gap-4 [clip-path:inset(var(--strip-clip-top,0px)_-4px_-8px_-4px)]"
-            // Seeded here; the effect above keeps it on the weekday row's edge
-            // (React leaves it alone while this seed doesn't change).
-            style={{ "--strip-clip-top": "0px" } as CSSProperties}
+            // The box reaches 4px past the sides and 8px past the bottom
+            // (margins undone by padding), so the mask never cuts a focus ring.
+            className="-mx-1 -mb-2 flex flex-col gap-4 px-1 pb-2"
+            style={
+              {
+                // Seeded here; the effect above keeps it on the weekday row's
+                // edge (React leaves it alone while this seed doesn't change).
+                "--strip-clip-top": "0px",
+                ...stackedStripMask,
+              } as CSSProperties
+            }
           >
             {overlays}
             {children}
@@ -798,7 +840,8 @@ function MonthCaption({ calendarMonth, displayIndex, className, style, ...props 
   // the first caption. Side by side: captions centered, previous at the far
   // left, next at the far right.
   const navStart: ("previous" | "next")[] = !hideNav && twoUp && first ? ["previous"] : [];
-  const navEnd: ("previous" | "next")[] = hideNav
+  const stackedLayout = cal.numberOfMonths > 1 && cal.orientation === "vertical";
+  const navEnd: ("previous" | "next")[] = hideNav || stackedLayout
     ? []
     : twoUp
       ? last
@@ -838,6 +881,10 @@ function MonthCaption({ calendarMonth, displayIndex, className, style, ...props 
       className={cn(
         "relative flex h-[var(--cell-size)] items-center gap-1",
         twoUp ? "justify-center" : "justify-between pl-2",
+        // With week numbers, the title belongs to the days: it starts at the
+        // Monday column (centered over the 7 days, side by side).
+        cal.showWeekNumber &&
+          (twoUp ? "pl-[var(--cell-size)]" : "pl-[calc(var(--cell-size)+0.5rem)]"),
         "mb-1",
         className
       )}

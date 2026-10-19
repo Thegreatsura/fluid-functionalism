@@ -35,10 +35,14 @@ export function routeKeyboardOnMouseDown(
 ) {
   if (!scope) return;
   const target = e.target as HTMLElement;
-  // React bubbles events out of portals: a press inside a popup opened from
-  // the demo (a time list, a menu) isn't a click on this region's empty space.
-  if (!scope.contains(target)) return;
   if (target.closest(FOCUSABLE_SELECTOR)) return; // let the element focus itself
+  // React bubbles events out of portals: a press on a popup opened from the
+  // demo (a time list, a menu) isn't a click on this region's empty space.
+  // Keep focus where it is (the field driving the popup), and move nothing.
+  if (!scope.contains(target)) {
+    e.preventDefault();
+    return;
+  }
   e.preventDefault(); // don't blur to <body> on an empty-space click
   const region = fallback ?? scope;
   const active = document.activeElement as HTMLElement | null;

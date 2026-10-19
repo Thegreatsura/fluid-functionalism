@@ -363,17 +363,17 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
   // upper one share a path, as side by side. Measured on the layout a change
   // starts from: the arriving month starts exactly where it was shown.
   const twoUp = cal.numberOfMonths > 1 && cal.orientation === "horizontal";
-  const twoStacked = cal.numberOfMonths > 1 && cal.orientation === "vertical";
+  const stacked = cal.numberOfMonths > 1 && cal.orientation === "vertical";
   const [stride, setStride] = useState<number | null>(null);
   useIsoLayoutEffect(() => {
     const container = containerRef.current;
-    if ((!twoUp && !twoStacked) || !container) {
+    if ((!twoUp && !stacked) || !container) {
       setStride(null);
       return;
     }
     const months = container.querySelectorAll<HTMLElement>('[data-slot="calendar-month"]');
     const [first, second] = [months[0], months[1]];
-    if (!first || (twoStacked && !second)) return;
+    if (!first || (stacked && !second)) return;
     const measure = () =>
       setStride(twoUp ? first.offsetWidth + MONTH_GAP : second.offsetTop - first.offsetTop);
     measure();
@@ -382,7 +382,7 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
     ro.observe(first);
     if (second) ro.observe(second);
     return () => ro.disconnect();
-  }, [twoUp, twoStacked]);
+  }, [twoUp, stacked]);
 
   // While a range end is being picked, the band follows the lit day.
   const previewDate =
@@ -440,8 +440,6 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
     return () => clearTimeout(id);
   }, [committedEnd, clearCommittedEnd]);
 
-  const stacked = cal.numberOfMonths > 1 && cal.orientation === "vertical";
-
   // The weekday row sticks while stacked months scroll, so the strip's clip
   // follows its bottom edge: a month sliding up leaves there, never behind it.
   const weekdayRowRef = useRef<HTMLDivElement>(null);
@@ -450,15 +448,24 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
     const row = weekdayRowRef.current;
     const strip = stripRef.current;
     if (!stacked || !row || !strip) return;
-    const update = () => {
-      const top = Math.max(0, row.getBoundingClientRect().bottom - strip.getBoundingClientRect().top);
+    // Not clamped: at rest the row's edge sits above the strip (negative),
+    // so the fade happens in the gap and the first title stays whole.
+    const measure = () => {
+      frame = 0;
+      const top = row.getBoundingClientRect().bottom - strip.getBoundingClientRect().top;
       strip.style.setProperty("--strip-clip-top", `${top}px`);
     };
-    update();
+    // One read per frame, however many scroll events land in it.
+    let frame = 0;
+    const update = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    measure();
     // Capture catches whichever ancestor scrolls (a popover, a demo, the page).
     window.addEventListener("scroll", update, { capture: true, passive: true });
     window.addEventListener("resize", update);
     return () => {
+      cancelAnimationFrame(frame);
       window.removeEventListener("scroll", update, { capture: true });
       window.removeEventListener("resize", update);
     };
@@ -495,7 +502,6 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
   const focusRect: ItemRect | null =
     isMeasured && focusedIndex !== null ? (itemRects[focusedIndex] ?? null) : null;
   const cellRadius = cal.pill ? "rounded-full" : shape.bg;
-  const vertical = cal.numberOfMonths > 1 && cal.orientation === "vertical";
 
   // The hover highlight, its inner ring over filled days, and the focus
   // ring. Positioned against the months container either way: the stacked
@@ -575,7 +581,7 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
       data-orientation={cal.numberOfMonths > 1 ? cal.orientation : undefined}
       className={cn(
         "relative isolate flex",
-        vertical ? "flex-col gap-4" : "flex-row flex-wrap gap-x-6 gap-y-4",
+        stacked ? "flex-col gap-4" : "flex-row flex-wrap gap-x-6 gap-y-4",
         // Side by side, the month strip slides under this clip; it reaches
         // 4px past the sides and 8px past the ends so the focus ring and the
         // highlight are never cut. Stacked months clip below the weekday row.
@@ -604,8 +610,8 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
     >
       {/* Stacked, these draw inside the clipped strip (its clip makes its own
           stacking layer), so the numbers stay above the solid preview end. */}
-      {!vertical && overlays}
-      {vertical && months[0] && (
+      {!stacked && overlays}
+      {stacked && months[0] && (
         <div
           ref={weekdayRowRef}
           aria-hidden
@@ -621,7 +627,7 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
           <span className="sr-only">{labels.labelWeekNumberHeader?.()}</span>
         </div>
       )}
-      {vertical && !cal.navHidden && (
+      {stacked && !cal.navHidden && (
         // Stacked, the chevrons float over the first caption row, outside the
         // masked strip (whose hole fades the sliding months under them).
         <div
@@ -633,7 +639,7 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
         </div>
       )}
       <GridContext.Provider value={gridCtx}>
-        {vertical ? (
+        {stacked ? (
           // Stacked, the strip's clip starts under the weekday row, so a
           // month sliding up leaves at its edge instead of passing behind it.
           <div

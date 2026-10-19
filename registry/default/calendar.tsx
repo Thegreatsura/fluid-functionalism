@@ -473,6 +473,77 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
   const cellRadius = cal.pill ? "rounded-full" : shape.bg;
   const vertical = cal.numberOfMonths > 1 && cal.orientation === "vertical";
 
+  // The hover highlight, its inner ring over filled days, and the focus
+  // ring. Positioned against the months container either way: the stacked
+  // strip isn't a containing block, only a stacking layer.
+  const overlays = (
+    <>
+        <FluidHoverHighlight
+          hover={hover}
+          className={cn(
+            "z-[1]",
+            cellRadius,
+            // Picking a range end, the highlight is the proposed end: the solid
+            // fill and its inset ring (1px in, radius concentric with the
+            // cell's) glide to the pointer like the single-select highlight
+            // instead of jumping from cell to cell.
+            previewGlides &&
+              cn(
+                "bg-foreground before:pointer-events-none before:absolute before:inset-px before:border before:border-background",
+                cal.pill ? "before:rounded-full" : "before:rounded-[7px]"
+              )
+          )}
+          transition={snap ? false : undefined}
+        />
+        {/* The highlight sits under a filled start or end, so it brings an
+            inner ring on top: the end ring's geometry (1px in, concentric
+            radius) at 40%, gliding on the same rect and spring, shown only
+            while the lit day is filled. Picking an end, the highlight already
+            is the solid end with its ring, so this one stays out. */}
+        <FluidHoverHighlight
+          hover={hover}
+          className={cn(
+            "z-[3] bg-transparent",
+            cellRadius,
+            "before:pointer-events-none before:absolute before:inset-px before:border before:border-background before:transition-opacity before:duration-80",
+            cal.pill ? "before:rounded-full" : "before:rounded-[7px]",
+            litFilled && !previewGlides ? "before:opacity-40" : "before:opacity-0"
+          )}
+          transition={snap ? false : undefined}
+        />
+        <AnimatePresence>
+          {focusRect && (
+            <motion.div
+              data-slot="calendar-focus-ring"
+              className={cn(
+                "pointer-events-none absolute left-0 top-0 z-[3] border border-[color:var(--focus-ring,#6B97FF)]",
+                cal.pill ? "rounded-full" : shape.focusRing
+              )}
+              initial={{
+                opacity: 0,
+                x: focusRect.left - 2,
+                y: focusRect.top - 2,
+                width: focusRect.width + 4,
+                height: focusRect.height + 4,
+              }}
+              animate={{
+                opacity: 1,
+                x: focusRect.left - 2,
+                y: focusRect.top - 2,
+                width: focusRect.width + 4,
+                height: focusRect.height + 4,
+              }}
+              exit={{ opacity: 0, transition: spring.fast.exit }}
+              transition={{
+                ...(snap || reduceMotion ? { duration: 0 } : spring.fast),
+                opacity: { duration: 0.08 },
+              }}
+            />
+          )}
+        </AnimatePresence>
+    </>
+  );
+
   return (
     <div
       ref={containerRef}
@@ -507,69 +578,9 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
       onBlur={handleBlur}
       {...props}
     >
-      <FluidHoverHighlight
-        hover={hover}
-        className={cn(
-          "z-[1]",
-          cellRadius,
-          // Picking a range end, the highlight is the proposed end: the solid
-          // fill and its inset ring (1px in, radius concentric with the
-          // cell's) glide to the pointer like the single-select highlight
-          // instead of jumping from cell to cell.
-          previewGlides &&
-            cn(
-              "bg-foreground before:pointer-events-none before:absolute before:inset-px before:border before:border-background",
-              cal.pill ? "before:rounded-full" : "before:rounded-[7px]"
-            )
-        )}
-        transition={snap ? false : undefined}
-      />
-      {/* The highlight sits under a filled start or end, so it brings an
-          inner ring on top: the end ring's geometry (1px in, concentric
-          radius) at 40%, gliding on the same rect and spring, shown only
-          while the lit day is filled. Picking an end, the highlight already
-          is the solid end with its ring, so this one stays out. */}
-      <FluidHoverHighlight
-        hover={hover}
-        className={cn(
-          "z-[3] bg-transparent",
-          cellRadius,
-          "before:pointer-events-none before:absolute before:inset-px before:border before:border-background before:transition-opacity before:duration-80",
-          cal.pill ? "before:rounded-full" : "before:rounded-[7px]",
-          litFilled && !previewGlides ? "before:opacity-40" : "before:opacity-0"
-        )}
-        transition={snap ? false : undefined}
-      />
-      <AnimatePresence>
-        {focusRect && (
-          <motion.div
-            data-slot="calendar-focus-ring"
-            className={cn(
-              "pointer-events-none absolute left-0 top-0 z-[3] border border-[color:var(--focus-ring,#6B97FF)]",
-              cal.pill ? "rounded-full" : shape.focusRing
-            )}
-            initial={{
-              opacity: 0,
-              x: focusRect.left - 2,
-              y: focusRect.top - 2,
-              width: focusRect.width + 4,
-              height: focusRect.height + 4,
-            }}
-            animate={{
-              opacity: 1,
-              x: focusRect.left - 2,
-              y: focusRect.top - 2,
-              width: focusRect.width + 4,
-              height: focusRect.height + 4,
-            }}
-            exit={{ opacity: 0, transition: spring.fast.exit }}
-            transition={{
-              ...(snap || reduceMotion ? { duration: 0 } : spring.fast),
-              opacity: { duration: 0.08 },
-            }}
-          />
-        )}
-      </AnimatePresence>
+      {/* Stacked, these draw inside the clipped strip (its clip makes its own
+          stacking layer), so the numbers stay above the solid preview end. */}
+      {!vertical && overlays}
       {vertical && months[0] && (
         <div
           ref={weekdayRowRef}
@@ -597,6 +608,7 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
             // (React leaves it alone while this seed doesn't change).
             style={{ "--strip-clip-top": "0px" } as CSSProperties}
           >
+            {overlays}
             {children}
           </div>
         ) : (
@@ -746,7 +758,11 @@ function CaptionText({
       aria-live={present ? "polite" : undefined}
       aria-hidden={present ? undefined : true}
       className={cn(
-        "col-start-1 row-start-1 justify-self-center whitespace-nowrap text-foreground [text-box:trim-both_cap_alphabetic]",
+        "col-start-1 row-start-1 whitespace-nowrap text-foreground [text-box:trim-both_cap_alphabetic]",
+        // Centered side by side, where captions are; left everywhere else, so
+        // a shorter title doesn't sit centered in the cell while the longer
+        // one leaves, then jump left when the cell shrinks.
+        stride !== null && !stacked ? "justify-self-center" : "justify-self-start",
         shownElsewhere && "invisible",
         typeClass("body", compact ? "compact" : "default")
       )}

@@ -5,7 +5,7 @@
  * 8601, and Escape during a range pick puts the previous range back.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { dateMatchModifiers } from "@daypicker/react";
 import {
@@ -147,6 +147,29 @@ describe("range", () => {
     const range = onChange.mock.lastCall?.[0] as DateRange;
     expect(dayNumber(range.from!)).toBe(dayNumber(new Date(2026, 10, 15)));
     expect(range.to).toBeUndefined();
+  });
+
+  it("plays the inner ring out on the day that commits the range end", () => {
+    render(<Range />);
+    fireEvent.click(dayButton(/November 9th, 2026/));
+    const end = dayButton(/November 13th, 2026/);
+    // Focus proposes the end, as the pointer would.
+    act(() => end.focus());
+    expect(end.querySelector("[data-slot=calendar-commit-ring]")).toBeNull();
+    fireEvent.click(end);
+    expect(end.querySelector("[data-slot=calendar-commit-ring]")).not.toBeNull();
+    expect(dayButton(/November 9th, 2026/).querySelector("[data-slot=calendar-commit-ring]")).toBeNull();
+  });
+
+  it("plays no ring when Escape cancels the pick", () => {
+    const initial = { from: new Date(2026, 10, 2), to: new Date(2026, 10, 4) };
+    render(<Range initial={initial} />);
+    const start = dayButton(/November 20th, 2026/);
+    fireEvent.click(start);
+    const end = dayButton(/November 24th, 2026/);
+    act(() => end.focus());
+    fireEvent.keyDown(end, { key: "Escape" });
+    expect(document.querySelector("[data-slot=calendar-commit-ring]")).toBeNull();
   });
 
   it("puts the previous range back on Escape before the end is picked", () => {

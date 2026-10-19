@@ -179,7 +179,8 @@ interface GridContextValue {
   /** Side by side months: how far one month travels on a month change (its
    *  width plus the gap), so the grids move as one strip. Null otherwise. */
   stride: number | null;
-  /** The day a range end was just committed on: its inner ring plays out. */
+  /** The day a range end was just committed on: it takes the gliding
+   *  highlight's fill in the same frame, with no fade. */
   committedEnd: number | null;
 }
 
@@ -373,11 +374,19 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
 
   const previewGlides =
     previewEnd !== null && !!cal.range?.from && previewEnd !== dayNumber(cal.range.from);
+  // Whether the lit day is a filled one (the selected day, or a range end).
+  const litDay = activeIndex !== null ? gridStart + activeIndex : null;
+  const litFilled =
+    litDay !== null &&
+    (cal.mode === "single"
+      ? cal.selectedDay === litDay
+      : (!!cal.range?.from && dayNumber(cal.range.from) === litDay) ||
+        (!!cal.range?.to && !cal.picking && dayNumber(cal.range.to) === litDay));
 
-  // The pick that commits a range end hands the gliding ring to the chosen
-  // day, which plays it out. Tracked during render: the last proposed end is
-  // the day that was clicked (or entered) when picking stops on a range
-  // whose ends include it; Escape restores another range and plays nothing.
+  // The pick that commits a range end hands the gliding fill to the chosen
+  // day, which must take it in the same frame. Tracked during render: the
+  // last proposed end is the day that was clicked (or entered) when picking
+  // stops on a range whose ends include it; Escape restores another range.
   const [pickTrack, setPickTrack] = useState({ picking: cal.picking, end: previewEnd });
   const [committedEnd, setCommittedEnd] = useState<number | null>(null);
   if (pickTrack.picking !== cal.picking || (cal.picking && pickTrack.end !== previewEnd)) {
@@ -388,7 +397,7 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
     setPickTrack({ picking: cal.picking, end: cal.picking ? previewEnd : null });
   }
   const clearCommittedEnd = useCallback(() => setCommittedEnd(null), []);
-  // The ring unmounts once its exit has run, on the shared fallback timer.
+  // The cell's usual color fades come back after the moment has passed.
   useEffect(() => {
     if (committedEnd === null) return;
     const id = setTimeout(clearCommittedEnd, exitFallbackMs(spring.moderate));
@@ -474,6 +483,22 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
               "bg-foreground before:pointer-events-none before:absolute before:inset-px before:border before:border-background",
               cal.pill ? "before:rounded-full" : "before:rounded-[7px]"
             )
+        )}
+        transition={snap ? false : undefined}
+      />
+      {/* The highlight sits under a filled start or end, so it brings an
+          inner ring on top: the end ring's geometry (1px in, concentric
+          radius) at 40%, gliding on the same rect and spring, shown only
+          while the lit day is filled. Picking an end, the highlight already
+          is the solid end with its ring, so this one stays out. */}
+      <FluidHoverHighlight
+        hover={hover}
+        className={cn(
+          "z-[3] bg-transparent",
+          cellRadius,
+          "before:pointer-events-none before:absolute before:inset-px before:border before:border-background before:transition-opacity before:duration-80",
+          cal.pill ? "before:rounded-full" : "before:rounded-[7px]",
+          litFilled && !previewGlides ? "before:opacity-40" : "before:opacity-0"
         )}
         transition={snap ? false : undefined}
       />
@@ -1148,27 +1173,6 @@ function DayButton({ day, modifiers, className, style, children, ...props }: Day
         fontVariationSettings: modifiers.today ? fontWeights.semibold : fontWeights.normal,
       }}
     >
-      {/* Its own presence: the month panel's initial={false} would
-          otherwise start the ring at its end frame. */}
-      <AnimatePresence>
-        {grid.committedEnd === n && (
-          // The proposed end's inner ring, handed over on the click that
-          // commits it: it scales out past the cell edge and fades, like a
-          // short ripple. Reduced motion keeps the fade only.
-          <motion.span
-            aria-hidden
-            data-slot="calendar-commit-ring"
-            className={cn(
-              "pointer-events-none absolute inset-px border border-background",
-              cal.pill ? "rounded-full" : "rounded-[7px]"
-            )}
-            initial={{ scale: 1, opacity: 1 }}
-            animate={{ scale: grid.reduceMotion ? 1 : 1.2, opacity: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ ...spring.moderate.exit, ease: "easeOut" }}
-          />
-        )}
-      </AnimatePresence>
       <span className="[text-box:trim-both_cap_alphabetic]">{children}</span>
       {modifiers.today && (
         <span

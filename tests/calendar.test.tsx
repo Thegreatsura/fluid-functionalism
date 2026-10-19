@@ -149,27 +149,27 @@ describe("range", () => {
     expect(range.to).toBeUndefined();
   });
 
-  it("plays the inner ring out on the day that commits the range end", () => {
+  it("fills the day that commits the range end in the same frame", () => {
     render(<Range />);
     fireEvent.click(dayButton(/November 9th, 2026/));
     const end = dayButton(/November 13th, 2026/);
     // Focus proposes the end, as the pointer would.
     act(() => end.focus());
-    expect(end.querySelector("[data-slot=calendar-commit-ring]")).toBeNull();
     fireEvent.click(end);
-    expect(end.querySelector("[data-slot=calendar-commit-ring]")).not.toBeNull();
-    expect(dayButton(/November 9th, 2026/).querySelector("[data-slot=calendar-commit-ring]")).toBeNull();
+    expect(end.className).toContain("bg-foreground");
+    // No fade: the gliding highlight hands its fill over at once.
+    expect(end.className).toContain("transition-none");
+    expect(dayButton(/November 9th, 2026/).className).not.toContain("transition-none");
   });
 
-  it("plays no ring when Escape cancels the pick", () => {
+  it("keeps the usual fades when Escape cancels the pick", () => {
     const initial = { from: new Date(2026, 10, 2), to: new Date(2026, 10, 4) };
     render(<Range initial={initial} />);
-    const start = dayButton(/November 20th, 2026/);
-    fireEvent.click(start);
+    fireEvent.click(dayButton(/November 20th, 2026/));
     const end = dayButton(/November 24th, 2026/);
     act(() => end.focus());
     fireEvent.keyDown(end, { key: "Escape" });
-    expect(document.querySelector("[data-slot=calendar-commit-ring]")).toBeNull();
+    expect(document.querySelector("button.transition-none")).toBeNull();
   });
 
   it("puts the previous range back on Escape before the end is picked", () => {

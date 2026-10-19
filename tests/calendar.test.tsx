@@ -172,6 +172,33 @@ describe("range", () => {
     const bands = document.querySelectorAll("[data-slot=calendar-range-band]");
     expect(bands.length).toBe(5);
   });
+
+  it("gives row ends 2px corners, square where the next row continues the band", () => {
+    render(
+      <Calendar
+        mode="range"
+        month={new Date(2026, 10, 1)}
+        weekStartsOn={0}
+        selected={{ from: new Date(2026, 10, 8), to: new Date(2026, 10, 28) }}
+        onSelect={() => {}}
+      />
+    );
+    const corners = (day: number) => {
+      const band = dayButton(new RegExp(`November ${day}(st|nd|rd|th), 2026`))
+        .closest("[role=gridcell]")!
+        .querySelector<HTMLElement>("[data-slot=calendar-range-band]")!;
+      const { borderTopLeftRadius: tl, borderBottomLeftRadius: bl } = band.style;
+      const { borderTopRightRadius: tr, borderBottomRightRadius: br } = band.style;
+      return [tl, tr, br, bl].map((r) => (r === "2px" ? "2" : "0")).join(" ");
+    };
+    // Rows 8-14, 15-21, 22-28 (Sunday start). Top-left, top-right,
+    // bottom-right, bottom-left.
+    expect(corners(14)).toBe("0 2 0 0");
+    expect(corners(15)).toBe("2 0 0 0");
+    expect(corners(21)).toBe("0 0 2 0");
+    expect(corners(22)).toBe("0 0 0 2");
+    expect(corners(18)).toBe("0 0 0 0");
+  });
 });
 
 describe("week numbers", () => {

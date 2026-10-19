@@ -86,7 +86,7 @@ function CalendarPlaygroundSection() {
         <PlaygroundLayout
           controls={controls}
           preview={
-            <ComponentPreview code={code} padding="none" minHeightClass="min-h-[420px]">
+            <ComponentPreview code={code} padding="none" align="top" minHeightClass="min-h-[420px]">
               {preview}
             </ComponentPreview>
           }

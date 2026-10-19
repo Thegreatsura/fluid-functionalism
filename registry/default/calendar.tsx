@@ -883,12 +883,15 @@ function WeekNumber({ className, style, children, ...props }: WeekNumberProps) {
 
 /**
  * One gridcell. Draws its slice of the range band: from its center to the
- * edge facing the rest of the range, full width in the middle, rounded only
- * where a week row (or a month, when outside days are hidden) ends.
+ * edge facing the rest of the range, full width in the middle. Where a week
+ * row (or a month, when outside days are hidden) ends, the band gets 2px
+ * corners, and 0 on any corner whose row above or below continues the band
+ * at that edge, so stacked rows read as one block.
  */
 function Day({ day, modifiers, className, style, children, ...props }: DayProps) {
   const cal = useCalendarContext();
   const grid = useGridContext();
+  const month = useContext(MonthContext);
   const n = dayNumber(day.date);
   const band = grid.band;
   const visible = !modifiers.hidden;
@@ -897,9 +900,24 @@ function Day({ day, modifiers, className, style, children, ...props }: DayProps)
   const nextDay = addDays(day.date, 1);
   const lastOfMonth = nextDay.getMonth() !== day.date.getMonth();
   const firstOfMonth = day.date.getDate() === 1;
-  const roundLeft = inBand && n > band!.from && (weekday === 0 || (firstOfMonth && cal.outsideHidden));
-  const roundRight = inBand && n < band!.to && (weekday === 6 || (lastOfMonth && cal.outsideHidden));
-  const radius = cal.pill ? "9999px" : "8px";
+  const edgeLeft = inBand && n > band!.from && (weekday === 0 || (firstOfMonth && cal.outsideHidden));
+  const edgeRight = inBand && n < band!.to && (weekday === 6 || (lastOfMonth && cal.outsideHidden));
+
+  // Whether the day `m` is drawn in this grid with band reaching its left or
+  // right edge: the row above or below then touches this corner.
+  const weeks = month?.calendarMonth.weeks;
+  const gridFirst = weeks?.[0]?.days[0] ? dayNumber(weeks[0].days[0].date) : n;
+  const lastWeek = weeks?.[weeks.length - 1]?.days;
+  const gridLast = lastWeek?.length ? dayNumber(lastWeek[lastWeek.length - 1].date) : n;
+  const drawn = (m: number) => {
+    if (m < gridFirst || m > gridLast) return false;
+    if (!cal.outsideHidden || !month) return true;
+    const d = addDays(day.date, m - n);
+    return d.getMonth() === month.calendarMonth.date.getMonth();
+  };
+  const bandAtLeft = (m: number) => !!band && drawn(m) && m > band.from && m <= band.to;
+  const bandAtRight = (m: number) => !!band && drawn(m) && m >= band.from && m < band.to;
+  const corner = (edge: boolean, touching: boolean) => (edge && !touching ? "2px" : 0);
 
   return (
     <div
@@ -927,10 +945,10 @@ function Day({ day, modifiers, className, style, children, ...props }: DayProps)
           style={{
             left: n > band!.from ? 0 : "50%",
             right: n < band!.to ? 0 : "50%",
-            borderTopLeftRadius: roundLeft ? radius : 0,
-            borderBottomLeftRadius: roundLeft ? radius : 0,
-            borderTopRightRadius: roundRight ? radius : 0,
-            borderBottomRightRadius: roundRight ? radius : 0,
+            borderTopLeftRadius: corner(edgeLeft, bandAtLeft(n - 7)),
+            borderBottomLeftRadius: corner(edgeLeft, bandAtLeft(n + 7)),
+            borderTopRightRadius: corner(edgeRight, bandAtRight(n - 7)),
+            borderBottomRightRadius: corner(edgeRight, bandAtRight(n + 7)),
           }}
         />
       )}

@@ -449,6 +449,9 @@ function TimeField({
       ref={inputRef}
       type="text"
       inputMode="text"
+      // A text input's intrinsic width (~20ch) would size the grid cell;
+      // size 1 drops it so the invisible text copy decides the width.
+      size={1}
       role="combobox"
       aria-label={label}
       aria-expanded={open}

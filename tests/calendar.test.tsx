@@ -199,6 +199,32 @@ describe("range", () => {
     expect(corners(22)).toBe("0 0 0 2");
     expect(corners(18)).toBe("0 0 0 0");
   });
+
+  it("finds row ends from the grid with ISO weeks (Monday start)", () => {
+    render(
+      <Calendar
+        mode="range"
+        showWeekNumber
+        month={new Date(2026, 10, 1)}
+        selected={{ from: new Date(2026, 10, 2), to: new Date(2026, 10, 18) }}
+        onSelect={() => {}}
+      />
+    );
+    const corners = (day: number) => {
+      const band = dayButton(new RegExp(`November ${day}(st|nd|rd|th), 2026`))
+        .closest("[role=gridcell]")!
+        .querySelector<HTMLElement>("[data-slot=calendar-range-band]")!;
+      const { borderTopLeftRadius: tl, borderBottomLeftRadius: bl } = band.style;
+      const { borderTopRightRadius: tr, borderBottomRightRadius: br } = band.style;
+      return [tl, tr, br, bl].map((r) => (r === "2px" ? "2" : "0")).join(" ");
+    };
+    // Rows 2-8, 9-15, 16-22: Sunday ends a row, Monday starts one.
+    expect(corners(7)).toBe("0 0 0 0");
+    expect(corners(8)).toBe("0 2 0 0");
+    expect(corners(9)).toBe("2 0 0 0");
+    expect(corners(15)).toBe("0 0 2 0");
+    expect(corners(16)).toBe("0 0 0 2");
+  });
 });
 
 describe("week numbers", () => {

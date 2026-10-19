@@ -30,7 +30,6 @@ import {
   labelDayButton,
   rangeContainsModifiers,
   useDayPicker,
-  type CalendarDay,
   type CalendarMonth,
   type CustomComponents,
   type DateRange,
@@ -896,12 +895,9 @@ function Day({ day, modifiers, className, style, children, ...props }: DayProps)
   const band = grid.band;
   const visible = !modifiers.hidden;
   const inBand = !!band && visible && band.from !== band.to && n >= band.from && n <= band.to;
-  const weekday = (day.date.getDay() - weekStartIndex(day) + 7) % 7;
   const nextDay = addDays(day.date, 1);
   const lastOfMonth = nextDay.getMonth() !== day.date.getMonth();
   const firstOfMonth = day.date.getDate() === 1;
-  const edgeLeft = inBand && n > band!.from && (weekday === 0 || (firstOfMonth && cal.outsideHidden));
-  const edgeRight = inBand && n < band!.to && (weekday === 6 || (lastOfMonth && cal.outsideHidden));
 
   // Whether the day `m` is drawn in this grid with band reaching its left or
   // right edge: the row above or below then touches this corner.
@@ -909,6 +905,12 @@ function Day({ day, modifiers, className, style, children, ...props }: DayProps)
   const gridFirst = weeks?.[0]?.days[0] ? dayNumber(weeks[0].days[0].date) : n;
   const lastWeek = weeks?.[weeks.length - 1]?.days;
   const gridLast = lastWeek?.length ? dayNumber(lastWeek[lastWeek.length - 1].date) : n;
+  // The column, read off the grid itself: every week row starts on the
+  // week's first day (outside days included, hidden or not), whatever
+  // weekStartsOn, locale or ISO numbering decided that day is.
+  const weekday = (((n - gridFirst) % 7) + 7) % 7;
+  const edgeLeft = inBand && n > band!.from && (weekday === 0 || (firstOfMonth && cal.outsideHidden));
+  const edgeRight = inBand && n < band!.to && (weekday === 6 || (lastOfMonth && cal.outsideHidden));
   const drawn = (m: number) => {
     if (m < gridFirst || m > gridLast) return false;
     if (!cal.outsideHidden || !month) return true;
@@ -955,11 +957,6 @@ function Day({ day, modifiers, className, style, children, ...props }: DayProps)
       {children}
     </div>
   );
-}
-
-/** Which weekday a row starts on, read off the day's own week. */
-function weekStartIndex(day: CalendarDay) {
-  return day.dateLib.startOfWeek(day.date).getDay();
 }
 
 function DayButton({ day, modifiers, className, style, children, ...props }: DayButtonProps) {

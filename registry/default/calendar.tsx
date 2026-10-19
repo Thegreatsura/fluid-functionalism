@@ -211,16 +211,6 @@ function useShownElsewhere(monthTime: number, present: boolean, stride: number |
   return !present && stride !== null && months.some((m) => m.date.getTime() === monthTime);
 }
 
-/** How far the band runs past a month's edge while fading (px). */
-const BAND_FADE_REACH = 8;
-
-/** The band's fade toward `to`: a short ramp that starts as far inside the
- *  cell's edge as it ends outside it. */
-function bandFade(to: "left" | "right"): CSSProperties {
-  const mask = `linear-gradient(to ${to}, #000 calc(100% - ${BAND_FADE_REACH * 2}px), transparent)`;
-  return { maskImage: mask, WebkitMaskImage: mask };
-}
-
 const INDEX_ATTR = "data-calendar-index";
 
 /**
@@ -1061,14 +1051,8 @@ function Day({ day, modifiers, className, style, children, ...props }: DayProps)
   // week's first day (outside days included, hidden or not), whatever
   // weekStartsOn, locale or ISO numbering decided that day is.
   const weekday = (((n - gridFirst) % 7) + 7) % 7;
-  // A range that runs on into the next month (or came from the previous one)
-  // while outside days are hidden doesn't stop at the month's edge: the band
-  // runs a little past the cell and fades out, then fades back in before the
-  // next month's first day, so the two halves read as one span.
-  const fadeOut = inBand && n < band!.to && lastOfMonth && cal.outsideHidden;
-  const fadeIn = inBand && n > band!.from && firstOfMonth && cal.outsideHidden;
-  const edgeLeft = inBand && n > band!.from && weekday === 0 && !fadeIn;
-  const edgeRight = inBand && n < band!.to && weekday === 6 && !fadeOut;
+  const edgeLeft = inBand && n > band!.from && (weekday === 0 || (firstOfMonth && cal.outsideHidden));
+  const edgeRight = inBand && n < band!.to && (weekday === 6 || (lastOfMonth && cal.outsideHidden));
   const drawn = (m: number) => {
     if (m < gridFirst || m > gridLast) return false;
     if (!cal.outsideHidden || !month) return true;
@@ -1101,12 +1085,10 @@ function Day({ day, modifiers, className, style, children, ...props }: DayProps)
         <span
           aria-hidden
           data-slot="calendar-range-band"
-          data-band-fade={fadeOut ? "right" : fadeIn ? "left" : undefined}
           className="pointer-events-none absolute inset-y-0 bg-[var(--tint)]"
           style={{
-            left: fadeIn ? -BAND_FADE_REACH : n > band!.from ? 0 : "50%",
-            right: fadeOut ? -BAND_FADE_REACH : n < band!.to ? 0 : "50%",
-            ...(fadeOut || fadeIn ? bandFade(fadeOut ? "right" : "left") : null),
+            left: n > band!.from ? 0 : "50%",
+            right: n < band!.to ? 0 : "50%",
             borderTopLeftRadius: corner(edgeLeft, bandAtLeft(n - 7)),
             borderBottomLeftRadius: corner(edgeLeft, bandAtLeft(n + 7)),
             borderTopRightRadius: corner(edgeRight, bandAtRight(n - 7)),

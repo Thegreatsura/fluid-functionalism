@@ -223,6 +223,31 @@ describe("range", () => {
     expect(corners(18)).toBe("0 0 0 0");
   });
 
+  it("fades the band out and back in across a month break", () => {
+    render(
+      <Calendar
+        mode="range"
+        numberOfMonths={2}
+        weekStartsOn={0}
+        month={new Date(2026, 9, 1)}
+        selected={{ from: new Date(2026, 9, 27), to: new Date(2026, 10, 3) }}
+        onSelect={() => {}}
+      />
+    );
+    const band = (re: RegExp) =>
+      dayButton(re)
+        .closest("[role=gridcell]")!
+        .querySelector<HTMLElement>("[data-slot=calendar-range-band]")!;
+    const last = band(/October 31st, 2026/);
+    expect(last.style.right).toBe("-8px");
+    expect(last.dataset.bandFade).toBe("right");
+    expect(last.style.borderTopRightRadius).toBe("0px");
+    const first = band(/November 1st, 2026/);
+    expect(first.style.left).toBe("-8px");
+    expect(first.dataset.bandFade).toBe("left");
+    expect(band(/October 28th, 2026/).dataset.bandFade).toBeUndefined();
+  });
+
   it("finds row ends from the grid with ISO weeks (Monday start)", () => {
     render(
       <Calendar

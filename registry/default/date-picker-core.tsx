@@ -598,10 +598,10 @@ function TimeRow({
       aria-selected={selected}
       data-fluid-hover-index={index}
       className={cn(
-        "relative z-10 flex shrink-0 cursor-pointer items-center justify-between rounded-lg tabular-nums",
+        // The duration hugs the time: start-aligned, a small gap.
+        "relative z-10 flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg tabular-nums",
         sizeClasses.control,
         sizeClasses.itemPx,
-        sizeClasses.gap,
         typeClass("body", compact ? "compact" : "default"),
         "transition-[color] duration-80",
         selected || active ? "text-foreground" : "text-muted-foreground"
@@ -611,7 +611,9 @@ function TimeRow({
       <span className="inline-grid">
         <span
           aria-hidden
-          className="invisible col-start-1 row-start-1"
+          // Trimmed like the visible label, so both boxes match and the time
+          // shares a baseline with the duration.
+          className="invisible col-start-1 row-start-1 [text-box:trim-both_cap_alphabetic]"
           style={{ fontVariationSettings: fontWeights.semibold }}
         >
           {label}
@@ -623,7 +625,12 @@ function TimeRow({
           {label}
         </span>
       </span>
-      {duration && <span className="text-muted-foreground [text-box:trim-both_cap_alphabetic]">{duration}</span>}
+      {/* A description, a step quieter than the time it follows. */}
+      {duration && (
+        <span className="text-muted-foreground opacity-60 [text-box:trim-both_cap_alphabetic]">
+          {duration}
+        </span>
+      )}
     </div>
   );
 }

@@ -16,8 +16,8 @@ import { cn } from "@/lib/utils";
  * left/right band by band.
  *
  * The size mix is balanced so the grid fills with NO holes at both md and xl:
- * smalls needed = 2·(larges) + 1·(mediums) = 2·5 + 6 = 16 = smalls available
- * (and an even small count keeps md's half-width pairs complete). Adding a
+ * smalls needed = 2·(larges) + 1·(mediums) = 2·5 + 7 = 17 = smalls available.
+ * At md the odd small closes the grid on its own half row. Adding a
  * card or changing a gridSize breaks that equation — rebalance before
  * shipping or the bottom rows develop holes again.
  */
@@ -49,6 +49,8 @@ const displayOrder: { slug: string; side?: "right" }[] = [
   { slug: "color-picker" },                   // band 11 · large left
   { slug: "tooltip" },
   { slug: "badge" },
+  { slug: "calendar", side: "right" },        // band 12 · medium right
+  { slug: "date-picker" },
 ];
 
 /** Stage padding overrides, by slug (the default is px-6 py-16). */
@@ -57,6 +59,7 @@ const STAGE_PADDING: Record<string, string> = {
   table: "px-6 py-6",
   card: "px-6 py-5",
   "command-menu": "px-6 py-8",
+  calendar: "px-4 py-2",
 };
 
 /**

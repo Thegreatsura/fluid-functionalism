@@ -1,0 +1,214 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Calendar, type DateRange } from "@/components/ui/calendar";
+import { ComponentPreview } from "@/lib/docs/ComponentPreview";
+import { PropsTable } from "@/lib/docs/PropsTable";
+import { DocPage, DocSection } from "@/lib/docs/DocPage";
+import { PlaygroundLayout } from "@/lib/docs/playground";
+import { CalendarPlayground, demoBookedDays } from "@/lib/docs/playgrounds/calendar";
+import { calendarProps } from "@/lib/docs/api/calendar";
+
+// ---------------------------------------------------------------------------
+// Code snippets
+// ---------------------------------------------------------------------------
+
+const singleCode = `import { Calendar } from "./components";
+
+const [date, setDate] = useState<Date | undefined>(new Date());
+
+<Calendar selected={date} onSelect={setDate} />`;
+
+const rangeCode = `import { Calendar, type DateRange } from "./components";
+
+const [range, setRange] = useState<DateRange | undefined>();
+
+<Calendar
+  mode="range"
+  numberOfMonths={2}
+  orientation="horizontal"
+  selected={range}
+  onSelect={setRange}
+/>`;
+
+const verticalCode = `import { Calendar, type DateRange } from "./components";
+
+<div className="h-[360px] overflow-y-auto">
+  <Calendar
+    mode="range"
+    numberOfMonths={2}
+    orientation="vertical"
+    selected={range}
+    onSelect={setRange}
+  />
+</div>`;
+
+const bookingCode = `import { Calendar, type DateRange } from "./components";
+
+const booked = [/* Date[] of taken nights */];
+
+<Calendar
+  mode="range"
+  selected={range}
+  onSelect={setRange}
+  booked={booked}
+  disabled={{ before: new Date() }}
+/>`;
+
+const availableCode = `import { Calendar } from "./components";
+
+<Calendar
+  selected={date}
+  onSelect={setDate}
+  available={{ dayOfWeek: [1, 2, 3, 4, 5] }}
+/>`;
+
+const sizeCode = `import { Calendar } from "./components";
+
+{/* Bigger cells add air; the numbers stay on the type scale */}
+<Calendar cellSize={48} selected={date} onSelect={setDate} />
+
+{/* fill: columns stretch to the container, cellSize caps the row height */}
+<div className="w-full max-w-[480px]">
+  <Calendar fill cellSize={44} selected={date} onSelect={setDate} />
+</div>`;
+
+const weekNumbersCode = `import { Calendar } from "./components";
+
+<Calendar showWeekNumber selected={date} onSelect={setDate} />`;
+
+// ── Playground ───────────────────────────────────────────
+
+function CalendarPlaygroundSection() {
+  return (
+    <CalendarPlayground>
+      {({ preview, controls, code }) => (
+        <PlaygroundLayout
+          controls={controls}
+          preview={
+            <ComponentPreview code={code} padding="none" minHeightClass="min-h-[420px]">
+              {preview}
+            </ComponentPreview>
+          }
+        />
+      )}
+    </CalendarPlayground>
+  );
+}
+
+export default function CalendarDoc() {
+  const [date, setDate] = useState<Date | undefined>(() => new Date());
+  const [range, setRange] = useState<DateRange | undefined>(undefined);
+  const [stacked, setStacked] = useState<DateRange | undefined>(undefined);
+  const [booking, setBooking] = useState<DateRange | undefined>(undefined);
+  const [weekday, setWeekday] = useState<Date | undefined>(undefined);
+  const [big, setBig] = useState<Date | undefined>(() => new Date());
+  const [filled, setFilled] = useState<Date | undefined>(() => new Date());
+  const [week, setWeek] = useState<Date | undefined>(() => new Date());
+  const booked = useMemo(() => demoBookedDays(), []);
+
+  return (
+    <DocPage
+      title="Calendar"
+      slug="calendar"
+      description="Month grid for a day or a range: one fluid hover across both months, a range band that follows the pointer, booked and unavailable days, and week numbers."
+    >
+      <DocSection title="Playground">
+        <CalendarPlaygroundSection />
+      </DocSection>
+
+      <DocSection title="Single">
+        <p className="text-site-body text-muted-foreground">
+          Click a day, or arrow to it and press <code>Enter</code>. <code>PageUp</code> and <code>PageDown</code> change the month.
+        </p>
+        <ComponentPreview code={singleCode} minHeightClass="min-h-[360px]">
+          <Calendar selected={date} onSelect={setDate} />
+        </ComponentPreview>
+      </DocSection>
+
+      <DocSection title="Range">
+        <p className="text-site-body text-muted-foreground">
+          2 months, one hover. Pick a start, then move: the band follows the pointer across the month break.
+        </p>
+        <ComponentPreview code={rangeCode} minHeightClass="min-h-[360px]">
+          <Calendar
+            mode="range"
+            numberOfMonths={2}
+            orientation="horizontal"
+            selected={range}
+            onSelect={setRange}
+          />
+        </ComponentPreview>
+      </DocSection>
+
+      <DocSection title="Stacked months">
+        <p className="text-site-body text-muted-foreground">
+          <code>orientation=&quot;vertical&quot;</code> stacks the months under one weekday row that stays while they scroll. <code>auto</code> picks this when 2 months don&apos;t fit side by side.
+        </p>
+        <ComponentPreview code={verticalCode}>
+          <div className="h-[360px] overflow-y-auto rounded-lg bg-background">
+            <Calendar
+              mode="range"
+              numberOfMonths={2}
+              orientation="vertical"
+              selected={stacked}
+              onSelect={setStacked}
+            />
+          </div>
+        </ComponentPreview>
+      </DocSection>
+
+      <DocSection title="Booked and unavailable">
+        <p className="text-site-body text-muted-foreground">
+          Booked days are struck through and a range can&apos;t cross them. Past days only fade.
+        </p>
+        <ComponentPreview code={bookingCode} minHeightClass="min-h-[360px]">
+          <Calendar
+            mode="range"
+            selected={booking}
+            onSelect={setBooking}
+            booked={booked}
+            disabled={{ before: new Date() }}
+          />
+        </ComponentPreview>
+        <p className="text-site-body text-muted-foreground">
+          <code>available</code> flips the rule: every day it doesn&apos;t match is unavailable.
+        </p>
+        <ComponentPreview code={availableCode} minHeightClass="min-h-[360px]">
+          <Calendar
+            selected={weekday}
+            onSelect={setWeekday}
+            available={{ dayOfWeek: [1, 2, 3, 4, 5] }}
+          />
+        </ComponentPreview>
+      </DocSection>
+
+      <DocSection title="Cell size">
+        <p className="text-site-body text-muted-foreground">
+          <code>cellSize</code> sets the cell in px. <code>fill</code> stretches the columns to the container.
+        </p>
+        <ComponentPreview code={sizeCode} minHeightClass="min-h-[420px]">
+          <div className="flex w-full flex-col items-center gap-8">
+            <Calendar cellSize={48} selected={big} onSelect={setBig} />
+            <div className="w-full max-w-[480px]">
+              <Calendar fill cellSize={44} selected={filled} onSelect={setFilled} />
+            </div>
+          </div>
+        </ComponentPreview>
+      </DocSection>
+
+      <DocSection title="Week numbers">
+        <p className="text-site-body text-muted-foreground">
+          ISO week numbers in a muted column, with weeks starting on Monday.
+        </p>
+        <ComponentPreview code={weekNumbersCode} minHeightClass="min-h-[360px]">
+          <Calendar showWeekNumber selected={week} onSelect={setWeek} />
+        </ComponentPreview>
+      </DocSection>
+
+      <DocSection title="API Reference">
+        <PropsTable props={calendarProps} />
+      </DocSection>
+    </DocPage>
+  );
+}

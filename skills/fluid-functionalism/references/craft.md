@@ -26,6 +26,7 @@ Systems first — their craft applies across every component below.
 - [Badge](#badge)
 - [Banner](#banner)
 - [Button](#button)
+- [Calendar](#calendar)
 - [Card](#card)
 - [CarouselDots](#carousel-dots)
 - [ChatMessage](#chat-message)
@@ -33,6 +34,7 @@ Systems first — their craft applies across every component below.
 - [ColorPicker](#color-picker)
 - [Combobox](#combobox)
 - [CommandMenu](#command-menu)
+- [DatePicker](#date-picker)
 - [Dialog](#dialog)
 - [Dropdown](#dropdown)
 - [InputCopy](#input-copy)
@@ -218,6 +220,21 @@ Systems first — their craft applies across every component below.
 - Size ladder: default h-9 (36px) px-4 13px text, compact h-7 (28px) px-3 12px text; unset size follows the surrounding SizeProvider, legacy sm/md/lg resolve as aliases. asChild clones the user's element with the button's internals as children and drops `disabled` on non-button roots.
 - `render` is accepted as a second spelling of `asChild` (and `nativeButton` is accepted and ignored), on the same clone path, so a link stays a plain link with no `role="button"`. The shadcn CLI rewrites `asChild` into `render` plus `nativeButton={false}` when it installs into a Base UI project, so components that hand Button a link keep working there.
 
+<a id="calendar"></a>
+## Calendar
+
+- DayPicker v10 (`@daypicker/react`) owns the date math, the roving tabindex, the grid keys and the locale; every part it renders is swapped for a div with the matching ARIA role (`grid`, `row`, `gridcell`), so the grid lays out with flex and one fluid hover scope can span 2 months. DayPicker's own `animate` stays off.
+- One `useFluidHover` with `axis: "xy"` over every month on screen, rows stacked gap-0, so the highlight glides from Oct 31 to Nov 1 across the gap between the grids. Captions, the weekday row, week numbers and unavailable days are inert: the highlight leaves while the pointer crosses them and fades back in on the next day.
+- The highlight follows keyboard focus. A month change re-registers every day under new indices, so the highlight and the focus ring snap to the newly focused cell (`transition={false}`) instead of gliding from the old grid's geometry.
+- Selected days and range ends are a solid `bg-foreground text-background` fill, semibold through `fontVariationSettings` in a fixed-size cell, so the weight change never reflows. Today is semibold with a 4px dot under the number that turns `text-background` when today is picked. The palette stays neutral: no brand color, no colored today.
+- The range is one `--tint` band per week row, drawn as each cell's slice: from the start cell's center to its far edge, full width in the middle, to the end cell's center. Corners round only where a row ends, or where a month ends while outside days are hidden, so the band reads continuous across row and month breaks.
+- While the end is being picked, the band follows the hovered or focused day across both months; the proposed end is a solid circle with a 1px foreground ring 2px out, the focus ring's geometry. A preview that would cross a booked day is not drawn, matching `excludeDisabled`, which resets a range that spans one.
+- Range picks use `resetOnSelect`: the first click starts a new range, the second sets the end (either side of the start). Escape before the second pick restores the range that was there before.
+- Booked days are disabled, muted, struck through, and announced with a ", booked" suffix on the day's label. Days outside `available`, `disabled` days and the past are disabled and muted without the line-through.
+- `cellSize` writes `--cell-size` (36px, 32px compact); cells, the weekday row, the week number column, the nav buttons (78% of the cell) and the today dot derive from it, while the numbers stay on the body type role. `fill` stretches the columns and caps the row height at `cellSize`.
+- A month change slides each grid and caption 10px in the direction of travel and crossfades with the one it replaces on `spring.moderate`; the grid box springs between 5- and 6-week heights from a measured `offsetHeight`, never `"auto"`. Reduced motion keeps the crossfade only.
+- 2 months hide outside days so no date renders twice. `orientation="auto"` compares the container's width with what 2 months need at the current `cellSize`; stacked months share one sticky weekday row. Week numbers are ISO 8601 with a Monday start unless `weekStartsOn` says Sunday.
+
 <a id="card"></a>
 ## Card
 
@@ -302,6 +319,19 @@ Systems first — their craft applies across every component below.
 - Shortcut system: `"mod+k"` is ⌘K on a Mac, Ctrl+K elsewhere ("mod" matches either while listening); physical-key (`code`) fallback applies when `key` isn't a Latin letter/digit or when ⌥ is held, so an unmodified Dvorak "t" is never read as physical K; a bare key stays out of editable fields. Among mounted dialogs sharing a combo, an open one answers first (the press closes it), else the most recently mounted one whose `shortcutScope` holds focus.
 - The footer's Enter hint names the highlighted row's `action` (default: its label) so it reads as the thing Enter does ("Open Showcase") rather than a generic "Run"; it sits at the trailing edge so its changing width never moves the other hints, which follow the menu (tabs add ← →, a dialog adds Esc).
 - Suggested rows lead under their own heading while nothing is typed, and leave their original group so nothing is listed twice; the default filter matches every query word against label + description + keywords and never re-sorts, so rows don't move under the cursor as the query grows.
+
+<a id="date-picker"></a>
+## DatePicker
+
+- The field trigger matches Select: the control height, the shape's input radius, a 1px border, and the focus ring. Its parts (the date, each time, the clear button) sit 2px inside the border and share one fluid hover scope along `x`, with corners nested in the field's radius (5px rounded, 17px pill). `variant="ghost"` drops the border for inline use.
+- Labels come from `Intl`, no date library: `Wed Oct 21`, the year added outside the current one; ranges read `Oct 21 → Oct 24`. Times follow the locale's 12 or 24 hour clock unless `hourCycle` says otherwise.
+- The date popover opens on the selected day (or today) with focus on it; Escape closes it and focus returns to the trigger. A single pick holds the popover 200ms so the fill is seen landing, then closes. A range closes once its end is picked, and only complete ranges reach `onValueChange`: the half-picked one lives in the picker, and closing mid-pick drops it.
+- Escape mid-pick restores the previous range and keeps the popover open; the next Escape closes it. Range mode shows 2 months, side by side when the viewport has room, stacked and scrolling under one weekday row when it doesn't.
+- Presets are a fluid hover list beside the calendar (above it when stacked). Picking one sets the range and moves the calendar to its first month.
+- Each time is an editable field that anchors its own popover, separate from the date's: type `1130`, `11:30` or `11:30am`, and the nearest slot lights and scrolls to the middle of the list; Enter commits the typed time, arrows walk the slots. Focus never leaves the field: the list is a listbox driven by `aria-activedescendant`, and pressing a row doesn't blur the field.
+- Slot lists are Dropdown rows: one fluid hover scope, gap-0, `step` minutes apart (15 by default), opening scrolled to the value, or to now. The end list starts one step after the start and shows each row's duration (`15min`, `1h`, `1h 45min`). Moving the start keeps the duration; times stay on the same day.
+- Time fields size to their text through an invisible copy in the same grid cell, so `11:00` and `11:00 AM` both sit snug, and they take `useSize().field`: 16px on touch screens, where iOS zooms into anything smaller.
+- The 2 flavors share everything but the popover: Radix keeps its content mounted with `forceMount` until the exit spring ends; Base UI calls `preventUnmountOnClose()` on every close and releases the unmount from the frame's animation callback, with an exit-length timeout as a fallback.
 
 <a id="dialog"></a>
 ## Dialog

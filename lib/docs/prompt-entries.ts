@@ -465,6 +465,54 @@ import { Plus, ArrowRight } from "lucide-react";
       "disabled: boolean (default false). Disables the button.",
     ],
   },
+  calendar: {
+    craft: [
+      "DayPicker v10 (`@daypicker/react`) owns the date math, the roving tabindex, the grid keys and the locale; every part it renders is swapped for a div with the matching ARIA role (`grid`, `row`, `gridcell`), so the grid lays out with flex and one fluid hover scope can span 2 months. DayPicker's own `animate` stays off.",
+      "One `useFluidHover` with `axis: \"xy\"` over every month on screen, rows stacked gap-0, so the highlight glides from Oct 31 to Nov 1 across the gap between the grids. Captions, the weekday row, week numbers and unavailable days are inert: the highlight leaves while the pointer crosses them and fades back in on the next day.",
+      "The highlight follows keyboard focus. A month change re-registers every day under new indices, so the highlight and the focus ring snap to the newly focused cell (`transition={false}`) instead of gliding from the old grid's geometry.",
+      "Selected days and range ends are a solid `bg-foreground text-background` fill, semibold through `fontVariationSettings` in a fixed-size cell, so the weight change never reflows. Today is semibold with a 4px dot under the number that turns `text-background` when today is picked. The palette stays neutral: no brand color, no colored today.",
+      "The range is one `--tint` band per week row, drawn as each cell's slice: from the start cell's center to its far edge, full width in the middle, to the end cell's center. Corners round only where a row ends, or where a month ends while outside days are hidden, so the band reads continuous across row and month breaks.",
+      "While the end is being picked, the band follows the hovered or focused day across both months; the proposed end is a solid circle with a 1px foreground ring 2px out, the focus ring's geometry. A preview that would cross a booked day is not drawn, matching `excludeDisabled`, which resets a range that spans one.",
+      "Range picks use `resetOnSelect`: the first click starts a new range, the second sets the end (either side of the start). Escape before the second pick restores the range that was there before.",
+      "Booked days are disabled, muted, struck through, and announced with a \", booked\" suffix on the day's label. Days outside `available`, `disabled` days and the past are disabled and muted without the line-through.",
+      "`cellSize` writes `--cell-size` (36px, 32px compact); cells, the weekday row, the week number column, the nav buttons (78% of the cell) and the today dot derive from it, while the numbers stay on the body type role. `fill` stretches the columns and caps the row height at `cellSize`.",
+      "A month change slides each grid and caption 10px in the direction of travel and crossfades with the one it replaces on `spring.moderate`; the grid box springs between 5- and 6-week heights from a measured `offsetHeight`, never `\"auto\"`. Reduced motion keeps the crossfade only.",
+      "2 months hide outside days so no date renders twice. `orientation=\"auto\"` compares the container's width with what 2 months need at the current `cellSize`; stacked months share one sticky weekday row. Week numbers are ISO 8601 with a Monday start unless `weekStartsOn` says Sunday.",
+    ],
+    usage: `"use client";
+
+import { useState } from "react";
+import { Calendar, type DateRange } from "@/components/ui/calendar";
+
+export function Stay() {
+  const [range, setRange] = useState<DateRange | undefined>();
+  return (
+    <Calendar
+      mode="range"
+      numberOfMonths={2}
+      selected={range}
+      onSelect={setRange}
+      booked={[new Date(2026, 10, 12)]}
+      disabled={{ before: new Date() }}
+    />
+  );
+}`,
+    props: [
+      "mode: \"single\" | \"range\" (default \"single\"). One day, or a start and an end.",
+      "selected: Date | DateRange. With onSelect it is controlled; without, it seeds the calendar's own state.",
+      "onSelect: (value) => void. Called on every pick; in range mode the first pick returns a range with no `to`.",
+      "booked: Matcher | Matcher[]. Unavailable, struck through, announced as booked.",
+      "available: Matcher | Matcher[]. When set, every day it does not match is unavailable.",
+      "disabled: Matcher | Matcher[]. Days that can't be picked, e.g. { before: new Date() }.",
+      "numberOfMonths: 1 | 2 (default 1). Two months share one fluid hover and hide outside days.",
+      "orientation: \"auto\" | \"horizontal\" | \"vertical\" (default \"auto\"). auto: side by side when the container fits both months.",
+      "cellSize: number (default 36, 32 compact). Cell size in px.",
+      "fill: boolean (default false). Columns stretch to the container; cellSize caps the row height.",
+      "showWeekNumber: boolean (default false). Muted ISO week column.",
+      "size: \"default\" | \"compact\". Step on the size ladder.",
+      "Every other DayPicker prop (weekStartsOn, locale, timeZone, month, onMonthChange, min, max) passes through.",
+    ],
+  },
   "card": {
     craft: [
       "Cards are transparent and borderless by default, unlike stock shadcn: they inherit the parent substrate and lean on hairline dividers plus the fluid hover highlight instead of a drawn frame.",
@@ -682,6 +730,54 @@ const [value, setValue] = useState("");
       "disabled: boolean (default false). Disables the field and the popup.",
       'size: "default" | "compact". Pins field and popup to one size step; otherwise follows the SizeProvider.',
       'ComboboxInput variant: "bordered" | "borderless" (default "bordered"). Also takes icon, placeholder, error, clearable.',
+    ],
+  },
+  "date-picker": {
+    craft: [
+      "The field trigger matches Select: the control height, the shape's input radius, a 1px border, and the focus ring. Its parts (the date, each time, the clear button) sit 2px inside the border and share one fluid hover scope along `x`, with corners nested in the field's radius (5px rounded, 17px pill). `variant=\"ghost\"` drops the border for inline use.",
+      "Labels come from `Intl`, no date library: `Wed Oct 21`, the year added outside the current one; ranges read `Oct 21 → Oct 24`. Times follow the locale's 12 or 24 hour clock unless `hourCycle` says otherwise.",
+      "The date popover opens on the selected day (or today) with focus on it; Escape closes it and focus returns to the trigger. A single pick holds the popover 200ms so the fill is seen landing, then closes. A range closes once its end is picked, and only complete ranges reach `onValueChange`: the half-picked one lives in the picker, and closing mid-pick drops it.",
+      "Escape mid-pick restores the previous range and keeps the popover open; the next Escape closes it. Range mode shows 2 months, side by side when the viewport has room, stacked and scrolling under one weekday row when it doesn't.",
+      "Presets are a fluid hover list beside the calendar (above it when stacked). Picking one sets the range and moves the calendar to its first month.",
+      "Each time is an editable field that anchors its own popover, separate from the date's: type `1130`, `11:30` or `11:30am`, and the nearest slot lights and scrolls to the middle of the list; Enter commits the typed time, arrows walk the slots. Focus never leaves the field: the list is a listbox driven by `aria-activedescendant`, and pressing a row doesn't blur the field.",
+      "Slot lists are Dropdown rows: one fluid hover scope, gap-0, `step` minutes apart (15 by default), opening scrolled to the value, or to now. The end list starts one step after the start and shows each row's duration (`15min`, `1h`, `1h 45min`). Moving the start keeps the duration; times stay on the same day.",
+      "Time fields size to their text through an invisible copy in the same grid cell, so `11:00` and `11:00 AM` both sit snug, and they take `useSize().field`: 16px on touch screens, where iOS zooms into anything smaller.",
+      "The 2 flavors share everything but the popover: Radix keeps its content mounted with `forceMount` until the exit spring ends; Base UI calls `preventUnmountOnClose()` on every close and releases the unmount from the frame's animation callback, with an exit-length timeout as a fallback.",
+    ],
+    usage: `"use client";
+
+import { useState } from "react";
+import { DatePicker, type TimeRange } from "@/components/ui/date-picker";
+
+export function EventWhen() {
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [time, setTime] = useState<TimeRange | null>({ start: "11:00", end: "12:45" });
+  return (
+    <DatePicker
+      variant="ghost"
+      value={date}
+      onValueChange={setDate}
+      timeRange={time}
+      onTimeRangeChange={setTime}
+    />
+  );
+}`,
+    props: [
+      "mode: \"single\" | \"range\" (default \"single\"). One date, or a start and an end.",
+      "value / defaultValue: Date | DateRange. A range reaches onValueChange only once both ends are set.",
+      "onValueChange: (value) => void. Called on a pick, a complete range, or a clear.",
+      "variant: \"field\" | \"ghost\" (default \"field\"). A bordered field like Select, or inline text with a hover fill.",
+      "placeholder: string (default \"Pick a date\" / \"Pick dates\").",
+      "presets: { label, range }[]. Range mode: ranges listed beside the calendar.",
+      "time / defaultTime / onTimeChange: string | null. One \"HH:mm\" time on the same day.",
+      "timeRange / defaultTimeRange / onTimeRangeChange: { start, end } | null. A start and an end with the duration shown.",
+      "step: number (default 15). Minutes between slots.",
+      "hourCycle: 12 | 24 (default from the locale).",
+      "locale: string. BCP 47 locale for labels and times.",
+      "numberOfMonths: 1 | 2 (default 1 single, 2 range). orientation: \"auto\" | \"horizontal\" | \"vertical\".",
+      "calendarProps: Partial<CalendarProps>. booked, available, disabled, cellSize, showWeekNumber, weekStartsOn, locale.",
+      "clearable: boolean (default true). Field variant: clear button once a value is set.",
+      "open / defaultOpen / onOpenChange: the date popover. disabled: boolean. size: \"default\" | \"compact\".",
     ],
   },
   "dialog": {

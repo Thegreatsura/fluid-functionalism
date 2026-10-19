@@ -80,7 +80,7 @@ Two registry items that cover single dates, date ranges and date + time, with th
 | Hover | One shared fluid hover highlight (`--hover`) gliding across the grid (`useFluidHover({ axis: "xy" })`, rows gap-0) |
 | Selected (single, range ends) | Solid `bg-foreground text-background`, regular weight (selection never changes weight) |
 | Range middle | One continuous `--tint` band per week row, from the center of the start cell to the center of the end cell, 2px corners at row ends, 0 where the row above or below continues the band at that edge. Continues across row and month breaks (Airbnb ref) |
-| Range hover preview | While picking the end, the band follows the hovered/focused day (across both months). Preview end = solid circle at regular cell size with a 1px background-color ring inset 2px, concentric radius |
+| Range hover preview | While picking the end, the band follows the hovered/focused day (across both months). Preview end = the fluid hover highlight restyled as a solid cell that glides to the pointer, at regular cell size with a 1px background-color ring inset 2px, concentric radius |
 | Today | Semibold number + 4px dot under it; dot turns `text-background` when today is selected |
 | Booked | Unavailable (disabled, not focusable) + muted + line-through |
 | Unavailable (outside `available`, `disabled`, past) | Disabled, muted, no line-through |

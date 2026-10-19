@@ -369,6 +369,9 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
     }
   }
 
+  const previewGlides =
+    previewEnd !== null && !!cal.range?.from && previewEnd !== dayNumber(cal.range.from);
+
   const gridCtx = useMemo(
     () => ({ registerItem, gridStart, band, previewEnd, direction, reduceMotion, stride }),
     // band is rebuilt each render; compare its parts.
@@ -417,7 +420,19 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
     >
       <FluidHoverHighlight
         hover={hover}
-        className={cn("z-[1]", cellRadius)}
+        className={cn(
+          "z-[1]",
+          cellRadius,
+          // Picking a range end, the highlight is the proposed end: the solid
+          // fill and its inset ring (2px in, radius concentric with the
+          // cell's) glide to the pointer like the single-select highlight
+          // instead of jumping from cell to cell.
+          previewGlides &&
+            cn(
+              "bg-foreground before:pointer-events-none before:absolute before:inset-[2px] before:border before:border-background",
+              cal.pill ? "before:rounded-full" : "before:rounded-[6px]"
+            )
+        )}
         transition={snap ? false : undefined}
       />
       <AnimatePresence>
@@ -1040,8 +1055,7 @@ function DayButton({ day, modifiers, className, style, children, ...props }: Day
     cal.mode === "single"
       ? cal.selectedDay === n
       : (!!cal.range?.from && dayNumber(cal.range.from) === n) ||
-        (!!cal.range?.to && !cal.picking && dayNumber(cal.range.to) === n) ||
-        grid.previewEnd === n;
+        (!!cal.range?.to && !cal.picking && dayNumber(cal.range.to) === n);
   const isPreviewEnd = cal.picking && grid.previewEnd === n && !(cal.range?.from && dayNumber(cal.range.from) === n);
   const inMiddle = !!band && n > band.from && n < band.to;
   const booked = !!modifiers.booked;
@@ -1062,28 +1076,24 @@ function DayButton({ day, modifiers, className, style, children, ...props }: Day
       data-preview-end={isPreviewEnd || undefined}
       className={cn(
         "relative z-[2] flex items-center justify-center p-0 outline-none select-none tabular-nums",
-        // While a range end is being picked the proposed end jumps from cell
-        // to cell with the pointer, and the band slices under it switch at
-        // once: a fade here would flash half-filled circles, so it's instant.
+        // While a range end is being picked the fill is the gliding
+        // highlight's: cells only swap their number's color, faded over the
+        // highlight's arrival so the number never shows on the wrong fill.
         cal.picking
-          ? "transition-none"
+          ? "transition-[color] duration-100"
           : "transition-[color,background-color,font-variation-settings] duration-80",
         cal.fill ? "aspect-square h-full max-w-full" : "size-[var(--cell-size)]",
         cal.pill ? "rounded-full" : "rounded-lg",
         typeClass("body", compact ? "compact" : "default"),
         isEnd
           ? "bg-foreground text-background"
-          : unavailable
+          : isPreviewEnd
+            ? "cursor-pointer text-background"
+            : unavailable
             ? cn("cursor-default text-muted-foreground opacity-50", booked && "line-through")
             : day.outside
               ? "cursor-pointer text-muted-foreground opacity-60"
               : "cursor-pointer text-foreground",
-        // Inset ring, concentric with the cell: 2px in, so 8px - 2px = 6px.
-        isPreviewEnd &&
-          cn(
-            "before:pointer-events-none before:absolute before:inset-[2px] before:border before:border-background",
-            cal.pill ? "before:rounded-full" : "before:rounded-[6px]"
-          ),
         className
       )}
       style={{

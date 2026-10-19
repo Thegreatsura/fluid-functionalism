@@ -409,10 +409,14 @@ function TimeField({
   const selectedIndex = value === null ? -1 : slots.findIndex((s) => s.minutes === value);
 
   // Opening lands on the value, or on the slot nearest `fallback`.
+  // The row an open lands on: the shown time, or the slot nearest the
+  // fallback (now, or the start) when the field is empty.
+  const openTargetRef = useRef<number | null>(null);
   const openList = () => {
     if (disabled || open) return;
     setOpen(true);
     const target = selectedIndex >= 0 ? selectedIndex : nearestSlotIndex(slots, fallback);
+    openTargetRef.current = target >= 0 ? target : null;
     setActiveIndex(target >= 0 ? target : null);
   };
   const closeList = () => {
@@ -425,10 +429,18 @@ function TimeField({
   // move in view.
   const scrollToActive = useCallback((center: boolean) => {
     const list = listRef.current;
-    if (!list) return;
-    const row = list.querySelector<HTMLElement>("[data-fluid-hover-active]");
+    if (!list) return false;
+    // Opening centers the shown time (always marked selected), or the lit
+    // row when nothing is picked yet; a keyboard move follows the lit row.
+    const lit = list.querySelector<HTMLElement>("[data-fluid-hover-active]");
+    const target = openTargetRef.current;
+    const row = center
+      ? (list.querySelector<HTMLElement>('[aria-selected="true"]') ??
+        (target !== null ? list.querySelector<HTMLElement>(`[data-fluid-hover-index="${target}"]`) : null) ??
+        lit)
+      : lit;
     const viewport = list.closest<HTMLElement>("[data-slot=scroll-area-viewport]");
-    if (!row || !viewport) return;
+    if (!row || !viewport || viewport.clientHeight === 0) return false;
     const top = row.offsetTop;
     const bottom = top + row.offsetHeight;
     if (center) {
@@ -438,23 +450,26 @@ function TimeField({
     } else if (bottom > viewport.scrollTop + viewport.clientHeight) {
       viewport.scrollTop = bottom - viewport.clientHeight + 4;
     }
+    return true;
   }, []);
   useEffect(() => {
     if (open) remeasure();
   }, [open, remeasure]);
-  // The popup can mount a frame after `open`; center once its rows are
-  // measured, once per open.
-  const centeredRef = useRef(false);
+  // The list opens on the shown time, centered. The popup can mount a few
+  // frames after `open` (and the hover's "measured" flag can be left over
+  // from the last open), so it retries each frame until the lit row is laid
+  // out in its viewport, then stops: once per open.
   useEffect(() => {
-    if (!open) {
-      centeredRef.current = false;
-      return;
-    }
-    if (!hover.isMeasured || centeredRef.current) return;
-    centeredRef.current = true;
-    const id = requestAnimationFrame(() => scrollToActive(true));
+    if (!open) return;
+    let id = 0;
+    let tries = 0;
+    const attempt = () => {
+      if (scrollToActive(true) || ++tries > 30) return;
+      id = requestAnimationFrame(attempt);
+    };
+    id = requestAnimationFrame(attempt);
     return () => cancelAnimationFrame(id);
-  }, [open, hover.isMeasured, scrollToActive]);
+  }, [open, scrollToActive]);
 
   // An end list starts one step after its start; a typed end at or before
   // the start is not a time it offers, so the draft is dropped instead.

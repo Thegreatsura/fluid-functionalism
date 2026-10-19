@@ -180,7 +180,8 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
   );
 
   return children({
-    preview: <div className="flex w-full justify-center px-6 py-16">{picker}</div>,
+    // Top left, so the row never slides sideways as its fields change width.
+    preview: <div className="flex w-full justify-start px-6 py-16">{picker}</div>,
     demoPreview: <div className="flex w-full justify-center">{picker}</div>,
     controls,
     code: buildDatePickerPlaygroundCode(state),

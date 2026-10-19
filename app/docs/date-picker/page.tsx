@@ -119,7 +119,7 @@ export default function DatePickerDoc() {
           Opens on the selected day, or today. Pick one and it closes.
         </p>
         <ComponentPreview code={singleCode} minHeightClass="min-h-[420px]" align="top">
-          <div className="pt-10">
+          <div className="w-full">
             <DatePicker value={date} onValueChange={setDate} />
           </div>
         </ComponentPreview>
@@ -130,7 +130,7 @@ export default function DatePickerDoc() {
           Pick a start and an end, or a preset. It closes once the end is set; <code>Escape</code> mid-pick puts the previous range back.
         </p>
         <ComponentPreview code={rangeCode} minHeightClass="min-h-[460px]" align="top">
-          <div className="pt-10">
+          <div className="w-full">
             <DatePicker mode="range" value={range} onValueChange={setRange} presets={presets} />
           </div>
         </ComponentPreview>
@@ -141,7 +141,7 @@ export default function DatePickerDoc() {
           2 segments, 2 popovers. Type <code>1130</code> or <code>11:30am</code> in a time, or arrow through the slots. The end list counts the duration from the start.
         </p>
         <ComponentPreview code={eventCode} minHeightClass="min-h-[420px]" align="top">
-          <div className="flex flex-col gap-1 pt-10">
+          <div className="flex w-full flex-col gap-1">
             <div
               className="px-2 text-site-title text-foreground"
               style={{ fontVariationSettings: fontWeights.semibold }}
@@ -164,7 +164,7 @@ export default function DatePickerDoc() {
           <code>time</code> takes one time instead. <code>step</code> sets the minutes between slots.
         </p>
         <ComponentPreview code={timeCode} minHeightClass="min-h-[420px]" align="top">
-          <div className="pt-10">
+          <div className="w-full">
             <DatePicker
               value={deadline}
               onValueChange={setDeadline}
@@ -181,7 +181,7 @@ export default function DatePickerDoc() {
           <code>calendarProps</code> reaches the calendar inside: booked nights, past days, cell size.
         </p>
         <ComponentPreview code={bookingCode} minHeightClass="min-h-[460px]" align="top">
-          <div className="pt-10">
+          <div className="w-full">
             <DatePicker
               mode="range"
               value={stay}

@@ -448,8 +448,9 @@ function TimeField({
   };
 
   const activeId = activeIndex !== null && open ? `${listId}-${activeIndex}` : undefined;
-  // The field sizes to its text through an invisible copy in the same grid
-  // cell, so `11:00` and `11:00 AM` both sit snug in any font.
+  // The field sizes through invisible copies in the same grid cell: its own
+  // text (or placeholder) and the list's longest times, so it fits any font
+  // and keeps one width whichever time is picked.
   const field = (
     <span
       ref={segmentRef}
@@ -466,6 +467,17 @@ function TimeField({
       <span aria-hidden className="invisible col-start-1 row-start-1 whitespace-pre tabular-nums">
         {text || placeholder}
       </span>
+      {/* The field keeps the width of its longest time, so picking 1:00 or
+          12:30 never moves what follows it. */}
+      {widestLabels.map((w) => (
+        <span
+          key={w}
+          aria-hidden
+          className="invisible col-start-1 row-start-1 whitespace-pre tabular-nums"
+        >
+          {w}
+        </span>
+      ))}
     <input
       ref={inputRef}
       type="text"
@@ -485,7 +497,7 @@ function TimeField({
       placeholder={placeholder}
       value={text}
       className={cn(
-        "col-start-1 row-start-1 w-full min-w-0 bg-transparent p-0 text-center tabular-nums text-inherit outline-none placeholder:text-muted-foreground",
+        "col-start-1 row-start-1 w-full min-w-0 bg-transparent p-0 text-left tabular-nums text-inherit outline-none placeholder:text-muted-foreground",
         sizeClasses.field,
         // The field's shape radius would clip the text selection's corners;
         // the rounded focus ring belongs to the whole segment instead.

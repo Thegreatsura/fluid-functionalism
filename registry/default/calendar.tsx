@@ -418,6 +418,28 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
 
   const stacked = cal.numberOfMonths > 1 && cal.orientation === "vertical";
 
+  // The weekday row sticks while stacked months scroll, so the strip's clip
+  // follows its bottom edge: a month sliding up leaves there, never behind it.
+  const weekdayRowRef = useRef<HTMLDivElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const row = weekdayRowRef.current;
+    const strip = stripRef.current;
+    if (!stacked || !row || !strip) return;
+    const update = () => {
+      const top = Math.max(0, row.getBoundingClientRect().bottom - strip.getBoundingClientRect().top);
+      strip.style.setProperty("--strip-clip-top", `${top}px`);
+    };
+    update();
+    // Capture catches whichever ancestor scrolls (a popover, a demo, the page).
+    window.addEventListener("scroll", update, { capture: true, passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, { capture: true });
+      window.removeEventListener("resize", update);
+    };
+  }, [stacked]);
+
   const gridCtx = useMemo(
     () => ({
       registerItem,
@@ -459,10 +481,10 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
       className={cn(
         "relative isolate flex",
         vertical ? "flex-col gap-4" : "flex-row flex-wrap gap-x-6 gap-y-4",
-        // With 2 months, the month strip slides under this clip; it reaches
+        // Side by side, the month strip slides under this clip; it reaches
         // 4px past the sides and 8px past the ends so the focus ring and the
-        // highlight are never cut.
-        (twoUp || twoStacked) && "[clip-path:inset(-8px_-4px)]",
+        // highlight are never cut. Stacked months clip below the weekday row.
+        twoUp && "[clip-path:inset(-8px_-4px)]",
         cal.fill && "w-full",
         className
       )}
@@ -550,6 +572,7 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
       </AnimatePresence>
       {vertical && months[0] && (
         <div
+          ref={weekdayRowRef}
           aria-hidden
           {...{ [INERT_ATTR]: "" }}
           className="sticky top-0 z-[4] flex bg-inherit"
@@ -563,7 +586,20 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
           <span className="sr-only">{labels.labelWeekNumberHeader?.()}</span>
         </div>
       )}
-      <GridContext.Provider value={gridCtx}>{children}</GridContext.Provider>
+      <GridContext.Provider value={gridCtx}>
+        {vertical ? (
+          // Stacked, the strip's clip starts under the weekday row, so a
+          // month sliding up leaves at its edge instead of passing behind it.
+          <div
+            ref={stripRef}
+            className="flex flex-col gap-4 [clip-path:inset(var(--strip-clip-top,0px)_-4px_-8px_-4px)]"
+          >
+            {children}
+          </div>
+        ) : (
+          children
+        )}
+      </GridContext.Provider>
     </div>
   );
 }

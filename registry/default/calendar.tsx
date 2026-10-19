@@ -1150,7 +1150,9 @@ function Day({ day, modifiers, className, style, children, ...props }: DayProps)
         <span
           aria-hidden
           data-slot="calendar-range-band"
-          className="pointer-events-none absolute inset-y-0 bg-[var(--tint)]"
+          // The hover fill: a long band reads heavier than a small one, so it
+          // takes the lightest token; the highlight over it stacks a step up.
+          className="pointer-events-none absolute inset-y-0 bg-hover"
           style={{
             left: n > band!.from ? 0 : "50%",
             right: n < band!.to ? 0 : "50%",

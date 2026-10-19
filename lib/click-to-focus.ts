@@ -38,7 +38,12 @@ export function routeKeyboardOnMouseDown(
   if (target.closest(FOCUSABLE_SELECTOR)) return; // let the element focus itself
   e.preventDefault(); // don't blur to <body> on an empty-space click
   const region = fallback ?? scope;
-  if (region.contains(document.activeElement) && document.activeElement !== region)
-    return; // already keyboard-active here — keep the current focus
+  const active = document.activeElement as HTMLElement | null;
+  // Already keyboard-active here: keep the current focus, except in a text
+  // field. Clicking away from a field means leaving it (a time being typed
+  // commits on blur), so focus moves to the region instead.
+  const typing =
+    !!active && (active.matches("input:not([type=checkbox]):not([type=radio]), textarea") || active.isContentEditable);
+  if (active && region.contains(active) && active !== region && !typing) return;
   region.focus();
 }

@@ -997,7 +997,14 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
   const segmentHover = useFluidHover(segmentsRef, { axis: "x", gapClick: false });
   const scope = useMemo(() => ({ registerItem: segmentHover.registerItem }), [segmentHover.registerItem]);
   const dateRef = useSegment(scope, 0);
-  const clearRef = useSegment(scope, 9);
+  // The clear button mounts only once there is a value, after the scope's
+  // first registration pass, so it registers through a callback ref: the
+  // highlight then glides behind it like any segment.
+  const { registerItem: registerSegment } = segmentHover;
+  const clearRef = useCallback(
+    (el: HTMLButtonElement | null) => registerSegment(9, el),
+    [registerSegment]
+  );
 
   const field = variant === "field";
   // Segments sit 2px inside the field (plus its 1px border); their corners
@@ -1257,7 +1264,7 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
       <AnimatePresence initial={false}>
         {clearable_ && (
           <motion.button
-            ref={clearRef as RefObject<HTMLButtonElement>}
+            ref={clearRef}
             key="clear"
             type="button"
             aria-label="Clear"

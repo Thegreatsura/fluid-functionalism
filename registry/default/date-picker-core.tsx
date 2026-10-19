@@ -329,6 +329,18 @@ function TimeField({
   const sizeClasses = useSize();
   const compact = sizeClasses.variant === "compact";
   const listId = useId();
+  // Every row's time takes the width of the longest one, so the durations
+  // after it line up in one column. Digits are tabular, so the longest string
+  // is the widest; its AM/PM twin is measured too, as the letters differ.
+  const labels = useMemo(
+    () => slots.map((slot) => formatTime(slot.minutes, hourCycle, locale)),
+    [slots, hourCycle, locale]
+  );
+  const widestLabels = useMemo(() => {
+    const longest = labels.reduce((a, b) => (b.length > a.length ? b : a), "");
+    const twin = longest.replace(/AM|PM/, (m) => (m === "AM" ? "PM" : "AM"));
+    return twin === longest ? [longest] : [longest, twin];
+  }, [labels]);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -549,7 +561,8 @@ function TimeField({
               id={`${listId}-${i}`}
               index={i}
               registerItem={registerItem}
-              label={formatTime(slot.minutes, hourCycle, locale)}
+              label={labels[i]}
+              widest={widestLabels}
               duration={slot.duration === undefined ? undefined : formatDuration(slot.duration)}
               selected={i === selectedIndex}
               active={i === activeIndex}
@@ -571,6 +584,7 @@ function TimeRow({
   index,
   registerItem,
   label,
+  widest,
   duration,
   selected,
   active,
@@ -581,6 +595,8 @@ function TimeRow({
   index: number;
   registerItem: UseFluidHoverReturn["registerItem"];
   label: string;
+  /** The list's widest labels, laid out invisibly to fix the time's width. */
+  widest: string[];
   duration?: string;
   selected: boolean;
   active: boolean;
@@ -618,6 +634,16 @@ function TimeRow({
         >
           {label}
         </span>
+        {widest.map((w) => (
+          <span
+            key={w}
+            aria-hidden
+            className="invisible col-start-1 row-start-1 [text-box:trim-both_cap_alphabetic]"
+            style={{ fontVariationSettings: fontWeights.semibold }}
+          >
+            {w}
+          </span>
+        ))}
         <span
           className="col-start-1 row-start-1 transition-[color,font-variation-settings] duration-80 [text-box:trim-both_cap_alphabetic]"
           style={{ fontVariationSettings: selected ? fontWeights.semibold : fontWeights.normal }}

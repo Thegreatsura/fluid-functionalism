@@ -617,6 +617,13 @@ function CaptionText({
   );
 }
 
+/** Mask for a side-by-side caption layer: transparent under the chevron
+ *  (78% of a cell), then a 24px ramp to opaque, toward `to`. */
+function captionFade(to: "left" | "right") {
+  const nav = "calc(var(--cell-size) * 0.78)";
+  return `linear-gradient(to ${to}, transparent ${nav}, #000 calc(${nav} + 24px))`;
+}
+
 function MonthCaption({ calendarMonth, displayIndex, className, style, ...props }: MonthCaptionProps) {
   const cal = useCalendarContext();
   const { formatters } = useDayPicker();
@@ -641,6 +648,25 @@ function MonthCaption({ calendarMonth, displayIndex, className, style, ...props 
         : [];
   const key = calendarMonth.date.getTime();
   const offset = grid.reduceMotion ? 0 : 10;
+  const caption = (
+    <span className={cn("relative inline-grid", grid.stride === null && "overflow-hidden")}>
+      <AnimatePresence initial={false} custom={grid.direction}>
+        <CaptionText
+          key={key}
+          monthTime={key}
+          compact={cal.compact}
+          offset={offset}
+          stride={grid.stride}
+        >
+          {formatters.formatCaption(
+            calendarMonth.date,
+            calendarMonth.weeks[0]?.days[0]?.dateLib.options,
+            calendarMonth.weeks[0]?.days[0]?.dateLib
+          )}
+        </CaptionText>
+      </AnimatePresence>
+    </span>
+  );
 
   return (
     <div
@@ -660,23 +686,31 @@ function MonthCaption({ calendarMonth, displayIndex, className, style, ...props 
           {navStart.length > 0 && <NavGroup buttons={navStart} />}
         </div>
       )}
-      <span className={cn("relative inline-grid", grid.stride === null && "overflow-hidden")}>
-        <AnimatePresence initial={false} custom={grid.direction}>
-          <CaptionText
-            key={key}
-            monthTime={key}
-            compact={cal.compact}
-            offset={offset}
-            stride={grid.stride}
+      {twoUp && grid.stride !== null ? (
+        // Side by side, captions slide a whole stride. This layer reaches over
+        // the neighbouring month (so the incoming caption isn't cut at the
+        // gap) and fades out on the chevron's side, like a scroll fade:
+        // clear under the chevron, then a 24px ramp, so no title ever slides
+        // under it.
+        <div
+          className="pointer-events-none absolute inset-y-0"
+          style={{
+            left: first ? 0 : -grid.stride,
+            right: last ? 0 : -grid.stride,
+            maskImage: captionFade(first ? "right" : "left"),
+            WebkitMaskImage: captionFade(first ? "right" : "left"),
+          }}
+        >
+          <div
+            className="absolute inset-y-0 flex items-center justify-center"
+            style={{ left: first ? 0 : grid.stride, right: last ? 0 : grid.stride }}
           >
-            {formatters.formatCaption(
-              calendarMonth.date,
-              calendarMonth.weeks[0]?.days[0]?.dateLib.options,
-              calendarMonth.weeks[0]?.days[0]?.dateLib
-            )}
-          </CaptionText>
-        </AnimatePresence>
-      </span>
+            {caption}
+          </div>
+        </div>
+      ) : (
+        caption
+      )}
       {twoUp ? (
         <div className="absolute right-0 top-1/2 -translate-y-1/2">
           {navEnd.length > 0 && <NavGroup buttons={navEnd} />}

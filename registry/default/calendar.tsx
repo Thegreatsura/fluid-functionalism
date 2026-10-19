@@ -731,7 +731,9 @@ function MonthCaption({ calendarMonth, displayIndex, className, style, ...props 
   const key = calendarMonth.date.getTime();
   const offset = grid.reduceMotion ? 0 : 10;
   const caption = (
-    <span className={cn("relative inline-grid", grid.stride === null && "overflow-hidden")}>
+    // No clip: the label is trimmed to cap height, so a clip would shave its
+    // ascenders and round overshoots; the 10px slide fades in and out anyway.
+    <span className="relative inline-grid">
       <AnimatePresence initial={false} custom={grid.direction}>
         <CaptionText
           key={key}

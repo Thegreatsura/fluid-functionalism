@@ -509,7 +509,9 @@ function TimeField({
       data-slot="date-picker-time"
       className={cn(
         segmentClass,
-        "cursor-text gap-1.5 has-[input:focus-visible]:ring-1 has-[input:focus-visible]:ring-[color:var(--focus-ring,#6B97FF)]",
+        // Icon-to-text gap matches Button's, at both sizes.
+        compact ? "gap-1" : "gap-1.5",
+        "cursor-text has-[input:focus-visible]:ring-1 has-[input:focus-visible]:ring-[color:var(--focus-ring,#6B97FF)]",
         sizeClasses.field
       )}
       onClick={() => inputRef.current?.focus()}
@@ -1117,7 +1119,8 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
       data-placeholder={hasValue ? undefined : ""}
       className={cn(
         segmentClass,
-        sizeClasses.gap,
+        // Icon-to-label gap matches Button's, at both sizes.
+        compact ? "gap-1" : "gap-1.5",
         "cursor-pointer whitespace-nowrap",
         field && !hasTime && !hasTimeRange && "flex-1",
         hasValue ? "text-foreground" : "text-muted-foreground",
@@ -1131,7 +1134,9 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
           className="shrink-0 text-muted-foreground"
         />
       )}
-      <span className="inline-grid tabular-nums">
+      {/* Left-aligned: a button centers its text, which would float the date
+          inside its fixed width. */}
+      <span className="inline-grid text-left tabular-nums">
         <span className="col-start-1 row-start-1 [text-box:trim-both_cap_alphabetic]">
           {dateLabel}
         </span>

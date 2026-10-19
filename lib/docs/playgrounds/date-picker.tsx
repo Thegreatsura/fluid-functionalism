@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   DatePicker,
   type DateRange,
@@ -10,15 +10,19 @@ import {
 import { Switch } from "@/registry/radix/switch";
 import {
   PLAY_SWITCH,
+  PlayDivider,
   PlayField,
   PlaySelect,
   PlaygroundPanel,
 } from "@/lib/docs/playground";
+import { demoBookedDays } from "./calendar";
 import type { PlaygroundProps } from "./types";
 
 // ── DatePicker playground ────────────────────────────────
-// What gets picked (a date, a range, a date with a time or a time range)
-// and how the trigger sits on the page (a field, or inline text).
+// What gets picked (a date, a range, a date with a time or a time range),
+// how the trigger sits on the page (a field, or inline text), and every
+// prop that changes what the popovers show. Handlers, `locale` and the open
+// state have no visual knob and stay in the API table.
 
 type Time = "none" | "time" | "timeRange";
 
@@ -27,6 +31,15 @@ interface PlayState {
   variant: "field" | "ghost";
   time: Time;
   presets: boolean;
+  months: "1" | "2";
+  orientation: "auto" | "horizontal" | "vertical";
+  step: "15" | "30" | "60";
+  clock: "locale" | "12" | "24";
+  weekNumbers: boolean;
+  days: "all" | "booked";
+  clearable: boolean;
+  disabled: boolean;
+  size: "site" | "default" | "compact";
 }
 
 const DEFAULT_STATE: PlayState = {
@@ -34,7 +47,20 @@ const DEFAULT_STATE: PlayState = {
   variant: "field",
   time: "none",
   presets: false,
+  months: "1",
+  orientation: "auto",
+  step: "15",
+  clock: "locale",
+  weekNumbers: false,
+  days: "all",
+  clearable: true,
+  disabled: false,
+  size: "site",
 };
+
+/** The default month count for a mode: 1 for a date, 2 for a range. */
+const defaultMonths = (mode: PlayState["mode"]): PlayState["months"] =>
+  mode === "range" ? "2" : "1";
 
 function pick<T>(options: readonly T[]): T {
   return options[Math.floor(Math.random() * options.length)];
@@ -57,6 +83,10 @@ export function demoPresets(today = new Date()): DatePickerPreset[] {
 export function buildDatePickerPlaygroundCode(o: PlayState): string {
   const range = o.mode === "range";
   const time = !range && o.time !== "none" ? o.time : "none";
+  const calendarProps = [
+    ...(o.days === "booked" ? ["booked", "disabled: { before: new Date() }"] : []),
+    ...(o.weekNumbers ? ["showWeekNumber: true"] : []),
+  ];
   const props = [
     ...(range ? [`mode="range"`] : []),
     ...(o.variant === "ghost" ? [`variant="ghost"`] : []),
@@ -64,7 +94,15 @@ export function buildDatePickerPlaygroundCode(o: PlayState): string {
     `onValueChange={${range ? "setRange" : "setDate"}}`,
     ...(time === "time" ? ["time={time}", "onTimeChange={setTime}"] : []),
     ...(time === "timeRange" ? ["timeRange={time}", "onTimeRangeChange={setTime}"] : []),
+    ...(time !== "none" && o.step !== "15" ? [`step={${o.step}}`] : []),
+    ...(time !== "none" && o.clock !== "locale" ? [`hourCycle={${o.clock}}`] : []),
     ...(range && o.presets ? ["presets={presets}"] : []),
+    ...(o.months !== defaultMonths(o.mode) ? [`numberOfMonths={${o.months}}`] : []),
+    ...(o.months === "2" && o.orientation !== "auto" ? [`orientation="${o.orientation}"`] : []),
+    ...(calendarProps.length ? [`calendarProps={{ ${calendarProps.join(", ")} }}`] : []),
+    ...(o.variant === "field" && !o.clearable ? ["clearable={false}"] : []),
+    ...(o.disabled ? ["disabled"] : []),
+    ...(o.size !== "site" ? [`size="${o.size}"`] : []),
   ];
   return [
     `import { DatePicker${range ? ", type DateRange" : ""}${time === "timeRange" ? ", type TimeRange" : ""} } from "./components";`,
@@ -95,45 +133,66 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
   const [time, setTime] = useState<string | null>("11:00");
   const [timeRange, setTimeRange] = useState<TimeRange | null>({ start: "11:00", end: "12:45" });
   const [presets] = useState(() => demoPresets());
+  const booked = useMemo(() => demoBookedDays(), []);
 
-  const randomize = () =>
+  const randomize = () => {
+    const mode = pick(["single", "range"] as const);
     setState({
-      mode: pick(["single", "range"] as const),
+      mode,
       variant: pick(["field", "ghost"] as const),
       time: pick(["none", "time", "timeRange"] as const),
       presets: Math.random() > 0.5,
+      months: Math.random() > 0.7 ? (mode === "range" ? "1" : "2") : defaultMonths(mode),
+      orientation: pick(["auto", "horizontal", "vertical"] as const),
+      step: pick(["15", "15", "30", "60"] as const),
+      clock: pick(["locale", "12", "24"] as const),
+      weekNumbers: Math.random() > 0.6,
+      days: pick(["all", "booked"] as const),
+      clearable: true,
+      disabled: false,
+      size: "site",
     });
+  };
 
   const range_ = state.mode === "range";
+  const hasTime = !range_ && state.time !== "none";
+  // Props every variant shares.
+  const shared = {
+    variant: state.variant,
+    numberOfMonths: Number(state.months) as 1 | 2,
+    orientation: state.orientation,
+    step: Number(state.step),
+    hourCycle: state.clock === "locale" ? undefined : (Number(state.clock) as 12 | 24),
+    calendarProps: {
+      ...(state.days === "booked" ? { booked, disabled: { before: new Date() } } : {}),
+      showWeekNumber: state.weekNumbers,
+    },
+    clearable: state.clearable,
+    disabled: state.disabled,
+    size: state.size === "site" ? undefined : state.size,
+  };
   const picker = range_ ? (
     <DatePicker
       key="range"
       mode="range"
-      variant={state.variant}
+      {...shared}
       value={range}
       onValueChange={setRange}
       presets={state.presets ? presets : undefined}
     />
   ) : state.time === "time" ? (
-    <DatePicker
-      key="time"
-      variant={state.variant}
-      value={date}
-      onValueChange={setDate}
-      time={time}
-      onTimeChange={setTime}
-    />
+    <DatePicker key="time" {...shared} value={date} onValueChange={setDate} time={time} onTimeChange={setTime} />
   ) : state.time === "timeRange" ? (
     <DatePicker
       key="timeRange"
-      variant={state.variant}
+      {...shared}
       value={date}
       onValueChange={setDate}
       timeRange={timeRange}
       onTimeRangeChange={setTimeRange}
     />
   ) : (
-    <DatePicker key="single" variant={state.variant} value={date} onValueChange={setDate} />
+    <DatePicker key="single" {...shared} value={date} onValueChange={setDate} />
   );
 
   const controls = (
@@ -141,7 +200,11 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
       <PlayField label="Mode">
         <PlaySelect
           value={state.mode}
-          onChange={(v) => set("mode", v as PlayState["mode"])}
+          onChange={(v) => {
+            const mode = v as PlayState["mode"];
+            // Each mode opens on its own default month count.
+            setState((prev) => ({ ...prev, mode, months: defaultMonths(mode) }));
+          }}
           options={[
             { value: "single", label: "Date" },
             { value: "range", label: "Range" },
@@ -169,11 +232,96 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
           ]}
         />
       </PlayField>
+      <PlayField label="Step" disabled={!hasTime}>
+        <PlaySelect
+          value={state.step}
+          onChange={(v) => set("step", v as PlayState["step"])}
+          options={[
+            { value: "15", label: "15 min" },
+            { value: "30", label: "30 min" },
+            { value: "60", label: "1 hour" },
+          ]}
+        />
+      </PlayField>
+      <PlayField label="Clock" disabled={!hasTime}>
+        <PlaySelect
+          value={state.clock}
+          onChange={(v) => set("clock", v as PlayState["clock"])}
+          options={[
+            { value: "locale", label: "Locale" },
+            { value: "12", label: "12h" },
+            { value: "24", label: "24h" },
+          ]}
+        />
+      </PlayField>
       <Switch
         label="Presets"
         checked={state.presets}
         disabled={!range_}
         onToggle={() => set("presets", !state.presets)}
+        className={PLAY_SWITCH}
+      />
+      <PlayDivider />
+      <PlayField label="Months">
+        <PlaySelect
+          value={state.months}
+          onChange={(v) => set("months", v as PlayState["months"])}
+          options={[
+            { value: "1", label: "1" },
+            { value: "2", label: "2" },
+          ]}
+        />
+      </PlayField>
+      <PlayField label="Orientation" disabled={state.months === "1"}>
+        <PlaySelect
+          value={state.orientation}
+          onChange={(v) => set("orientation", v as PlayState["orientation"])}
+          options={[
+            { value: "auto", label: "Auto" },
+            { value: "horizontal", label: "Horizontal" },
+            { value: "vertical", label: "Vertical" },
+          ]}
+        />
+      </PlayField>
+      <PlayField label="Days">
+        <PlaySelect
+          value={state.days}
+          onChange={(v) => set("days", v as PlayState["days"])}
+          options={[
+            { value: "all", label: "All open" },
+            { value: "booked", label: "Booked + past" },
+          ]}
+        />
+      </PlayField>
+      <Switch
+        label="Week numbers"
+        checked={state.weekNumbers}
+        onToggle={() => set("weekNumbers", !state.weekNumbers)}
+        className={PLAY_SWITCH}
+      />
+      <PlayDivider />
+      <PlayField label="Size">
+        <PlaySelect
+          value={state.size}
+          onChange={(v) => set("size", v as PlayState["size"])}
+          options={[
+            { value: "site", label: "Site" },
+            { value: "default", label: "Default" },
+            { value: "compact", label: "Compact" },
+          ]}
+        />
+      </PlayField>
+      <Switch
+        label="Clearable"
+        checked={state.clearable}
+        disabled={state.variant !== "field"}
+        onToggle={() => set("clearable", !state.clearable)}
+        className={PLAY_SWITCH}
+      />
+      <Switch
+        label="Disabled"
+        checked={state.disabled}
+        onToggle={() => set("disabled", !state.disabled)}
         className={PLAY_SWITCH}
       />
     </PlaygroundPanel>

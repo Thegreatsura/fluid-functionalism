@@ -94,12 +94,12 @@ describe("day states", () => {
     expect(past.className).not.toContain("line-through");
   });
 
-  it("fills the selected day and sets its weight without a layout change", () => {
+  it("fills the selected day and keeps its regular weight", () => {
     render(<Calendar month={new Date(2026, 10, 1)} selected={new Date(2026, 10, 20)} onSelect={() => {}} />);
     const day = dayButton(/November 20th, 2026/);
     expect(day.getAttribute("data-selected")).not.toBeNull();
     expect(day.className).toContain("bg-foreground");
-    expect(day.style.fontVariationSettings).toContain("550");
+    expect(day.style.fontVariationSettings).not.toContain("550");
   });
 });
 

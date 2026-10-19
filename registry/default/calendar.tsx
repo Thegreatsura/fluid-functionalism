@@ -177,6 +177,9 @@ interface GridContextValue {
   previewEnd: number | null;
   direction: number;
   reduceMotion: boolean;
+  /** Side by side months: how far one month travels on a month change (its
+   *  width plus the gap), so the grids move as one strip. Null otherwise. */
+  stride: number | null;
 }
 
 const GridContext = createContext<GridContextValue | null>(null);
@@ -196,6 +199,28 @@ const PanelPresentContext = createContext(true);
 const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 const INDEX_ATTR = "data-calendar-index";
+
+/**
+ * A month change. One month: the grid slides 10px and crossfades. Side by
+ * side: every grid travels a full stride, so the month leaving the right slot
+ * and the same month entering the left slot share one path and read as one
+ * strip sliding under the clip. `custom` is the direction of travel, read
+ * from AnimatePresence so an exiting panel always gets the latest one.
+ */
+function slideVariants(offset: number, stride: number | null) {
+  const carousel = stride !== null && offset > 0;
+  const distance = carousel ? stride : offset;
+  const exitTransition = carousel ? spring.moderate : spring.moderate.exit;
+  return {
+    enter: (d: number) => ({ opacity: carousel ? 1 : 0, x: d * distance }),
+    center: { opacity: 1, x: 0, transition: spring.moderate },
+    exit: (d: number) => ({
+      opacity: carousel ? 1 : 0,
+      x: -d * distance,
+      transition: exitTransition,
+    }),
+  };
+}
 /** Parts the pointer passes over without lighting a day (captions, the
  *  weekday row, week numbers, booked days). */
 const INERT_ATTR = "data-calendar-inert";
@@ -290,6 +315,26 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
     setActiveIndex(null);
   };
 
+  // Side by side, a month change moves every grid by one month width plus
+  // the gap. Measured from the first month (all months share one width).
+  const twoUp = cal.numberOfMonths > 1 && cal.orientation === "horizontal";
+  const [stride, setStride] = useState<number | null>(null);
+  useIsoLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!twoUp || !container) {
+      setStride(null);
+      return;
+    }
+    const month = container.querySelector<HTMLElement>('[data-slot="calendar-month"]');
+    if (!month) return;
+    const measure = () => setStride(month.offsetWidth + MONTH_GAP);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(month);
+    return () => ro.disconnect();
+  }, [twoUp]);
+
   // While a range end is being picked, the band follows the lit day.
   const previewDate =
     cal.picking && activeIndex !== null && firstDay ? addDays(firstDay, activeIndex) : null;
@@ -315,10 +360,10 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
   }
 
   const gridCtx = useMemo(
-    () => ({ registerItem, gridStart, band, previewEnd, direction, reduceMotion }),
+    () => ({ registerItem, gridStart, band, previewEnd, direction, reduceMotion, stride }),
     // band is rebuilt each render; compare its parts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [registerItem, gridStart, band?.from, band?.to, previewEnd, direction, reduceMotion]
+    [registerItem, gridStart, band?.from, band?.to, previewEnd, direction, reduceMotion, stride]
   );
 
   const focusRect: ItemRect | null =
@@ -334,6 +379,10 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
       className={cn(
         "relative isolate flex",
         vertical ? "flex-col gap-4" : "flex-row flex-wrap gap-x-6 gap-y-4",
+        // Side by side, the month strip slides under this clip; it reaches
+        // 4px past the sides and 8px past the ends so the focus ring and the
+        // highlight are never cut.
+        twoUp && "[clip-path:inset(-8px_-4px)]",
         cal.fill && "w-full",
         className
       )}
@@ -522,29 +571,32 @@ function NavSlot({
  *  leaves the live region, so a month change is announced once. */
 function CaptionText({
   compact,
-  direction,
   offset,
+  stride,
   children,
 }: {
   compact: boolean;
-  direction: number;
   offset: number;
+  stride: number | null;
   children: ReactNode;
 }) {
   const present = useIsPresent();
+  const { direction } = useGridContext();
   return (
     <motion.span
       role={present ? "status" : undefined}
       aria-live={present ? "polite" : undefined}
       aria-hidden={present ? undefined : true}
       className={cn(
-        "col-start-1 row-start-1 whitespace-nowrap text-foreground [text-box:trim-both_cap_alphabetic]",
+        "col-start-1 row-start-1 justify-self-center whitespace-nowrap text-foreground [text-box:trim-both_cap_alphabetic]",
         typeClass("body", compact ? "compact" : "default")
       )}
       style={{ fontVariationSettings: fontWeights.semibold }}
-      initial={{ opacity: 0, x: direction * offset }}
-      animate={{ opacity: 1, x: 0, transition: spring.moderate }}
-      exit={{ opacity: 0, x: -direction * offset, transition: spring.moderate.exit }}
+      variants={slideVariants(offset, stride)}
+      custom={direction}
+      initial="enter"
+      animate="center"
+      exit="exit"
     >
       {children}
     </motion.span>
@@ -594,14 +646,9 @@ function MonthCaption({ calendarMonth, displayIndex, className, style, ...props 
           {navStart.length > 0 && <NavGroup buttons={navStart} />}
         </div>
       )}
-      <span className="relative inline-grid overflow-hidden">
-        <AnimatePresence initial={false} mode="popLayout" custom={grid.direction}>
-          <CaptionText
-            key={key}
-            compact={cal.compact}
-            direction={grid.direction}
-            offset={offset}
-          >
+      <span className={cn("relative inline-grid", grid.stride === null && "overflow-hidden")}>
+        <AnimatePresence initial={false} custom={grid.direction}>
+          <CaptionText key={key} compact={cal.compact} offset={offset} stride={grid.stride}>
             {formatters.formatCaption(
               calendarMonth.date,
               calendarMonth.weeks[0]?.days[0]?.dateLib.options,
@@ -706,6 +753,8 @@ function WeekNumberHeader({ className, style, ...props }: HTMLAttributes<HTMLEle
  * travel and crossfades with the grid it replaces; the box springs between
  * 5- and 6-week heights from a measured offsetHeight (never "auto", which
  * overshoots under a scaled ancestor). Reduced motion keeps the crossfade.
+ * Both panels share one grid cell, like the caption, so the incoming month
+ * is laid out (and its days measured) at the top while the old one fades.
  */
 function Weeks({ className, style, children }: HTMLAttributes<HTMLElement>) {
   const month = useContext(MonthContext);
@@ -734,16 +783,16 @@ function Weeks({ className, style, children }: HTMLAttributes<HTMLElement>) {
   return (
     <motion.div
       data-slot="calendar-weeks"
-      className={cn("relative", clip && "overflow-hidden")}
+      className={cn("relative grid", clip && "[overflow-y:clip]")}
       style={{ height }}
     >
-      <AnimatePresence initial={false} mode="popLayout" custom={grid.direction}>
+      <AnimatePresence initial={false} custom={grid.direction}>
         <WeeksPanel
           key={key}
           className={className}
           style={style}
-          direction={grid.direction}
           offset={offset}
+          stride={grid.stride}
           onHeight={onHeight}
         >
           {children}
@@ -757,18 +806,19 @@ function WeeksPanel({
   className,
   style,
   children,
-  direction,
   offset,
+  stride,
   onHeight,
 }: {
   className?: string;
   style?: CSSProperties;
   children: ReactNode;
-  direction: number;
   offset: number;
+  stride: number | null;
   onHeight: (h: number) => void;
 }) {
   const present = useIsPresent();
+  const { direction } = useGridContext();
   const ref = useRef<HTMLDivElement>(null);
   useIsoLayoutEffect(() => {
     const el = ref.current;
@@ -785,11 +835,17 @@ function WeeksPanel({
         ref={ref}
         role="rowgroup"
         aria-hidden={present ? undefined : true}
-        className={cn("flex flex-col", !present && "pointer-events-none", className)}
+        className={cn(
+          "col-start-1 row-start-1 flex flex-col self-start",
+          !present && "pointer-events-none",
+          className
+        )}
         style={style}
-        initial={{ opacity: 0, x: direction * offset }}
-        animate={{ opacity: 1, x: 0, transition: spring.moderate }}
-        exit={{ opacity: 0, x: -direction * offset, transition: spring.moderate.exit }}
+        variants={slideVariants(offset, stride)}
+        custom={direction}
+        initial="enter"
+        animate="center"
+        exit="exit"
       >
         {children}
       </motion.div>
@@ -942,14 +998,18 @@ function DayButton({ day, modifiers, className, style, children, ...props }: Day
             : day.outside
               ? "cursor-pointer text-muted-foreground opacity-60"
               : "cursor-pointer text-foreground",
+        // Inset ring, concentric with the cell: 2px in, so 8px - 2px = 6px.
         isPreviewEnd &&
-          "before:pointer-events-none before:absolute before:-inset-[2px] before:rounded-[inherit] before:border before:border-foreground",
+          cn(
+            "before:pointer-events-none before:absolute before:inset-[2px] before:border before:border-background",
+            cal.pill ? "before:rounded-full" : "before:rounded-[6px]"
+          ),
         className
       )}
       style={{
         ...style,
-        fontVariationSettings:
-          isEnd || modifiers.today ? fontWeights.semibold : fontWeights.normal,
+        // Selection never changes weight; only today is semibold.
+        fontVariationSettings: modifiers.today ? fontWeights.semibold : fontWeights.normal,
       }}
     >
       <span className="[text-box:trim-both_cap_alphabetic]">{children}</span>

@@ -78,9 +78,9 @@ Two registry items that cover single dates, date ranges and date + time, with th
 | State | Look |
 |---|---|
 | Hover | One shared fluid hover highlight (`--hover`) gliding across the grid (`useFluidHover({ axis: "xy" })`, rows gap-0) |
-| Selected (single, range ends) | Solid `bg-foreground text-background`, semibold via `fontVariationSettings` (no layout shift) |
+| Selected (single, range ends) | Solid `bg-foreground text-background`, regular weight (selection never changes weight) |
 | Range middle | One continuous `--tint` band per week row, from the center of the start cell to the center of the end cell, rounded only at row ends. Continues across row and month breaks (Airbnb ref) |
-| Range hover preview | While picking the end, the band follows the hovered/focused day (across both months). Preview end = solid circle with a 2px-offset ring in foreground color (same geometry as the focus ring) |
+| Range hover preview | While picking the end, the band follows the hovered/focused day (across both months). Preview end = solid circle at regular cell size with a 1px background-color ring inset 2px, concentric radius |
 | Today | Semibold number + 4px dot under it; dot turns `text-background` when today is selected |
 | Booked | Unavailable (disabled, not focusable) + muted + line-through |
 | Unavailable (outside `available`, `disabled`, past) | Disabled, muted, no line-through |
@@ -146,7 +146,7 @@ No brand color: the palette stays neutral.
 ## 7. Motion
 
 - Springs from `lib/springs.ts` only.
-- Month change: direction-aware 8 to 12px slide + crossfade on `moderate`, caption text too. Grid height animates between 5- and 6-week months by **measuring `offsetHeight`** (never `"auto"`, see framer-under-scale note). Reduced motion: crossfade only.
+- Month change: direction-aware 8 to 12px slide + crossfade on `moderate`, caption text too. Two months side by side: the strip slides a full month width (carousel), no crossfade. Grid height animates between 5- and 6-week months by **measuring `offsetHeight`** (never `"auto"`, see framer-under-scale note). Reduced motion: crossfade only.
 - Selected weight change via `fontVariationSettings` (no layout shift).
 - Popover enter/exit follow the existing popup pattern for each flavor.
 - Add `calendar` / `date-picker` to `REFERENCE_TIERS` on `/docs/motion` and to `motion-guidelines.md`.

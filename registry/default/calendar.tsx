@@ -424,13 +424,13 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
           "z-[1]",
           cellRadius,
           // Picking a range end, the highlight is the proposed end: the solid
-          // fill and its inset ring (2px in, radius concentric with the
+          // fill and its inset ring (1px in, radius concentric with the
           // cell's) glide to the pointer like the single-select highlight
           // instead of jumping from cell to cell.
           previewGlides &&
             cn(
-              "bg-foreground before:pointer-events-none before:absolute before:inset-[2px] before:border before:border-background",
-              cal.pill ? "before:rounded-full" : "before:rounded-[6px]"
+              "bg-foreground before:pointer-events-none before:absolute before:inset-px before:border before:border-background",
+              cal.pill ? "before:rounded-full" : "before:rounded-[7px]"
             )
         )}
         transition={snap ? false : undefined}

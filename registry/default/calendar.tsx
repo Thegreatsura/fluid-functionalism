@@ -1062,7 +1062,12 @@ function DayButton({ day, modifiers, className, style, children, ...props }: Day
       data-preview-end={isPreviewEnd || undefined}
       className={cn(
         "relative z-[2] flex items-center justify-center p-0 outline-none select-none tabular-nums",
-        "transition-[color,background-color,font-variation-settings] duration-80",
+        // While a range end is being picked the proposed end jumps from cell
+        // to cell with the pointer, and the band slices under it switch at
+        // once: a fade here would flash half-filled circles, so it's instant.
+        cal.picking
+          ? "transition-none"
+          : "transition-[color,background-color,font-variation-settings] duration-80",
         cal.fill ? "aspect-square h-full max-w-full" : "size-[var(--cell-size)]",
         cal.pill ? "rounded-full" : "rounded-lg",
         typeClass("body", compact ? "compact" : "default"),

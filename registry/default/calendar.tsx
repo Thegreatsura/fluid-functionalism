@@ -334,23 +334,31 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
 
   // Side by side, a month change moves every grid by one month width plus
   // the gap. Measured from the first month (all months share one width).
+  // Stacked, it moves every grid by the distance between the two month slots,
+  // so the month leaving the lower slot and the same month arriving in the
+  // upper one share a path, as side by side. Measured on the layout a change
+  // starts from: the arriving month starts exactly where it was shown.
   const twoUp = cal.numberOfMonths > 1 && cal.orientation === "horizontal";
+  const twoStacked = cal.numberOfMonths > 1 && cal.orientation === "vertical";
   const [stride, setStride] = useState<number | null>(null);
   useIsoLayoutEffect(() => {
     const container = containerRef.current;
-    if (!twoUp || !container) {
+    if ((!twoUp && !twoStacked) || !container) {
       setStride(null);
       return;
     }
-    const month = container.querySelector<HTMLElement>('[data-slot="calendar-month"]');
-    if (!month) return;
-    const measure = () => setStride(month.offsetWidth + MONTH_GAP);
+    const months = container.querySelectorAll<HTMLElement>('[data-slot="calendar-month"]');
+    const [first, second] = [months[0], months[1]];
+    if (!first || (twoStacked && !second)) return;
+    const measure = () =>
+      setStride(twoUp ? first.offsetWidth + MONTH_GAP : second.offsetTop - first.offsetTop);
     measure();
     if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(measure);
-    ro.observe(month);
+    ro.observe(first);
+    if (second) ro.observe(second);
     return () => ro.disconnect();
-  }, [twoUp]);
+  }, [twoUp, twoStacked]);
 
   // While a range end is being picked, the band follows the lit day.
   const previewDate =
@@ -451,10 +459,10 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
       className={cn(
         "relative isolate flex",
         vertical ? "flex-col gap-4" : "flex-row flex-wrap gap-x-6 gap-y-4",
-        // Side by side, the month strip slides under this clip; it reaches
+        // With 2 months, the month strip slides under this clip; it reaches
         // 4px past the sides and 8px past the ends so the focus ring and the
         // highlight are never cut.
-        twoUp && "[clip-path:inset(-8px_-4px)]",
+        (twoUp || twoStacked) && "[clip-path:inset(-8px_-4px)]",
         cal.fill && "w-full",
         className
       )}

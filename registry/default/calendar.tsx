@@ -633,7 +633,7 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
         <div
           {...{ [INERT_ATTR]: "" }}
           className="absolute right-0 z-[5] flex h-[var(--cell-size)] items-center"
-          style={{ top: "calc(var(--cell-size) * 0.8 + 16px)" }}
+          style={{ top: "calc(round(down, var(--cell-size) * 0.8, 1px) + 16px)" }}
         >
           <NavGroup buttons={["previous", "next"]} />
         </div>
@@ -955,12 +955,15 @@ function MonthGrid({ className, style, children, ...props }: HTMLAttributes<HTML
   );
 }
 
+// The weekday row's height is rounded to whole pixels: the hover layers are
+// placed from offsetTop, which rounds, so a fractional row (36 x 0.8 = 28.8)
+// would set them a fraction of a pixel off every day below it.
 function WeekdayCell({ children, className }: { children: ReactNode; className?: string }) {
   const cal = useCalendarContext();
   return (
     <span
       className={cn(
-        "flex h-[calc(var(--cell-size)*0.8)] items-center justify-center text-muted-foreground",
+        "flex h-[round(down,calc(var(--cell-size)*0.8),1px)] items-center justify-center text-muted-foreground",
         cal.fill ? "min-w-0 flex-1" : "w-[var(--cell-size)]",
         typeClass("caption", cal.compact ? "compact" : "default"),
         className
@@ -994,7 +997,7 @@ function Weekday({ className, style, children, ...props }: HTMLAttributes<HTMLEl
     <div
       role="columnheader"
       className={cn(
-        "flex h-[calc(var(--cell-size)*0.8)] items-center justify-center text-muted-foreground",
+        "flex h-[round(down,calc(var(--cell-size)*0.8),1px)] items-center justify-center text-muted-foreground",
         cal.fill ? "min-w-0 flex-1" : "w-[var(--cell-size)]",
         typeClass("caption", cal.compact ? "compact" : "default"),
         className

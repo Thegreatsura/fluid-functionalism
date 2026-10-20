@@ -1293,7 +1293,7 @@ function DayButton({ day, modifiers, className, style, children, ...props }: Day
       data-preview-end={isPreviewEnd || undefined}
       className={cn(
         "relative z-[2] flex items-center justify-center p-0 outline-none select-none tabular-nums",
-        hasDetail && "flex-col gap-1",
+        hasDetail && "flex-col gap-2",
         // While a range end is being picked the fill is the gliding
         // highlight's: cells only swap their number's color, faded over the
         // highlight's arrival so the number never shows on the wrong fill.

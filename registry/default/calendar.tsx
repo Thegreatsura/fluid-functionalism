@@ -8,6 +8,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  useId,
   useState,
   type CSSProperties,
   type FocusEvent,
@@ -1272,17 +1273,14 @@ function DayButton({ day, modifiers, className, style, children, ...props }: Day
   // Optional content under the number (a price). Outside days skip it.
   const detail = !day.outside && cal.dayDetail ? cal.dayDetail(day.date) : null;
   const hasDetail = detail !== null && detail !== undefined && detail !== false && detail !== "";
-  const baseLabel = (props as { "aria-label"?: string })["aria-label"];
-  const ariaLabel =
-    hasDetail && (typeof detail === "string" || typeof detail === "number") && baseLabel
-      ? `${baseLabel}, ${detail}`
-      : baseLabel;
+  // Read after the date, whatever the detail is (text or a styled node).
+  const detailId = useId();
 
   return (
     <button
       ref={ref}
       {...props}
-      aria-label={ariaLabel}
+      aria-describedby={hasDetail ? detailId : undefined}
       tabIndex={present ? props.tabIndex : -1}
       {...{ [INDEX_ATTR]: day.outside ? undefined : index }}
       {...(unavailable ? { [INERT_ATTR]: "" } : {})}
@@ -1327,6 +1325,7 @@ function DayButton({ day, modifiers, className, style, children, ...props }: Day
       <span className="[text-box:trim-both_cap_alphabetic]">{children}</span>
       {hasDetail && (
         <span
+          id={detailId}
           data-slot="calendar-day-detail"
           className={cn(
             "whitespace-nowrap [text-box:trim-both_cap_alphabetic]",
@@ -1410,7 +1409,7 @@ interface CalendarBaseProps extends PassThrough {
   /**
    * Extra content under each day's number, such as a price: return a short
    * string or node, or null for none. Set a taller `cellSize` (56 and up) to
-   * give it room. A string or number is added to the day's label too.
+   * give it room. Screen readers read it after the date (aria-describedby).
    */
   dayDetail?: (date: Date) => ReactNode;
   /** Stretch the columns to the container's width; `cellSize` then caps

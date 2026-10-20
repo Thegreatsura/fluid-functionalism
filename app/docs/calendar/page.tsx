@@ -66,15 +66,25 @@ const sizeCode = `import { Calendar } from "./components";
 // A nightly rate per weekday, Sunday first.
 const rates = [129, 119, 119, 124, 139, 189, 199];
 
+// Low rates in green, high ones in red, the middle stays muted.
+const tone = (rate: number) =>
+  rate <= 124 ? "text-[color:var(--success)]" : rate >= 189 ? "text-destructive" : undefined;
+
 <Calendar
   cellSize={56}
   selected={date}
   onSelect={setDate}
-  dayDetail={(day) => \`$\${rates[day.getDay()]}\`}
+  dayDetail={(day) => {
+    const rate = rates[day.getDay()];
+    return <span className={tone(rate)}>\${rate}</span>;
+  }}
 />`;
 
 /** A nightly rate per weekday, Sunday first, for the cell size demo. */
 const rates = [129, 119, 119, 124, 139, 189, 199];
+/** Low rates in green, high ones in red, the middle stays muted. */
+const tone = (rate: number) =>
+  rate <= 124 ? "text-[color:var(--success)]" : rate >= 189 ? "text-destructive" : undefined;
 
 const weekNumbersCode = `import { Calendar } from "./components";
 
@@ -185,14 +195,17 @@ export default function CalendarDoc() {
 
       <DocSection title="Cell size">
         <p className="text-site-body text-muted-foreground">
-          <code>cellSize</code> sets the cell in px; the numbers keep their size. <code>dayDetail</code> puts a line under each number, a price here, and needs the room of a taller cell.
+          <code>cellSize</code> sets the cell in px; the numbers keep their size. <code>dayDetail</code> puts a line under each number, a price here, and needs the room of a taller cell. It takes any node: low rates show green, high ones red.
         </p>
         <ComponentPreview code={sizeCode} minHeightClass="min-h-[420px]">
           <Calendar
             cellSize={56}
             selected={big}
             onSelect={setBig}
-            dayDetail={(day) => `$${rates[day.getDay()]}`}
+            dayDetail={(day) => {
+              const rate = rates[day.getDay()];
+              return <span className={tone(rate)}>${rate}</span>;
+            }}
           />
         </ComponentPreview>
       </DocSection>

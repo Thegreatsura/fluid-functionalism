@@ -276,7 +276,7 @@ describe("range", () => {
 });
 
 describe("day detail", () => {
-  it("renders a line under each in-month day and reads it in the label", () => {
+  it("renders a line under each in-month day and describes the day with it", () => {
     render(
       <Calendar
         month={new Date(2026, 10, 1)}
@@ -286,7 +286,9 @@ describe("day detail", () => {
     );
     const day = dayButton(/November 20th, 2026/);
     expect(day.querySelector("[data-slot=calendar-day-detail]")?.textContent).toBe("$120");
-    expect(day.getAttribute("aria-label")).toMatch(/, \$120$/);
+    // Read after the date: the button points at the detail.
+    const detail = day.querySelector("[data-slot=calendar-day-detail]")!;
+    expect(day.getAttribute("aria-describedby")).toBe(detail.id);
     // null means no detail.
     expect(dayButton(/November 4th, 2026/).querySelector("[data-slot=calendar-day-detail]")).toBeNull();
     // Outside days skip it.

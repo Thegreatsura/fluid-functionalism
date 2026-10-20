@@ -53,6 +53,11 @@ export const calendarProps: PropDef[] = [
     description: "Day cell size in px. Text stays on the type scale; bigger cells add air.",
   },
   {
+    name: "dayDetail",
+    type: "(date: Date) => ReactNode",
+    description: "A line under each day's number, such as a price. Return null for none; give it a taller cellSize (56 and up). Strings and numbers join the day's label.",
+  },
+  {
     name: "fill",
     type: "boolean",
     default: "false",

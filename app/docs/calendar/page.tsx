@@ -63,8 +63,18 @@ const availableCode = `import { Calendar } from "./components";
 
 const sizeCode = `import { Calendar } from "./components";
 
-{/* Bigger cells add air; the numbers stay on the type scale */}
-<Calendar cellSize={48} selected={date} onSelect={setDate} />`;
+// A nightly rate per weekday, Sunday first.
+const rates = [129, 119, 119, 124, 139, 189, 199];
+
+<Calendar
+  cellSize={56}
+  selected={date}
+  onSelect={setDate}
+  dayDetail={(day) => \`$\${rates[day.getDay()]}\`}
+/>`;
+
+/** A nightly rate per weekday, Sunday first, for the cell size demo. */
+const rates = [129, 119, 119, 124, 139, 189, 199];
 
 const weekNumbersCode = `import { Calendar } from "./components";
 
@@ -175,10 +185,15 @@ export default function CalendarDoc() {
 
       <DocSection title="Cell size">
         <p className="text-site-body text-muted-foreground">
-          <code>cellSize</code> sets the cell in px. Bigger cells add room around the numbers; the numbers keep their size.
+          <code>cellSize</code> sets the cell in px; the numbers keep their size. <code>dayDetail</code> puts a line under each number, a price here, and needs the room of a taller cell.
         </p>
         <ComponentPreview code={sizeCode} minHeightClass="min-h-[420px]">
-          <Calendar cellSize={48} selected={big} onSelect={setBig} />
+          <Calendar
+            cellSize={56}
+            selected={big}
+            onSelect={setBig}
+            dayDetail={(day) => `$${rates[day.getDay()]}`}
+          />
         </ComponentPreview>
       </DocSection>
 

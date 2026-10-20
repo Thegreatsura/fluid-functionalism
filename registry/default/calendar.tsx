@@ -157,6 +157,8 @@ interface CalendarContextValue {
   /** The caller's hideNavigation / disableNavigation (DayPicker's own nav
    *  is always hidden; the captions render ours). */
   navHidden: boolean;
+  /** Extra content under each day's number (a price, a count). */
+  dayDetail?: (date: Date) => ReactNode;
 }
 
 const CalendarContext = createContext<CalendarContextValue | null>(null);
@@ -1267,11 +1269,20 @@ function DayButton({ day, modifiers, className, style, children, ...props }: Day
   const booked = !!modifiers.booked;
   const unavailable = !!modifiers.disabled;
   const compact = cal.compact;
+  // Optional content under the number (a price). Outside days skip it.
+  const detail = !day.outside && cal.dayDetail ? cal.dayDetail(day.date) : null;
+  const hasDetail = detail !== null && detail !== undefined && detail !== false && detail !== "";
+  const baseLabel = (props as { "aria-label"?: string })["aria-label"];
+  const ariaLabel =
+    hasDetail && (typeof detail === "string" || typeof detail === "number") && baseLabel
+      ? `${baseLabel}, ${detail}`
+      : baseLabel;
 
   return (
     <button
       ref={ref}
       {...props}
+      aria-label={ariaLabel}
       tabIndex={present ? props.tabIndex : -1}
       {...{ [INDEX_ATTR]: day.outside ? undefined : index }}
       {...(unavailable ? { [INERT_ATTR]: "" } : {})}
@@ -1282,6 +1293,7 @@ function DayButton({ day, modifiers, className, style, children, ...props }: Day
       data-preview-end={isPreviewEnd || undefined}
       className={cn(
         "relative z-[2] flex items-center justify-center p-0 outline-none select-none tabular-nums",
+        hasDetail && "flex-col gap-1",
         // While a range end is being picked the fill is the gliding
         // highlight's: cells only swap their number's color, faded over the
         // highlight's arrival so the number never shows on the wrong fill.
@@ -1313,7 +1325,23 @@ function DayButton({ day, modifiers, className, style, children, ...props }: Day
       }}
     >
       <span className="[text-box:trim-both_cap_alphabetic]">{children}</span>
-      {modifiers.today && (
+      {hasDetail && (
+        <span
+          data-slot="calendar-day-detail"
+          className={cn(
+            "whitespace-nowrap [text-box:trim-both_cap_alphabetic]",
+            typeClass("caption", compact ? "compact" : "default"),
+            // Quieter than the number; on a filled day it takes the fill's
+            // text color with the number.
+            !(isEnd || isPreviewEnd) && !unavailable && "text-muted-foreground"
+          )}
+          style={{ fontVariationSettings: fontWeights.normal }}
+        >
+          {detail}
+        </span>
+      )}
+      {/* With a detail under it, today is marked by its weight alone. */}
+      {modifiers.today && !hasDetail && (
         <span
           aria-hidden
           data-slot="calendar-today-dot"
@@ -1379,6 +1407,12 @@ interface CalendarBaseProps extends PassThrough {
   orientation?: CalendarOrientation;
   /** Cell size in px. Default 36, or 32 at the compact size. */
   cellSize?: number;
+  /**
+   * Extra content under each day's number, such as a price: return a short
+   * string or node, or null for none. Set a taller `cellSize` (56 and up) to
+   * give it room. A string or number is added to the day's label too.
+   */
+  dayDetail?: (date: Date) => ReactNode;
   /** Stretch the columns to the container's width; `cellSize` then caps
    *  the row height. */
   fill?: boolean;
@@ -1420,6 +1454,7 @@ function Calendar(props: CalendarProps) {
     numberOfMonths = 1,
     orientation = "auto",
     cellSize: cellSizeProp,
+    dayDetail,
     fill = false,
     showOutsideDays: showOutsideDaysProp,
     size,
@@ -1523,8 +1558,9 @@ function Calendar(props: CalendarProps) {
       showWeekNumber: !!showWeekNumber,
       autoFocus: !!autoFocus,
       navHidden: !!rest.hideNavigation || !!rest.disableNavigation,
+      dayDetail,
     }),
-    [compact, fill, shape.variant, mode, value, range, picking, matchers.disabled, resolvedOrientation, numberOfMonths, showOutsideDays, showWeekNumber, autoFocus, rest.hideNavigation, rest.disableNavigation]
+    [compact, fill, shape.variant, mode, value, range, picking, matchers.disabled, resolvedOrientation, numberOfMonths, showOutsideDays, showWeekNumber, autoFocus, rest.hideNavigation, rest.disableNavigation, dayDetail]
   );
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {

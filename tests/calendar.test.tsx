@@ -275,6 +275,26 @@ describe("range", () => {
   });
 });
 
+describe("day detail", () => {
+  it("renders a line under each in-month day and reads it in the label", () => {
+    render(
+      <Calendar
+        month={new Date(2026, 10, 1)}
+        cellSize={56}
+        dayDetail={(d) => (d.getDate() === 4 ? null : `$${100 + d.getDate()}`)}
+      />
+    );
+    const day = dayButton(/November 20th, 2026/);
+    expect(day.querySelector("[data-slot=calendar-day-detail]")?.textContent).toBe("$120");
+    expect(day.getAttribute("aria-label")).toMatch(/, \$120$/);
+    // null means no detail.
+    expect(dayButton(/November 4th, 2026/).querySelector("[data-slot=calendar-day-detail]")).toBeNull();
+    // Outside days skip it.
+    const outside = document.querySelectorAll("[data-outside] [data-slot=calendar-day-detail]");
+    expect(outside.length).toBe(0);
+  });
+});
+
 describe("week numbers", () => {
   it("uses ISO 8601 numbering with a Monday start by default", () => {
     expect(resolveWeekNumbering(true, undefined, undefined)).toBe(true);

@@ -63,28 +63,30 @@ const availableCode = `import { Calendar } from "./components";
 
 const sizeCode = `import { Calendar } from "./components";
 
-// A nightly rate per weekday, Sunday first.
-const rates = [129, 119, 119, 124, 139, 189, 199];
-
-// Low rates in green, high ones in red, the middle stays muted.
-const tone = (rate: number) =>
-  rate <= 124 ? "text-[color:var(--success)]" : rate >= 189 ? "text-destructive" : undefined;
+// A nightly rate per day, from your pricing.
+const rateFor = (day: Date) => rates[day.toDateString()];
 
 <Calendar
   cellSize={56}
   selected={date}
   onSelect={setDate}
   dayDetail={(day) => {
-    const rate = rates[day.getDay()];
-    return <span className={tone(rate)}>\${rate}</span>;
+    const rate = rateFor(day);
+    // Good deals in green, the rest muted.
+    return <span className={rate <= 119 ? "text-[color:var(--success)]" : undefined}>\${rate}</span>;
   }}
 />`;
 
-/** A nightly rate per weekday, Sunday first, for the cell size demo. */
-const rates = [129, 119, 119, 124, 139, 189, 199];
-/** Low rates in green, high ones in red, the middle stays muted. */
-const tone = (rate: number) =>
-  rate <= 124 ? "text-[color:var(--success)]" : rate >= 189 ? "text-destructive" : undefined;
+/**
+ * A made-up nightly rate per day for the cell size demo, $99 to $189. Hashed
+ * from the date, so it varies day to day but renders the same on the server
+ * and the client.
+ */
+function demoRate(day: Date) {
+  const seed = day.getFullYear() * 400 + day.getMonth() * 32 + day.getDate();
+  const hash = Math.imul(seed, 2654435761) >>> 0;
+  return 99 + ((hash >>> 8) % 10) * 10;
+}
 
 const weekNumbersCode = `import { Calendar } from "./components";
 
@@ -195,7 +197,7 @@ export default function CalendarDoc() {
 
       <DocSection title="Cell size">
         <p className="text-site-body text-muted-foreground">
-          <code>cellSize</code> sets the cell in px; the numbers keep their size. <code>dayDetail</code> puts a line under each number, a price here, and needs the room of a taller cell. It takes any node: low rates show green, high ones red.
+          <code>cellSize</code> sets the cell in px; the numbers keep their size. <code>dayDetail</code> puts a line under each number, a price here, and needs the room of a taller cell. It takes any node: good deals show green.
         </p>
         <ComponentPreview code={sizeCode} minHeightClass="min-h-[420px]">
           <Calendar
@@ -203,8 +205,12 @@ export default function CalendarDoc() {
             selected={big}
             onSelect={setBig}
             dayDetail={(day) => {
-              const rate = rates[day.getDay()];
-              return <span className={tone(rate)}>${rate}</span>;
+              const rate = demoRate(day);
+              return (
+                <span className={rate <= 119 ? "text-[color:var(--success)]" : undefined}>
+                  ${rate}
+                </span>
+              );
             }}
           />
         </ComponentPreview>

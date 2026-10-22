@@ -275,6 +275,17 @@ describe("range", () => {
   });
 });
 
+describe("required", () => {
+  it("keeps the selection when the selected day is picked again", () => {
+    const onSelect = vi.fn();
+    render(
+      <Calendar required month={new Date(2026, 10, 1)} selected={new Date(2026, 10, 20)} onSelect={onSelect} />
+    );
+    fireEvent.click(dayButton(/November 20th, 2026/));
+    expect(onSelect.mock.lastCall?.[0]).toBeInstanceOf(Date);
+  });
+});
+
 describe("day detail", () => {
   it("renders a line under each in-month day and describes the day with it", () => {
     render(

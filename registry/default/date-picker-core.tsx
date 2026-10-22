@@ -222,6 +222,27 @@ export function formatRangeLabel(range: DateRange, locale?: string, now = new Da
   return `${fmt.format(range.from)} → ${fmt.format(range.to)}`;
 }
 
+/** `2026-10-21`, from the date's local parts (not UTC). */
+function isoDate(date: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/** The hidden input's value for `name` (exported for the unit tests). */
+export function formValue(
+  value: Date | DateRange | undefined,
+  time?: string | null,
+  timeRange?: TimeRange | null
+): string {
+  if (value instanceof Date) {
+    const day = isoDate(value);
+    if (timeRange) return `${day}T${timeRange.start}/${day}T${timeRange.end}`;
+    return time ? `${day}T${time}` : day;
+  }
+  if (value?.from && value.to) return `${isoDate(value.from)}/${isoDate(value.to)}`;
+  return "";
+}
+
 function rangeWithYear(range: DateRange, now: Date) {
   const year = now.getFullYear();
   return (
@@ -906,8 +927,17 @@ interface DatePickerBaseProps {
   /** BCP 47 locale for labels and times. Default: the browser's. */
   locale?: string;
   className?: string;
+  /** The date trigger's id, for a `<label htmlFor>`. */
   id?: string;
+  /** Names the group for screen readers, read before the date. */
   "aria-label"?: string;
+  /**
+   * Submits the value with a native form through a hidden input, in ISO 8601
+   * local time: `2026-10-21`, `2026-10-21T11:00` with a time, and two of
+   * those joined by `/` for a range or a start and end time. Empty until the
+   * value is complete.
+   */
+  name?: string;
 }
 
 interface DatePickerSingleProps extends DatePickerBaseProps {
@@ -966,6 +996,7 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
     className,
     id,
     "aria-label": ariaLabel,
+    name,
   } = props;
   const presets = mode === "range" ? (props as DatePickerRangeProps).presets : undefined;
   const numberOfMonths = numberOfMonthsProp ?? (mode === "range" ? 2 : 1);
@@ -1388,6 +1419,17 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
       {...segmentHover.handlers}
     >
       <FluidHoverHighlight hover={segmentHover} className={cn("z-0", innerRadius)} />
+      {name && (
+        <input
+          type="hidden"
+          name={name}
+          value={formValue(
+            mode === "range" ? range : single,
+            hasTime ? time : null,
+            hasTimeRange ? timeRange : null
+          )}
+        />
+      )}
       {datePopover}
       {(hasTime || hasTimeRange) && (
         <span aria-hidden className="relative z-[1] mx-0.5 h-4 w-px shrink-0 bg-border" />

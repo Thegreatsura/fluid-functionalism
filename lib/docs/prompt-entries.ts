@@ -512,6 +512,7 @@ export function Stay() {
       "orientation: \"auto\" | \"horizontal\" | \"vertical\" (default \"auto\"). auto: side by side when the container fits both months.",
       "cellSize: number (default 36, 32 compact). Cell size in px.",
       "dayDetail: (date: Date) => ReactNode. A line under each day's number (a price); null for none. Needs a taller cellSize (56+).",
+      "required: boolean (default false). Keeps a selection: picking the selected day again doesn't clear it.",
       "fill: boolean (default false). Columns stretch to the container; cellSize caps the row height.",
       "showWeekNumber: boolean (default false). Muted ISO week column.",
       "size: \"default\" | \"compact\". Step on the size ladder.",
@@ -785,6 +786,7 @@ export function EventWhen() {
       "calendarProps: Partial<CalendarProps>. booked, available, disabled, cellSize, showWeekNumber, weekStartsOn, locale.",
       "clearable: boolean (default true). Outline variant: clear button once a value is set.",
       "open / defaultOpen / onOpenChange: the date popover. disabled: boolean. size: \"default\" | \"compact\".",
+      "name: string. Submits the value with a native form (hidden input, ISO 8601 local: 2026-10-21, 2026-10-21T11:00, or two joined by / for a range or a time range). id: the date trigger's id, for <label htmlFor>. aria-label: names the group, read before the date. className: classes on the group.",
     ],
   },
   "dialog": {

@@ -23,6 +23,7 @@ import {
   shiftEnd,
   timeToMinutes,
   widestLabelParts,
+  formValue,
 } from "@/registry/default/date-picker-core";
 
 afterEach(cleanup);
@@ -133,6 +134,21 @@ describe("12h and 24h", () => {
     expect(formatTime(810, 24, "en-US")).toBe("13:30");
     expect(plain(formatTime(690, 12, "en-US"))).toBe("11:30 AM");
     expect(plain(formatTime(0, 12, "en-US"))).toBe("12:00 AM");
+  });
+});
+
+describe("form value", () => {
+  it("submits ISO 8601 local dates, times and intervals", () => {
+    const day = new Date(2026, 9, 21);
+    expect(formValue(day)).toBe("2026-10-21");
+    expect(formValue(day, "11:00")).toBe("2026-10-21T11:00");
+    expect(formValue(day, null, { start: "11:00", end: "12:45" })).toBe(
+      "2026-10-21T11:00/2026-10-21T12:45"
+    );
+    expect(formValue({ from: day, to: new Date(2026, 9, 24) })).toBe("2026-10-21/2026-10-24");
+    // Incomplete or empty: nothing to submit.
+    expect(formValue({ from: day, to: undefined })).toBe("");
+    expect(formValue(undefined)).toBe("");
   });
 });
 
@@ -289,6 +305,16 @@ describe.each(flavors)("%s flavor", (_name, mod) => {
     });
     expect(value).toBe("11:30");
     expect((input as HTMLInputElement).value).toBe("11:30");
+  });
+
+  it("submits its value through a hidden input when named", () => {
+    render(
+      <form>
+        <DatePicker name="when" value={new Date(2026, 9, 21)} time="11:00" onTimeChange={() => {}} />
+      </form>
+    );
+    const form = document.querySelector("form")!;
+    expect(new FormData(form).get("when")).toBe("2026-10-21T11:00");
   });
 
   it("hides the duration while the end time is being edited, keeping its width", async () => {

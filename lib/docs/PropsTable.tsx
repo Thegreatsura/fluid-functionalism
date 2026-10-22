@@ -55,7 +55,9 @@ export function PropsTable({ props }: PropsTableProps) {
         <tbody>
           {props.map((prop) => (
             <tr key={prop.name} className="border-b border-border/40">
-              <td className="px-3 py-2 text-foreground font-mono text-site-caption">
+              {/* nowrap: a name like .reveal-landing-subtle stays whole and
+                  the column grows to fit it, instead of breaking at hyphens. */}
+              <td className="px-3 py-2 text-foreground font-mono text-site-caption whitespace-nowrap">
                 {prop.name}
               </td>
               <td className="px-3 py-2 text-muted-foreground font-mono text-site-caption">

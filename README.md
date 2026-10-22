@@ -146,6 +146,7 @@ The systems every component shares. Each installs as code, the same way.
 |---|---|---|
 | [Fluid Hover](https://www.fluidfunctionalism.com/docs/fluid-hover) | `use-fluid-hover` | One hook and one highlight per list. The highlight glides to the item nearest your cursor and never blinks off between rows |
 | [Motion](https://www.fluidfunctionalism.com/docs/motion) | `springs` | 3 spring speeds, fast, moderate, and slow, each with an exit one tier quicker than its entrance |
+| [Reveal](https://www.fluidfunctionalism.com/docs/reveal) | `reveal` | 1 class reveals a whole page, on load and on scroll |
 | [Scrollbars](https://www.fluidfunctionalism.com/docs/scrollbars) | `scroll-area` · `base/scroll-area` | A scrollbar that stays out of the way but never disappears, with native scroll on touch |
 | [Sizes](https://www.fluidfunctionalism.com/docs/sizes) | `size-context` | 2 sizes, a 36px default and a 28px compact, shared by buttons, inputs, selects, tabs, and rows |
 | [Surfaces](https://www.fluidfunctionalism.com/docs/surfaces) | `elevated` | 8 elevation levels so popovers, dropdowns, and dialogs stay visible at any depth, in light and dark |

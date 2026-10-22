@@ -88,6 +88,7 @@ const REFERENCE_TIERS = [
       { label: "Mobile drawer",           slug: null },
       { label: "Sidebar",                 slug: "/docs/sidebar" },
       { label: "Selection merge / split", slug: "/docs/checkbox-group" },
+      { label: "Reveal (product)",        slug: "/docs/reveal" },
     ],
   },
   {
@@ -103,6 +104,7 @@ const REFERENCE_TIERS = [
       { label: "Dialog",              slug: "/docs/dialog" },
       { label: "Ask-user questions",  slug: "/docs/ask-user-questions" },
       { label: "Thinking steps",      slug: "/docs/thinking-steps" },
+      { label: "Reveal (landing)",    slug: "/docs/reveal" },
     ],
   },
 ];

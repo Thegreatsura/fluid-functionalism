@@ -2456,8 +2456,13 @@
             "opacity": "0"
           }
         },
+        "@keyframes reveal-pulse": {
+          "50%": {
+            "opacity": "0.5"
+          }
+        },
         ":is(.reveal-product, .reveal-product-subtle, .reveal-items, .reveal-swap) [data-slot=\"skeleton\"]": {
-          "animation": "reveal-skeleton-in 250ms ease-in-out both, pulse 2s cubic-bezier(0.4, 0, 0.6, 1) 250ms infinite"
+          "animation": "reveal-skeleton-in 250ms ease-in-out both, reveal-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) 250ms infinite"
         },
         ".reveal-swap > :first-child:not(:last-child) [data-slot=\"skeleton\"]": {
           "animation": "none"
@@ -2510,6 +2515,9 @@
           ":is(.reveal-landing, .reveal-landing-subtle) > :not(:first-child), :is(.reveal-landing, .reveal-landing-subtle) .reveal-scroll": {
             "animation": "reveal-preset 250ms linear(0, 0.3878, 0.7777, 0.9458, 0.9946, 1.0029, 1.0021, 1) backwards",
             "animation-delay": "var(--reveal-load-delay, 0s)"
+          },
+          ":is(.reveal-landing, .reveal-landing-subtle) .reveal-scroll .reveal-scroll": {
+            "animation-delay": "calc(var(--reveal-load-delay, 0s) + var(--reveal-step))"
           },
           ":is(.reveal-product, .reveal-product-subtle, .reveal-items, .reveal-swap) [data-slot=\"skeleton\"]": {
             "animation": "reveal-skeleton-in 250ms ease-in-out both"

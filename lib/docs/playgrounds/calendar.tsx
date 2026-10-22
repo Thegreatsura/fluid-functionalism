@@ -10,33 +10,30 @@ import {
   PlayDivider,
   PlaygroundPanel,
 } from "@/lib/docs/playground";
+import {
+  CALENDAR_PRESET_DEF,
+  CALENDAR_DEFAULT_CODE,
+  CALENDAR_BOOKED_OFFSETS,
+  CALENDAR_WEEKDAYS,
+  DEFAULT_CALENDAR_STATE as DEFAULT_STATE,
+  encodeCalendarPreset,
+  decodeCalendarPreset,
+  type CalendarDays as Days,
+  type CalendarPlayState as PlayState,
+} from "@/lib/preset/calendar-options";
+import {
+  usePresetGlobals,
+  usePresetUrlSync,
+  GetCodeDialog,
+} from "@/lib/docs/preset-ui";
+import { omit } from "@/lib/omit";
+import { PRESET_GLOBAL_KEYS } from "@/lib/preset/sidebar-options";
 import type { PlaygroundProps } from "./types";
 
 // ── Calendar playground ──────────────────────────────────
 // One calendar, driven by the questions a booking or scheduling screen
 // asks: one day or a range, one month or two (and how they sit), how big
 // the cells are, and which days can't be picked.
-
-type Days = "all" | "booked" | "weekdays";
-
-interface PlayState {
-  mode: "single" | "range";
-  months: "1" | "2";
-  orientation: "auto" | "horizontal" | "vertical";
-  /** "auto" leaves cellSize unset, so the site size picks 36 or 32. */
-  cellSize: "auto" | "40" | "44" | "48";
-  weekNumbers: boolean;
-  days: Days;
-}
-
-const DEFAULT_STATE: PlayState = {
-  mode: "range",
-  months: "2",
-  orientation: "auto",
-  cellSize: "auto",
-  weekNumbers: false,
-  days: "all",
-};
 
 function pick<T>(options: readonly T[]): T {
   return options[Math.floor(Math.random() * options.length)];
@@ -48,7 +45,7 @@ function addDays(date: Date, days: number) {
 
 /** Booked nights a few days out, so the demo always shows some. */
 export function demoBookedDays(today = new Date()): Date[] {
-  return [4, 5, 6, 12, 19, 20].map((n) => addDays(today, n));
+  return CALENDAR_BOOKED_OFFSETS.map((n) => addDays(today, n));
 }
 
 export function buildCalendarPlaygroundCode(o: PlayState): string {
@@ -86,6 +83,17 @@ export function CalendarPlayground({ children }: PlaygroundProps) {
   const [range, setRange] = useState<DateRange | undefined>(undefined);
   const booked = useMemo(() => demoBookedDays(), []);
 
+  // ── Get code (presets) ─────────────────────────────────
+  const globals = usePresetGlobals();
+  const presetCode = encodeCalendarPreset({ ...state, ...globals });
+  usePresetUrlSync(presetCode, CALENDAR_DEFAULT_CODE, (raw) => {
+    const res = decodeCalendarPreset(raw);
+    if (res.ok) {
+      // The globals stay with the site settings; the rail takes the rest.
+      setState(omit(res.preset, PRESET_GLOBAL_KEYS));
+    }
+  });
+
   const randomize = () =>
     setState({
       mode: pick(["single", "range", "range"] as const),
@@ -100,7 +108,7 @@ export function CalendarPlayground({ children }: PlaygroundProps) {
     state.days === "booked"
       ? { booked, disabled: { before: new Date() } }
       : state.days === "weekdays"
-        ? { available: { dayOfWeek: [1, 2, 3, 4, 5] } }
+        ? { available: { dayOfWeek: [...CALENDAR_WEEKDAYS] } }
         : {};
 
   const common = {
@@ -180,6 +188,10 @@ export function CalendarPlayground({ children }: PlaygroundProps) {
         onToggle={() => set("weekNumbers", !state.weekNumbers)}
         className={PLAY_SWITCH}
       />
+      <PlayDivider />
+      {/* shadcn's preset principle: the exact configuration above, as a
+          stateless code the registry can turn into an installable block. */}
+      <GetCodeDialog def={CALENDAR_PRESET_DEF} code={presetCode} />
     </PlaygroundPanel>
   );
 

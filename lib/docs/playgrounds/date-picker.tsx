@@ -15,7 +15,26 @@ import {
   PlaySelect,
   PlaygroundPanel,
 } from "@/lib/docs/playground";
+import { omit } from "@/lib/omit";
+import { PRESET_GLOBAL_KEYS } from "@/lib/preset/sidebar-options";
 import { demoBookedDays } from "./calendar";
+import {
+  DATE_PICKER_PRESET_DEF,
+  DATE_PICKER_DEFAULT_CODE,
+  DATE_PICKER_DEFAULT_TIME,
+  DATE_PICKER_DEFAULT_TIME_RANGE,
+  DEFAULT_DATE_PICKER_STATE as DEFAULT_STATE,
+  defaultDatePickerMonths as defaultMonths,
+  encodeDatePickerPreset,
+  decodeDatePickerPreset,
+  type DatePickerTime as Time,
+  type DatePickerPlayState as PlayState,
+} from "@/lib/preset/date-picker-options";
+import {
+  usePresetGlobals,
+  usePresetUrlSync,
+  GetCodeDialog,
+} from "@/lib/docs/preset-ui";
 import type { PlaygroundProps } from "./types";
 
 // ── DatePicker playground ────────────────────────────────
@@ -23,44 +42,6 @@ import type { PlaygroundProps } from "./types";
 // how the trigger sits on the page (a field, or inline text), and every
 // prop that changes what the popovers show. Handlers, `locale` and the open
 // state have no visual knob and stay in the API table.
-
-type Time = "none" | "time" | "timeRange";
-
-interface PlayState {
-  mode: "single" | "range";
-  variant: "outline" | "ghost";
-  time: Time;
-  presets: boolean;
-  months: "1" | "2";
-  orientation: "auto" | "horizontal" | "vertical";
-  step: "15" | "30" | "60";
-  clock: "locale" | "12" | "24";
-  weekNumbers: boolean;
-  days: "all" | "booked";
-  clearable: boolean;
-  disabled: boolean;
-  size: "site" | "default" | "compact";
-}
-
-const DEFAULT_STATE: PlayState = {
-  mode: "single",
-  variant: "ghost",
-  time: "timeRange",
-  presets: false,
-  months: "2",
-  orientation: "horizontal",
-  step: "15",
-  clock: "locale",
-  weekNumbers: false,
-  days: "all",
-  clearable: true,
-  disabled: false,
-  size: "site",
-};
-
-/** The default month count for a mode: 1 for a date, 2 for a range. */
-const defaultMonths = (mode: PlayState["mode"]): PlayState["months"] =>
-  mode === "range" ? "2" : "1";
 
 function pick<T>(options: readonly T[]): T {
   return options[Math.floor(Math.random() * options.length)];
@@ -102,7 +83,7 @@ export function buildDatePickerPlaygroundCode(o: PlayState): string {
     ...(calendarProps.length ? [`calendarProps={{ ${calendarProps.join(", ")} }}`] : []),
     ...(o.variant === "outline" && !o.clearable ? ["clearable={false}"] : []),
     ...(o.disabled ? ["disabled"] : []),
-    ...(o.size !== "site" ? [`size="${o.size}"`] : []),
+    ...(o.pickerSize !== "site" ? [`size="${o.pickerSize}"`] : []),
   ];
   return [
     `import { DatePicker${range ? ", type DateRange" : ""}${time === "timeRange" ? ", type TimeRange" : ""} } from "./components";`,
@@ -130,10 +111,21 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
     setState((prev) => ({ ...prev, [key]: value }));
   const [date, setDate] = useState<Date | undefined>(() => new Date());
   const [range, setRange] = useState<DateRange | undefined>(undefined);
-  const [time, setTime] = useState<string | null>("11:00");
-  const [timeRange, setTimeRange] = useState<TimeRange | null>({ start: "11:00", end: "12:45" });
+  const [time, setTime] = useState<string | null>(DATE_PICKER_DEFAULT_TIME);
+  const [timeRange, setTimeRange] = useState<TimeRange | null>({ ...DATE_PICKER_DEFAULT_TIME_RANGE });
   const [presets] = useState(() => demoPresets());
   const booked = useMemo(() => demoBookedDays(), []);
+
+  // ── Get code (presets) ─────────────────────────────────
+  const globals = usePresetGlobals();
+  const presetCode = encodeDatePickerPreset({ ...state, ...globals });
+  usePresetUrlSync(presetCode, DATE_PICKER_DEFAULT_CODE, (raw) => {
+    const res = decodeDatePickerPreset(raw);
+    if (res.ok) {
+      // The globals stay with the site settings; the rail takes the rest.
+      setState(omit(res.preset, PRESET_GLOBAL_KEYS));
+    }
+  });
 
   const randomize = () => {
     const mode = pick(["single", "range"] as const);
@@ -150,7 +142,7 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
       days: pick(["all", "booked"] as const),
       clearable: true,
       disabled: false,
-      size: "site",
+      pickerSize: "site",
     });
   };
 
@@ -169,7 +161,7 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
     },
     clearable: state.clearable,
     disabled: state.disabled,
-    size: state.size === "site" ? undefined : state.size,
+    size: state.pickerSize === "site" ? undefined : state.pickerSize,
   };
   const picker = range_ ? (
     <DatePicker
@@ -302,8 +294,8 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
       <PlayDivider />
       <PlayField label="Size">
         <PlaySelect
-          value={state.size}
-          onChange={(v) => set("size", v as PlayState["size"])}
+          value={state.pickerSize}
+          onChange={(v) => set("pickerSize", v as PlayState["pickerSize"])}
           options={[
             { value: "site", label: "Site" },
             { value: "default", label: "Default" },
@@ -324,6 +316,10 @@ export function DatePickerPlayground({ children }: PlaygroundProps) {
         onToggle={() => set("disabled", !state.disabled)}
         className={PLAY_SWITCH}
       />
+      <PlayDivider />
+      {/* shadcn's preset principle: the exact configuration above, as a
+          stateless code the registry can turn into an installable block. */}
+      <GetCodeDialog def={DATE_PICKER_PRESET_DEF} code={presetCode} />
     </PlaygroundPanel>
   );
 

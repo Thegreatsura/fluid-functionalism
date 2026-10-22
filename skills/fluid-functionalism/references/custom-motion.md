@@ -276,8 +276,11 @@ feel like it was already there.
 
 ### Timing
 
-- No new token: every reveal rides `spring.slow` (0.24s, bounce 0.12),
-  written in CSS as `linear()`, so pages move at the pace of dialogs.
+- No new token: landing steps ride `spring.slow` (0.24s, bounce 0.12), the
+  tier for large surfaces, so pages move at the pace of dialogs. Product
+  steps ride `spring.moderate` (0.16s, no bounce): app blocks are panels,
+  and a fade has no travel for a bounce to act on. Both are written in CSS
+  as `linear()`; scroll steps follow the scroll.
 - Stagger siblings only, 0.04 to 0.1s apart, and cap it: the 4th step (8th
   for data rows) carries everything after it, so a list never queues.
 - Travel stays small: 12px and a 0.94 scale at most on a landing page,

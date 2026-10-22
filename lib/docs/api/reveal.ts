@@ -14,7 +14,7 @@ const productSubtle = presets["reveal-product-subtle"];
 
 /** "12px rise, 0.94 scale, 0.1s steps, from 12px to 120px of scroll." */
 const landingValues = (p: typeof landing | typeof landingSubtle) =>
-  `${p.distance}px rise, ${p.scale} scale, ${p.step}s steps, from ${p.scrollStart}px to ${p.scroll}px of scroll.`;
+  `${p.distance}px rise, ${p.scale} scale, ${p.step}s steps on spring.${p.spring}, from ${p.scrollStart}px to ${p.scroll}px of scroll.`;
 
 export const revealPresets: PropDef[] = [
   {
@@ -30,7 +30,7 @@ export const revealPresets: PropDef[] = [
   {
     name: ".reveal-product",
     type: "class",
-    description: `The app. Every block fades in on load, ${product.step}s apart. Nothing moves on scroll.`,
+    description: `The app. Every block fades in on load, ${product.step}s apart on spring.${product.spring}. Nothing moves on scroll.`,
   },
   {
     name: ".reveal-product-subtle",
@@ -65,6 +65,7 @@ export const PRESET_SPECS = Object.fromEntries(
   Object.entries(presets).map(([name, p]: [string, RevealPreset]) => [
     name,
     [
+      { label: "Spring", value: `spring.${p.spring}` },
       { label: "Rise", value: p.distance ? `${p.distance}px` : "None" },
       { label: "Scale", value: p.scale ? String(p.scale) : "None" },
       { label: "Step", value: `${p.step}s` },

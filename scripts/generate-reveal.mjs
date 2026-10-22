@@ -4,8 +4,9 @@
  *  1. the block between the <generated:reveal> markers in app/globals.css
  *  2. the `css` of the `reveal` item in registry.json
  *
- * Preset values come from lib/reveal/presets.ts, and the easing is
- * spring.slow written as CSS linear() by motion's own spring generator.
+ * Preset values come from lib/reveal/presets.ts. Each preset's spring tier
+ * (slow for landing, moderate for product) is written as CSS linear() by
+ * motion's own spring generator into --reveal-motion.
  *
  * `node scripts/generate-reveal.mjs` writes; `--check` exits non-zero when
  * either copy is stale (run by tests/reveal.test.ts).
@@ -23,18 +24,21 @@ const END = "/* </generated:reveal> */";
 
 const load = async (path) => import(`${pathToFileURL(`${ROOT}${path}`).href}?t=${Date.now()}`);
 
-/** spring.slow as CSS: "250ms linear(0, …, 1)". */
-export function slowSpringCss(slow) {
+/** A spring tier as CSS: "250ms linear(0, …, 1)". */
+export function springCss(tier) {
   return springGenerator({
-    duration: slow.duration * 1000,
-    bounce: slow.bounce,
+    duration: tier.duration * 1000,
+    bounce: tier.bounce,
     keyframes: [0, 1],
   }).toString();
 }
 
 /** The whole reveal stylesheet as an ordered list: a string is a comment,
  *  [selector, declarations] a rule, [at-rule, list] a nested block. */
-export function revealRules(presets, ease) {
+export function revealRules(presets, springs) {
+  // Each preset sets --reveal-motion; outside one (.reveal-items or
+  // .reveal-swap beside a preset) the helpers move like the product.
+  const ease = `var(--reveal-motion, ${springs.moderate})`;
   const L = ":is(.reveal-landing, .reveal-landing-subtle)";
   const P = ":is(.reveal-product, .reveal-product-subtle)";
   const ENTER = "entry var(--reveal-scroll-start) entry var(--reveal-scroll)";
@@ -45,7 +49,7 @@ export function revealRules(presets, ease) {
   const productStep = `${presets["reveal-product"].step}s`;
 
   const presetVars = (p) => {
-    const v = {};
+    const v = { "--reveal-motion": springs[p.spring] };
     if (p.distance !== undefined) v["--reveal-distance"] = `${p.distance}px`;
     if (p.scale !== undefined) v["--reveal-scale"] = String(p.scale);
     v["--reveal-step"] = `${p.step}s`;
@@ -73,9 +77,10 @@ export function revealRules(presets, ease) {
    section of its own. Browsers without view timelines show sections still.
    \`.reveal-product\`: the app itself. Every child fades in once on first
    paint, a short step apart; nothing moves on scroll. Slow data uses
-   \`.reveal-swap\` and \`.reveal-items\`. \`-subtle\` tones each down. All
-   ride spring.slow written as linear(), and only the \`from\` frame is set,
-   so each block lands on its own styles.`,
+   \`.reveal-swap\` and \`.reveal-items\`. \`-subtle\` tones each down.
+   Landing steps ride spring.slow and product steps spring.moderate, written
+   as linear() in --reveal-motion; only the \`from\` frame is set, so each
+   block lands on its own styles.`,
     ["@keyframes reveal-preset", { from: { opacity: "0", transform: "translateY(var(--reveal-distance, 0px)) scale(var(--reveal-scale, 1))" } }],
     ...Object.entries(presets).map(([name, p]) => [`.${name}`, presetVars(p)]),
     [`${L} > :first-child > *, ${P} > *, .reveal-items > *, .reveal-swap > :last-child:not(:first-child)`, { animation: `reveal-preset ${ease} both` }],
@@ -201,7 +206,10 @@ export async function generate({ write = false } = {}) {
     load("lib/reveal/presets.ts"),
     load("registry/default/lib/springs.ts"),
   ]);
-  const rules = revealRules(revealPresets, slowSpringCss(spring.slow));
+  const rules = revealRules(revealPresets, {
+    slow: springCss(spring.slow),
+    moderate: springCss(spring.moderate),
+  });
 
   const globals = readFileSync(GLOBALS_PATH, "utf8");
   const a = globals.indexOf(START);

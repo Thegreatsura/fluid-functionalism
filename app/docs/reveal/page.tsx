@@ -44,7 +44,7 @@ export default function RevealDoc() {
     <DocPage
       title="Reveal"
       slug="reveal"
-      description="Page reveals in 1 class: a landing preset and a product preset, each with a subtle step."
+      description="1 class reveals a whole page, on load and on scroll."
     >
       <DocSection title="Landing">
         <p className="text-site-body text-muted-foreground">

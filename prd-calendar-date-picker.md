@@ -131,7 +131,7 @@ No brand color: the palette stays neutral.
 - Contains `calendar` (range defaults to `numberOfMonths={2}`, `orientation="auto"`).
 - Focus moves to the selected day (or today) on open. Escape closes and returns focus to the trigger.
 - Single: closes on select. Range: closes after the end is picked.
-- **Presets** (range): optional `presets` prop (`{ label, range }[]`), off by default. Renders a fluid hover list beside the calendar (stacks above it in vertical/narrow layout). Selecting a preset sets the range and moves the visible month to it.
+- **Presets** (range): optional `presets` prop (`{ label, range }[]`), off by default. Renders a fluid hover list beside the calendar (below it in a vertical or narrow layout). Selecting a preset sets the range and moves the visible month to it.
 
 ### 6.3 Time popover
 

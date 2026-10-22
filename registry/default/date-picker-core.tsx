@@ -1269,6 +1269,25 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
     />
   );
 
+  const presetList = showPresets ? (
+    <div
+      className={cn(
+        "shrink-0",
+        stacked ? "mt-1 border-t border-border pt-1" : "w-[152px] border-r border-border pr-1"
+      )}
+    >
+      <PresetList
+        presets={presets!}
+        value={range}
+        onPick={(preset) => {
+          setDraft(undefined);
+          setValue(preset.range);
+          if (preset.range.from) setMonth(preset.range.from);
+        }}
+      />
+    </div>
+  ) : null;
+
   const datePopover = (
     <Popover
       open={!!open}
@@ -1287,26 +1306,12 @@ function DatePickerCore(props: DatePickerProps & { Popover: ComponentType<DatePi
             "max-h-[min(560px,var(--popup-available-height,560px))] overflow-y-auto"
         )}
       >
-        {showPresets && (
-          <div
-            className={cn(
-              "shrink-0",
-              stacked ? "border-b border-border pb-1" : "w-[152px] border-r border-border pr-1"
-            )}
-          >
-            <PresetList
-              presets={presets!}
-              value={range}
-              onPick={(preset) => {
-                setDraft(undefined);
-                setValue(preset.range);
-                if (preset.range.from) setMonth(preset.range.from);
-              }}
-            />
-          </div>
-        )}
+        {/* Presets sit beside the calendar, or below it when the months
+            stack (the calendar stays first in reading and tab order). */}
+        {showPresets && !stacked && presetList}
         {/* 4px in from the popup's 12px corners: 8px keeps them concentric. */}
         <div className="rounded-lg bg-inherit">{calendar}</div>
+        {showPresets && stacked && presetList}
       </div>
     </Popover>
   );

@@ -108,7 +108,7 @@ export default function DatePickerDoc() {
     <DocPage
       title="DatePicker"
       slug="date-picker"
-      description="Field or inline trigger for a date, a range, or a date and a time: a calendar popover with presets, and time slot lists that show each duration."
+      description="Outline or ghost trigger for a date, a range, or a date and a time: a calendar popover with presets, and time slot lists that show each duration."
     >
       <DocSection title="Playground">
         <DatePickerPlaygroundSection />

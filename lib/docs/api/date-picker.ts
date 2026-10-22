@@ -23,7 +23,7 @@ export const datePickerProps: PropDef[] = [
     name: "variant",
     type: '"outline" | "ghost"',
     default: '"outline"',
-    description: "A bordered field that matches Select, or inline text with a hover fill.",
+    description: "Outline: a bordered field that matches Select. Ghost: inline text with a hover fill.",
   },
   {
     name: "placeholder",

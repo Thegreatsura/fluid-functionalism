@@ -63,8 +63,8 @@ const availableCode = `import { Calendar } from "./components";
 
 const sizeCode = `import { Calendar } from "./components";
 
-// A nightly rate per day, from your pricing.
-const rateFor = (day: Date) => rates[day.toDateString()];
+// Your nightly rate for a day: weeknights cheaper here.
+const rateFor = (day: Date) => ([0, 5, 6].includes(day.getDay()) ? 169 : 109);
 
 <Calendar
   cellSize={56}

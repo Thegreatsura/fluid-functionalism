@@ -635,8 +635,8 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
         // masked strip (whose hole fades the sliding months under them).
         <div
           {...{ [INERT_ATTR]: "" }}
-          className="absolute right-0 z-[5] flex h-[var(--cell-size)] items-center"
-          style={{ top: "calc(round(down, var(--cell-size) * 0.8, 1px) + 16px)" }}
+          // Same rounded row height as the weekday row, with the same fallback.
+          className="absolute right-0 top-[calc(var(--cell-size)*0.8_+_16px)] z-[5] flex h-[var(--cell-size)] items-center supports-[width:round(1px,1px)]:top-[calc(round(down,var(--cell-size)*0.8,1px)_+_16px)]"
         >
           <NavGroup buttons={["previous", "next"]} />
         </div>
@@ -960,13 +960,14 @@ function MonthGrid({ className, style, children, ...props }: HTMLAttributes<HTML
 
 // The weekday row's height is rounded to whole pixels: the hover layers are
 // placed from offsetTop, which rounds, so a fractional row (36 x 0.8 = 28.8)
-// would set them a fraction of a pixel off every day below it.
+// would set them a fraction of a pixel off every day below it. Browsers
+// without CSS round() keep the plain calc() height.
 function WeekdayCell({ children, className }: { children: ReactNode; className?: string }) {
   const cal = useCalendarContext();
   return (
     <span
       className={cn(
-        "flex h-[round(down,calc(var(--cell-size)*0.8),1px)] items-center justify-center text-muted-foreground",
+        "flex h-[calc(var(--cell-size)*0.8)] items-center justify-center text-muted-foreground supports-[width:round(1px,1px)]:h-[round(down,calc(var(--cell-size)*0.8),1px)]",
         cal.fill ? "min-w-0 flex-1" : "w-[var(--cell-size)]",
         typeClass("caption", cal.compact ? "compact" : "default"),
         className
@@ -1000,7 +1001,7 @@ function Weekday({ className, style, children, ...props }: HTMLAttributes<HTMLEl
     <div
       role="columnheader"
       className={cn(
-        "flex h-[round(down,calc(var(--cell-size)*0.8),1px)] items-center justify-center text-muted-foreground",
+        "flex h-[calc(var(--cell-size)*0.8)] items-center justify-center text-muted-foreground supports-[width:round(1px,1px)]:h-[round(down,calc(var(--cell-size)*0.8),1px)]",
         cal.fill ? "min-w-0 flex-1" : "w-[var(--cell-size)]",
         typeClass("caption", cal.compact ? "compact" : "default"),
         className
@@ -1271,7 +1272,15 @@ function DayButton({ day, modifiers, className, style, children, ...props }: Day
   const unavailable = !!modifiers.disabled;
   const compact = cal.compact;
   // Optional content under the number (a price). Outside days skip it.
-  const detail = !day.outside && cal.dayDetail ? cal.dayDetail(day.date) : null;
+  // Memoized per day: the grid re-renders every day on each pointer move
+  // while a range is picked, and the caller's function needn't run then.
+  const { dayDetail } = cal;
+  const detail = useMemo(
+    () => (!day.outside && dayDetail ? dayDetail(day.date) : null),
+    // day.date is a new Date each render; its day number is the identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dayDetail, n, day.outside]
+  );
   const hasDetail = detail !== null && detail !== undefined && detail !== false && detail !== "";
   // Read after the date, whatever the detail is (text or a styled node).
   const detailId = useId();
@@ -1330,9 +1339,12 @@ function DayButton({ day, modifiers, className, style, children, ...props }: Day
           className={cn(
             "whitespace-nowrap [text-box:trim-both_cap_alphabetic]",
             typeClass("caption", compact ? "compact" : "default"),
-            // Quieter than the number; on a filled day it takes the fill's
-            // text color with the number.
-            !(isEnd || isPreviewEnd) && !unavailable && "text-muted-foreground"
+            // Quieter than the number. On a filled day it takes the fill's
+            // text color with the number, overriding any color the caller
+            // gave it, so a colored price never vanishes on the fill.
+            isEnd || isPreviewEnd
+              ? "[&_*]:!text-current"
+              : !unavailable && "text-muted-foreground"
           )}
           style={{ fontVariationSettings: fontWeights.normal }}
         >

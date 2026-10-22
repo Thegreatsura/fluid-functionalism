@@ -19,6 +19,19 @@ does the other.
 invents its own duration — always import the token from `@/lib/springs` so
 unrelated parts of the UI move at consistent magnitudes.
 
+### Page reveals
+
+Pages that appear on load and on scroll ride `spring.slow`: no new tier.
+Product reveals play once and have no exit; landing sections follow the
+scroll in at the bottom and out at the top. They ship as 4 CSS
+classes on a page's container (`.reveal-landing`, `.reveal-product`, and a
+`-subtle` step for each), plus `.reveal-swap` and `.reveal-items` for slow
+data over shadcn's Skeleton, documented on the **Reveal** page (`app/docs/reveal/page.tsx`, served at
+`/docs/reveal`). Their values live in `lib/reveal/presets.ts`;
+`npm run reveal-css` (`scripts/generate-reveal.mjs`) writes the CSS into
+`app/globals.css` and the `reveal` registry item, with `spring.slow` as
+`linear()`. `tests/reveal.test.ts` fails when either copy is stale.
+
 ## Exit tokens (`registry/default/lib/springs.ts`)
 
 Enters are springs (above); exits are plain **tweens** — no bounce, one tier
@@ -217,7 +230,7 @@ Keep this table and that array identical.
 
 | fast (0.08s) | moderate (0.16s, no bounce) | slow (0.24s) |
 |---|---|---|
-| Fluid hover, Focus rings, Checkbox, Radio, Table rows, Card grid, Tooltip, Input copy, Slider, Select / Combobox / Color picker open, Command menu, Accordion | Dropdown / Select highlight, Tabs indicator, Carousel dots, Banner dismiss, Switch thumb, Chat & message bubbles, Mobile drawer, Sidebar, Selection merge / split | Dialog, Ask-user questions, Thinking steps |
+| Fluid hover, Focus rings, Checkbox, Radio, Table rows, Card grid, Tooltip, Input copy, Slider, Select / Combobox / Color picker open, Command menu, Accordion | Dropdown / Select highlight, Tabs indicator, Carousel dots, Banner dismiss, Switch thumb, Chat & message bubbles, Mobile drawer, Sidebar, Selection merge / split | Dialog, Ask-user questions, Thinking steps, Reveal |
 
 Most components *also* use `fast` for their hover and focus states on top of
 their headline tier — the table lists each component once, by its headline

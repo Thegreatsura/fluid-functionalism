@@ -21,6 +21,7 @@ import { apiReference as inputCopyApi } from "@/lib/docs/api/input-copy";
 import { apiReference as inputGroupApi } from "@/lib/docs/api/input-group";
 import { apiReference as inputMessageApi } from "@/lib/docs/api/input-message";
 import { apiReference as radioGroupApi } from "@/lib/docs/api/radio-group";
+import { apiReference as revealApi } from "@/lib/docs/api/reveal";
 import { apiReference as scrollbarsApi } from "@/lib/docs/api/scrollbars";
 import { apiReference as selectApi } from "@/lib/docs/api/select";
 import { apiReference as sidebarApi } from "@/lib/docs/api/sidebar";
@@ -54,6 +55,7 @@ export const API_REFERENCE: Record<string, ApiTable[]> = {
   "input-group": inputGroupApi,
   "input-message": inputMessageApi,
   "radio-group": radioGroupApi,
+  reveal: revealApi,
   scrollbars: scrollbarsApi,
   select: selectApi,
   sidebar: sidebarApi,

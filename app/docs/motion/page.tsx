@@ -103,6 +103,7 @@ const REFERENCE_TIERS = [
       { label: "Dialog",              slug: "/docs/dialog" },
       { label: "Ask-user questions",  slug: "/docs/ask-user-questions" },
       { label: "Thinking steps",      slug: "/docs/thinking-steps" },
+      { label: "Reveal",              slug: "/docs/reveal" },
     ],
   },
 ];

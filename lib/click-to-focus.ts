@@ -15,6 +15,16 @@ export const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
+// Fields a click away should leave: text-like inputs only (not range,
+// buttons, checkboxes or file pickers, which keep focus like any control).
+const TEXT_ENTRY_SELECTOR = [
+  "textarea",
+  "input:not([type])",
+  ...["text", "search", "email", "url", "tel", "password", "number", "date", "time", "datetime-local", "month", "week"].map(
+    (type) => `input[type=${type}]`
+  ),
+].join(",");
+
 /**
  * Routes keyboard control into a container on click. When the user clicks an
  * empty (non-interactive) part of the click region, focus moves to the
@@ -49,8 +59,7 @@ export function routeKeyboardOnMouseDown(
   // Already keyboard-active here: keep the current focus, except in a text
   // field. Clicking away from a field means leaving it (a time being typed
   // commits on blur), so focus moves to the region instead.
-  const typing =
-    !!active && (active.matches("input:not([type=checkbox]):not([type=radio]), textarea") || active.isContentEditable);
+  const typing = !!active && (active.matches(TEXT_ENTRY_SELECTOR) || active.isContentEditable);
   if (active && region.contains(active) && active !== region && !typing) return;
   region.focus();
 }

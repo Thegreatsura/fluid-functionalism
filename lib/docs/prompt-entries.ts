@@ -511,7 +511,7 @@ export function Stay() {
       "numberOfMonths: 1 | 2 (default 1). Two months share one fluid hover and hide outside days.",
       "orientation: \"auto\" | \"horizontal\" | \"vertical\" (default \"auto\"). auto: side by side when the container fits both months.",
       "cellSize: number (default 36, 32 compact). Cell size in px.",
-      "dayDetail: (date: Date) => ReactNode. A line under each day's number (a price); null for none. Needs a taller cellSize (56+).",
+      "dayDetail: (date: Date) => ReactNode. A line under each day's number (a price); null for none. Needs a taller cellSize (56+). A pure function of the date: results are memoized per day until the function changes.",
       "required: boolean (default false). Keeps a selection: picking the selected day again doesn't clear it.",
       "fill: boolean (default false). Columns stretch to the container; cellSize caps the row height.",
       "showWeekNumber: boolean (default false). Muted ISO week column.",

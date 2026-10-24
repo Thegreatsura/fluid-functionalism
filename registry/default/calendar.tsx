@@ -1422,6 +1422,9 @@ interface CalendarBaseProps extends PassThrough {
    * Extra content under each day's number, such as a price: return a short
    * string or node, or null for none. Set a taller `cellSize` (56 and up) to
    * give it room. Screen readers read it after the date (aria-describedby).
+   * Keep it a pure function of the date: its result is memoized per day
+   * until the function itself changes, so data it reads from outside (a ref,
+   * a mutated map) needs a new function to show up.
    */
   dayDetail?: (date: Date) => ReactNode;
   /** Stretch the columns to the container's width; `cellSize` then caps

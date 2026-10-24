@@ -77,6 +77,10 @@ describe("typed times", () => {
     ["12pm", 720],
     ["0000", 0],
     ["2359", 1439],
+    ["9h30", 570],
+    ["9h", 540],
+    ["9h pm", 1260],
+    ["123", 83],
   ])("%s is %i minutes", (input, minutes) => {
     expect(parseTime(input)).toBe(minutes);
   });

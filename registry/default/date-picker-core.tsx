@@ -71,13 +71,15 @@ export function minutesToTime(minutes: number): string {
 }
 
 /**
- * Reads a typed time: `1130`, `11:30`, `11.30`, `930`, `9`, `11:30am`,
- * `9pm`, `12am`. Returns minutes after midnight, or null when it isn't a
- * time.
+ * Reads a typed time: `1130`, `11:30`, `11.30`, `9h30`, `9h`, `930`, `9`,
+ * `11:30am`, `9pm`, `12am`. A separator (`:`, `.`, `h`) may end the hour on
+ * its own (`9h` is 9:00). Three bare digits read as H:MM (`123` is 1:23).
+ * Returns minutes after midnight, or null when it isn't a time.
  */
 export function parseTime(input: string): number | null {
   const s = input.trim().toLowerCase().replace(/\s+/g, "");
-  const m = /^(\d{1,2})(?:[:.h]?(\d{2}))?(a|am|p|pm)?$/.exec(s);
+  // Hour, then minutes after a separator (optional there) or two bare digits.
+  const m = /^(\d{1,2})(?:[:.h](\d{2})?|(\d{2}))?(a|am|p|pm)?$/.exec(s);
   if (!m) {
     // Three or four bare digits: "930", "1130".
     const d = /^(\d{3,4})(a|am|p|pm)?$/.exec(s);
@@ -86,8 +88,9 @@ export function parseTime(input: string): number | null {
     return parseTime(`${digits.slice(0, 2)}:${digits.slice(2)}${d[2] ?? ""}`);
   }
   let h = Number(m[1]);
-  const min = m[2] === undefined ? 0 : Number(m[2]);
-  const suffix = m[3];
+  const minutes = m[2] ?? m[3];
+  const min = minutes === undefined ? 0 : Number(minutes);
+  const suffix = m[4];
   if (min > 59) return null;
   if (suffix) {
     if (h < 1 || h > 12) return null;

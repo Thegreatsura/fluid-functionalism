@@ -57,7 +57,7 @@ export const calendarDaysProps: PropDef[] = [
     name: "dayDetail",
     type: "(date: Date) => ReactNode",
     description:
-      "A line under each day's number, such as a price. Return null for none, and give it a taller `cellSize` (56 and up). Any node works (a colored price, say); screen readers read it after the date.",
+      "A line under each day's number, such as a price. Return null for none, and give it a taller `cellSize` (56 and up). Any node works (a colored price, say); screen readers read it after the date. Keep it a pure function of the date: results are kept per day until you pass a new function.",
   },
 ];
 

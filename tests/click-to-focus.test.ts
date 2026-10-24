@@ -57,6 +57,17 @@ describe("routeKeyboardOnMouseDown", () => {
     expect(document.activeElement).toBe(region);
   });
 
+  it("keeps a focused non-text input (a range) on an empty-space press", () => {
+    const { region, $ } = setup();
+    const range = document.createElement("input");
+    range.type = "range";
+    region.appendChild(range);
+    range.focus();
+    const p = press($("empty"));
+    routeKeyboardOnMouseDown(p.event, region);
+    expect(document.activeElement).toBe(range);
+  });
+
   it("keeps focus in the field when a portaled popup row is pressed", () => {
     const { region, $ } = setup();
     $("input").focus();

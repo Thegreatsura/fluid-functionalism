@@ -5,6 +5,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ShapeProvider } from "@/registry/default/lib/shape-context";
+import { OG_IMAGES, OG_VIDEOS } from "@/lib/og-media";
 import { SizeProvider } from "@/registry/default/lib/size-context";
 import { ThemeProvider } from "@/registry/default/lib/theme-context";
 import { IconPlaygroundProvider } from "@/lib/docs/icon-playground";
@@ -36,7 +37,8 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Fluid Functionalism",
     description: "Open Source UI components created by @micka_design",
-    images: [{ url: "/metadata/og.png", width: 2400, height: 1260 }],
+    images: OG_IMAGES,
+    videos: OG_VIDEOS,
   },
   twitter: {
     card: "summary_large_image",

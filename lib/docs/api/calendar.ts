@@ -109,9 +109,9 @@ export const calendarAppearanceProps: PropDef[] = [
     description: "Pins the calendar to one step of the size ladder.",
   },
   {
-    name: "weekStartsOn · locale · timeZone · month · onMonthChange · …",
+    name: "DayPicker props",
     type: "DayPickerProps",
-    description: "Every other DayPicker prop passes through.",
+    description: "Every other DayPicker prop passes through: `weekStartsOn`, `locale`, `timeZone`, `month`, `onMonthChange` and the rest.",
   },
 ];
 

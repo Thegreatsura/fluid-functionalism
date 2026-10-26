@@ -4,15 +4,10 @@ import { useMemo, useState } from "react";
 import { Calendar, type DateRange } from "@/components/ui/calendar";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { PropsTable } from "@/lib/docs/PropsTable";
-import { DocPage, DocSection, DocSubheading } from "@/lib/docs/DocPage";
+import { DocPage, DocSection } from "@/lib/docs/DocPage";
 import { PlaygroundLayout } from "@/lib/docs/playground";
 import { CalendarPlayground, demoBookedDays } from "@/lib/docs/playgrounds/calendar";
-import {
-  calendarAppearanceProps,
-  calendarDaysProps,
-  calendarLayoutProps,
-  calendarSelectionProps,
-} from "@/lib/docs/api/calendar";
+import { apiReference } from "@/lib/docs/api/calendar";
 
 // ---------------------------------------------------------------------------
 // Code snippets
@@ -231,14 +226,7 @@ export default function CalendarDoc() {
       </DocSection>
 
       <DocSection title="API Reference">
-        <DocSubheading title="Selection" />
-        <PropsTable props={calendarSelectionProps} />
-        <DocSubheading title="Days" />
-        <PropsTable props={calendarDaysProps} />
-        <DocSubheading title="Layout" />
-        <PropsTable props={calendarLayoutProps} />
-        <DocSubheading title="Appearance" />
-        <PropsTable props={calendarAppearanceProps} />
+        <PropsTable groups={apiReference} />
       </DocSection>
     </DocPage>
   );

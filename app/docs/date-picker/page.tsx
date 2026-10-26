@@ -8,16 +8,10 @@ import {
 } from "@/components/ui/date-picker";
 import { ComponentPreview } from "@/lib/docs/ComponentPreview";
 import { PropsTable } from "@/lib/docs/PropsTable";
-import { DocPage, DocSection, DocSubheading } from "@/lib/docs/DocPage";
+import { DocPage, DocSection } from "@/lib/docs/DocPage";
 import { PlaygroundLayout } from "@/lib/docs/playground";
 import { DatePickerPlayground, demoPresets } from "@/lib/docs/playgrounds/date-picker";
-import {
-  datePickerCalendarProps,
-  datePickerFormProps,
-  datePickerTimeProps,
-  datePickerTriggerProps,
-  datePickerValueProps,
-} from "@/lib/docs/api/date-picker";
+import { apiReference } from "@/lib/docs/api/date-picker";
 import { fontWeights } from "@/lib/font-weight";
 
 // ---------------------------------------------------------------------------
@@ -200,16 +194,7 @@ export default function DatePickerDoc() {
       </DocSection>
 
       <DocSection title="API Reference">
-        <DocSubheading title="Value" />
-        <PropsTable props={datePickerValueProps} />
-        <DocSubheading title="Time" />
-        <PropsTable props={datePickerTimeProps} />
-        <DocSubheading title="Calendar" />
-        <PropsTable props={datePickerCalendarProps} />
-        <DocSubheading title="Trigger" />
-        <PropsTable props={datePickerTriggerProps} />
-        <DocSubheading title="Forms and accessibility" />
-        <PropsTable props={datePickerFormProps} />
+        <PropsTable groups={apiReference} />
       </DocSection>
     </DocPage>
   );

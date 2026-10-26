@@ -1,4 +1,4 @@
-// The API reference of /docs/calendar: its PropsTables and the API section
+// The API reference of /docs/calendar: its PropsTable and the API section
 // of /docs/calendar.md both read these, so the two cannot drift.
 import type { ApiTable, PropDef } from "@/lib/docs/api/types";
 
@@ -14,24 +14,23 @@ export const calendarSelectionProps: PropDef[] = [
   {
     name: "selected",
     type: "Date | DateRange",
-    description:
-      "The selected day, or `{ from, to }` in range mode (both `Date`, `to` unset while the end is being picked). With `onSelect` it is controlled; without, it seeds the calendar's own state. DayPicker's name: DatePicker calls it `value`.",
+    description: "The day, or `{ from, to }` in range mode. DatePicker calls it `value`.",
   },
   {
     name: "onSelect",
     type: "(value: Date | DateRange | undefined) => void",
-    description: "Called on every pick. In range mode the first pick returns a range with no `to`.",
+    description: "Runs on every pick. The first range pick has no `to` yet.",
   },
   {
     name: "required",
     type: "boolean",
     default: "false",
-    description: "Keeps a selection: picking the selected day again doesn't clear it.",
+    description: "Picking the selected day again keeps it.",
   },
   {
     name: "min / max",
     type: "number",
-    description: "Range mode: fewest and most nights a range may span.",
+    description: "Range mode: fewest and most nights.",
   },
 ];
 
@@ -40,24 +39,22 @@ export const calendarDaysProps: PropDef[] = [
   {
     name: "booked",
     type: "Matcher | Matcher[]",
-    description:
-      "Days that are taken: unavailable, struck through, and announced as booked. A matcher is a `Date`, a `Date[]`, `{ from, to }`, `{ before }`, `{ after }`, `{ dayOfWeek: [0, 6] }`, or `(date) => boolean`.",
+    description: "Taken days, struck through. A matcher is a date, `{ before }`, `{ dayOfWeek: [0, 6] }` or a function.",
   },
   {
     name: "available",
     type: "Matcher | Matcher[]",
-    description: "When set, every day it doesn't match is unavailable, such as `{ dayOfWeek: [1, 2, 3, 4, 5] }` for weekdays only.",
+    description: "Only these days open, such as `{ dayOfWeek: [1, 2, 3, 4, 5] }`.",
   },
   {
     name: "disabled",
     type: "Matcher | Matcher[]",
-    description: "Days that can't be picked, muted without a line-through, such as `{ before: new Date() }` for the past.",
+    description: "Days you can't pick, such as `{ before: new Date() }`.",
   },
   {
     name: "dayDetail",
     type: "(date: Date) => ReactNode",
-    description:
-      "A line under each day's number, such as a price. Return null for none, and give it a taller `cellSize` (56 and up). Any node works (a colored price, say); screen readers read it after the date. Keep it a pure function of the date: results are kept per day until you pass a new function.",
+    description: "A line under each number, like a price. Needs `cellSize` 56 or more. Keep it pure.",
   },
 ];
 
@@ -67,25 +64,25 @@ export const calendarLayoutProps: PropDef[] = [
     name: "numberOfMonths",
     type: "1 | 2",
     default: "1",
-    description: "Months on screen. Two months share one fluid hover and hide outside days.",
+    description: "Months on screen, under one fluid hover.",
   },
   {
     name: "orientation",
     type: '"auto" | "horizontal" | "vertical"',
     default: '"auto"',
-    description: "Two months side by side, stacked, or side by side when the container fits both.",
+    description: "2 months side by side or stacked. Auto stacks when they don't fit.",
   },
   {
     name: "cellSize",
     type: "number",
-    default: "36 (32 compact)",
-    description: "Day cell size in px. Text stays on the type scale; bigger cells add room.",
+    default: "36, 32 compact",
+    description: "Cell size in px. Numbers keep their size.",
   },
   {
     name: "fill",
     type: "boolean",
     default: "false",
-    description: "Stretches the columns to the container. `cellSize` then caps the row height.",
+    description: "Columns stretch to the container, rows stop at `cellSize`.",
   },
 ];
 
@@ -95,23 +92,23 @@ export const calendarAppearanceProps: PropDef[] = [
     name: "showWeekNumber",
     type: "boolean",
     default: "false",
-    description: "A muted ISO week column, display only. Titles then start at the Monday column.",
+    description: "A muted ISO week column.",
   },
   {
     name: "showOutsideDays",
     type: "boolean",
-    default: "true (1 month)",
-    description: "Days of the neighbouring months. Always off with 2 months.",
+    default: "true, false with 2 months",
+    description: "Days of the neighbouring months.",
   },
   {
     name: "size",
     type: '"default" | "compact"',
-    description: "Pins the calendar to one step of the size ladder.",
+    description: "Pins one step of the size ladder.",
   },
   {
     name: "DayPicker props",
     type: "DayPickerProps",
-    description: "Every other DayPicker prop passes through: `weekStartsOn`, `locale`, `timeZone`, `month`, `onMonthChange` and the rest.",
+    description: "The rest pass through: `weekStartsOn`, `locale`, `month`…",
   },
 ];
 

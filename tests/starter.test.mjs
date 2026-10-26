@@ -23,7 +23,7 @@ import {
 const manifest = JSON.parse(readFileSync(new URL("../registry.json", import.meta.url), "utf-8"));
 const depUrl = buildDepResolver(manifest.items);
 
-/** Every combination of the six settings (2 × 2 × 2 × 5 × 3 × 6 = 720). */
+/** Every combination of the six settings (2 × 2 × 2 × 5 × 3 × 7 = 840). */
 function allSettings() {
   let combos = [{}];
   for (const [key, values] of Object.entries(SETTING_VALUES)) {
@@ -38,9 +38,9 @@ describe("starter slug", () => {
     expect(parseStarterSlug(DEFAULT_SLUG)).toEqual({ ok: true, settings: STARTER_DEFAULTS });
   });
 
-  it("round-trips all 720 combinations", () => {
+  it("round-trips all 840 combinations", () => {
     const combos = allSettings();
-    expect(combos).toHaveLength(720);
+    expect(combos).toHaveLength(840);
     for (const s of combos) {
       expect(parseStarterSlug(starterSlug(s)), starterSlug(s)).toEqual({ ok: true, settings: s });
     }
@@ -131,8 +131,8 @@ describe("generated starter files compile", () => {
   const MATRIX = [
     STARTER_DEFAULTS,
     { base: "radix", shape: "pill", size: "compact", icons: "lucide", theme: "dark", accent: "violet" },
-    { base: "base", shape: "rounded", size: "default", icons: "tabler", theme: "light", accent: "green" },
-    { base: "radix", shape: "rounded", size: "compact", icons: "phosphor", theme: "system", accent: "blue" },
+    { base: "base", shape: "rounded", size: "default", icons: "tabler", theme: "light", accent: "lime" },
+    { base: "radix", shape: "rounded", size: "compact", icons: "phosphor", theme: "system", accent: "red" },
     { base: "base", shape: "pill", size: "default", icons: "hugeicons", theme: "dark", accent: "teal" },
   ];
 

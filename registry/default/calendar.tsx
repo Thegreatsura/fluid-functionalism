@@ -822,12 +822,14 @@ function CaptionText({
   monthTime,
   offset,
   stride,
+  centered,
   children,
 }: {
   compact: boolean;
   monthTime: number;
   offset: number;
   stride: number | null;
+  centered: boolean;
   children: ReactNode;
 }) {
   const present = useIsPresent();
@@ -840,10 +842,10 @@ function CaptionText({
       aria-hidden={present ? undefined : true}
       className={cn(
         "col-start-1 row-start-1 whitespace-nowrap text-foreground [text-box:trim-both_cap_alphabetic]",
-        // Centered side by side, where captions are; left everywhere else, so
-        // a shorter title doesn't sit centered in the cell while the longer
-        // one leaves, then jump left when the cell shrinks.
-        stride !== null && !stacked ? "justify-self-center" : "justify-self-start",
+        // Centered side by side, where captions are; left everywhere else
+        // (one month too), so a shorter title doesn't sit centered in the
+        // cell while the longer one leaves, then jump left when it shrinks.
+        centered ? "justify-self-center" : "justify-self-start",
         shownElsewhere && "invisible",
         typeClass("body", compact ? "compact" : "default")
       )}
@@ -911,6 +913,7 @@ function MonthCaption({ calendarMonth, displayIndex, className, style, ...props 
           compact={cal.compact}
           offset={offset}
           stride={grid.stride}
+          centered={twoUp}
         >
           {formatters.formatCaption(
             calendarMonth.date,

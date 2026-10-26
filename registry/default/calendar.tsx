@@ -379,12 +379,15 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
   // so the month leaving the lower slot and the same month arriving in the
   // upper one share a path, as side by side. Measured on the layout a change
   // starts from: the arriving month starts exactly where it was shown.
+  // A single month slides the same way: out a full width while the next
+  // comes in from the other side, so 1 and 2 months feel alike.
   const twoUp = cal.numberOfMonths > 1 && cal.orientation === "horizontal";
   const stacked = cal.numberOfMonths > 1 && cal.orientation === "vertical";
+  const sideways = !stacked;
   const [stride, setStride] = useState<number | null>(null);
   useIsoLayoutEffect(() => {
     const container = containerRef.current;
-    if ((!twoUp && !stacked) || !container) {
+    if (!container) {
       setStride(null);
       return;
     }
@@ -392,14 +395,14 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
     const [first, second] = [months[0], months[1]];
     if (!first || (stacked && !second)) return;
     const measure = () =>
-      setStride(twoUp ? first.offsetWidth + MONTH_GAP : second.offsetTop - first.offsetTop);
+      setStride(sideways ? first.offsetWidth + MONTH_GAP : second.offsetTop - first.offsetTop);
     measure();
     if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(measure);
     ro.observe(first);
     if (second) ro.observe(second);
     return () => ro.disconnect();
-  }, [twoUp, stacked]);
+  }, [sideways, stacked]);
 
   // While a range end is being picked, the band follows the lit day.
   const previewDate =
@@ -629,9 +632,10 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
     >
       {/* Stacked, these draw inside the clipped strip (its clip makes its own
           stacking layer), so the numbers stay above the solid preview end. */}
-      {/* With 2 months these draw inside the masked strip (its mask makes
-          its own stacking layer), so the numbers stay above the fills. */}
-      {!stacked && !twoUp && overlays}
+      {/* The hover layers always draw inside the masked strip below (its
+          mask makes its own stacking layer), so numbers stay above fills.
+          The strip renders from the first frame: adding it later would
+          remount the months and strand the stride measurement. */}
       {stacked && months[0] && (
         <div
           ref={weekdayRowRef}
@@ -680,18 +684,16 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
             {overlays}
             {children}
           </div>
-        ) : twoUp ? (
-          // Side by side, the strip reaches 8px past the months (and the
-          // bottom, for the focus ring), margins undone by padding.
+        ) : (
+          // Sideways (1 month or 2), the strip reaches 8px past the months
+          // (and the bottom, for the focus ring), margins undone by padding.
           <div
-            className="-mx-2 -mb-2 flex flex-row gap-x-6 px-2 pb-2"
+            className={cn("-mx-2 -mb-2 flex flex-row gap-x-6 px-2 pb-2", cal.fill && "min-w-0 flex-1")}
             style={sideStripMask}
           >
             {overlays}
             {children}
           </div>
-        ) : (
-          children
         )}
       </GridContext.Provider>
     </div>
@@ -864,6 +866,13 @@ function captionFade(to: "left" | "right") {
   return `linear-gradient(to ${to}, transparent ${nav}, #000 calc(${nav} + 24px))`;
 }
 
+/** The single-month caption layer's mask: clear past the right edge and
+ *  under the chevron pair (2 buttons, 78% of a cell each), then a 24px ramp. */
+function oneUpCaptionFade(stride: number, noNav: boolean) {
+  const clear = noNav ? `${stride}px` : `calc(${stride}px + var(--cell-size) * 1.56)`;
+  return `linear-gradient(to left, transparent ${clear}, #000 calc(${clear} + 24px))`;
+}
+
 function MonthCaption({ calendarMonth, displayIndex, className, style, ...props }: MonthCaptionProps) {
   const cal = useCalendarContext();
   const { formatters } = useDayPicker();
@@ -871,6 +880,8 @@ function MonthCaption({ calendarMonth, displayIndex, className, style, ...props 
   const last = displayIndex === cal.numberOfMonths - 1;
   const first = displayIndex === 0;
   const twoUp = cal.numberOfMonths > 1 && cal.orientation === "horizontal";
+  // One month sliding a full stride: the title passes under the chevrons.
+  const oneUp = cal.numberOfMonths === 1 && grid.stride !== null;
   const hideNav = cal.navHidden;
 
   // Single month and stacked months: caption left, both chevrons right of
@@ -955,6 +966,33 @@ function MonthCaption({ calendarMonth, displayIndex, className, style, ...props 
             {caption}
           </div>
         </div>
+      ) : oneUp ? (
+        // One month: the title slides a whole stride too. The layer reaches a
+        // stride past both sides (the strip fades the far edges) and is clear
+        // under the chevron pair, then ramps in over 24px, so the title never
+        // slides under the chevrons.
+        <>
+          <div
+            className="pointer-events-none absolute inset-y-0"
+            style={{
+              left: -grid.stride!,
+              right: -grid.stride!,
+              maskImage: oneUpCaptionFade(grid.stride!, hideNav),
+              WebkitMaskImage: oneUpCaptionFade(grid.stride!, hideNav),
+            }}
+          >
+            <div
+              className={cn(
+                "absolute inset-y-0 flex items-center",
+                cal.showWeekNumber ? "pl-[calc(var(--cell-size)+0.5rem)]" : "pl-2"
+              )}
+              style={{ left: grid.stride!, right: grid.stride! }}
+            >
+              {caption}
+            </div>
+          </div>
+          <span aria-hidden className="flex-1" />
+        </>
       ) : (
         caption
       )}
@@ -990,10 +1028,21 @@ function MonthGrid({ className, style, children, ...props }: HTMLAttributes<HTML
 // placed from offsetTop, which rounds, so a fractional row (36 x 0.8 = 28.8)
 // would set them a fraction of a pixel off every day below it. Browsers
 // without CSS round() keep the plain calc() height.
-function WeekdayCell({ children, className }: { children: ReactNode; className?: string }) {
+function WeekdayCell({
+  children,
+  className,
+  label,
+}: {
+  children: ReactNode;
+  className?: string;
+  /** The full weekday name: makes the cell the grid's column header. */
+  label?: string;
+}) {
   const cal = useCalendarContext();
   return (
     <span
+      role={label ? "columnheader" : undefined}
+      aria-label={label}
       className={cn(
         "flex h-[calc(var(--cell-size)*0.8)] items-center justify-center text-muted-foreground supports-[width:round(1px,1px)]:h-[round(down,calc(var(--cell-size)*0.8),1px)]",
         cal.fill ? "min-w-0 flex-1" : "w-[var(--cell-size)]",
@@ -1008,9 +1057,10 @@ function WeekdayCell({ children, className }: { children: ReactNode; className?:
 
 function Weekdays({ className, style, children }: HTMLAttributes<HTMLElement>) {
   const cal = useCalendarContext();
-  // Stacked months show one weekday row, pinned above both grids; side by
-  // side, each month's row travels in its sliding panel instead.
-  if (cal.numberOfMonths > 1) return null;
+  const grid = useGridContext();
+  // Stacked months show one weekday row, pinned above both grids; sliding
+  // sideways (1 month or 2), each month's row travels in its panel instead.
+  if (cal.numberOfMonths > 1 || grid.stride !== null) return null;
   return (
     <div
       role="row"
@@ -1129,7 +1179,7 @@ function WeeksPanel({
   const present = useIsPresent();
   const cal = useCalendarContext();
   const month = useContext(MonthContext);
-  const { formatters } = useDayPicker();
+  const { formatters, labels } = useDayPicker();
   const { direction, stacked, sharedRows } = useGridContext();
   const shownElsewhere = useShownElsewhere(monthTime, present, stride);
   const ref = useRef<HTMLDivElement>(null);
@@ -1166,10 +1216,20 @@ function WeeksPanel({
         exit="exit"
       >
         {side && (
-          <div aria-hidden {...{ [INERT_ATTR]: "" }} className="flex">
-            {cal.showWeekNumber && <span className="w-[var(--cell-size)] shrink-0" />}
+          // The grid's column headers, as DayPicker's own row would give.
+          <div role="row" {...{ [INERT_ATTR]: "" }} className="flex">
+            {cal.showWeekNumber && (
+              <span
+                role="columnheader"
+                aria-label={labels.labelWeekNumberHeader?.()}
+                className="w-[var(--cell-size)] shrink-0"
+              />
+            )}
             {firstWeek.map((day) => (
-              <WeekdayCell key={day.isoDate}>
+              <WeekdayCell
+                key={day.isoDate}
+                label={labels.labelWeekday(day.date, day.dateLib.options, day.dateLib)}
+              >
                 {formatters.formatWeekdayName(day.date, day.dateLib.options, day.dateLib)}
               </WeekdayCell>
             ))}

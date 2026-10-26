@@ -184,6 +184,9 @@ interface GridContextValue {
   stride: number | null;
   /** Two months stacked: the slide and the chevrons go up and down. */
   stacked: boolean;
+  /** Side by side, the most week rows among the months on screen: every
+   *  month takes that height, so none resizes in the middle of a slide. */
+  sharedRows: number | null;
   /** The day a range end was just committed on: it takes the gliding
    *  highlight's fill in the same frame, with no fade. */
   committedEnd: number | null;
@@ -263,6 +266,17 @@ const stackedStripMask: CSSProperties = (() => {
     maskRepeat: "no-repeat",
     maskComposite: "subtract, intersect",
   };
+})();
+
+/**
+ * The side-by-side strip's mask: content fades over 8px at the outer edges.
+ * The strip reaches 8px past the months on both sides, so at rest the fade
+ * covers only that margin and nothing on screen is dimmed; a month sliding
+ * out dissolves there instead of being cut.
+ */
+const sideStripMask: CSSProperties = (() => {
+  const mask = "linear-gradient(to right, transparent, #000 8px, #000 calc(100% - 8px), transparent)";
+  return { maskImage: mask, WebkitMaskImage: mask };
 })();
 
 /** Parts the pointer passes over without lighting a day (captions, the
@@ -474,6 +488,8 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
     };
   }, [stacked]);
 
+  const sharedRows = twoUp ? Math.max(...months.map((m) => m.weeks.length)) : null;
+
   const gridCtx = useMemo(
     () => ({
       registerItem,
@@ -484,6 +500,7 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
       reduceMotion,
       stride,
       stacked,
+      sharedRows,
       committedEnd,
     }),
     // band is rebuilt each render; compare its parts.
@@ -498,6 +515,7 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
       reduceMotion,
       stride,
       stacked,
+      sharedRows,
       committedEnd,
     ]
   );
@@ -585,10 +603,8 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
       className={cn(
         "relative isolate flex",
         stacked ? "flex-col gap-4" : "flex-row flex-wrap gap-x-6 gap-y-4",
-        // Side by side, the month strip slides under this clip; it reaches
-        // 4px past the sides and 8px past the ends so the focus ring and the
-        // highlight are never cut. Stacked months clip below the weekday row.
-        twoUp && "[clip-path:inset(-8px_-4px)]",
+        // With 2 months, the months sit in a masked strip (below): soft
+        // edges side by side, a fade under the weekday row when stacked.
         cal.fill && "w-full",
         className
       )}
@@ -613,7 +629,9 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
     >
       {/* Stacked, these draw inside the clipped strip (its clip makes its own
           stacking layer), so the numbers stay above the solid preview end. */}
-      {!stacked && overlays}
+      {/* With 2 months these draw inside the masked strip (its mask makes
+          its own stacking layer), so the numbers stay above the fills. */}
+      {!stacked && !twoUp && overlays}
       {stacked && months[0] && (
         <div
           ref={weekdayRowRef}
@@ -658,6 +676,16 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
                 ...stackedStripMask,
               } as CSSProperties
             }
+          >
+            {overlays}
+            {children}
+          </div>
+        ) : twoUp ? (
+          // Side by side, the strip reaches 8px past the months (and the
+          // bottom, for the focus ring), margins undone by padding.
+          <div
+            className="-mx-2 -mb-2 flex flex-row gap-x-6 px-2 pb-2"
+            style={sideStripMask}
           >
             {overlays}
             {children}
@@ -980,8 +1008,9 @@ function WeekdayCell({ children, className }: { children: ReactNode; className?:
 
 function Weekdays({ className, style, children }: HTMLAttributes<HTMLElement>) {
   const cal = useCalendarContext();
-  // Stacked months show one weekday row, pinned above both grids.
-  if (cal.numberOfMonths > 1 && cal.orientation === "vertical") return null;
+  // Stacked months show one weekday row, pinned above both grids; side by
+  // side, each month's row travels in its sliding panel instead.
+  if (cal.numberOfMonths > 1) return null;
   return (
     <div
       role="row"
@@ -1098,9 +1127,16 @@ function WeeksPanel({
   onHeight: (h: number) => void;
 }) {
   const present = useIsPresent();
-  const { direction, stacked } = useGridContext();
+  const cal = useCalendarContext();
+  const month = useContext(MonthContext);
+  const { formatters } = useDayPicker();
+  const { direction, stacked, sharedRows } = useGridContext();
   const shownElsewhere = useShownElsewhere(monthTime, present, stride);
   const ref = useRef<HTMLDivElement>(null);
+  // Side by side, the weekday row travels with its days, so a slide moves
+  // each month as one block instead of sliding days under fixed labels.
+  const side = stride !== null && !stacked;
+  const firstWeek = month?.calendarMonth.weeks[0]?.days ?? [];
   useIsoLayoutEffect(() => {
     const el = ref.current;
     if (!el || !present) return;
@@ -1129,7 +1165,28 @@ function WeeksPanel({
         animate="center"
         exit="exit"
       >
-        {children}
+        {side && (
+          <div aria-hidden {...{ [INERT_ATTR]: "" }} className="flex">
+            {cal.showWeekNumber && <span className="w-[var(--cell-size)] shrink-0" />}
+            {firstWeek.map((day) => (
+              <WeekdayCell key={day.isoDate}>
+                {formatters.formatWeekdayName(day.date, day.dateLib.options, day.dateLib)}
+              </WeekdayCell>
+            ))}
+          </div>
+        )}
+        {side && sharedRows !== null && !cal.fill ? (
+          // Every month takes the taller month's height, so neither resizes
+          // in the middle of a sideways slide.
+          <div
+            className="flex flex-col"
+            style={{ minHeight: `calc(var(--cell-size) * ${sharedRows})` }}
+          >
+            {children}
+          </div>
+        ) : (
+          children
+        )}
       </motion.div>
     </PanelPresentContext.Provider>
   );

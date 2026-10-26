@@ -222,23 +222,33 @@ function useShownElsewhere(monthTime: number, present: boolean, stride: number |
 const INDEX_ATTR = "data-calendar-index";
 
 /**
- * A month change. One month: the grid slides 10px and crossfades. Side by
- * side: every grid travels a full stride, so the month leaving the right slot
- * and the same month entering the left slot share one path and read as one
- * strip sliding under the clip. `custom` is the direction of travel, read
- * from AnimatePresence so an exiting panel always gets the latest one.
+ * A month change. Side by side: every grid travels a full stride, so the
+ * month leaving the right slot and the same month entering the left slot
+ * share one path and read as one strip sliding under the clip. One month:
+ * the same slide over a third of the stride, crossfading where the two
+ * meet. `custom` is the direction of travel, read from AnimatePresence so
+ * an exiting panel always gets the latest one.
  */
-function slideVariants(offset: number, stride: number | null, axis: "x" | "y" = "x") {
+const SINGLE_MONTH_TRAVEL = 1 / 3;
+
+function slideVariants(
+  offset: number,
+  stride: number | null,
+  axis: "x" | "y" = "x",
+  single = false
+) {
   const carousel = stride !== null && offset > 0;
-  const distance = carousel ? stride : offset;
+  const distance = carousel ? (single ? stride * SINGLE_MONTH_TRAVEL : stride) : offset;
+  // Full-stride grids hand over in one path; shorter travel overlaps them.
+  const solid = carousel && !single;
   const exitTransition = carousel ? spring.moderate : spring.moderate.exit;
   // Stacked months travel up and down, like the layout they sit in.
   const at = (v: number) => (axis === "x" ? { x: v } : { y: v });
   return {
-    enter: (d: number) => ({ opacity: carousel ? 1 : 0, ...at(d * distance) }),
+    enter: (d: number) => ({ opacity: solid ? 1 : 0, ...at(d * distance) }),
     center: { opacity: 1, x: 0, y: 0, transition: spring.moderate },
     exit: (d: number) => ({
-      opacity: carousel ? 1 : 0,
+      opacity: solid ? 1 : 0,
       ...at(-d * distance),
       transition: exitTransition,
     }),
@@ -833,6 +843,7 @@ function CaptionText({
   children: ReactNode;
 }) {
   const present = useIsPresent();
+  const cal = useCalendarContext();
   const { direction, stacked } = useGridContext();
   const shownElsewhere = useShownElsewhere(monthTime, present, stride);
   return (
@@ -850,7 +861,7 @@ function CaptionText({
         typeClass("body", compact ? "compact" : "default")
       )}
       style={{ fontVariationSettings: fontWeights.semibold }}
-      variants={slideVariants(offset, stride, stacked ? "y" : "x")}
+      variants={slideVariants(offset, stride, stacked ? "y" : "x", cal.numberOfMonths === 1)}
       custom={direction}
       initial="enter"
       animate="center"
@@ -1212,7 +1223,7 @@ function WeeksPanel({
           className
         )}
         style={style}
-        variants={slideVariants(offset, stride, stacked ? "y" : "x")}
+        variants={slideVariants(offset, stride, stacked ? "y" : "x", cal.numberOfMonths === 1)}
         custom={direction}
         initial="enter"
         animate="center"

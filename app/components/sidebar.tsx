@@ -25,7 +25,7 @@ interface NavEntry {
   name: string;
 }
 
-/** The New dot, in the changelog's blue: on what the latest release lists as
+/** The New dot, in the accent (the changelog's New color): on what the latest release lists as
  *  New and on pages landed since (AHEAD_OF_RELEASE), so the dots move on
  *  with each month's release. */
 function NewDot() {

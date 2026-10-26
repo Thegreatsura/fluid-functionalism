@@ -32,6 +32,12 @@ export const ACCENT_ORDER = Object.keys(ACCENT_PRESETS) as AccentPreset[];
 
 export const DEFAULT_ACCENT: AccentPreset = "blue";
 
+/** The accent as a CSS value, for site code that draws in it (inspect
+ *  rulers, spec-sheet guides, annotations). SVG presentation attributes
+ *  can't read var(): pass it through style or as the CSS color under
+ *  currentColor. */
+export const ACCENT_VAR = "var(--fluid-accent, #6B97FF)";
+
 /** A 6-digit hex color, the only custom accent shape the site stores. */
 export function isAccentHex(value: string | null | undefined): value is string {
   return !!value && /^#[0-9a-fA-F]{6}$/.test(value);

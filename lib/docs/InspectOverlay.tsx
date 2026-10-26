@@ -14,6 +14,7 @@ import { fontWeights } from "@/registry/default/lib/font-weight";
 import { spring } from "@/lib/springs";
 import { useSizeVariant } from "@/lib/size-context";
 import { Tooltip } from "@/registry/radix/tooltip";
+import { ACCENT_VAR } from "@/lib/accent";
 
 // ---------------------------------------------------------------------------
 // Inspect overlay — a design-inspector layer for ComponentPreview. It sits
@@ -33,7 +34,7 @@ import { Tooltip } from "@/registry/radix/tooltip";
 // The rulers, guides and bands follow the site accent (right panel >
 // Accent). SVG attributes can't read var(), so the rulers set it as their
 // CSS color and draw with currentColor.
-const ACCENT = "var(--fluid-accent, #6B97FF)";
+const ACCENT = ACCENT_VAR;
 const GREEN = "rgba(153, 255, 201, 0.35)"; // #99FFC9, subtle
 const GREEN_LINE = "rgba(83, 214, 145, 0.9)";
 // Near-black green for the strip labels — the mint fill reads as pale mint in

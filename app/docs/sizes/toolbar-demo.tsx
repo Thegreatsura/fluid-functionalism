@@ -9,6 +9,7 @@ import { TabsSubtle, TabsSubtleItem } from "@/components/flavored/tabs-subtle";
 import { InputGroup, InputField } from "@/registry/default/input-group";
 import { cn } from "@/registry/default/lib/utils";
 import { ListFilter, Plus, Search, SquareKanban, Table2 } from "lucide-react";
+import { ACCENT_VAR } from "@/lib/accent";
 
 // ---------------------------------------------------------------------------
 // The toolbar demo: the same toolbar line at each step of the ladder. Lives
@@ -42,12 +43,12 @@ function SearchField() {
   );
 }
 
-/** Spec-sheet height guides for a toolbar row: a blue line along the row's
+/** Spec-sheet height guides for a toolbar row: an accent line along the row's
  *  top and bottom edges, and a double-headed arrow with the height on the
  *  right. Desktop-only decoration — on phones it would collide with the
  *  wrapped controls. */
 function HeightGuides({ height }: { height: number }) {
-  const line = { backgroundColor: "#6B97FF", opacity: 0.5 };
+  const line = { backgroundColor: ACCENT_VAR, opacity: 0.5 };
   return (
     <div aria-hidden className="pointer-events-none hidden sm:block">
       <div className="absolute inset-x-0 top-0 h-px" style={line} />
@@ -58,23 +59,24 @@ function HeightGuides({ height }: { height: number }) {
           height={height}
           viewBox={`0 0 8 ${height}`}
           fill="none"
+          style={{ color: ACCENT_VAR }}
         >
           <path
             d={`M4,1.5 V${height - 1.5}`}
-            stroke="#6B97FF"
+            stroke="currentColor"
             strokeWidth={1.25}
             strokeLinecap="round"
           />
           <path
             d={`M1.5,5 L4,1.5 L6.5,5`}
-            stroke="#6B97FF"
+            stroke="currentColor"
             strokeWidth={1.25}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
           <path
             d={`M1.5,${height - 5} L4,${height - 1.5} L6.5,${height - 5}`}
-            stroke="#6B97FF"
+            stroke="currentColor"
             strokeWidth={1.25}
             strokeLinecap="round"
             strokeLinejoin="round"

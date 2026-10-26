@@ -45,6 +45,8 @@
 
 :root {
   color-scheme: light dark;
+  /* The accent: see "Accent and focus indicator" below. */
+  --fluid-accent: #6B97FF;
 }
 
 :root,
@@ -101,11 +103,19 @@
   --success: light-dark(#22C55E, #86EFAC);
   --warning: light-dark(#F59E0B, #FCD34D);
 
-  /* ── Focus indicator ──
-     Every component focus ring reads var(--focus-ring, #6B97FF), so this is
-     the single theming point. The literal fallback keeps registry components
-     self-contained when installed into projects without the variable. */
-  --focus-ring: #6B97FF;
+  /* ── Accent and focus indicator ──
+     --fluid-accent is the one brand color: the switch track, drop and swatch
+     rings, the copy highlight, and (through --focus-ring) every focus ring.
+     The site overrides it inline on <html> with the visitor's accent (lib/
+     accent.ts, right panel > Accent, A). Components read
+     var(--fluid-accent, #6B97FF) / var(--focus-ring, #6B97FF): the literal
+     fallback keeps them self-contained in projects without the variables.
+     Hover and selected highlights stay neutral on purpose.
+     --fluid-accent itself is declared on :root alone (above): declared here
+     too, every forced-theme subtree (.light/.dark) would reset it to blue
+     under the visitor's accent. --focus-ring re-resolves from the inherited
+     value in each scope. */
+  --focus-ring: var(--fluid-accent);
 
   /* ── Alpha checkerboard (color-picker swatches) ── */
   --checker-a: light-dark(#bbbbbb, #1f1f1f);

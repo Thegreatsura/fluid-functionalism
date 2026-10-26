@@ -1686,7 +1686,7 @@ const ColorSwatch = forwardRef<HTMLButtonElement, ColorSwatchProps>(
     // page background, then a 2px outer ring (accent blue when selected,
     // 40% gray on hover). The gap keeps the ring readable on any swatch color.
     const ring = selected
-      ? "inset 0 0 0 1px rgba(127,127,127,0.25), 0 0 0 2px var(--background), 0 0 0 4px #6B97FF"
+      ? "inset 0 0 0 1px rgba(127,127,127,0.25), 0 0 0 2px var(--background), 0 0 0 4px var(--fluid-accent, #6B97FF)"
       : hovered
         ? "inset 0 0 0 1px rgba(127,127,127,0.25), 0 0 0 2px var(--background), 0 0 0 4px rgba(127,127,127,0.4)"
         : "inset 0 0 0 1px rgba(127,127,127,0.25)";
@@ -1790,6 +1790,7 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
   (
     {
       value,
+      // eslint-disable-next-line no-restricted-syntax -- a starting color for the picker, not the accent
       defaultValue = "#6B97FF",
       onValueChange,
       format,
@@ -2264,6 +2265,7 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
     // when that is its own emitted string coming back, lastEmitted skips
     // the re-parse.
     const isControlled = pickerProps.value !== undefined;
+    // eslint-disable-next-line no-restricted-syntax -- a starting color for the picker, not the accent
     const [internalValue, setInternalValue] = useState(pickerProps.value ?? pickerProps.defaultValue ?? "#6B97FF");
     const currentValue = isControlled ? (pickerProps.value as string) : internalValue;
 

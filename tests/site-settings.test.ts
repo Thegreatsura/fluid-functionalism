@@ -16,7 +16,7 @@ describe("Make them yours settings", () => {
   });
 
   it("reads every saved setting back", () => {
-    const saved = { theme: "dark", shape: "pill", size: "compact", icons: "phosphor", base: "radix" } as const;
+    const saved = { theme: "dark", shape: "pill", size: "compact", icons: "phosphor", base: "radix", accent: "orange" } as const;
     const cookies = Object.fromEntries(
       Object.entries(saved).map(([key, value]) => [SETTINGS_COOKIES[key as keyof typeof saved], value]),
     );

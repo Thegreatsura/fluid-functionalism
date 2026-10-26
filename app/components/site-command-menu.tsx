@@ -41,6 +41,8 @@ import {
   type IconLibrary,
 } from "@/lib/docs/icon-playground";
 import { useBase, installUrl, type Base } from "@/lib/base-context";
+import { useAccent } from "@/lib/docs/accent";
+import { ACCENT_ORDER, ACCENT_PRESETS } from "@/lib/accent";
 
 // ---------------------------------------------------------------------------
 // The site's own command menu: ⌘K anywhere. Every page, every setting the
@@ -167,6 +169,7 @@ export function SiteCommandMenu() {
   const { size, setSize } = useSizeContext();
   const { iconLibrary, setIconLibrary } = useIconLibrary();
   const { base, setBase } = useBase();
+  const { preset: accent, custom: customAccent, setPreset: setAccent } = useAccent();
   const [tab, setTab] = useState("all");
   const [recent, setRecent] = useState<string[]>([]);
 
@@ -243,6 +246,20 @@ export function SiteCommandMenu() {
         onSelect: () => {
           setTheme(t.value);
           showSuccessToast(`Theme set to ${t.label}`);
+        },
+      })),
+      ...ACCENT_ORDER.map((a) => ({
+        kind: "setting" as const,
+        value: `accent:${a}`,
+        label: `Accent: ${ACCENT_PRESETS[a].label}`,
+        action: `Set accent to ${ACCENT_PRESETS[a].label}`,
+        description: current(!customAccent && accent === a),
+        icon: icons.palette,
+        keywords: ["accent", "color", "brand", "focus", a],
+        group: "Settings",
+        onSelect: () => {
+          setAccent(a);
+          showSuccessToast(`Accent set to ${ACCENT_PRESETS[a].label}`);
         },
       })),
       ...SHAPES.map((s) => ({
@@ -378,6 +395,9 @@ export function SiteCommandMenu() {
     setIconLibrary,
     base,
     setBase,
+    accent,
+    customAccent,
+    setAccent,
     currentComponent,
     pageIndex,
     isNew,

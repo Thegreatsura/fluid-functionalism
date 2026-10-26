@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { spring } from "@/registry/default/lib/springs";
@@ -40,6 +40,20 @@ const REPO = "mickadesign/fluid-functionalism";
 
 /** The heading font select's action row: opens the Google Fonts picker. */
 const BROWSE = "__browse";
+
+const stop = (e: SyntheticEvent) => e.stopPropagation();
+
+/** Wraps a select's popup inside a row that carries a shortcut tooltip.
+ *  React events bubble through portals, so without it, hovering or focusing
+ *  the open list reaches the tooltip's trigger and shows "Press X to cycle"
+ *  over the options. `contents` keeps the wrapper out of the row's layout. */
+function TooltipPopupGuard({ children }: { children: ReactNode }) {
+  return (
+    <div className="contents" onPointerMove={stop} onPointerDown={stop} onFocus={stop}>
+      {children}
+    </div>
+  );
+}
 
 function formatStars(n: number): string {
   if (n >= 1000) {
@@ -142,7 +156,6 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
   const PaletteIcon = useIcon("palette");
   const RadixIcon = useIcon("circle");
   const BaseUiIcon = useIcon("square-library");
-  const SearchIcon = useIcon("search");
 
   const themeOptions = [
     { label: "System", value: "system" as Theme, icon: MonitorIcon },
@@ -184,13 +197,15 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
                 className="min-w-0 w-auto h-7 px-2 text-site-body"
                 icon={themeOptions.find((o) => o.value === theme)?.icon}
               />
-              <SelectContent>
-                {themeOptions.map((o, i) => (
-                  <SelectItem key={o.value} value={o.value} index={i} icon={o.icon}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+              <TooltipPopupGuard>
+                <SelectContent>
+                  {themeOptions.map((o, i) => (
+                    <SelectItem key={o.value} value={o.value} index={i} icon={o.icon}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </TooltipPopupGuard>
             </Select>
           </div>
         </Tooltip>
@@ -203,13 +218,15 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
                 className="min-w-0 w-auto h-7 px-2 text-site-body"
                 icon={shapeOptions.find((o) => o.value === shape)?.icon}
               />
-              <SelectContent>
-                {shapeOptions.map((o, i) => (
-                  <SelectItem key={o.value} value={o.value} index={i} icon={o.icon}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+              <TooltipPopupGuard>
+                <SelectContent>
+                  {shapeOptions.map((o, i) => (
+                    <SelectItem key={o.value} value={o.value} index={i} icon={o.icon}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </TooltipPopupGuard>
             </Select>
           </div>
         </Tooltip>
@@ -221,13 +238,15 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
                 variant="borderless"
                 className="min-w-0 w-auto h-7 px-2 text-site-body"
               />
-              <SelectContent>
-                {sizeOptions.map((o, i) => (
-                  <SelectItem key={o.value} value={o.value} index={i}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+              <TooltipPopupGuard>
+                <SelectContent>
+                  {sizeOptions.map((o, i) => (
+                    <SelectItem key={o.value} value={o.value} index={i}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </TooltipPopupGuard>
             </Select>
           </div>
         </Tooltip>
@@ -239,13 +258,15 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
                 variant="borderless"
                 className="min-w-0 w-auto h-7 px-2 text-site-body"
               />
-              <SelectContent>
-                {iconOptions.map((o, i) => (
-                  <SelectItem key={o.value} value={o.value} index={i}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+              <TooltipPopupGuard>
+                <SelectContent>
+                  {iconOptions.map((o, i) => (
+                    <SelectItem key={o.value} value={o.value} index={i}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </TooltipPopupGuard>
             </Select>
           </div>
         </Tooltip>
@@ -262,16 +283,18 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
                 variant="borderless"
                 className="min-w-0 w-auto h-7 px-2 text-site-body"
               />
-              <SelectContent>
-                {fonts.map((f, i) => (
-                  <SelectItem key={f} value={f} index={i}>
-                    {headingFontLabel(f, custom)}
+              <TooltipPopupGuard>
+                <SelectContent>
+                  {fonts.map((f, i) => (
+                    <SelectItem key={f} value={f} index={i}>
+                      {headingFontLabel(f, custom)}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={BROWSE} index={fonts.length}>
+                    Browse Google Fonts…
                   </SelectItem>
-                ))}
-                <SelectItem value={BROWSE} index={fonts.length} icon={SearchIcon}>
-                  Browse Google Fonts…
-                </SelectItem>
-              </SelectContent>
+                </SelectContent>
+              </TooltipPopupGuard>
             </Select>
           </div>
         </Tooltip>

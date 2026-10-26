@@ -49,15 +49,26 @@ const BROWSE = "__browse";
 function AccentContrastNote({ hex }: { hex: string }) {
   const { theme } = useThemeContext();
   // The page background, read after a theme change has settled (the theme
-  // crossfade runs 180ms on background-color).
+  // crossfade runs 180ms on background-color), and again when the OS flips
+  // light and dark under the System theme.
   const [bg, setBg] = useState<string | null>(null);
   useEffect(() => {
-    const id = setTimeout(() => {
-      const m = getComputedStyle(document.body).backgroundColor.match(/\d+(\.\d+)?/g);
-      if (!m || m.length < 3) return;
-      setBg("#" + m.slice(0, 3).map((v) => Math.round(Number(v)).toString(16).padStart(2, "0")).join(""));
-    }, 200);
-    return () => clearTimeout(id);
+    let id: ReturnType<typeof setTimeout>;
+    const read = () => {
+      clearTimeout(id);
+      id = setTimeout(() => {
+        const m = getComputedStyle(document.body).backgroundColor.match(/\d+(\.\d+)?/g);
+        if (!m || m.length < 3) return;
+        setBg("#" + m.slice(0, 3).map((v) => Math.round(Number(v)).toString(16).padStart(2, "0")).join(""));
+      }, 200);
+    };
+    read();
+    const scheme = window.matchMedia("(prefers-color-scheme: dark)");
+    scheme.addEventListener("change", read);
+    return () => {
+      clearTimeout(id);
+      scheme.removeEventListener("change", read);
+    };
   }, [theme]);
   if (!bg || contrastRatio(hex, bg) >= LOW_ACCENT_CONTRAST) return null;
   return (

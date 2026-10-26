@@ -61,7 +61,7 @@ export function BentoCard({ slug, name, isNew, animateLayout = false, action, cl
         {name}
       </span>
       {isNew && (
-        <Badge variant="dot" color="blue" size="sm">
+        <Badge variant="dot" color="accent" size="sm">
           New
         </Badge>
       )}

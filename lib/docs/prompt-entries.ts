@@ -374,7 +374,7 @@ const questions: AskUserQuestion[] = [
     props: [
       "variant: \"solid\" | \"dot\" (default \"solid\"). Solid uses a tinted background; dot shows a colored indicator.",
       "size: \"default\" | \"compact\" (default from SizeProvider). Step on the size ladder; legacy sm/md/lg values resolve as aliases.",
-      "color: BadgeColor (default \"gray\"). Tailwind palette name: gray, red, orange, amber, yellow, lime, green, emerald, teal, cyan, blue, indigo, violet, purple, fuchsia, pink, rose.",
+      "color: BadgeColor (default \"gray\"). accent (the app's --fluid-accent), or a Tailwind palette name: gray, red, orange, amber, yellow, lime, green, emerald, teal, cyan, blue, indigo, violet, purple, fuchsia, pink, rose.",
     ],
   },
   banner: {

@@ -6,6 +6,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ShapeProvider } from "@/registry/default/lib/shape-context";
+import { OG_IMAGES, OG_VIDEOS } from "@/lib/og-media";
 import { SizeProvider } from "@/registry/default/lib/size-context";
 import { ThemeProvider } from "@/registry/default/lib/theme-context";
 import { IconPlaygroundProvider } from "@/lib/docs/icon-playground";
@@ -51,19 +52,8 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Fluid Functionalism",
     description: "Open Source UI components created by @micka_design",
-    images: [{ url: "/metadata/og.png", width: 2400, height: 1260 }],
-    // The same card as a loop (`npm run og:video`). og.png stays the poster
-    // for every platform that ignores og:video. Absolute on purpose: Next
-    // resolves image URLs against metadataBase but prints video URLs as-is.
-    videos: [
-      {
-        url: "https://www.fluidfunctionalism.com/metadata/og.webm",
-        secureUrl: "https://www.fluidfunctionalism.com/metadata/og.webm",
-        width: 1200,
-        height: 630,
-        type: "video/webm",
-      },
-    ],
+    images: OG_IMAGES,
+    videos: OG_VIDEOS,
   },
   twitter: {
     card: "summary_large_image",

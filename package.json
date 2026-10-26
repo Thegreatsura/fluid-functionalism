@@ -16,7 +16,8 @@
     "deps:inventory": "node scripts/deps-watch/inventory.mjs",
     "deps:popups": "node scripts/deps-watch/verify-popups.mjs",
     "deps:install": "node scripts/deps-watch/install-check.mjs",
-    "og": "node scripts/og-export.mjs"
+    "og": "node scripts/og-export.mjs",
+    "og:video": "node scripts/og-video-export.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

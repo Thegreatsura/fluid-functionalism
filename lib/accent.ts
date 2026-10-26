@@ -4,28 +4,23 @@
 // --fluid-accent (globals.css derives --focus-ring from it). Hover and
 // selected highlights stay neutral on purpose.
 //
-// Seven presets travel as a "Make them yours" setting (cookie ff_accent, a word
+// Three presets travel as a "Make them yours" setting (cookie ff_accent, a word
 // in the starter slug). A custom color is site-only (cookie ff_accent_custom)
 // and reaches installs through the copied prompt. Server-safe: the root
 // layout, the starter generator and the client all read it.
 // ---------------------------------------------------------------------------
 
-export type AccentPreset = "blue" | "violet" | "pink" | "red" | "orange" | "lime" | "teal";
+export type AccentPreset = "blue" | "violet" | "red";
 
 /** The presets in panel order, by hue. All sit at the default blue's
  *  contrast: about 2.8:1 on white and 6.4 to 7:1 on the dark background, so a
- *  focus ring reads the same whichever is picked. Violet, pink and orange
- *  share the blue's OKLCH lightness (0.693); lime and teal sit a step darker
- *  (0.674) and red a step lighter (0.708) to reach the same contrast on
- *  white. */
+ *  focus ring reads the same whichever is picked. Violet shares the blue's
+ *  OKLCH lightness (0.693); red sits a step lighter (0.708) to reach the same
+ *  contrast on white. */
 export const ACCENT_PRESETS: Record<AccentPreset, { label: string; hex: string }> = {
   blue: { label: "Blue", hex: "#6B97FF" },
   violet: { label: "Violet", hex: "#AC82F0" },
-  pink: { label: "Pink", hex: "#E66DA1" },
   red: { label: "Red", hex: "#FF6964" },
-  orange: { label: "Orange", hex: "#E97930" },
-  lime: { label: "Lime", hex: "#76A901" },
-  teal: { label: "Teal", hex: "#0DABB2" },
 };
 
 export const ACCENT_ORDER = Object.keys(ACCENT_PRESETS) as AccentPreset[];

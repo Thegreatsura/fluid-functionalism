@@ -29,8 +29,9 @@ interface ComponentPreviewProps {
   playbackButton?: PlaybackButton;
   /** Padding around the preview content. Use "compact" when the demo
    *  is a self-contained block that already supplies its own breathing
-   *  room (dialogs, full-bleed cards). "responsive" is compact on mobile
-   *  and default on desktop — for big demos that feel cramped on phones.
+   *  room (dialogs, full-bleed cards). "default" narrows its sides to
+   *  16px on phones; "responsive" is compact there on every side — for big
+   *  demos that feel cramped on phones.
    *  "none" removes the padding entirely so the demo bleeds to the
    *  preview frame (full-width tables, scroll areas).
    *  Defaults to "default". */
@@ -218,7 +219,7 @@ export function ComponentPreview({
                   ? "px-4 py-4"
                   : padding === "responsive"
                     ? "px-4 py-4 sm:px-8 sm:py-12"
-                    : "px-8 py-12"
+                    : "px-4 py-12 sm:px-8"
             }`}
           >
             {children}

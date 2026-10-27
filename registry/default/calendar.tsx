@@ -190,6 +190,9 @@ interface GridContextValue {
   /** The day a range end was just committed on: it takes the gliding
    *  highlight's fill in the same frame, with no fade. */
   committedEnd: number | null;
+  /** A committed range a new pick just replaced: its band and ends fade
+   *  out instead of vanishing. `id` restarts the fade for each one. */
+  ghost: { from: number; to: number; id: number } | null;
 }
 
 const GridContext = createContext<GridContextValue | null>(null);
@@ -509,6 +512,24 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
     setPickTrack({ picking: cal.picking, end: cal.picking ? previewEnd : null });
   }
   const clearCommittedEnd = useCallback(() => setCommittedEnd(null), []);
+  // A new pick replacing a committed range leaves the old one as a ghost
+  // that fades out on the moderate exit. Tracked during render, compared by
+  // day numbers (the range's dates are new objects each render).
+  const committed =
+    cal.mode === "range" && !cal.picking && cal.range?.from && cal.range.to
+      ? { from: dayNumber(cal.range.from), to: dayNumber(cal.range.to) }
+      : null;
+  const [lastCommitted, setLastCommitted] = useState(committed);
+  const [ghost, setGhost] = useState<GridContextValue["ghost"]>(null);
+  if (committed?.from !== lastCommitted?.from || committed?.to !== lastCommitted?.to) {
+    if (lastCommitted && !committed) setGhost({ ...lastCommitted, id: (ghost?.id ?? 0) + 1 });
+    setLastCommitted(committed);
+  }
+  useEffect(() => {
+    if (!ghost) return;
+    const id = setTimeout(() => setGhost(null), exitFallbackMs(spring.moderate));
+    return () => clearTimeout(id);
+  }, [ghost]);
   // Held down on a filled day, its ring goes solid; on an empty one, the
   // hover fill presses like a ghost Button. The press reads before the
   // click commits. The window listener catches a release outside the grid.
@@ -571,6 +592,7 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
       stacked,
       sharedRows,
       committedEnd,
+      ghost,
     }),
     // band is rebuilt each render; compare its parts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -586,6 +608,7 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
       stacked,
       sharedRows,
       committedEnd,
+      ghost,
     ]
   );
 
@@ -1398,9 +1421,7 @@ function Day({ day, modifiers, className, style, children, ...props }: DayProps)
   const grid = useGridContext();
   const month = useContext(MonthContext);
   const n = dayNumber(day.date);
-  const band = grid.band;
   const visible = !modifiers.hidden;
-  const inBand = !!band && visible && band.from !== band.to && n >= band.from && n <= band.to;
   const nextDay = addDays(day.date, 1);
   const lastOfMonth = nextDay.getMonth() !== day.date.getMonth();
   const firstOfMonth = day.date.getDate() === 1;
@@ -1415,17 +1436,33 @@ function Day({ day, modifiers, className, style, children, ...props }: DayProps)
   // week's first day (outside days included, hidden or not), whatever
   // weekStartsOn, locale or ISO numbering decided that day is.
   const weekday = (((n - gridFirst) % 7) + 7) % 7;
-  const edgeLeft = inBand && n > band!.from && (weekday === 0 || (firstOfMonth && cal.outsideHidden));
-  const edgeRight = inBand && n < band!.to && (weekday === 6 || (lastOfMonth && cal.outsideHidden));
   const drawn = (m: number) => {
     if (m < gridFirst || m > gridLast) return false;
     if (!cal.outsideHidden || !month) return true;
     const d = addDays(day.date, m - n);
     return d.getMonth() === month.calendarMonth.date.getMonth();
   };
-  const bandAtLeft = (m: number) => !!band && drawn(m) && m > band.from && m <= band.to;
-  const bandAtRight = (m: number) => !!band && drawn(m) && m >= band.from && m < band.to;
   const corner = (edge: boolean, touching: boolean) => (edge && !touching ? "2px" : 0);
+  // This cell's slice of a band (the live one, or a fading ghost), or null.
+  const slice = (band: { from: number; to: number } | null): CSSProperties | null => {
+    if (!band || !visible || band.from === band.to || n < band.from || n > band.to) return null;
+    const edgeLeft = n > band.from && (weekday === 0 || (firstOfMonth && cal.outsideHidden));
+    const edgeRight = n < band.to && (weekday === 6 || (lastOfMonth && cal.outsideHidden));
+    const atLeft = (m: number) => drawn(m) && m > band.from && m <= band.to;
+    const atRight = (m: number) => drawn(m) && m >= band.from && m < band.to;
+    return {
+      left: n > band.from ? 0 : "50%",
+      right: n < band.to ? 0 : "50%",
+      borderTopLeftRadius: corner(edgeLeft, atLeft(n - 7)),
+      borderBottomLeftRadius: corner(edgeLeft, atLeft(n + 7)),
+      borderTopRightRadius: corner(edgeRight, atRight(n - 7)),
+      borderBottomRightRadius: corner(edgeRight, atRight(n + 7)),
+    };
+  };
+  const bandSlice = slice(grid.band);
+  const ghost = grid.ghost;
+  const ghostSlice = slice(ghost);
+  const ghostEnd = !!ghost && visible && (n === ghost.from || n === ghost.to);
 
   return (
     <div
@@ -1445,21 +1482,42 @@ function Day({ day, modifiers, className, style, children, ...props }: DayProps)
       )}
       style={style}
     >
-      {inBand && (
+      {/* The range a new pick replaced: its band slice and filled ends fade
+          out together on the moderate exit, under everything live. Its own
+          presence scope: the month panel's initial={false} would otherwise
+          skip the starting opacity and mount it already faded. */}
+      <AnimatePresence>
+        {(ghostSlice || ghostEnd) && (
+          <motion.span
+            key={ghost!.id}
+            aria-hidden
+            data-slot="calendar-range-ghost"
+            className="pointer-events-none absolute inset-0 flex items-center justify-center"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 0 }}
+            transition={spring.moderate.exit}
+          >
+            {ghostSlice && <span className="absolute inset-y-0 bg-hover" style={ghostSlice} />}
+            {ghostEnd && (
+              <span
+                className={cn(
+                  "relative bg-foreground",
+                  cal.fill ? "aspect-square h-full max-w-full" : "size-[var(--cell-size)]",
+                  cal.pill ? "rounded-full" : "rounded-lg"
+                )}
+              />
+            )}
+          </motion.span>
+        )}
+      </AnimatePresence>
+      {bandSlice && (
         <span
           aria-hidden
           data-slot="calendar-range-band"
           // The hover fill: a long band reads heavier than a small one, so it
           // takes the lightest token; the highlight over it stacks a step up.
           className="pointer-events-none absolute inset-y-0 bg-hover"
-          style={{
-            left: n > band!.from ? 0 : "50%",
-            right: n < band!.to ? 0 : "50%",
-            borderTopLeftRadius: corner(edgeLeft, bandAtLeft(n - 7)),
-            borderBottomLeftRadius: corner(edgeLeft, bandAtLeft(n + 7)),
-            borderTopRightRadius: corner(edgeRight, bandAtRight(n - 7)),
-            borderBottomRightRadius: corner(edgeRight, bandAtRight(n + 7)),
-          }}
+          style={bandSlice}
         />
       )}
       {children}

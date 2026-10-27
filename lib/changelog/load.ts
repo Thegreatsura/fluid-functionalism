@@ -43,11 +43,10 @@ let marksCache: ReleaseMarks | null = null;
 
 /** The doc slugs the latest release marks: New for its New entries, Updated
  *  for its Updated and Breaking ones, plus the pages listed ahead of the
- *  next release. The sidebar dots the release's New ones, and the Showcase,
- *  ⌘K, /demo and /compare label all of them, so every marker on the site
- *  moves on with each release. Read once per server in production, where
- *  release files only change with a deploy; every request in development,
- *  so an edited release shows. */
+ *  next release. Only the ahead pages get a New dot or badge (useReleaseMarks
+ *  in lib/changelog/marks.tsx), so New means landed this month. Read once
+ *  per server in production, where release files only change with a deploy;
+ *  every request in development, so an edited release shows. */
 export function latestMarks(dir = CHANGELOG_DIR, ahead = AHEAD_OF_RELEASE): ReleaseMarks {
   if (marksCache && process.env.NODE_ENV === "production") return marksCache;
   let marks: ReleaseMarks = { new: [], updated: [], ahead: [] };

@@ -29,6 +29,7 @@ import { cn } from "@/registry/default/lib/utils";
 import { ChevronDown, ListFilter, Plus } from "lucide-react";
 import { SORT_OPTIONS, ToolbarDemo } from "@/app/docs/sizes/toolbar-demo";
 import { PROVIDER_PROPS, CONSUMER_PROPS } from "@/lib/docs/api/sizes";
+import { ACCENT_VAR } from "@/lib/accent";
 
 /** Inline code chip used throughout the prose. */
 function Code({ children }: { children: ReactNode }) {
@@ -243,7 +244,7 @@ function CompactRegionDemo() {
         </defs>
         <path
           d="M112,20 Q70,26 22,66"
-          stroke="#6B97FF"
+          style={{ stroke: ACCENT_VAR }}
           strokeWidth={1.5}
           strokeLinecap="round"
           markerEnd="url(#ff-sizes-annotation-arrow)"

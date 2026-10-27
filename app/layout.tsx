@@ -15,7 +15,9 @@ import { SizeShortcut } from "@/lib/docs/size-shortcut";
 import { SizeAttribute } from "@/lib/docs/size-attribute";
 import { SettingsToast } from "@/lib/docs/settings-toast";
 import { SettingsPersistence } from "@/lib/docs/settings-persistence";
-import { readHeadingFont, readSettings } from "@/lib/docs/site-settings";
+import { readCustomAccent, readHeadingFont, readSettings } from "@/lib/docs/site-settings";
+import { AccentProvider, AccentShortcut } from "@/lib/docs/accent";
+import { accentHex } from "@/lib/accent";
 import { HeadingFontProvider, HeadingFontShortcut } from "@/lib/docs/heading-font";
 import googleFonts from "@/lib/docs/google-fonts.json";
 import { customHeadingVars, googleFontWeights, type GoogleFont } from "@/lib/docs/google-fonts";
@@ -77,6 +79,9 @@ export default async function RootLayout({
   // SettingsPersistence: rendering them here means a reload paints the
   // visitor's theme, radius, size, icons and primitive from the first frame.
   const settings = readSettings((name) => cookieStore.get(name)?.value);
+  // A custom accent overrides the preset; either way the color goes inline
+  // on <html>, so focus rings paint in it from the first frame.
+  const customAccent = readCustomAccent((name) => cookieStore.get(name)?.value);
   // The heading font, and the Google Fonts family behind "custom": unknown
   // to the catalog, it falls back to Inter.
   const saved = readHeadingFont((name) => cookieStore.get(name)?.value);
@@ -98,7 +103,12 @@ export default async function RootLayout({
       className={settings.theme === "system" ? sourceSerif.variable : `${settings.theme} ${sourceSerif.variable}`}
       data-size={settings.size}
       data-font={headingFont}
-      style={customFont ? (customHeadingVars(customFont, customWeight) as React.CSSProperties) : undefined}
+      style={
+        {
+          "--fluid-accent": accentHex(settings.accent, customAccent),
+          ...(customFont ? customHeadingVars(customFont, customWeight) : {}),
+        } as React.CSSProperties
+      }
     >
       {/* Font smoothing (antialiased/grayscale) is set globally in globals.css */}
       <body>
@@ -115,18 +125,21 @@ export default async function RootLayout({
               <ThemeProvider defaultTheme={settings.theme}>
                 <IconPlaygroundProvider defaultLibrary={settings.icons}>
                   <BaseProvider defaultBase={settings.base}>
-                    <HeadingFontProvider defaultFont={headingFont} defaultCustom={customFont} defaultWeight={customWeight}>
-                      <HeadingFontShortcut />
-                      <SettingsPersistence />
-                      {/* The sidebar's New dots: what the latest changelog
-                          release lists as New, read from content/changelog. */}
-                      <SidebarLayout defaultOpen={sidebarDefaultOpen} marks={latestMarks()}>
-                        {children}
-                      </SidebarLayout>
-                      <SettingsToast />
-                      <Analytics />
-                      <SpeedInsights />
-                    </HeadingFontProvider>
+                    <AccentProvider defaultPreset={settings.accent} defaultCustom={customAccent}>
+                      <AccentShortcut />
+                      <HeadingFontProvider defaultFont={headingFont} defaultCustom={customFont} defaultWeight={customWeight}>
+                        <HeadingFontShortcut />
+                        <SettingsPersistence />
+                        {/* The sidebar's New dots: what the latest changelog
+                            release lists as New, read from content/changelog. */}
+                        <SidebarLayout defaultOpen={sidebarDefaultOpen} marks={latestMarks()}>
+                          {children}
+                        </SidebarLayout>
+                        <SettingsToast />
+                        <Analytics />
+                        <SpeedInsights />
+                      </HeadingFontProvider>
+                    </AccentProvider>
                   </BaseProvider>
                 </IconPlaygroundProvider>
               </ThemeProvider>

@@ -24,9 +24,9 @@ interface NavEntry {
   name: string;
 }
 
-/** The New dot, in the changelog's blue: on what the latest release lists as
- *  New and on pages landed since (AHEAD_OF_RELEASE), so the dots move on
- *  with each month's release. */
+/** The New dot, in the accent (the changelog's New color): on pages landed
+ *  since the latest release (AHEAD_OF_RELEASE), so the dots only mark what
+ *  is new this month. */
 function NewDot() {
   // Rendered as a flex sibling of the weight-animated label (the row's gap
   // provides the spacing), matching the old NavItem dot's visual position.
@@ -48,7 +48,7 @@ function NavGroup({
   pathname: string;
   ariaLabel: string;
 }) {
-  // New in the latest release, or landed since and listed ahead of the next.
+  // Landed since the latest release and listed ahead of the next.
   const { isNew } = useReleaseMarks();
   return (
     // A labelled group (System, Components) gets 16px above it instead of

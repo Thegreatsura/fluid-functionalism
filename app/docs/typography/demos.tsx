@@ -286,7 +286,7 @@ function WeightItem({
       {marks && (
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-y-2 z-20 w-px bg-[#6B97FF]"
+          className="pointer-events-none absolute inset-y-2 z-20 w-px bg-[var(--fluid-accent,#6B97FF)]"
           style={{ left: marks.edge }}
         />
       )}
@@ -517,7 +517,7 @@ function CountRow({
       {marks && (
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-y-2 z-20 w-px bg-[#6B97FF]"
+          className="pointer-events-none absolute inset-y-2 z-20 w-px bg-[var(--fluid-accent,#6B97FF)]"
           style={{ left: marks.left + rest }}
         />
       )}
@@ -671,7 +671,7 @@ function TrimChip({ trimmed, onAbove }: { trimmed: boolean; onAbove: (px: number
           <span
             key={i}
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 z-20 h-px -translate-y-1/2 bg-[#6B97FF]"
+            className="pointer-events-none absolute inset-x-0 z-20 h-px -translate-y-1/2 bg-[var(--fluid-accent,#6B97FF)]"
             style={{ top: y }}
           />
         ))}

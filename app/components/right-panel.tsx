@@ -33,6 +33,9 @@ import { Tooltip } from "@/registry/radix/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useBase, type Base } from "@/lib/base-context";
 import { StarterPromptButton } from "@/app/components/starter-install";
+import { ColorPickerPopover } from "@/registry/default/color-picker";
+import { useAccent } from "@/lib/docs/accent";
+import { ACCENT_ORDER, ACCENT_PRESETS, LOW_ACCENT_CONTRAST, accentLabel, contrastRatio } from "@/lib/accent";
 import { useHeadingFont, headingFontLabel, HeadingWeightSelect } from "@/lib/docs/heading-font";
 import type { HeadingFont } from "@/lib/docs/site-settings";
 
@@ -40,6 +43,57 @@ const REPO = "mickadesign/fluid-functionalism";
 
 /** The heading font select's action row: opens the Google Fonts picker. */
 const BROWSE = "__browse";
+
+/** Warns under the Accent row when a custom color nearly vanishes against
+ *  the page: focus rings are 1px of the accent. */
+function AccentContrastNote({ hex }: { hex: string }) {
+  const { theme } = useThemeContext();
+  // The page background, read after a theme change has settled (the theme
+  // crossfade runs 180ms on background-color), and again when the OS flips
+  // light and dark under the System theme.
+  const [bg, setBg] = useState<string | null>(null);
+  useEffect(() => {
+    let id: ReturnType<typeof setTimeout>;
+    const read = () => {
+      clearTimeout(id);
+      id = setTimeout(() => {
+        const rgb = toRgb(getComputedStyle(document.body).backgroundColor);
+        if (rgb) setBg(toHex(rgb));
+      }, 250);
+    };
+    read();
+    const scheme = window.matchMedia("(prefers-color-scheme: dark)");
+    scheme.addEventListener("change", read);
+    return () => {
+      clearTimeout(id);
+      scheme.removeEventListener("change", read);
+    };
+  }, [theme]);
+  if (!bg || contrastRatio(hex, bg) >= LOW_ACCENT_CONTRAST) return null;
+  return (
+    <p className="-mt-1 text-site-caption text-muted-foreground">
+      Low contrast here: focus rings will be hard to see.
+    </p>
+  );
+}
+
+/** The accent presets as the picker's swatches, in panel order. */
+const ACCENT_SWATCHES = ACCENT_ORDER.map((p) => ACCENT_PRESETS[p].hex);
+
+/** A color as a 6-digit uppercase hex (the accent has no alpha). */
+const toHex = ({ r, g, b }: { r: number; g: number; b: number }) =>
+  "#" + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("").toUpperCase();
+
+/** Any CSS color the browser computes (rgb(), color(srgb …), oklab() …) as
+ *  sRGB channels, by painting it into a 1px canvas. */
+function toRgb(color: string): { r: number; g: number; b: number } | null {
+  const ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+  if (!ctx) return null;
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, 1, 1);
+  const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+  return { r, g, b };
+}
 
 const stop = (e: SyntheticEvent) => e.stopPropagation();
 
@@ -147,6 +201,7 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
   const { iconLibrary, setIconLibrary } = useIconLibrary();
   const { base, setBase } = useBase();
   const { font, fonts, custom, setFont, browse } = useHeadingFont();
+  const accent = useAccent();
 
   const MonitorIcon = useIcon("monitor");
   const SunIcon = useIcon("sun");
@@ -209,6 +264,25 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
             </Select>
           </div>
         </Tooltip>
+        <Tooltip content={<span>Press &ensp;<kbd className="font-mono opacity-50">A</kbd>&ensp; to cycle</span>} side={tooltipSide}>
+          <div className="flex items-center justify-between">
+            <span className="text-site-body text-muted-foreground">Accent</span>
+            {/* The presets are the picker's swatches; any other color is a
+                custom accent. The trigger reads like the selects: the name
+                (or hex) in the foreground, then the color. */}
+            <TooltipPopupGuard>
+              <ColorPickerPopover
+                value={accent.hex}
+                onValueChange={(_, parsed) => accent.setColor(toHex(parsed))}
+                swatches={ACCENT_SWATCHES}
+                triggerLabel={accentLabel(accent.preset, accent.custom)}
+                triggerShowValue={false}
+                triggerClassName="h-7 border-transparent px-2 text-site-body [&_span]:px-0 [&_span]:text-foreground"
+              />
+            </TooltipPopupGuard>
+          </div>
+        </Tooltip>
+        <AccentContrastNote hex={accent.hex} />
         <Tooltip content={<span>Press &ensp;<kbd className="font-mono opacity-50">R</kbd>&ensp; to toggle</span>} side={tooltipSide}>
           <div className="flex items-center justify-between">
             <span className="text-site-body text-muted-foreground">Radius</span>

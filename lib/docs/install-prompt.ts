@@ -7,6 +7,7 @@ import { SETTING_LABELS, describeSettings } from "@/lib/starter/install";
 import { starterSlug, type StarterSettings } from "@/lib/starter/settings";
 import type { HeadingFont } from "@/lib/docs/site-settings";
 import { googleFontWeights, nearestGoogleFontWeight, type GoogleFont } from "@/lib/docs/google-fonts";
+import { ACCENT_PRESETS, DEFAULT_ACCENT, accentHex } from "@/lib/accent";
 import {
   SITE,
   OVERWRITE_NOTE,
@@ -229,13 +230,23 @@ function headingLines(heading: StarterHeading): string[] {
  *  or, in a folder that already holds an app, install the same components
  *  and settings into it. A heading font other than Inter adds a step that
  *  sets it up the way the site draws it. */
-export function buildStarterPrompt(settings: StarterSettings, heading?: StarterHeading): string {
+export function buildStarterPrompt(
+  settings: StarterSettings,
+  heading?: StarterHeading,
+  customAccent: string | null = null,
+): string {
   const slug = starterSlug(settings);
   const flavor = settings.base === "base" ? "Base UI" : "Radix";
   const family = headingFamily(heading);
+  // A custom accent replaces the preset in words; the slug keeps the preset.
+  const summary = describeSettings(settings, customAccent);
+  // The color an existing app has to set itself: the tokens item installs
+  // the default blue.
+  const accent = accentHex(settings.accent, customAccent);
+  const setAccent = accent !== ACCENT_PRESETS[DEFAULT_ACCENT].hex;
   const lines: string[] = [];
   lines.push(
-    `Start a new React app with Fluid Functionalism: every component installed, every system wired, set to ${describeSettings(settings)}${family ? `, ${family} headings` : ""}.`,
+    `Start a new React app with Fluid Functionalism: every component installed, every system wired, set to ${summary}${family ? `, ${family} headings` : ""}.`,
   );
   lines.push("");
   lines.push("Run (shadcn CLI, Next.js template, asks nothing):");
@@ -248,6 +259,11 @@ export function buildStarterPrompt(settings: StarterSettings, heading?: StarterH
   lines.push(
     `- components/providers.tsx holds the settings: next-themes (${settings.theme} by default, D flips light and dark) and FluidProvider (${settings.shape} corners, ${settings.size} size step, ${SETTING_LABELS.icons[settings.icons]} icons, reduced motion that follows the OS). Change a value there and every component follows.`,
   );
+  lines.push(
+    customAccent
+      ? `- app/layout.tsx sets the accent on <html> as --fluid-accent (focus rings, the switch track and every accented detail read it). Change its value to "${customAccent}", the color picked on the site.`
+      : `- app/layout.tsx sets the accent on <html> as --fluid-accent (${ACCENT_PRESETS[settings.accent].label.toLowerCase()}, ${ACCENT_PRESETS[settings.accent].hex}): focus rings, the switch track and every accented detail read it.`,
+  );
   lines.push("- app/page.tsx: an app shell (sidebar and topbar) around a home screen to replace.");
   lines.push(
     settings.base === "base"
@@ -259,7 +275,7 @@ export function buildStarterPrompt(settings: StarterSettings, heading?: StarterH
   lines.push(`npx shadcn@latest add ${SITE}/r/setup/${slug}.json --overwrite`);
   lines.push(OVERWRITE_NOTE);
   lines.push(
-    `Then wrap the root layout's children in <FluidRoot> from components/fluid-root.tsx (inside the theme provider, if any), load Inter with axes: ["opsz"], and default the theme to ${settings.theme}.`,
+    `Then wrap the root layout's children in <FluidRoot> from components/fluid-root.tsx (inside the theme provider, if any), load Inter with axes: ["opsz"], and default the theme to ${settings.theme}.${setAccent ? ` For the accent, put style={{ "--fluid-accent": "${accent}" }} on <html>.` : ""}`,
   );
   lines.push("");
   if (family && heading) {

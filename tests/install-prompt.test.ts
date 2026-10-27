@@ -50,7 +50,7 @@ describe("Copy prompts", () => {
 });
 
 describe("the starter Copy prompt", () => {
-  const settings = { base: "radix", shape: "pill", size: "compact", icons: "phosphor", theme: "dark" } as const;
+  const settings = { base: "radix", shape: "pill", size: "compact", icons: "phosphor", theme: "dark", accent: "blue" } as const;
   const prompt = buildStarterPrompt(settings);
 
   it("leads with the one command, carrying every setting in its slug", () => {

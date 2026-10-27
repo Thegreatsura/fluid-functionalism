@@ -31,8 +31,9 @@ const AccentContext = createContext<AccentContextValue | null>(null);
  * Docs-site-only: the accent (--fluid-accent) behind every focus ring and
  * accented detail, set from the right panel or A. The preset is a "Make them
  * yours" setting (SettingsPersistence writes its cookie); a custom color has
- * its own cookie, written here. Either way the color lands inline on
- * <html>, which the root layout also renders, so the first paint has it.
+ * its own cookie, written here once the color settles. Either way the color
+ * lands inline on <html>, which the root layout also renders, so the first
+ * paint has it.
  */
 export function AccentProvider({
   defaultPreset,
@@ -51,10 +52,22 @@ export function AccentProvider({
     document.documentElement.style.setProperty("--fluid-accent", hex);
   }, [hex]);
 
+  // The custom color's cookie, written once the color settles: a picker drag
+  // changes it every frame. Nothing is written until it differs from what the
+  // server rendered, so a first visit sets no cookie.
+  const written = useRef(defaultCustom);
+  useEffect(() => {
+    if (custom === written.current) return;
+    const id = setTimeout(() => {
+      written.current = custom;
+      document.cookie = customAccentCookie(custom);
+    }, 250);
+    return () => clearTimeout(id);
+  }, [custom]);
+
   const setPreset = useCallback((next: AccentPreset) => {
     setPresetState(next);
     setCustom(null);
-    document.cookie = customAccentCookie(null);
   }, []);
 
   const setColor = useCallback(
@@ -64,9 +77,7 @@ export function AccentProvider({
         setPreset(match);
         return;
       }
-      const upper = next.toUpperCase();
-      setCustom(upper);
-      document.cookie = customAccentCookie(upper);
+      setCustom(next.toUpperCase());
     },
     [setPreset]
   );

@@ -6,7 +6,7 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
  *  latestMarks() in lib/changelog/load.ts. The one source for every New and
  *  Updated marker on the site. */
 export interface ReleaseMarks {
-  new: string[];
+  /** Updated or Breaking in the latest release, minus what it lists as New. */
   updated: string[];
   /** Landed after the latest release: badged New until the release that
    *  lists them (AHEAD_OF_RELEASE in lib/changelog/load.ts). */

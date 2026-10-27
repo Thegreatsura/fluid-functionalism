@@ -57,10 +57,9 @@ function AccentContrastNote({ hex }: { hex: string }) {
     const read = () => {
       clearTimeout(id);
       id = setTimeout(() => {
-        const m = getComputedStyle(document.body).backgroundColor.match(/\d+(\.\d+)?/g);
-        if (!m || m.length < 3) return;
-        setBg("#" + m.slice(0, 3).map((v) => Math.round(Number(v)).toString(16).padStart(2, "0")).join(""));
-      }, 200);
+        const rgb = toRgb(getComputedStyle(document.body).backgroundColor);
+        if (rgb) setBg(toHex(rgb));
+      }, 250);
     };
     read();
     const scheme = window.matchMedia("(prefers-color-scheme: dark)");
@@ -81,9 +80,20 @@ function AccentContrastNote({ hex }: { hex: string }) {
 /** The accent presets as the picker's swatches, in panel order. */
 const ACCENT_SWATCHES = ACCENT_ORDER.map((p) => ACCENT_PRESETS[p].hex);
 
-/** The picker's color as a 6-digit uppercase hex (the accent has no alpha). */
+/** A color as a 6-digit uppercase hex (the accent has no alpha). */
 const toHex = ({ r, g, b }: { r: number; g: number; b: number }) =>
   "#" + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("").toUpperCase();
+
+/** Any CSS color the browser computes (rgb(), color(srgb …), oklab() …) as
+ *  sRGB channels, by painting it into a 1px canvas. */
+function toRgb(color: string): { r: number; g: number; b: number } | null {
+  const ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+  if (!ctx) return null;
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, 1, 1);
+  const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+  return { r, g, b };
+}
 
 const stop = (e: SyntheticEvent) => e.stopPropagation();
 

@@ -239,9 +239,7 @@ export function buildStarterPrompt(
   const flavor = settings.base === "base" ? "Base UI" : "Radix";
   const family = headingFamily(heading);
   // A custom accent replaces the preset in words; the slug keeps the preset.
-  const summary = customAccent
-    ? describeSettings(settings).replace(/[^,]+ accent$/, ` ${customAccent} accent`)
-    : describeSettings(settings);
+  const summary = describeSettings(settings, customAccent);
   // The color an existing app has to set itself: the tokens item installs
   // the default blue.
   const accent = accentHex(settings.accent, customAccent);

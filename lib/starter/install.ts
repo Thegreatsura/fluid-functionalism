@@ -75,15 +75,15 @@ export const SETTING_LABELS = {
 } as const;
 
 /** "Base UI, rounded, default size, Untitled UI icons, system theme, blue
- *  accent". */
-export function describeSettings(s: StarterSettings): string {
+ *  accent". A custom accent (site-only, a hex) replaces the preset's name. */
+export function describeSettings(s: StarterSettings, customAccent: string | null = null): string {
   return [
     SETTING_LABELS.base[s.base],
     SETTING_LABELS.shape[s.shape].toLowerCase(),
     `${SETTING_LABELS.size[s.size].toLowerCase()} size`,
     `${SETTING_LABELS.icons[s.icons]} icons`,
     `${SETTING_LABELS.theme[s.theme].toLowerCase()} theme`,
-    `${SETTING_LABELS.accent[s.accent].toLowerCase()} accent`,
+    `${customAccent ?? SETTING_LABELS.accent[s.accent].toLowerCase()} accent`,
   ].join(", ");
 }
 

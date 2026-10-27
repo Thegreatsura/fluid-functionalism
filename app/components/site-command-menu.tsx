@@ -151,7 +151,10 @@ export function SiteCommandMenuTrigger() {
         <SidebarMenuButton icon={icons.search} onClick={() => setOpen(true)}>
           Search
         </SidebarMenuButton>
-        <SidebarMenuBadge className="font-sans text-site-caption">{mac ? "⌘K" : "Ctrl K"}</SidebarMenuBadge>
+        {/* Touch screens have no keyboard to press it with. */}
+        <SidebarMenuBadge className="font-sans text-site-caption [@media(hover:none)]:hidden">
+          {mac ? "⌘K" : "Ctrl K"}
+        </SidebarMenuBadge>
       </SidebarMenuItem>
     </SidebarMenu>
   );

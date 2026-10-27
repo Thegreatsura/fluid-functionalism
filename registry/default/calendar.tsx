@@ -260,6 +260,10 @@ function slideVariants(
 /** One day column: the cell size, or the measured column when the months
  *  fill their container (see the grid). The chevrons take one each. */
 const COL = "var(--calendar-col, var(--cell-size))";
+/** The week-number column: narrower than a day, so the numbers sit close
+ *  to the days instead of floating in a full cell. */
+export const WEEK_COL_RATIO = 0.75;
+const WEEK_COL = "calc(var(--cell-size) * 0.75)";
 
 /**
  * The stacked strip's mask, the scroll-fade recipe twice over. Top: nothing
@@ -708,7 +712,9 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
       data-orientation={cal.numberOfMonths > 1 ? cal.orientation : undefined}
       className={cn(
         "relative isolate flex",
-        stacked ? "flex-col gap-4" : "flex-row flex-wrap gap-x-6 gap-y-4",
+        // Stacked, the surface carries on to the sticky weekday row, which
+        // must hide what scrolls under it.
+        stacked ? "flex-col gap-4 bg-inherit" : "flex-row flex-wrap gap-x-6 gap-y-4",
         // With 2 months, the months sit in a masked strip (below): soft
         // edges side by side, a fade under the weekday row when stacked.
         cal.fill && "w-full",
@@ -749,7 +755,7 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
           {...{ [INERT_ATTR]: "" }}
           className="sticky top-0 z-[4] flex bg-inherit"
         >
-          {cal.showWeekNumber && <span className="w-[var(--cell-size)] shrink-0" />}
+          {cal.showWeekNumber && <span className="w-[calc(var(--cell-size)*0.75)] shrink-0" />}
           {months[0].weeks[0].days.map((day) => (
             <WeekdayCell key={day.isoDate}>
               {formatters.formatWeekdayName(day.date, day.dateLib.options, day.dateLib)}
@@ -760,11 +766,12 @@ function Months({ className, style, children, ...props }: HTMLAttributes<HTMLDiv
       )}
       {stacked && !cal.navHidden && (
         // Stacked, the chevrons float over the first caption row, outside the
-        // masked strip (whose hole fades the sliding months under them).
+        // masked strip (whose hole fades the sliding months under them), and
+        // pass under the sticky weekday row when a short popup scrolls.
         <div
           {...{ [INERT_ATTR]: "" }}
           // Same rounded row height as the weekday row, with the same fallback.
-          className="absolute right-0 top-[calc(var(--cell-size)*0.8_+_16px)] z-[5] flex h-[var(--cell-size)] items-center supports-[width:round(1px,1px)]:top-[calc(round(down,var(--cell-size)*0.8,1px)_+_16px)]"
+          className="absolute right-0 top-[calc(var(--cell-size)*0.8_+_16px)] z-[3] flex h-[var(--cell-size)] items-center supports-[width:round(1px,1px)]:top-[calc(round(down,var(--cell-size)*0.8,1px)_+_16px)]"
         >
           <NavGroup buttons={["previous", "next"]} />
         </div>
@@ -981,7 +988,7 @@ function CaptionText({
  *  (one day column, after the week numbers on the left), then a 24px ramp to
  *  opaque, toward `to`. */
 function captionFade(to: "left" | "right", weekNumbers: boolean) {
-  const nav = to === "right" && weekNumbers ? `calc(var(--cell-size) + ${COL})` : COL;
+  const nav = to === "right" && weekNumbers ? `calc(${WEEK_COL} + ${COL})` : COL;
   return `linear-gradient(to ${to}, transparent ${nav}, #000 calc(${nav} + 24px))`;
 }
 
@@ -1052,7 +1059,7 @@ function MonthCaption({ calendarMonth, displayIndex, className, style, ...props 
         // With week numbers, the title belongs to the days: it starts at the
         // Monday column (centered over the 7 days, side by side).
         cal.showWeekNumber &&
-          (twoUp ? "pl-[var(--cell-size)]" : "pl-[calc(var(--cell-size)+0.5rem)]"),
+          (twoUp ? "pl-[calc(var(--cell-size)*0.75)]" : "pl-[calc(var(--cell-size)*0.75+0.5rem)]"),
         "mb-1",
         className
       )}
@@ -1063,7 +1070,7 @@ function MonthCaption({ calendarMonth, displayIndex, className, style, ...props 
         <div
           className={cn(
             "absolute top-1/2 -translate-y-1/2",
-            cal.showWeekNumber ? "left-[var(--cell-size)]" : "left-0"
+            cal.showWeekNumber ? "left-[calc(var(--cell-size)*0.75)]" : "left-0"
           )}
         >
           {navStart.length > 0 && <NavGroup buttons={navStart} />}
@@ -1109,7 +1116,7 @@ function MonthCaption({ calendarMonth, displayIndex, className, style, ...props 
             <div
               className={cn(
                 "absolute inset-y-0 flex items-center",
-                cal.showWeekNumber ? "pl-[calc(var(--cell-size)+0.5rem)]" : "pl-2"
+                cal.showWeekNumber ? "pl-[calc(var(--cell-size)*0.75+0.5rem)]" : "pl-2"
               )}
               style={{ left: grid.stride!, right: grid.stride! }}
             >
@@ -1180,23 +1187,11 @@ function WeekdayCell({
   );
 }
 
-function Weekdays({ className, style, children }: HTMLAttributes<HTMLElement>) {
-  const cal = useCalendarContext();
-  const grid = useGridContext();
-  // Stacked months show one weekday row, pinned above both grids; sliding
-  // sideways (1 month or 2), each month's row travels in its panel instead.
-  if (cal.numberOfMonths > 1 || grid.stride !== null) return null;
-  return (
-    <div
-      role="row"
-      aria-hidden
-      {...{ [INERT_ATTR]: "" }}
-      className={cn("flex", className)}
-      style={style}
-    >
-      {children}
-    </div>
-  );
+// DayPicker's own weekday row never renders. Stacked months show one row,
+// pinned above both grids; sliding sideways (1 month or 2), each month's row
+// travels in its panel instead, from the first paint.
+function Weekdays() {
+  return null;
 }
 
 function Weekday({ className, style, children, ...props }: HTMLAttributes<HTMLElement>) {
@@ -1223,7 +1218,7 @@ function WeekNumberHeader({ className, style, ...props }: HTMLAttributes<HTMLEle
     <div
       role="columnheader"
       aria-label={(props as { "aria-label"?: string })["aria-label"]}
-      className={cn("w-[var(--cell-size)] shrink-0", className)}
+      className={cn("w-[calc(var(--cell-size)*0.75)] shrink-0", className)}
       style={style}
     />
   );
@@ -1241,17 +1236,24 @@ function Weeks({ className, style, children }: HTMLAttributes<HTMLElement>) {
   const month = useContext(MonthContext);
   const grid = useGridContext();
   const height = useMotionValue<number | "auto">("auto");
-  const measuredRef = useRef(false);
+  // The month the height was last taken from, and the height it settles on.
+  const measuredRef = useRef<{ month: number; h: number } | null>(null);
   const [clip, setClip] = useState(false);
 
+  // Only a month change springs. A resize within the same month (fonts and
+  // cell sizes settling after mount, a container resize) snaps, so the
+  // calendar never grows on first paint.
   const onHeight = useCallback(
-    (h: number) => {
-      if (!measuredRef.current || grid.reduceMotion) {
-        measuredRef.current = true;
-        height.set(h);
+    (h: number, monthTime: number) => {
+      const last = measuredRef.current;
+      measuredRef.current = { month: monthTime, h };
+      if (!last || grid.reduceMotion || last.month === monthTime) {
+        if (last?.month === monthTime && last.h === h) return;
+        height.jump(h);
+        setClip(false);
         return;
       }
-      if (height.get() === h) return;
+      if (last.h === h) return;
       setClip(true);
       animate(height, h, { ...spring.moderate, onComplete: () => setClip(false) });
     },
@@ -1303,7 +1305,7 @@ function WeeksPanel({
   monthTime: number;
   offset: number;
   stride: number | null;
-  onHeight: (h: number) => void;
+  onHeight: (h: number, monthTime: number) => void;
 }) {
   const present = useIsPresent();
   const cal = useCalendarContext();
@@ -1313,18 +1315,19 @@ function WeeksPanel({
   const shownElsewhere = useShownElsewhere(monthTime, present, stride);
   const ref = useRef<HTMLDivElement>(null);
   // Side by side, the weekday row travels with its days, so a slide moves
-  // each month as one block instead of sliding days under fixed labels.
-  const side = stride !== null && !stacked;
+  // each month as one block instead of sliding days under fixed labels. Known
+  // before the stride is measured, so the row is there on the first paint.
+  const side = !stacked;
   const firstWeek = month?.calendarMonth.weeks[0]?.days ?? [];
   useIsoLayoutEffect(() => {
     const el = ref.current;
     if (!el || !present) return;
-    onHeight(el.offsetHeight);
+    onHeight(el.offsetHeight, monthTime);
     if (typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => onHeight(el.offsetHeight));
+    const ro = new ResizeObserver(() => onHeight(el.offsetHeight, monthTime));
     ro.observe(el);
     return () => ro.disconnect();
-  }, [present, onHeight]);
+  }, [present, onHeight, monthTime]);
   return (
     <PanelPresentContext.Provider value={present}>
       <motion.div
@@ -1351,7 +1354,7 @@ function WeeksPanel({
               <span
                 role="columnheader"
                 aria-label={labels.labelWeekNumberHeader?.()}
-                className="w-[var(--cell-size)] shrink-0"
+                className="w-[calc(var(--cell-size)*0.75)] shrink-0"
               />
             )}
             {firstWeek.map((day) => (
@@ -1397,7 +1400,7 @@ function WeekNumber({ className, style, children, ...props }: WeekNumberProps) {
       aria-label={(props as { "aria-label"?: string })["aria-label"]}
       {...{ [INERT_ATTR]: "" }}
       className={cn(
-        "flex w-[var(--cell-size)] shrink-0 items-center justify-center tabular-nums text-muted-foreground opacity-60",
+        "flex w-[calc(var(--cell-size)*0.75)] shrink-0 items-center justify-center tabular-nums text-muted-foreground opacity-60",
         cal.fill ? "max-h-[var(--cell-size)]" : "h-[var(--cell-size)]",
         typeClass("caption", cal.compact ? "compact" : "default"),
         className
@@ -1819,7 +1822,7 @@ function Calendar(props: CalendarProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [fits, setFits] = useState(true);
   const neededWidth =
-    (7 + (showWeekNumber ? 1 : 0)) * cellSize * 2 + MONTH_GAP + CALENDAR_PAD * 2;
+    (7 + (showWeekNumber ? WEEK_COL_RATIO : 0)) * cellSize * 2 + MONTH_GAP + CALENDAR_PAD * 2;
   useIsoLayoutEffect(() => {
     if (orientation !== "auto" || !twoMonths) return;
     const parent = wrapperRef.current?.parentElement;
@@ -1882,7 +1885,8 @@ function Calendar(props: CalendarProps) {
     disabled: matchers.disabled,
     modifiers: { ...matchers.modifiers, ...rest.modifiers },
     components: { ...components, ...rest.components },
-    className: cn("p-2", fill && "w-full", className),
+    // bg-inherit passes the surface down to the stacked weekday row.
+    className: cn("bg-inherit p-2", fill && "w-full", className),
   };
 
   const picker =

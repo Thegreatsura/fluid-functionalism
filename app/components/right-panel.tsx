@@ -544,53 +544,7 @@ export function SettingsContent() {
           />
         </SettingRow>
         <AccentContrastNote hex={accent.hex} />
-        <SettingRow label="Radius" hoverIndex={2} shortcut="R" index={shapeOptions.findIndex((o) => o.value === shape)}>
-          <Select value={shape} onValueChange={(v) => setShape(v as ShapeVariant)}>
-            <SelectTrigger
-              variant="borderless"
-              className="min-w-0 w-auto h-7 px-2 text-site-body"
-              icon={shapeOptions.find((o) => o.value === shape)?.icon}
-            />
-            <SelectContent>
-              {shapeOptions.map((o, i) => (
-                <SelectItem key={o.value} value={o.value} index={i} icon={o.icon}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </SettingRow>
-        <SettingRow label="Size" hoverIndex={3} shortcut="S" index={sizeOptions.findIndex((o) => o.value === size)}>
-          <Select value={size} onValueChange={(v) => setSize(v as SizeVariant)}>
-            <SelectTrigger
-              variant="borderless"
-              className="min-w-0 w-auto h-7 px-2 text-site-body"
-            />
-            <SelectContent>
-              {sizeOptions.map((o, i) => (
-                <SelectItem key={o.value} value={o.value} index={i}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </SettingRow>
-        <SettingRow label="Icons" hoverIndex={4} shortcut="I" index={iconOptions.findIndex((o) => o.value === iconLibrary)}>
-          <Select value={iconLibrary} onValueChange={(v) => setIconLibrary(v as IconLibrary)}>
-            <SelectTrigger
-              variant="borderless"
-              className="min-w-0 w-auto h-7 px-2 text-site-body"
-            />
-            <SelectContent>
-              {iconOptions.map((o, i) => (
-                <SelectItem key={o.value} value={o.value} index={i}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </SettingRow>
-        <SettingRow label="Heading font" hoverIndex={5} shortcut="F" index={fonts.indexOf(font)}>
+        <SettingRow label="Heading font" hoverIndex={2} shortcut="F" index={fonts.indexOf(font)}>
           {/* The last row is an action, not a value: it opens the
               Google Fonts picker and leaves the selection alone. */}
           <Select
@@ -642,13 +596,59 @@ export function SettingsContent() {
               }
             >
               <div className="min-h-0">
-                <SettingRow label="Heading weight" hoverIndex={6}>
+                <SettingRow label="Heading weight" hoverIndex={3}>
                   <HeadingWeightSelect triggerClassName="min-w-0 w-auto h-7 px-2 text-site-body" />
                 </SettingRow>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
+        <SettingRow label="Radius" hoverIndex={4} shortcut="R" index={shapeOptions.findIndex((o) => o.value === shape)}>
+          <Select value={shape} onValueChange={(v) => setShape(v as ShapeVariant)}>
+            <SelectTrigger
+              variant="borderless"
+              className="min-w-0 w-auto h-7 px-2 text-site-body"
+              icon={shapeOptions.find((o) => o.value === shape)?.icon}
+            />
+            <SelectContent>
+              {shapeOptions.map((o, i) => (
+                <SelectItem key={o.value} value={o.value} index={i} icon={o.icon}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </SettingRow>
+        <SettingRow label="Size" hoverIndex={5} shortcut="S" index={sizeOptions.findIndex((o) => o.value === size)}>
+          <Select value={size} onValueChange={(v) => setSize(v as SizeVariant)}>
+            <SelectTrigger
+              variant="borderless"
+              className="min-w-0 w-auto h-7 px-2 text-site-body"
+            />
+            <SelectContent>
+              {sizeOptions.map((o, i) => (
+                <SelectItem key={o.value} value={o.value} index={i}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </SettingRow>
+        <SettingRow label="Icons" hoverIndex={6} shortcut="I" index={iconOptions.findIndex((o) => o.value === iconLibrary)}>
+          <Select value={iconLibrary} onValueChange={(v) => setIconLibrary(v as IconLibrary)}>
+            <SelectTrigger
+              variant="borderless"
+              className="min-w-0 w-auto h-7 px-2 text-site-body"
+            />
+            <SelectContent>
+              {iconOptions.map((o, i) => (
+                <SelectItem key={o.value} value={o.value} index={i}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </SettingRow>
         <SettingRow label="Primitive" hoverIndex={7} index={baseOptions.findIndex((o) => o.value === base)}>
           <Select value={base} onValueChange={(v) => setBase(v as Base)}>
             <SelectTrigger

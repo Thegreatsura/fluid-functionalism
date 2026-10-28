@@ -69,7 +69,7 @@ const PAGE_BG = { light: "#FAFAFA", dark: "#171717" };
 function AccentContrastNote({ hex, dark }: { hex: string; dark: boolean }) {
   if (contrastRatio(hex, PAGE_BG[dark ? "dark" : "light"]) >= LOW_ACCENT_CONTRAST) return null;
   return (
-    <p className="-mt-1 flex items-start gap-1.5 text-site-caption text-destructive">
+    <p className="flex items-start gap-1.5 py-2 text-site-caption text-destructive">
       {/* Banner's filled warning triangle, its mark cut out in the page
           color; one caption line tall, centered on the first line. */}
       <svg width={14} height={14} viewBox="0 0 24 24" fill="none" aria-hidden="true" className="mt-px shrink-0">
@@ -88,7 +88,7 @@ function AccentContrastNote({ hex, dark }: { hex: string; dark: boolean }) {
           strokeLinejoin="round"
         />
       </svg>
-      Low contrast here: focus rings will be hard to see.
+      Low contrast: Accent color will be hard to see
     </p>
   );
 }

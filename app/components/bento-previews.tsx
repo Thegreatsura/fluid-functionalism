@@ -3,6 +3,7 @@
 import { useContext, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { slideVariants, useSlideDirection } from "@/lib/docs/slide-direction";
+import { useCardArt } from "@/lib/docs/playgrounds/card";
 import { CarouselDots } from "@/registry/default/carousel-dots";
 import Image from "next/image";
 import { useIcon, useIcons } from "@/lib/icon-context";
@@ -169,35 +170,28 @@ function InputMessagePreview() {
 }
 
 function CardPreview() {
-  const Circle = useIcon("circle");
-  const Shield = useIcon("shield");
-  const Palette = useIcon("palette");
-  const Search = useIcon("search");
-  const items = [
-    { icon: Circle, title: "Fluid motion" },
-    { icon: Shield, title: "Accessible" },
-    { icon: Palette, title: "Yours to theme" },
-    { icon: Search, title: "Fluid hover" },
-  ];
-  // A medium tile: 4 compact inline rows (icon and title) under one fluid
+  // The Card page's logo art, in the visitor's accent.
+  const { thumb } = useCardArt();
+  const items = ["Fluid motion", "Accessible", "Yours to theme", "Fluid hover"];
+  // A medium tile: 4 compact inline rows (avatar and title) under one fluid
   // hover, divided by hairlines. The descriptions stay on the docs page:
   // with them the 4 rows outgrow the tile's stage.
   return (
     <div className="w-full max-w-[520px]">
       <CardGroup orientation="inline" fluidHover>
-        {items.map((item) => (
+        {items.map((title) => (
           <Card
-            key={item.title}
-            label={item.title}
+            key={title}
+            label={title}
             size="compact"
             // 4 rows must share a 300px tile row with the stage padding and
             // the footer: 52px rows instead of the compact row's 60px minimum.
             className="min-h-[52px] py-1.5"
             onClick={() => {}}
           >
-            <CardMedia icon={item.icon} />
+            <CardMedia logo={thumb} size={28} />
             <CardHeader>
-              <CardTitle>{item.title}</CardTitle>
+              <CardTitle>{title}</CardTitle>
             </CardHeader>
           </Card>
         ))}

@@ -1332,6 +1332,11 @@ html.transitioning *::after {
     animation-timeline: --sf-scroller;
     animation-range: calc(100% - var(--scroll-divider-size)) 100%;
   }
+  /* Likewise at the bottom: a region flush with the panel's own bottom edge
+     (nothing under it, like a sidebar with no footer) draws no end line. */
+  .scroll-divider:last-child::after {
+    content: none;
+  }
 }
 
 /* Scroll-aware: the start/end edge stays solid until there's content past it. */

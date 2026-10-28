@@ -1732,11 +1732,10 @@ ColorSwatch.displayName = "ColorSwatch";
 
 // One cell of the strip: the swatch with 4px of room, so the cells tile with
 // no gap and the hover background, a cell wide, rings the swatch. The cell is
-// the button; the swatch inside only paints.
+// the button; the swatch inside only paints. Selected, the cell fills with
+// the foreground, as a Calendar range end does: a frame no swatch color can
+// swallow, the hover background gliding beneath it.
 const SWATCH_HAIRLINE = "inset 0 0 0 1px rgba(127,127,127,0.25)";
-// Selected rings in the foreground color, not the accent: the swatches are
-// often accents themselves, and an accent ring vanishes around its own color.
-const SWATCH_SELECTED = `${SWATCH_HAIRLINE}, 0 0 0 2px var(--background), 0 0 0 4px var(--foreground)`;
 
 interface SwatchCellProps extends Omit<HTMLAttributes<HTMLButtonElement>, "color" | "onClick"> {
   color: string;
@@ -1770,15 +1769,16 @@ const SwatchCell = forwardRef<HTMLButtonElement, SwatchCellProps>(
         aria-label={label ?? `Select color ${color}`}
         aria-pressed={selected}
         className={cn(
-          "relative z-10 shrink-0 cursor-pointer p-1 outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
+          "relative z-10 shrink-0 cursor-pointer p-1 outline-none transition-[background-color] duration-80 focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
           shape.container,
+          selected && "bg-foreground",
           className
         )}
         onClick={() => onPick(color)}
       >
         <span
-          className={cn("relative block size-7 overflow-hidden transition-shadow duration-80", shape.bg)}
-          style={{ ...CHECKER_BG, boxShadow: selected ? SWATCH_SELECTED : SWATCH_HAIRLINE }}
+          className={cn("relative block size-7 overflow-hidden", shape.bg)}
+          style={{ ...CHECKER_BG, boxShadow: SWATCH_HAIRLINE }}
         >
           <span className="absolute inset-0" style={{ backgroundColor: color }} />
         </span>

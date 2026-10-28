@@ -15,7 +15,6 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, animate, motion, useReducedMotion } from "motion/react";
 import { spring } from "@/registry/default/lib/springs";
-import { fontWeights } from "@/registry/default/lib/font-weight";
 import { Button } from "@/registry/radix/button";
 import {
   Select,
@@ -37,8 +36,7 @@ import {
   iconLibraryLabels,
   type IconLibrary,
 } from "@/lib/docs/icon-playground";
-import { SurfaceProvider } from "@/lib/surface-context";
-import { RightRailTarget } from "@/lib/right-rail";
+import { RailHairline, RightRailTarget } from "@/lib/right-rail";
 import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 import { showShortcutToast } from "@/lib/docs/settings-toast";
@@ -346,7 +344,8 @@ function SettingRow({
     // Select wraps its trigger in a div, which has to give way too.
     // relative: painted over the list's highlight, which sits behind the
     // trigger in place of the trigger's own hover fill.
-    <div className="relative flex items-center justify-between gap-3">
+    // pl-2: the label starts where the group label above it does.
+    <div className="relative flex items-center justify-between gap-3 pl-2">
       <span className="shrink-0 whitespace-nowrap text-site-body text-muted-foreground">{label}</span>
       <span
         ref={controlRef}
@@ -534,7 +533,7 @@ export function SettingsContent() {
     <div className="flex flex-col gap-2">
       {/* The settings, stacked with no gap under one fluid hover. */}
       <SettingHoverContext.Provider value={registerHover}>
-      <div ref={listRef} className="relative flex flex-col py-3" {...hoverHandlers}>
+      <div ref={listRef} className="relative flex flex-col" {...hoverHandlers}>
         <FluidHoverHighlight hover={hover} className={shapeClasses.input} />
         <SettingRow label="Theme" hoverIndex={0} shortcut="T" index={themeOptions.findIndex((o) => o.value === theme)}>
           <Select value={theme} onValueChange={(v) => setTheme(v as Theme)}>
@@ -695,12 +694,12 @@ export function SettingsContent() {
       </SettingHoverContext.Provider>
 
       {/* The home page's install prompt, carrying everything set above.
-          mb-3: with the column's gap-2, 20px to the credit, the same as the
-          rows' py-3 + gap-2 above it. */}
-      <StarterPromptButton size="sm" className="mb-3 w-full" />
+          mt-2 + the column's gap-2: 16px under the rows, and the same 16px
+          (mb-2 + gap-2) on to the credit. */}
+      <StarterPromptButton size="sm" className="my-2 w-full" />
 
-      {/* Credit */}
-      <div className="flex items-center gap-2">
+      {/* Credit, inset like the labels. */}
+      <div className="flex items-center gap-2 pl-2">
         <img
           src="/micka.png"
           alt=""
@@ -784,9 +783,6 @@ export function RightPanel() {
   const isXl = useIsXl();
   const shown = open && isXl;
   const PanelRightIcon = useIcon("panel-right");
-  // The rail's cards take the shape's container radius, so they round with
-  // the pill and rounded settings like the items inside them.
-  const shape = useShape();
   // The changelog's rail holds its Releases index alone: nothing on that
   // page reacts to the settings, which stay a ⌘K or a shortcut away.
   const showSettings = usePathname() !== "/changelog";
@@ -881,24 +877,22 @@ export function RightPanel() {
           panel's true edge — any breathing room lives INSIDE the scroller,
           under the mask, never outside pushing the gradient down. */}
       <ScrollArea viewportClassName="scroll-fade max-h-[calc(100svh-2rem)]">
-      <div className="flex flex-col gap-3">
+      {/* Groups stack like the left sidebar's: each later one brings its own
+          16px (pt-4) above its label. */}
+      <div className="flex flex-col">
         {showSettings && (
         // contain-inline-size: the rail's scroll area sizes to its content,
         // so the card's one-line labels would widen it past the rail;
         // contained, it takes the rail's width and the values truncate.
-        <aside className={`p-4 contain-inline-size ${shape.container} bg-muted`}>
-          <SurfaceProvider value={2}>
-            <div className="flex items-center justify-between pb-2">
-              <h2
-                className="text-site-title text-foreground leading-none"
-                style={{ fontVariationSettings: fontWeights.semibold }}
-              >
-                Make them yours
-              </h2>
-              <GitHubStarButton />
-            </div>
-            <SettingsContent />
-          </SurfaceProvider>
+        // A group like the left sidebar's: no card, a small label with the
+        // star count on its right, a hairline under it.
+        <aside className="contain-inline-size">
+          <div className="flex h-8 items-center justify-between pl-2">
+            <h2 className="text-site-caption text-foreground">Make them yours</h2>
+            <GitHubStarButton />
+          </div>
+          <RailHairline />
+          <SettingsContent />
         </aside>
         )}
 

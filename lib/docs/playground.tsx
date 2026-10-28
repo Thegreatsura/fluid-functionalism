@@ -5,9 +5,7 @@ import { createPortal } from "react-dom";
 import { Shuffle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fontWeights } from "@/registry/default/lib/font-weight";
-import { SurfaceProvider } from "@/lib/surface-context";
-import { useRightRailNode } from "@/lib/right-rail";
-import { useShape } from "@/lib/shape-context";
+import { RailHairline, useRightRailNode } from "@/lib/right-rail";
 import {
   Select,
   SelectTrigger,
@@ -23,7 +21,7 @@ import {
 
 // Reversed layout turns the library Switch (toggle → label) into a settings
 // row (label ← left, toggle → right) that matches the borderless-select rows.
-export const PLAY_SWITCH = "w-full flex-row-reverse justify-between h-9 px-1 py-0";
+export const PLAY_SWITCH = "w-full flex-row-reverse justify-between h-9 px-2 py-0";
 
 export function PlayField({
   label,
@@ -37,7 +35,7 @@ export function PlayField({
   return (
     <div
       className={cn(
-        "flex h-9 items-center justify-between px-1",
+        "flex h-9 items-center justify-between pl-2",
         disabled && "opacity-40 pointer-events-none"
       )}
     >
@@ -78,7 +76,7 @@ export function PlaySection({ label }: { label: string }) {
   // headings of the list rather than a smaller muted caption.
   return (
     <div
-      className="px-1 pb-1 pt-2 text-site-body text-foreground"
+      className="px-2 pb-1 pt-2 text-site-body text-foreground"
       style={{ fontVariationSettings: fontWeights.semibold }}
     >
       {label}
@@ -97,9 +95,9 @@ export function PlaygroundOverlay({ children }: { children: ReactNode }) {
   );
 }
 
-/** Hairline between two control groups — full bleed across the panel. */
+/** Hairline between two control groups, inset like the group label's. */
 export function PlayDivider() {
-  return <div className="my-2 -mx-3 border-t border-border/60" />;
+  return <div aria-hidden className="my-2 ml-2 mr-3 h-px shrink-0 bg-border" />;
 }
 
 /** The muted controls card: title row with a shuffle button, fields below. */
@@ -112,31 +110,25 @@ export function PlaygroundPanel({
   onShuffle: () => void;
   children: ReactNode;
 }) {
-  // Rounds with the Radius setting, like the settings card above it.
-  const shape = useShape();
+  // A group like the settings above it and the left sidebar's: no card, a
+  // small label with the shuffle on its right, a hairline under it.
   return (
-    <SurfaceProvider value={2}>
-      <div className={`w-full ${shape.container} bg-muted p-3`}>
-        <div className="flex items-center justify-between px-1 pt-1 pb-2">
-          <h2
-            className="text-site-title text-foreground leading-none"
-            style={{ fontVariationSettings: fontWeights.semibold }}
-          >
-            {title}
-          </h2>
-          <button
-            type="button"
-            onClick={onShuffle}
-            aria-label="Randomize properties"
-            title="Randomize"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors duration-80 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]"
-          >
-            <Shuffle size={15} strokeWidth={1.5} />
-          </button>
-        </div>
-        {children}
+    <div className="w-full pt-4">
+      <div className="flex h-8 items-center justify-between pl-2">
+        <h2 className="text-site-caption text-foreground">{title}</h2>
+        <button
+          type="button"
+          onClick={onShuffle}
+          aria-label="Randomize properties"
+          title="Randomize"
+          className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors duration-80 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]"
+        >
+          <Shuffle size={15} strokeWidth={1.5} />
+        </button>
       </div>
-    </SurfaceProvider>
+      <RailHairline />
+      {children}
+    </div>
   );
 }
 

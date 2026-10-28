@@ -1017,6 +1017,13 @@ html.transitioning *::after {
     border-radius: var(--shape-input-radius, 8px);
   }
 
+  /* Text fields match :focus-visible on every focus, and most sit inside a
+     wrapper that draws the ring: the radius would only clip their text
+     selection into a rounded corner (the color picker's HEX field). */
+  :is(input, textarea):focus-visible {
+    border-radius: 0;
+  }
+
   /* Prose links are inline text boxes — the shape-system radius reads
      pill-ish at text height, so their ring takes a tight 2px corner
      instead. Component links (NavItem, Button asChild) carry their own

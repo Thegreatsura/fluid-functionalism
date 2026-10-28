@@ -812,8 +812,10 @@ function SidebarPreview() {
   // desktop, and rail-only on a phone, where 12rem of rail would leave the
   // main region an 83px sliver that shows nothing.
   const narrow = useNarrowFrame();
+  // The app frame rounds with the Radius setting, like the site's cards.
+  const shape = useShape();
   return (
-    <div className="flex h-[380px] w-full max-w-[620px] overflow-hidden rounded-xl border border-border bg-background">
+    <div className={cn("flex h-[460px] w-full max-w-[620px] overflow-hidden border border-border bg-background", shape.container)}>
       {/* A whole app shell in miniature — workspace row, a thread list with
           the status-dot treatment, a user row, and the main region beside it.
           collapsible="none" keeps it static: it never becomes the

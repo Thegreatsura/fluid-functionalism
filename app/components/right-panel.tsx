@@ -46,8 +46,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useBase, type Base } from "@/lib/base-context";
 import { StarterPromptButton } from "@/app/components/starter-install";
 import { ColorPickerPopover } from "@/registry/default/color-picker";
-import { useAccent } from "@/lib/docs/accent";
-import { ACCENT_ORDER, ACCENT_PRESETS, LOW_ACCENT_CONTRAST, accentLabel, contrastRatio } from "@/lib/accent";
+import { accentHexOf, accentSwatches, useAccent } from "@/lib/docs/accent";
+import { ACCENT_ORDER, LOW_ACCENT_CONTRAST, accentLabel, contrastRatio } from "@/lib/accent";
 import { useHeadingFont, headingFontLabel, HeadingWeightSelect } from "@/lib/docs/heading-font";
 import type { HeadingFont } from "@/lib/docs/site-settings";
 
@@ -91,17 +91,6 @@ function AccentContrastNote({ hex, dark }: { hex: string; dark: boolean }) {
     </p>
   );
 }
-
-/** The accent presets as the picker's swatches, in panel order: each
- *  preset's shade for the theme showing, named in its tooltip. */
-const ACCENT_SWATCHES = {
-  light: ACCENT_ORDER.map((p) => ({ color: ACCENT_PRESETS[p].light, label: ACCENT_PRESETS[p].label })),
-  dark: ACCENT_ORDER.map((p) => ({ color: ACCENT_PRESETS[p].dark, label: ACCENT_PRESETS[p].label })),
-};
-
-/** A color as a 6-digit uppercase hex (the accent has no alpha). */
-const toHex = ({ r, g, b }: { r: number; g: number; b: number }) =>
-  "#" + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("").toUpperCase();
 
 /** How far a setting's value travels as it rolls in or out. */
 const ROLL = 16;
@@ -608,8 +597,8 @@ export function SettingsContent({ credit = true }: { credit?: boolean }) {
               (or hex) in the foreground, then the color. */}
           <ColorPickerPopover
             value={accent.hex}
-            onValueChange={(_, parsed) => accent.setColor(toHex(parsed))}
-            swatches={ACCENT_SWATCHES[accent.dark ? "dark" : "light"]}
+            onValueChange={(_, parsed) => accent.setColor(accentHexOf(parsed))}
+            swatches={accentSwatches(accent.dark)}
             triggerLabel={accentLabel(accent.preset, accent.custom)}
             triggerShowValue={false}
             triggerClassName="h-7 border-transparent px-2 text-site-body [&_span]:px-0 [&_span]:text-foreground"

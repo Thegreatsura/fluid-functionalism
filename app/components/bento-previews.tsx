@@ -4,6 +4,7 @@ import { useContext, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { slideVariants, useSlideDirection } from "@/lib/docs/slide-direction";
 import { useCardArt } from "@/lib/docs/playgrounds/card";
+import { accentHexOf, accentSwatches, useAccent } from "@/lib/docs/accent";
 import { CarouselDots } from "@/registry/default/carousel-dots";
 import Image from "next/image";
 import { useIcon, useIcons } from "@/lib/icon-context";
@@ -769,6 +770,10 @@ function TooltipPreview() {
 
 function ColorPickerPreview() {
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
+  // The site's accent, live: the picker shows it, its swatches are the
+  // presets, and any color picked here becomes the accent everywhere, as
+  // the right panel's Accent row does.
+  const accent = useAccent();
   // `relative` is load-bearing: the FormatDropdown (HEX/RGB/HSL/OKLCH) portals
   // INTO this wrapper and uses absolute positioning computed against the
   // wrapper's bounding rect. Without `relative`, the menu's absolute coords
@@ -777,7 +782,11 @@ function ColorPickerPreview() {
   return (
     <div ref={setContainer} className="relative w-full max-w-[280px]">
       <ColorPickerPortalContainer value={container}>
-        <ColorPicker defaultValue="#6B97FF" />
+        <ColorPicker
+          value={accent.hex}
+          onValueChange={(_, parsed) => accent.setColor(accentHexOf(parsed))}
+          swatches={accentSwatches(accent.dark)}
+        />
       </ColorPickerPortalContainer>
     </div>
   );

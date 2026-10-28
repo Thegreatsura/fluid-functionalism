@@ -130,6 +130,22 @@ export function AccentProvider({
   return <AccentContext.Provider value={value}>{children}</AccentContext.Provider>;
 }
 
+/** The presets as a ColorPicker's swatches, in panel order: each preset's
+ *  shade for the theme showing, named in its tooltip. */
+const SWATCHES = {
+  light: ACCENT_ORDER.map((p) => ({ color: ACCENT_PRESETS[p].light, label: ACCENT_PRESETS[p].label })),
+  dark: ACCENT_ORDER.map((p) => ({ color: ACCENT_PRESETS[p].dark, label: ACCENT_PRESETS[p].label })),
+};
+export function accentSwatches(dark: boolean) {
+  return SWATCHES[dark ? "dark" : "light"];
+}
+
+/** A ColorPicker's parsed color as the 6-digit uppercase hex the accent
+ *  stores (it has no alpha). */
+export function accentHexOf({ r, g, b }: { r: number; g: number; b: number }): string {
+  return "#" + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("").toUpperCase();
+}
+
 export function useAccent(): AccentContextValue {
   const ctx = useContext(AccentContext);
   if (!ctx) throw new Error("useAccent must be used inside AccentProvider");

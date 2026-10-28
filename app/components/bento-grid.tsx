@@ -27,12 +27,12 @@ const displayOrder: { slug: string; side?: "right" }[] = [
   { slug: "thinking-indicator" },
   { slug: "color-picker", side: "right" },    // band 2 · large right
   { slug: "tooltip" },
-  { slug: "badge" },
+  { slug: "switch" },
   { slug: "card" },                           // band 3 · medium left
   { slug: "select" },
   { slug: "command-menu", side: "right" },    // band 4 · large right
   { slug: "combobox" },
-  { slug: "switch" },
+  { slug: "badge" },
   { slug: "sidebar" },                        // band 5 · large left
   { slug: "radio-group" },
   { slug: "chat-message" },

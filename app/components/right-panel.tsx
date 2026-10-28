@@ -333,7 +333,7 @@ function SettingRow({
               ref={keyRef}
               aria-hidden
               data-shortcut=""
-              className="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center bg-foreground/15 px-1 font-mono text-site-micro leading-none text-muted-foreground rounded-[2px] pointer-coarse:hidden"
+              className="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center bg-[light-dark(rgb(23_23_23/0.15),rgb(245_245_245/0.08))] px-1 font-mono text-site-micro leading-none text-muted-foreground rounded-[2px] pointer-coarse:hidden"
             >
               {shortcut}
             </kbd>,

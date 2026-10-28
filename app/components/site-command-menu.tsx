@@ -180,7 +180,7 @@ export function SiteCommandMenuTrigger() {
         {/* The key chip of the right panel's shortcuts: 18px on a 2px-round
             tint, 1px down to stay centered where the 20px badge sits. Touch
             screens have no keyboard to press it with. */}
-        <SidebarMenuBadge className="mt-px h-[18px] min-w-[18px] rounded-[2px] bg-foreground/15 font-mono text-site-micro leading-none [@media(hover:none)]:hidden">
+        <SidebarMenuBadge className="mt-px h-[18px] min-w-[18px] rounded-[2px] bg-[light-dark(rgb(23_23_23/0.15),rgb(245_245_245/0.08))] font-mono text-site-micro leading-none [@media(hover:none)]:hidden">
           {mac ? "⌘K" : "Ctrl K"}
         </SidebarMenuBadge>
       </SidebarMenuItem>

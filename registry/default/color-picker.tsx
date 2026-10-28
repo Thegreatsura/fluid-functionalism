@@ -1832,7 +1832,31 @@ function SwatchStrip({
   const containerRef = useRef<HTMLDivElement>(null);
   const hover = useFluidHover(containerRef, { axis: "xy" });
   // registerItem is stable; the handlers object is new each render.
-  const { registerItem, handlers } = hover;
+  const { registerItem, handlers, activeIndex } = hover;
+
+  // Each swatch's normalized color, and so the selected one's index. Until a
+  // named swatch is resolved, its raw name never equals a hex, so it renders
+  // unselected while hydrating.
+  const normalized = items.map(({ color }) => {
+    const parsed = parseColor(color);
+    return parsed
+      ? rgbToHexStr(parsed.r, parsed.g, parsed.b, parsed.a).toLowerCase()
+      : resolvedSwatches[color] ?? color.toLowerCase();
+  });
+  const selectedIndex = normalized.indexOf(normalizedCurrent);
+  // Hovering the selected swatch: the hover fill sits under its solid cell,
+  // so the ring above (as on a Calendar range end) shows instead.
+  const litSelected = activeIndex !== null && activeIndex === selectedIndex;
+
+  // Held from the press until the button comes up anywhere, as the Calendar
+  // does: the fill steps to the pressed token and shrinks 1px a side.
+  const [pressed, setPressed] = useState(false);
+  useEffect(() => {
+    if (!pressed) return;
+    const release = () => setPressed(false);
+    window.addEventListener("mouseup", release);
+    return () => window.removeEventListener("mouseup", release);
+  }, [pressed]);
 
   return (
     // -m-1: the cells' 4px of room sits outside the strip's edges, so the
@@ -1840,21 +1864,47 @@ function SwatchStrip({
     // shows, the next swatch's shows at once instead of waiting again. Not
     // hoverable: crossing to a name would hold off the swatches in its path.
     <TooltipProvider delayDuration={300} disableHoverableContent>
-      <div ref={containerRef} className="relative -m-1 flex flex-wrap" {...handlers}>
-        <FluidHoverHighlight hover={hover} className={shape.container} />
+      <div
+        ref={containerRef}
+        className="relative -m-1 flex flex-wrap"
+        {...handlers}
+        onMouseDown={(e) => {
+          if (e.button === 0) setPressed(true);
+        }}
+        onMouseUp={() => setPressed(false)}
+      >
+        {/* The hover fill, pressed like a ghost Button (the Calendar's day
+            recipe): a surface 1px in with a same-color 1px spread at rest,
+            the spread collapsing on press so the fill shrinks 1px a side
+            and steps to the active token. */}
+        <FluidHoverHighlight
+          hover={hover}
+          className={cn(
+            "bg-transparent before:pointer-events-none before:absolute before:inset-px before:rounded-[inherit] before:bg-[var(--swatch-press)] before:transition-[box-shadow,background-color] before:[transition-duration:180ms,80ms] before:[transition-timing-function:cubic-bezier(0.23,1,0.32,1),ease]",
+            shape.container,
+            pressed && !litSelected
+              ? "[--swatch-press:var(--active)] before:shadow-[0_0_0_0px_var(--swatch-press)] before:[transition-duration:80ms,80ms]"
+              : "[--swatch-press:var(--hover)] before:shadow-[0_0_0_1px_var(--swatch-press)]"
+          )}
+        />
+        {/* Over the selected swatch's solid cell, the highlight brings an
+            inner ring on top instead: 1px in, in the page color, at 40%,
+            gliding on the same rect and spring. Pressed, it goes solid. */}
+        <FluidHoverHighlight
+          hover={hover}
+          className={cn(
+            "z-20 bg-transparent before:pointer-events-none before:absolute before:inset-px before:rounded-[inherit] before:border before:border-background before:transition-opacity before:duration-80",
+            shape.container,
+            !litSelected ? "before:opacity-0" : pressed ? "before:opacity-100" : "before:opacity-40"
+          )}
+        />
         {items.map(({ color, label }, i) => {
-          // Until a named swatch is resolved, its raw name never equals a hex,
-          // so it renders unselected while hydrating.
-          const parsed = parseColor(color);
-          const normalized = parsed
-            ? rgbToHexStr(parsed.r, parsed.g, parsed.b, parsed.a).toLowerCase()
-            : resolvedSwatches[color] ?? color.toLowerCase();
           const cell = (
             <SwatchCell
               color={color}
               label={label}
               index={i}
-              selected={normalized === normalizedCurrent}
+              selected={i === selectedIndex}
               registerItem={registerItem}
               onPick={onPick}
             />
@@ -1862,8 +1912,8 @@ function SwatchStrip({
           // Index in the key: the same color may appear twice in a list.
           return label ? (
             // sideOffset 2: the name sits just past the cell, 6px off the
-          // swatch, clear of the selected ring.
-          <Tooltip key={`${color}-${i}`} content={label} sideOffset={2}>
+            // swatch.
+            <Tooltip key={`${color}-${i}`} content={label} sideOffset={2}>
               {cell}
             </Tooltip>
           ) : (

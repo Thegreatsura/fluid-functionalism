@@ -57,34 +57,37 @@ const REPO = "mickadesign/fluid-functionalism";
 /** The heading font select's action row: opens the Google Fonts picker. */
 const BROWSE = "__browse";
 
+/** The page background on each theme, as globals.css's --surface-1. Read
+ *  as constants, not off the screen: the accent flips shade the moment the
+ *  theme does, while the painted background is still crossfading, and a
+ *  read mid-fade paired the new shade with a half-changed page. */
+const PAGE_BG = { light: "#FAFAFA", dark: "#171717" };
+
 /** Warns under the Accent row when a custom color nearly vanishes against
- *  the page: focus rings are 1px of the accent. */
-function AccentContrastNote({ hex }: { hex: string }) {
-  const { theme } = useThemeContext();
-  // The page background, read after a theme change has settled (the theme
-  // crossfade runs 180ms on background-color), and again when the OS flips
-  // light and dark under the System theme.
-  const [bg, setBg] = useState<string | null>(null);
-  useEffect(() => {
-    let id: ReturnType<typeof setTimeout>;
-    const read = () => {
-      clearTimeout(id);
-      id = setTimeout(() => {
-        const rgb = toRgb(getComputedStyle(document.body).backgroundColor);
-        if (rgb) setBg(toHex(rgb));
-      }, 250);
-    };
-    read();
-    const scheme = window.matchMedia("(prefers-color-scheme: dark)");
-    scheme.addEventListener("change", read);
-    return () => {
-      clearTimeout(id);
-      scheme.removeEventListener("change", read);
-    };
-  }, [theme]);
-  if (!bg || contrastRatio(hex, bg) >= LOW_ACCENT_CONTRAST) return null;
+ *  the page: focus rings are 1px of the accent. Worded and styled like a
+ *  field's error caption, after the Banner's warning glyph. */
+function AccentContrastNote({ hex, dark }: { hex: string; dark: boolean }) {
+  if (contrastRatio(hex, PAGE_BG[dark ? "dark" : "light"]) >= LOW_ACCENT_CONTRAST) return null;
   return (
-    <p className="-mt-1 text-site-caption text-muted-foreground">
+    <p className="-mt-1 flex items-start gap-1.5 text-site-caption text-destructive">
+      {/* Banner's filled warning triangle, its mark cut out in the page
+          color; one caption line tall, centered on the first line. */}
+      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" aria-hidden="true" className="mt-px shrink-0">
+        <path
+          d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"
+          fill="currentColor"
+          stroke="currentColor"
+          strokeWidth={1.5}
+          strokeLinejoin="round"
+        />
+        <path
+          d="M12 9.5v3.5M12 17h.01"
+          className="stroke-background"
+          strokeWidth={2.25}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
       Low contrast here: focus rings will be hard to see.
     </p>
   );
@@ -100,17 +103,6 @@ const ACCENT_SWATCHES = {
 /** A color as a 6-digit uppercase hex (the accent has no alpha). */
 const toHex = ({ r, g, b }: { r: number; g: number; b: number }) =>
   "#" + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("").toUpperCase();
-
-/** Any CSS color the browser computes (rgb(), color(srgb …), oklab() …) as
- *  sRGB channels, by painting it into a 1px canvas. */
-function toRgb(color: string): { r: number; g: number; b: number } | null {
-  const ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
-  if (!ctx) return null;
-  ctx.fillStyle = color;
-  ctx.fillRect(0, 0, 1, 1);
-  const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-  return { r, g, b };
-}
 
 /** How far a setting's value travels as it rolls in or out. */
 const ROLL = 16;
@@ -578,7 +570,7 @@ export function SettingsContent() {
             triggerClassName="h-7 border-transparent px-2 text-site-body [&_span]:px-0 [&_span]:text-foreground"
           />
         </SettingRow>
-        <AccentContrastNote hex={accent.hex} />
+        <AccentContrastNote hex={accent.hex} dark={accent.dark} />
         <SettingRow label="Heading font" hoverIndex={2} shortcut="F" index={fonts.indexOf(font)}>
           {/* The last row is an action, not a value: it opens the
               Google Fonts picker and leaves the selection alone. */}

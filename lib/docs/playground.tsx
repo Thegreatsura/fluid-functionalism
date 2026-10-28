@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Shuffle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { RailHairline, useRightRailNode } from "@/lib/right-rail";
+import { useShape } from "@/lib/shape-context";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 import {
   Select,
   SelectTrigger,
@@ -21,7 +24,8 @@ import {
 
 // Reversed layout turns the library Switch (toggle → label) into a settings
 // row (label ← left, toggle → right) that matches the borderless-select rows.
-export const PLAY_SWITCH = "w-full flex-row-reverse justify-between h-9 px-2 py-0";
+// play-row: one stop of the panel's fluid hover (see PlaygroundPanel).
+export const PLAY_SWITCH = "play-row w-full flex-row-reverse justify-between h-7 px-2 py-0";
 
 export function PlayField({
   label,
@@ -35,7 +39,7 @@ export function PlayField({
   return (
     <div
       className={cn(
-        "flex h-9 items-center justify-between pl-2",
+        "flex h-7 items-center justify-between pl-2",
         disabled && "opacity-40 pointer-events-none"
       )}
     >
@@ -56,9 +60,10 @@ export function PlaySelect({
 }) {
   return (
     <Select value={value} onValueChange={onChange}>
+      {/* play-row: one stop of the panel's fluid hover. */}
       <SelectTrigger
         variant="borderless"
-        className="min-w-0 w-auto h-7 px-2 text-site-body"
+        className="play-row relative z-10 min-w-0 w-auto h-7 px-2 text-site-body"
       />
       <SelectContent>
         {options.map((o, i) => (
@@ -112,6 +117,41 @@ export function PlaygroundPanel({
 }) {
   // A group like the settings above it and the left sidebar's: no card, a
   // small label with the shuffle on its right, a hairline under it.
+  const shape = useShape();
+
+  // One fluid hover across the controls, as in the settings group: every
+  // select trigger and switch row (marked play-row) is a stop, in page order.
+  // Playgrounds build their rows freely, so the stops are read off the DOM,
+  // and registered again only when that list changes.
+  const listRef = useRef<HTMLDivElement>(null);
+  const hover = useFluidHover(listRef, {
+    // A disabled field fades its row and stops pointer events on it.
+    isItemDisabled: (el) => !!el.closest(".pointer-events-none"),
+  });
+  // registerItem is stable; the handlers object is new each render.
+  const { registerItem, handlers } = hover;
+  const registered = useRef<HTMLElement[]>([]);
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const sync = () => {
+      const rows = [...list.querySelectorAll<HTMLElement>(".play-row")];
+      const prev = registered.current;
+      if (rows.length === prev.length && rows.every((el, i) => el === prev[i])) return;
+      prev.forEach((_, i) => registerItem(i, null));
+      rows.forEach((el, i) => registerItem(i, el));
+      registered.current = rows;
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(list, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      registered.current.forEach((_, i) => registerItem(i, null));
+      registered.current = [];
+    };
+  }, [registerItem]);
+
   return (
     <div className="w-full pt-4">
       <div className="flex h-8 items-center justify-between pl-2">
@@ -127,7 +167,15 @@ export function PlaygroundPanel({
         </button>
       </div>
       <RailHairline />
-      {children}
+      {/* Triggers drop their own hover fill: the gliding one replaces it. */}
+      <div
+        ref={listRef}
+        className="relative flex flex-col [&_.play-row:hover]:bg-transparent"
+        {...handlers}
+      >
+        <FluidHoverHighlight hover={hover} className={shape.input} />
+        {children}
+      </div>
     </div>
   );
 }

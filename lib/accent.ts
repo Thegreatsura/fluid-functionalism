@@ -12,15 +12,14 @@
 
 export type AccentPreset = "blue" | "violet" | "red";
 
-/** The presets in panel order, by hue. All sit at the default blue's
- *  contrast: about 2.8:1 on white and 6.4 to 7:1 on the dark background, so a
- *  focus ring reads the same whichever is picked. Violet shares the blue's
- *  OKLCH lightness (0.693); red sits a step lighter (0.708) to reach the same
- *  contrast on white. */
+/** The presets in panel order, by hue. Blue is the system's own; violet and
+ *  red are Tailwind's 400 shades (violet-400, red-400, as hex). All three sit
+ *  at about 0.70 OKLCH lightness: about 2.8:1 on white and 6.2 to 6.4:1 on
+ *  the dark background, so a focus ring reads the same whichever is picked. */
 export const ACCENT_PRESETS: Record<AccentPreset, { label: string; hex: string }> = {
   blue: { label: "Blue", hex: "#6B97FF" },
-  violet: { label: "Violet", hex: "#AC82F0" },
-  red: { label: "Red", hex: "#FF6964" },
+  violet: { label: "Violet", hex: "#A684FF" },
+  red: { label: "Red", hex: "#FF6467" },
 };
 
 export const ACCENT_ORDER = Object.keys(ACCENT_PRESETS) as AccentPreset[];

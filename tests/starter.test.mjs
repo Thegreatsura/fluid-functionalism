@@ -94,7 +94,7 @@ describe("starter item", () => {
     const s = { base: "radix", shape: "pill", size: "compact", icons: "phosphor", theme: "dark", accent: "violet" };
     const files = Object.fromEntries(starterFiles(s).map((f) => [f.target, f.content]));
     expect(files["app/layout.tsx"]).toContain(`axes: ["opsz"]`);
-    expect(files["app/layout.tsx"]).toContain(`"--fluid-accent": "#AC82F0"`);
+    expect(files["app/layout.tsx"]).toContain(`"--fluid-accent": "#A684FF"`);
     expect(starterFiles(STARTER_DEFAULTS).find((f) => f.target === "app/layout.tsx").content).toContain(`"--fluid-accent": "#6B97FF"`);
     expect(files["components/providers.tsx"]).toContain(`defaultTheme="dark"`);
     expect(files["components/providers.tsx"]).toContain(`<FluidProvider shape="pill" size="compact" icons={phosphorIcons}>`);

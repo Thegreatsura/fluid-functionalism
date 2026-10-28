@@ -39,9 +39,9 @@ describe("accent presets", () => {
   });
 
   it("map a hex back to its preset, any case", () => {
-    expect(presetForHex("#ac82f0")).toBe("violet");
+    expect(presetForHex("#a684ff")).toBe("violet");
     expect(presetForHex("#123456")).toBeNull();
-    expect(accentHex("red", null)).toBe("#FF6964");
+    expect(accentHex("red", null)).toBe("#FF6467");
     expect(accentHex("red", "#123456")).toBe("#123456");
     expect(accentLabel("red", null)).toBe("Red");
     expect(accentLabel("red", "#abcdef")).toBe("#ABCDEF");
@@ -68,9 +68,9 @@ describe("the starter Copy prompt's accent", () => {
     const prompt = buildStarterPrompt(settings);
     expect(starterCommand(settings)).toContain("/r/starter/violet.json");
     expect(prompt).toContain("violet accent");
-    expect(prompt).toContain("(violet, #AC82F0)");
+    expect(prompt).toContain("(violet, #A684FF)");
     // An existing app gets the tokens' blue, so it sets the preset itself.
-    expect(prompt).toContain(`put style={{ "--fluid-accent": "#AC82F0" }} on <html>`);
+    expect(prompt).toContain(`put style={{ "--fluid-accent": "#A684FF" }} on <html>`);
   });
 
   it("asks nothing extra of an existing app for the default blue", () => {

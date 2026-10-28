@@ -190,6 +190,9 @@ function SettingRow({
   // after the shortcut's own listener on document: it marks a key it acted
   // on with preventDefault, so a key typed into a field never presses.
   const keyRef = useRef<HTMLElement>(null);
+  // When the shortcut last fired: only a change it caused rolls the value.
+  // A pick from the open menu shows up in place, the menu already moved.
+  const pressedAt = useRef(-Infinity);
   useEffect(() => {
     if (!shortcut) return;
     let release: ReturnType<typeof setTimeout> | undefined;
@@ -201,8 +204,16 @@ function SettingRow({
       animate(key, { scale: KEY_PRESS }, spring.fast);
       release = setTimeout(() => animate(key, { scale: 1 }, spring.fast), 80);
     };
+    // Capture phase, ahead of the shortcut's listener: React renders the
+    // change before a later listener runs. A key typed into a field is
+    // stamped too, harmlessly: it changes no value.
+    const onKeyCapture = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === shortcut.toLowerCase()) pressedAt.current = performance.now();
+    };
+    window.addEventListener("keydown", onKeyCapture, true);
     window.addEventListener("keydown", onKeyDown);
     return () => {
+      window.removeEventListener("keydown", onKeyCapture, true);
       window.removeEventListener("keydown", onKeyDown);
       clearTimeout(release);
     };
@@ -221,6 +232,7 @@ function SettingRow({
     const from = prevIndex.current;
     prevIndex.current = index;
     if (index === undefined || from === undefined || from === index) return;
+    if (performance.now() - pressedAt.current > 100) return;
     const trigger = controlRef.current?.querySelector("button");
     if (!trigger) return;
     // A press mid-roll drops the value still leaving.
@@ -356,7 +368,7 @@ function SettingRow({
               ref={keyRef}
               aria-hidden
               data-shortcut=""
-              className="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center bg-[light-dark(rgb(23_23_23/0.15),rgb(245_245_245/0.08))] px-1 font-mono text-site-micro leading-none text-muted-foreground rounded-[2px] pointer-coarse:hidden"
+              className="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center bg-[light-dark(rgb(23_23_23/0.08),rgb(245_245_245/0.08))] px-1 font-mono text-site-micro leading-none text-muted-foreground rounded-[2px] pointer-coarse:hidden"
             >
               {shortcut}
             </kbd>,

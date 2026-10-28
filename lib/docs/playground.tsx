@@ -153,7 +153,9 @@ export function PlaygroundPanel({
   }, [registerItem]);
 
   return (
-    <div className="w-full pt-4">
+    // pt-8: a clear break from the settings group above, double the
+    // sidebar's 16px between groups.
+    <div className="w-full pt-8">
       <div className="flex h-8 items-center justify-between pl-2">
         <h2 className="text-site-caption text-foreground">{title}</h2>
         <button

@@ -37,6 +37,7 @@ import {
   type IconLibrary,
 } from "@/lib/docs/icon-playground";
 import { RailHairline, RightRailTarget } from "@/lib/right-rail";
+import { cn } from "@/lib/utils";
 import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 import { showShortcutToast } from "@/lib/docs/settings-toast";
@@ -477,8 +478,34 @@ export function GitHubStarButton() {
   );
 }
 
-/** The inner settings content — reused in the right column and mobile drawer. */
-export function SettingsContent() {
+/** "Created by @micka_design", inset like the group labels. */
+export function Credit({ className }: { className?: string }) {
+  return (
+    <div className={cn("flex items-center gap-2 pl-2", className)}>
+      <img
+        src="/micka.png"
+        alt=""
+        className="w-5 h-5 rounded-full object-cover shrink-0 outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
+      />
+      <p className="text-site-body text-muted-foreground">
+        Created by{" "}
+        <a
+          href="https://x.com/micka_design"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded text-muted-foreground hover:text-foreground transition-colors duration-80 outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)] focus-visible:ring-offset-2"
+        >
+          @micka_design
+        </a>
+      </p>
+    </div>
+  );
+}
+
+/** The inner settings content: reused in the right column and mobile drawer.
+ *  `credit={false}` where the host shows the credit elsewhere (the right
+ *  panel puts it at the top, where the sidebar has Search). */
+export function SettingsContent({ credit = true }: { credit?: boolean }) {
   const { theme, setTheme } = useThemeContext();
   const { shape, setShape } = useShapeContext();
   const { size, setSize } = useSizeContext();
@@ -695,28 +722,10 @@ export function SettingsContent() {
 
       {/* The home page's install prompt, carrying everything set above.
           mt-2 + the column's gap-2: 16px under the rows, and the same 16px
-          (mb-2 + gap-2) on to the credit. */}
-      <StarterPromptButton size="sm" className="my-2 w-full" />
+          (mb-2 + gap-2) on to the credit when it follows. */}
+      <StarterPromptButton size="sm" className={cn("mt-2 w-full", credit && "mb-2")} />
 
-      {/* Credit, inset like the labels. */}
-      <div className="flex items-center gap-2 pl-2">
-        <img
-          src="/micka.png"
-          alt=""
-          className="w-5 h-5 rounded-full object-cover shrink-0 outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
-        />
-        <p className="text-site-body text-muted-foreground">
-          Created by{" "}
-          <a
-            href="https://x.com/micka_design"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded text-muted-foreground hover:text-foreground transition-colors duration-80 outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)] focus-visible:ring-offset-2"
-          >
-            @micka_design
-          </a>
-        </p>
-      </div>
+      {credit && <Credit />}
 
     </div>
   );
@@ -885,14 +894,17 @@ export function RightPanel() {
         // so the card's one-line labels would widen it past the rail;
         // contained, it takes the rail's width and the values truncate.
         // A group like the left sidebar's: no card, a small label with the
-        // star count on its right, a hairline under it.
+        // star count on its right, a hairline under it. The credit tops the
+        // panel where Search tops the sidebar, one row, and the group starts
+        // 16px under it as the sidebar's labeled groups do.
         <aside className="contain-inline-size">
-          <div className="flex h-8 items-center justify-between pl-2">
+          <Credit className="h-8" />
+          <div className="mt-4 flex h-8 items-center justify-between pl-2">
             <h2 className="text-site-caption text-foreground">Make them yours</h2>
             <GitHubStarButton />
           </div>
           <RailHairline />
-          <SettingsContent />
+          <SettingsContent credit={false} />
         </aside>
         )}
 

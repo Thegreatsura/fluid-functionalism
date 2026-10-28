@@ -30,7 +30,7 @@ import {
 } from "@/components/flavored/sidebar";
 import { componentList, systemNavList } from "@/lib/docs/components";
 import { useReleaseMarks } from "@/lib/changelog/marks";
-import { useIcons, type IconName } from "@/lib/icon-context";
+import { useIcons, type IconComponent, type IconComponentProps, type IconName } from "@/lib/icon-context";
 import { useThemeContext, type Theme } from "@/registry/default/lib/theme-context";
 import { useShapeContext, type ShapeVariant } from "@/lib/shape-context";
 import { useSizeContext, type SizeVariant } from "@/lib/size-context";
@@ -115,6 +115,30 @@ const SHAPES: { value: ShapeVariant; label: string; icon: IconName }[] = [
   { value: "rounded", label: "Rounded", icon: "rectangle-horizontal" },
   { value: "pill", label: "Pill", icon: "circle" },
 ];
+
+/** Each accent preset's own color in place of an icon: a round swatch in
+ *  the icon's box, three quarters of it across so it sits level with the
+ *  line icons around it, edged like the color picker's tiles. */
+function accentSwatch(hex: string): IconComponent {
+  function AccentSwatch({ size = 16, className }: IconComponentProps) {
+    return (
+      <span
+        aria-hidden
+        className={`flex items-center justify-center ${className ?? ""}`}
+        style={{ width: size, height: size }}
+      >
+        <span
+          className="rounded-full shadow-[inset_0_0_0_1px_rgba(127,127,127,0.25)]"
+          style={{ width: size * 0.75, height: size * 0.75, backgroundColor: hex }}
+        />
+      </span>
+    );
+  }
+  return AccentSwatch;
+}
+const ACCENT_SWATCHES = Object.fromEntries(
+  ACCENT_ORDER.map((a) => [a, accentSwatch(ACCENT_PRESETS[a].hex)])
+) as Record<(typeof ACCENT_ORDER)[number], IconComponent>;
 const SIZES: { value: SizeVariant; label: string }[] = [
   { value: "default", label: "Default" },
   { value: "compact", label: "Compact" },
@@ -153,8 +177,10 @@ export function SiteCommandMenuTrigger() {
         <SidebarMenuButton icon={icons.search} onClick={() => setOpen(true)}>
           Search
         </SidebarMenuButton>
-        {/* Touch screens have no keyboard to press it with. */}
-        <SidebarMenuBadge className="font-sans text-site-caption [@media(hover:none)]:hidden">
+        {/* The key chip of the right panel's shortcuts: 18px on a 2px-round
+            tint, 1px down to stay centered where the 20px badge sits. Touch
+            screens have no keyboard to press it with. */}
+        <SidebarMenuBadge className="mt-px h-[18px] min-w-[18px] rounded-[2px] bg-foreground/15 font-mono text-site-micro leading-none [@media(hover:none)]:hidden">
           {mac ? "⌘K" : "Ctrl K"}
         </SidebarMenuBadge>
       </SidebarMenuItem>
@@ -257,7 +283,7 @@ export function SiteCommandMenu() {
         label: `Accent: ${ACCENT_PRESETS[a].label}`,
         action: `Set accent to ${ACCENT_PRESETS[a].label}`,
         description: current(!customAccent && accent === a),
-        icon: icons.palette,
+        icon: ACCENT_SWATCHES[a],
         keywords: ["accent", "color", "brand", "focus", a],
         group: "Settings",
         onSelect: () => {

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { SurfaceProvider } from "@/lib/surface-context";
 import { useRightRailNode } from "@/lib/right-rail";
+import { useShape } from "@/lib/shape-context";
 import {
   Select,
   SelectTrigger,
@@ -111,9 +112,11 @@ export function PlaygroundPanel({
   onShuffle: () => void;
   children: ReactNode;
 }) {
+  // Rounds with the Radius setting, like the settings card above it.
+  const shape = useShape();
   return (
     <SurfaceProvider value={2}>
-      <div className="w-full rounded-lg bg-muted p-3">
+      <div className={`w-full ${shape.container} bg-muted p-3`}>
         <div className="flex items-center justify-between px-1 pt-1 pb-2">
           <h2
             className="text-site-title text-foreground leading-none"

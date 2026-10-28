@@ -1,8 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, animate, motion, useReducedMotion } from "motion/react";
 import { spring } from "@/registry/default/lib/springs";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { Button } from "@/registry/radix/button";
@@ -17,7 +28,7 @@ import {
   useShapeContext,
   type ShapeVariant,
 } from "@/lib/shape-context";
-import { useSizeContext, type SizeVariant } from "@/lib/size-context";
+import { useSize, useSizeContext, type SizeVariant } from "@/lib/size-context";
 import { useThemeContext, type Theme } from "@/registry/default/lib/theme-context";
 import { useIcon } from "@/lib/icon-context";
 import {
@@ -28,6 +39,8 @@ import {
 } from "@/lib/docs/icon-playground";
 import { SurfaceProvider } from "@/lib/surface-context";
 import { RightRailTarget } from "@/lib/right-rail";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 import { showShortcutToast } from "@/lib/docs/settings-toast";
 import { Tooltip } from "@/registry/radix/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -95,16 +108,238 @@ function toRgb(color: string): { r: number; g: number; b: number } | null {
   return { r, g, b };
 }
 
-const stop = (e: SyntheticEvent) => e.stopPropagation();
+/** How far a setting's value travels as it rolls in or out. */
+const ROLL = 16;
+/** The trigger's edge fade while values roll: clear across the text's
+ *  line, fading out over the top and bottom quarter. */
+const ROLL_MASK = "linear-gradient(to bottom, transparent, #000 25%, #000 75%, transparent)";
 
-/** Wraps a select's popup inside a row that carries a shortcut tooltip.
- *  React events bubble through portals, so without it, hovering or focusing
- *  the open list reaches the tooltip's trigger and shows "Press X to cycle"
- *  over the options. `contents` keeps the wrapper out of the row's layout. */
-function TooltipPopupGuard({ children }: { children: ReactNode }) {
+/** The trigger's parts as they line up on screen (the key and chevron are
+ *  reordered with CSS order), the key included, the chevron not. */
+function inVisualOrder(trigger: HTMLElement): HTMLElement[] {
+  return [...trigger.children]
+    .filter(
+      (el): el is HTMLElement => el instanceof HTMLElement && el.dataset.rollCopy === undefined
+    )
+    .map((el, i) => ({ el, i, order: Number(getComputedStyle(el).order) || 0 }))
+    .sort((a, b) => a.order - b.order || a.i - b.i)
+    .map(({ el }) => el);
+}
+
+/** A shortcut key's chip, pressed: down 2px a side on its 18px. */
+const KEY_PRESS = 0.85;
+
+/** What rolls in a trigger: its first part, the value's text (a select's
+ *  icon and label, the accent's name). The key and chevron hold still, and
+ *  the accent's swatch fades from one color to the next instead (the
+ *  site's color transition). */
+function rollingParts(trigger: HTMLElement): HTMLElement[] {
+  const first = trigger.firstElementChild;
+  return first instanceof HTMLElement ? [first] : [];
+}
+
+/** The settings list's fluid hover: each row hands it its trigger. */
+const SettingHoverContext = createContext<
+  ((index: number, element: HTMLElement | null) => void) | null
+>(null);
+
+/** A setting: its label, then its control with the keyboard shortcut inside
+ *  it, in view without a hover, in the key chip the settings toast shows
+ *  when it's pressed. Touch screens drop the keys: there's no keyboard to
+ *  press them on.
+ *
+ *  `index` is the value's place in its menu. When it changes (a shortcut
+ *  cycling it, or a pick), the values roll like a list: the new one comes
+ *  in from where it sits, from below going down the menu, from above going
+ *  up or wrapping back to the top, while the old one leaves the other way,
+ *  blurring as it fades. Both pass through a fade at the trigger's top and
+ *  bottom edges, as a list scrolls under a scroll fade. */
+function SettingRow({
+  label,
+  shortcut,
+  index,
+  hoverIndex,
+  children,
+}: {
+  label: string;
+  shortcut?: string;
+  index?: number;
+  /** The row's fixed place in the list's fluid hover. */
+  hoverIndex: number;
+  children: ReactNode;
+}) {
+  // The chevron's size, for the accent swatch to take the same room.
+  const { icon } = useSize();
+  const reduceMotion = useReducedMotion();
+  const controlRef = useRef<HTMLSpanElement>(null);
+  // The control's trigger button, once mounted, to hold the shortcut key.
+  const [trigger, setTrigger] = useState<HTMLButtonElement | null>(null);
+  useLayoutEffect(() => {
+    setTrigger(controlRef.current?.querySelector("button") ?? null);
+  }, []);
+  // The trigger joins the list's fluid hover: the highlight sits on it, and
+  // a click anywhere on the row (its label too) goes to it.
+  const registerHover = useContext(SettingHoverContext);
+  useEffect(() => {
+    if (!registerHover || !trigger) return;
+    registerHover(hoverIndex, trigger);
+    return () => registerHover(hoverIndex, null);
+  }, [registerHover, hoverIndex, trigger]);
+  // Pressing the key presses its chip, the way the settings toast dips on a
+  // repeat press: down, held 80ms, then back on the fast spring. On window,
+  // after the shortcut's own listener on document: it marks a key it acted
+  // on with preventDefault, so a key typed into a field never presses.
+  const keyRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!shortcut) return;
+    let release: ReturnType<typeof setTimeout> | undefined;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!e.defaultPrevented || e.key.toLowerCase() !== shortcut.toLowerCase()) return;
+      const key = keyRef.current;
+      if (!key) return;
+      clearTimeout(release);
+      animate(key, { scale: KEY_PRESS }, spring.fast);
+      release = setTimeout(() => animate(key, { scale: 1 }, spring.fast), 80);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      clearTimeout(release);
+    };
+  }, [shortcut]);
+  const prevIndex = useRef(index);
+  // The trigger's content as last rendered, to play the old value out: by
+  // the time the index changes, the trigger already shows the new one.
+  const snapshot = useRef<HTMLElement | null>(null);
+  const leaving = useRef<HTMLElement | null>(null);
+  const rolls = useRef(0);
+  // Layout effects: the new value is already in the DOM, and the roll has
+  // to start before it paints at rest.
+  useLayoutEffect(() => {
+    const from = prevIndex.current;
+    prevIndex.current = index;
+    if (index === undefined || from === undefined || from === index) return;
+    const trigger = controlRef.current?.querySelector("button");
+    if (!trigger) return;
+    // A press mid-roll drops the value still leaving.
+    leaving.current?.remove();
+    leaving.current = null;
+    const content = rollingParts(trigger);
+    if (!content.length) return;
+    const y = index > from ? ROLL : -ROLL;
+
+    const old = snapshot.current;
+    if (old) {
+      if (getComputedStyle(trigger).position === "static") trigger.style.position = "relative";
+      // Over the new value's line, pinned by its right edge, where the
+      // chevron keeps it: the trigger has already resized to the new value.
+      const box = trigger.getBoundingClientRect();
+      // The copy holds the key's and swatch's room too, so it spans the
+      // same parts.
+      const line = inVisualOrder(trigger);
+      const first = line[0].getBoundingClientRect();
+      const last = line[line.length - 1].getBoundingClientRect();
+      Object.assign(old.style, {
+        position: "absolute",
+        top: `${first.top - box.top - trigger.clientTop}px`,
+        right: `${box.right - last.right - trigger.clientLeft}px`,
+        height: `${first.height}px`,
+        display: "flex",
+        alignItems: "center",
+        gap: getComputedStyle(trigger).columnGap,
+        whiteSpace: "nowrap",
+        pointerEvents: "none",
+      });
+      trigger.append(old);
+      leaving.current = old;
+    }
+
+    trigger.style.setProperty("mask-image", ROLL_MASK);
+    trigger.style.setProperty("-webkit-mask-image", ROLL_MASK);
+    const roll = ++rolls.current;
+    const done = () => {
+      if (roll !== rolls.current) return;
+      trigger.style.removeProperty("mask-image");
+      trigger.style.removeProperty("-webkit-mask-image");
+    };
+
+    // Moderate tier: the spring moves the value, while opacity and blur run
+    // linear over the same time, so the fade reads evenly across the travel.
+    const enter = animate(
+      content,
+      reduceMotion ? { opacity: [0, 1] } : { opacity: [0, 1], y: [y, 0] },
+      { ...spring.moderate, opacity: { duration: spring.moderate.duration, ease: "linear" } }
+    );
+    if (old) {
+      const fade = { duration: spring.moderate.exit.duration, ease: "linear" } as const;
+      animate(
+        old,
+        reduceMotion
+          ? { opacity: [1, 0] }
+          : { opacity: [1, 0], y: [0, -y], filter: ["blur(0px)", "blur(2px)"] },
+        { ...spring.moderate.exit, ease: "easeIn", opacity: fade, filter: fade }
+      ).then(() => {
+        old.remove();
+        if (leaving.current === old) leaving.current = null;
+      });
+    }
+    enter.then(done);
+  }, [index, reduceMotion]);
+  // After every render, so the copy has whatever the trigger shows now (an
+  // icon set swapped, a label renamed), with none of a roll's inline styles.
+  useLayoutEffect(() => {
+    const trigger = controlRef.current?.querySelector("button");
+    const parts = trigger ? inVisualOrder(trigger) : [];
+    if (!parts.length) return;
+    const copy = document.createElement("span");
+    copy.setAttribute("aria-hidden", "true");
+    copy.dataset.rollCopy = "";
+    for (const part of parts) {
+      const clone = part.cloneNode(true) as HTMLElement;
+      clone.style.removeProperty("transform");
+      clone.style.removeProperty("opacity");
+      clone.removeAttribute("id");
+      // At the size it has in the trigger: out of it, the trigger's own
+      // rules (the swatch's size) no longer reach the copy.
+      clone.style.width = getComputedStyle(part).width;
+      clone.style.flexShrink = "0";
+      // Only the value leaves: the rest stays put in the trigger, so the
+      // copy only keeps its room.
+      if (part !== trigger?.firstElementChild) clone.style.visibility = "hidden";
+      copy.append(clone);
+    }
+    snapshot.current = copy;
+  });
   return (
-    <div className="contents" onPointerMove={stop} onPointerDown={stop} onFocus={stop}>
-      {children}
+    // The label holds one line; a long value truncates in its trigger. The
+    // Select wraps its trigger in a div, which has to give way too.
+    // relative: painted over the list's highlight, which sits behind the
+    // trigger in place of the trigger's own hover fill.
+    <div className="relative flex items-center justify-between gap-3">
+      <span className="shrink-0 whitespace-nowrap text-site-body text-muted-foreground">{label}</span>
+      <span
+        ref={controlRef}
+        className="flex min-w-0 items-center [&>div]:min-w-0 [&_button:hover]:bg-transparent [&_button>span:nth-child(2)]:order-1 [&_button>span:nth-child(2)]:size-(--swatch)! [&_button>svg]:order-1"
+        style={{ "--swatch": `${icon}px` } as CSSProperties}
+      >
+        {children}
+        {/* The key sits in the trigger, after the value and before the
+            chevron (ordered last above), so it reads as part of the control.
+            Hidden from the combobox's name: the value is what it reads. */}
+        {shortcut &&
+          trigger &&
+          createPortal(
+            <kbd
+              ref={keyRef}
+              aria-hidden
+              data-shortcut=""
+              className="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center bg-foreground/15 px-1 font-mono text-site-micro leading-none text-muted-foreground rounded-[2px] pointer-coarse:hidden"
+            >
+              {shortcut}
+            </kbd>,
+            trigger
+          )}
+      </span>
     </div>
   );
 }
@@ -194,7 +429,7 @@ export function GitHubStarButton() {
 }
 
 /** The inner settings content — reused in the right column and mobile drawer. */
-export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left" | "right" | "top" | "bottom" }) {
+export function SettingsContent() {
   const { theme, setTheme } = useThemeContext();
   const { shape, setShape } = useShapeContext();
   const { size, setSize } = useSizeContext();
@@ -202,6 +437,12 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
   const { base, setBase } = useBase();
   const { font, fonts, custom, setFont, browse } = useHeadingFont();
   const accent = useAccent();
+  const reduceMotion = useReducedMotion();
+  const shapeClasses = useShape();
+  const listRef = useRef<HTMLDivElement>(null);
+  const hover = useFluidHover(listRef);
+  // registerItem is stable; the handlers object is new each render.
+  const { registerItem: registerHover, handlers: hoverHandlers } = hover;
 
   const MonitorIcon = useIcon("monitor");
   const SunIcon = useIcon("sun");
@@ -241,146 +482,151 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Theme, Radius & Icons selects */}
-      <div className="flex flex-col gap-1.5 py-3">
-        <Tooltip content={<span>Press &ensp;<kbd className="font-mono opacity-50">T</kbd>&ensp; to cycle</span>} side={tooltipSide}>
-          <div className="flex items-center justify-between">
-            <span className="text-site-body text-muted-foreground">Theme</span>
-            <Select value={theme} onValueChange={(v) => setTheme(v as Theme)}>
-              <SelectTrigger
-                variant="borderless"
-                className="min-w-0 w-auto h-7 px-2 text-site-body"
-                icon={themeOptions.find((o) => o.value === theme)?.icon}
-              />
-              <TooltipPopupGuard>
-                <SelectContent>
-                  {themeOptions.map((o, i) => (
-                    <SelectItem key={o.value} value={o.value} index={i} icon={o.icon}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </TooltipPopupGuard>
-            </Select>
-          </div>
-        </Tooltip>
-        <Tooltip content={<span>Press &ensp;<kbd className="font-mono opacity-50">A</kbd>&ensp; to cycle</span>} side={tooltipSide}>
-          <div className="flex items-center justify-between">
-            <span className="text-site-body text-muted-foreground">Accent</span>
-            {/* The presets are the picker's swatches; any other color is a
-                custom accent. The trigger reads like the selects: the name
-                (or hex) in the foreground, then the color. */}
-            <TooltipPopupGuard>
-              <ColorPickerPopover
-                value={accent.hex}
-                onValueChange={(_, parsed) => accent.setColor(toHex(parsed))}
-                swatches={ACCENT_SWATCHES}
-                triggerLabel={accentLabel(accent.preset, accent.custom)}
-                triggerShowValue={false}
-                triggerClassName="h-7 border-transparent px-2 text-site-body [&_span]:px-0 [&_span]:text-foreground"
-              />
-            </TooltipPopupGuard>
-          </div>
-        </Tooltip>
+      {/* The settings, stacked with no gap under one fluid hover. */}
+      <SettingHoverContext.Provider value={registerHover}>
+      <div ref={listRef} className="relative flex flex-col py-3" {...hoverHandlers}>
+        <FluidHoverHighlight hover={hover} className={shapeClasses.input} />
+        <SettingRow label="Theme" hoverIndex={0} shortcut="T" index={themeOptions.findIndex((o) => o.value === theme)}>
+          <Select value={theme} onValueChange={(v) => setTheme(v as Theme)}>
+            <SelectTrigger
+              variant="borderless"
+              className="min-w-0 w-auto h-7 px-2 text-site-body"
+              icon={themeOptions.find((o) => o.value === theme)?.icon}
+            />
+            <SelectContent>
+              {themeOptions.map((o, i) => (
+                <SelectItem key={o.value} value={o.value} index={i} icon={o.icon}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </SettingRow>
+        <SettingRow
+          label="Accent"
+          hoverIndex={1}
+          shortcut="A"
+          index={accent.custom ? ACCENT_ORDER.length : ACCENT_ORDER.indexOf(accent.preset)}
+        >
+          {/* The presets are the picker's swatches; any other color is a
+              custom accent. The trigger reads like the selects: the name
+              (or hex) in the foreground, then the color. */}
+          <ColorPickerPopover
+            value={accent.hex}
+            onValueChange={(_, parsed) => accent.setColor(toHex(parsed))}
+            swatches={ACCENT_SWATCHES}
+            triggerLabel={accentLabel(accent.preset, accent.custom)}
+            triggerShowValue={false}
+            triggerClassName="h-7 border-transparent px-2 text-site-body [&_span]:px-0 [&_span]:text-foreground"
+          />
+        </SettingRow>
         <AccentContrastNote hex={accent.hex} />
-        <Tooltip content={<span>Press &ensp;<kbd className="font-mono opacity-50">R</kbd>&ensp; to toggle</span>} side={tooltipSide}>
-          <div className="flex items-center justify-between">
-            <span className="text-site-body text-muted-foreground">Radius</span>
-            <Select value={shape} onValueChange={(v) => setShape(v as ShapeVariant)}>
-              <SelectTrigger
-                variant="borderless"
-                className="min-w-0 w-auto h-7 px-2 text-site-body"
-                icon={shapeOptions.find((o) => o.value === shape)?.icon}
-              />
-              <TooltipPopupGuard>
-                <SelectContent>
-                  {shapeOptions.map((o, i) => (
-                    <SelectItem key={o.value} value={o.value} index={i} icon={o.icon}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </TooltipPopupGuard>
-            </Select>
-          </div>
-        </Tooltip>
-        <Tooltip content={<span>Press &ensp;<kbd className="font-mono opacity-50">S</kbd>&ensp; to toggle</span>} side={tooltipSide}>
-          <div className="flex items-center justify-between">
-            <span className="text-site-body text-muted-foreground">Size</span>
-            <Select value={size} onValueChange={(v) => setSize(v as SizeVariant)}>
-              <SelectTrigger
-                variant="borderless"
-                className="min-w-0 w-auto h-7 px-2 text-site-body"
-              />
-              <TooltipPopupGuard>
-                <SelectContent>
-                  {sizeOptions.map((o, i) => (
-                    <SelectItem key={o.value} value={o.value} index={i}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </TooltipPopupGuard>
-            </Select>
-          </div>
-        </Tooltip>
-        <Tooltip content={<span>Press &ensp;<kbd className="font-mono opacity-50">I</kbd>&ensp; to cycle</span>} side={tooltipSide}>
-          <div className="flex items-center justify-between">
-            <span className="text-site-body text-muted-foreground">Icons</span>
-            <Select value={iconLibrary} onValueChange={(v) => setIconLibrary(v as IconLibrary)}>
-              <SelectTrigger
-                variant="borderless"
-                className="min-w-0 w-auto h-7 px-2 text-site-body"
-              />
-              <TooltipPopupGuard>
-                <SelectContent>
-                  {iconOptions.map((o, i) => (
-                    <SelectItem key={o.value} value={o.value} index={i}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </TooltipPopupGuard>
-            </Select>
-          </div>
-        </Tooltip>
-        <Tooltip content={<span>Press &ensp;<kbd className="font-mono opacity-50">F</kbd>&ensp; to cycle</span>} side={tooltipSide}>
-          <div className="flex items-center justify-between">
-            <span className="text-site-body text-muted-foreground">Heading font</span>
-            {/* The last row is an action, not a value: it opens the
-                Google Fonts picker and leaves the selection alone. */}
-            <Select
-              value={font}
-              onValueChange={(v) => (v === BROWSE ? browse() : setFont(v as HeadingFont))}
+        <SettingRow label="Radius" hoverIndex={2} shortcut="R" index={shapeOptions.findIndex((o) => o.value === shape)}>
+          <Select value={shape} onValueChange={(v) => setShape(v as ShapeVariant)}>
+            <SelectTrigger
+              variant="borderless"
+              className="min-w-0 w-auto h-7 px-2 text-site-body"
+              icon={shapeOptions.find((o) => o.value === shape)?.icon}
+            />
+            <SelectContent>
+              {shapeOptions.map((o, i) => (
+                <SelectItem key={o.value} value={o.value} index={i} icon={o.icon}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </SettingRow>
+        <SettingRow label="Size" hoverIndex={3} shortcut="S" index={sizeOptions.findIndex((o) => o.value === size)}>
+          <Select value={size} onValueChange={(v) => setSize(v as SizeVariant)}>
+            <SelectTrigger
+              variant="borderless"
+              className="min-w-0 w-auto h-7 px-2 text-site-body"
+            />
+            <SelectContent>
+              {sizeOptions.map((o, i) => (
+                <SelectItem key={o.value} value={o.value} index={i}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </SettingRow>
+        <SettingRow label="Icons" hoverIndex={4} shortcut="I" index={iconOptions.findIndex((o) => o.value === iconLibrary)}>
+          <Select value={iconLibrary} onValueChange={(v) => setIconLibrary(v as IconLibrary)}>
+            <SelectTrigger
+              variant="borderless"
+              className="min-w-0 w-auto h-7 px-2 text-site-body"
+            />
+            <SelectContent>
+              {iconOptions.map((o, i) => (
+                <SelectItem key={o.value} value={o.value} index={i}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </SettingRow>
+        <SettingRow label="Heading font" hoverIndex={5} shortcut="F" index={fonts.indexOf(font)}>
+          {/* The last row is an action, not a value: it opens the
+              Google Fonts picker and leaves the selection alone. */}
+          <Select
+            value={font}
+            onValueChange={(v) => (v === BROWSE ? browse() : setFont(v as HeadingFont))}
+          >
+            <SelectTrigger
+              variant="borderless"
+              className="min-w-0 w-auto h-7 px-2 text-site-body"
+            />
+            <SelectContent>
+              {fonts.map((f, i) => (
+                <SelectItem key={f} value={f} index={i}>
+                  {headingFontLabel(f, custom)}
+                </SelectItem>
+              ))}
+              <SelectItem value={BROWSE} index={fonts.length}>
+                Browse Google Fonts…
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </SettingRow>
+        {/* Only while a custom Google Fonts family is the heading font. It
+            opens and closes in place (grid rows 0fr to 1fr), so the rows
+            below slide instead of jumping. Clipped only while it moves: at rest
+            the select's focus ring needs the room. */}
+        <AnimatePresence initial={false}>
+          {font === "custom" && custom && (
+            <motion.div
+              key="heading-weight"
+              className="grid"
+              initial={{ gridTemplateRows: "0fr", opacity: 0, overflow: "hidden" }}
+              animate={{
+                gridTemplateRows: "1fr",
+                opacity: 1,
+                transitionEnd: { overflow: "visible" },
+              }}
+              exit={{
+                gridTemplateRows: "0fr",
+                opacity: 0,
+                overflow: "hidden",
+                transition: reduceMotion
+                  ? { duration: 0, opacity: spring.moderate.exit }
+                  : spring.moderate.exit,
+              }}
+              // Reduced motion: the row snaps open or shut, and only fades.
+              transition={
+                reduceMotion ? { duration: 0, opacity: { duration: spring.moderate.duration } } : spring.moderate
+              }
             >
-              <SelectTrigger
-                variant="borderless"
-                className="min-w-0 w-auto h-7 px-2 text-site-body"
-              />
-              <TooltipPopupGuard>
-                <SelectContent>
-                  {fonts.map((f, i) => (
-                    <SelectItem key={f} value={f} index={i}>
-                      {headingFontLabel(f, custom)}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value={BROWSE} index={fonts.length}>
-                    Browse Google Fonts…
-                  </SelectItem>
-                </SelectContent>
-              </TooltipPopupGuard>
-            </Select>
-          </div>
-        </Tooltip>
-        {/* Only while a custom Google Fonts family is the heading font. */}
-        {font === "custom" && custom && (
-          <div className="flex items-center justify-between">
-            <span className="text-site-body text-muted-foreground">Heading weight</span>
-            <HeadingWeightSelect triggerClassName="min-w-0 w-auto h-7 px-2 text-site-body" />
-          </div>
-        )}
-        <div className="flex items-center justify-between">
-          <span className="text-site-body text-muted-foreground">Primitive</span>
+              <div className="min-h-0">
+                <SettingRow label="Heading weight" hoverIndex={6}>
+                  <HeadingWeightSelect triggerClassName="min-w-0 w-auto h-7 px-2 text-site-body" />
+                </SettingRow>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <SettingRow label="Primitive" hoverIndex={7} index={baseOptions.findIndex((o) => o.value === base)}>
           <Select value={base} onValueChange={(v) => setBase(v as Base)}>
             <SelectTrigger
               variant="borderless"
@@ -394,8 +640,9 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </SettingRow>
       </div>
+      </SettingHoverContext.Provider>
 
       {/* The home page's install prompt, carrying everything set above.
           mb-3: with the column's gap-2, 20px to the credit, the same as the
@@ -427,6 +674,23 @@ export function SettingsContent({ tooltipSide = "left" }: { tooltipSide?: "left"
 }
 
 /** Desktop-only right column that mirrors the left sidebar styling. */
+// The panel's own read of the xl breakpoint (the concept screens mount it
+// outside any SidebarProvider, so it can't borrow the sidebar's isMobile).
+// The server and the first client render assume desktop.
+const XL_QUERY = "(min-width: 1280px)";
+function subscribeXl(onChange: () => void) {
+  const mql = window.matchMedia(XL_QUERY);
+  mql.addEventListener("change", onChange);
+  return () => mql.removeEventListener("change", onChange);
+}
+function useIsXl() {
+  return useSyncExternalStore(
+    subscribeXl,
+    () => window.matchMedia(XL_QUERY).matches,
+    () => true
+  );
+}
+
 export function RightPanel() {
   // The bare "]" key shows/hides the panel — the mirror of the left rail's
   // "[" (the sidebar provider only ever claims its own side's key, so "]" is
@@ -464,6 +728,11 @@ export function RightPanel() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  // Below xl the panel also gives its width back while xl-fade-block fades
+  // it, so the page slides into the space instead of snapping once
+  // display:none lands (the exit tween matches the CSS fade's 160ms).
+  const isXl = useIsXl();
+  const shown = open && isXl;
   const PanelRightIcon = useIcon("panel-right");
   // The rail's cards take the shape's container radius, so they round with
   // the pill and rounded settings like the items inside them.
@@ -534,13 +803,13 @@ export function RightPanel() {
       className="shrink-0 overflow-hidden sticky top-4 self-start mt-4 xl-fade-block max-xl:pointer-events-none"
       initial={false}
       animate={{
-        width: open ? 256 : 0,
+        width: shown ? 256 : 0,
         // 16px on the right, matching the 16px top (sticky top-4) and the
         // 16px the max-h calc leaves at the bottom — one even inset.
-        marginRight: open ? 16 : 0,
+        marginRight: shown ? 16 : 0,
       }}
       transition={
-        reduceMotion ? { duration: 0 } : open ? spring.slow : spring.slow.exit
+        reduceMotion ? { duration: 0 } : shown ? spring.slow : spring.slow.exit
       }
       style={{ pointerEvents: open ? undefined : "none" }}
       // Collapsed is width:0 + opacity:0 — still in the DOM, so without
@@ -564,9 +833,12 @@ export function RightPanel() {
       <ScrollArea viewportClassName="scroll-fade max-h-[calc(100svh-2rem)]">
       <div className="flex flex-col gap-3">
         {showSettings && (
-        <aside className={`p-4 ${shape.container} bg-muted`}>
+        // contain-inline-size: the rail's scroll area sizes to its content,
+        // so the card's one-line labels would widen it past the rail;
+        // contained, it takes the rail's width and the values truncate.
+        <aside className={`p-4 contain-inline-size ${shape.container} bg-muted`}>
           <SurfaceProvider value={2}>
-            <div className="flex items-center justify-between pt-2 pb-2">
+            <div className="flex items-center justify-between pb-2">
               <h2
                 className="text-site-title text-foreground leading-none"
                 style={{ fontVariationSettings: fontWeights.semibold }}
@@ -575,7 +847,7 @@ export function RightPanel() {
               </h2>
               <GitHubStarButton />
             </div>
-            <SettingsContent tooltipSide="left" />
+            <SettingsContent />
           </SurfaceProvider>
         </aside>
         )}

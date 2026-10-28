@@ -110,7 +110,7 @@ export function SiteSidebar() {
                 </h2>
                 <GitHubStarButton />
               </div>
-              <SettingsContent tooltipSide="right" />
+              <SettingsContent />
             </div>
             <div aria-hidden className="mx-4 mb-2 h-px shrink-0 bg-border" />
           </>

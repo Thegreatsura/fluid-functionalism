@@ -574,7 +574,7 @@ export function SettingsContent({ credit = true }: { credit?: boolean }) {
           <Select value={theme} onValueChange={(v) => setTheme(v as Theme)}>
             <SelectTrigger
               variant="borderless"
-              className="min-w-0 w-auto h-7 px-2 text-site-body"
+              className="min-w-0 w-auto px-2 text-site-body"
               icon={themeOptions.find((o) => o.value === theme)?.icon}
             />
             <SelectContent>
@@ -601,7 +601,7 @@ export function SettingsContent({ credit = true }: { credit?: boolean }) {
             swatches={accentSwatches(accent.dark)}
             triggerLabel={accentLabel(accent.preset, accent.custom)}
             triggerShowValue={false}
-            triggerClassName="h-7 border-transparent px-2 text-site-body [&_span]:px-0 [&_span]:text-foreground"
+            triggerClassName="border-transparent px-2 text-site-body [&_span]:px-0 [&_span]:text-foreground"
           />
         </SettingRow>
         <AccentContrastNote hex={accent.hex} dark={accent.dark} />
@@ -614,7 +614,7 @@ export function SettingsContent({ credit = true }: { credit?: boolean }) {
           >
             <SelectTrigger
               variant="borderless"
-              className="min-w-0 w-auto h-7 px-2 text-site-body"
+              className="min-w-0 w-auto px-2 text-site-body"
             />
             <SelectContent>
               {fonts.map((f, i) => (
@@ -658,7 +658,7 @@ export function SettingsContent({ credit = true }: { credit?: boolean }) {
             >
               <div className="min-h-0">
                 <SettingRow label="Heading weight" hoverIndex={3}>
-                  <HeadingWeightSelect triggerClassName="min-w-0 w-auto h-7 px-2 text-site-body" />
+                  <HeadingWeightSelect triggerClassName="min-w-0 w-auto px-2 text-site-body" />
                 </SettingRow>
               </div>
             </motion.div>
@@ -668,7 +668,7 @@ export function SettingsContent({ credit = true }: { credit?: boolean }) {
           <Select value={shape} onValueChange={(v) => setShape(v as ShapeVariant)}>
             <SelectTrigger
               variant="borderless"
-              className="min-w-0 w-auto h-7 px-2 text-site-body"
+              className="min-w-0 w-auto px-2 text-site-body"
               icon={shapeOptions.find((o) => o.value === shape)?.icon}
             />
             <SelectContent>
@@ -684,7 +684,7 @@ export function SettingsContent({ credit = true }: { credit?: boolean }) {
           <Select value={size} onValueChange={(v) => setSize(v as SizeVariant)}>
             <SelectTrigger
               variant="borderless"
-              className="min-w-0 w-auto h-7 px-2 text-site-body"
+              className="min-w-0 w-auto px-2 text-site-body"
             />
             <SelectContent>
               {sizeOptions.map((o, i) => (
@@ -699,7 +699,7 @@ export function SettingsContent({ credit = true }: { credit?: boolean }) {
           <Select value={iconLibrary} onValueChange={(v) => setIconLibrary(v as IconLibrary)}>
             <SelectTrigger
               variant="borderless"
-              className="min-w-0 w-auto h-7 px-2 text-site-body"
+              className="min-w-0 w-auto px-2 text-site-body"
             />
             <SelectContent>
               {iconOptions.map((o, i) => (
@@ -714,7 +714,7 @@ export function SettingsContent({ credit = true }: { credit?: boolean }) {
           <Select value={base} onValueChange={(v) => setBase(v as Base)}>
             <SelectTrigger
               variant="borderless"
-              className="min-w-0 w-auto h-7 px-2 text-site-body"
+              className="min-w-0 w-auto px-2 text-site-body"
             />
             <SelectContent>
               {baseOptions.map((o, i) => (

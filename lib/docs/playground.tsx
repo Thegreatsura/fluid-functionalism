@@ -29,7 +29,9 @@ import {
 // Reversed layout turns the library Switch (toggle → label) into a settings
 // row (label ← left, toggle → right) that matches the borderless-select rows.
 // play-row: one stop of the panel's fluid hover (see PlaygroundPanel).
-export const PLAY_SWITCH = "play-row w-full flex-row-reverse justify-between h-7 px-2 py-0";
+// Its height is the Switch's own by the Size setting: 36px at default, and
+// at least the compact select row's 28px (the compact switch alone is 24px).
+export const PLAY_SWITCH = "play-row w-full min-h-7 flex-row-reverse justify-between px-2";
 
 export function PlayField({
   label,
@@ -43,7 +45,7 @@ export function PlayField({
   return (
     <div
       className={cn(
-        "flex h-7 items-center justify-between pl-2",
+        "flex items-center justify-between pl-2",
         disabled && "opacity-40 pointer-events-none"
       )}
     >
@@ -67,7 +69,7 @@ export function PlaySelect({
       {/* play-row: one stop of the panel's fluid hover. */}
       <SelectTrigger
         variant="borderless"
-        className="play-row relative z-10 min-w-0 w-auto h-7 px-2 text-site-body"
+        className="play-row relative z-10 min-w-0 w-auto px-2 text-site-body"
       />
       <SelectContent>
         {options.map((o, i) => (

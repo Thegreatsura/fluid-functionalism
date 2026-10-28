@@ -39,7 +39,8 @@ export interface UseFluidHoverOptions {
    * padding, past the last row) is routed to the highlighted item, so what
    * is lit is what a click hits. On by default: in a menu or a list the
    * highlight is a promise about the click. Without `nearest` nothing is lit
-   * between items, so there is nothing to route. Pass `false` where empty space should stay
+   * between items, so there is nothing to route. Pass `false` where empty
+   * space should stay
    * inert (rows with destructive actions, generous whitespace), or
    * `{ maxDistance }` to route only clicks within that many pixels of the
    * highlighted item's edge.
@@ -476,10 +477,17 @@ export function useFluidHover<T extends HTMLElement>(
         if (!container) return;
         let next: number | null;
         if (!nearest) {
-          // The item under the pointer, or none.
+          // The item under the pointer, or none. Items can nest (a sidebar
+          // row's sub-rows sit inside it): the innermost one holding the
+          // pointer wins.
           next = null;
+          let hit: HTMLElement | null = null;
           for (const [index, el] of itemsRef.current) {
-            if (el.contains(target) && !isItemDisabled?.(el)) next = index;
+            if (!el.contains(target) || isItemDisabled?.(el)) continue;
+            if (!hit || hit.contains(el)) {
+              hit = el;
+              next = index;
+            }
           }
         } else next = pickNearest({
           axis,
@@ -544,7 +552,10 @@ export function useFluidHover<T extends HTMLElement>(
         "input, textarea, select, button, a, summary, [contenteditable], [role='textbox'], [role='searchbox'], [role='button']"
       );
       if (control) return;
-      if (gapClick === false) return;
+      // Without nearest nothing is lit between items. The highlight updates a
+      // frame late, so one still lit from the item just left must not take
+      // a click that landed in the gap.
+      if (gapClick === false || !nearest) return;
       const index = activeIndexRef.current;
       if (index === null) return;
       const element = itemsRef.current.get(index);
@@ -559,7 +570,7 @@ export function useFluidHover<T extends HTMLElement>(
       // wrapping it, if any) run exactly as if the pointer had been inside.
       resolveActivator(element).click();
     },
-    [isItemDisabled, gapClick, gapClickMaxDistance]
+    [isItemDisabled, gapClick, gapClickMaxDistance, nearest]
   );
 
   // Remeasure when the container resizes — a reflow moves items even though

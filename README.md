@@ -18,7 +18,7 @@ F L U I D   F U N C T I O N A L I S M
 
 Refined UI components with satisfying hover.
 
-A [shadcn/ui](https://ui.shadcn.com) registry of components, the systems they share, and blocks that compose them. Every transition exists to make a state change legible: springs instead of durations, one hover highlight that glides to the item nearest your cursor, and labels that get heavier without shifting the layout. Components that touch a primitive ship in two flavors, [Radix](https://www.radix-ui.com) and [Base UI](https://base-ui.com), with the same API on both.
+A [shadcn/ui](https://ui.shadcn.com) registry of components, the systems they share, and blocks that compose them. Every transition exists to make a state change legible: springs instead of durations, one hover highlight that glides from item to item under your cursor, and labels that get heavier without shifting the layout. Components that touch a primitive ship in two flavors, [Radix](https://www.radix-ui.com) and [Base UI](https://base-ui.com), with the same API on both.
 
 [Docs and demos](https://www.fluidfunctionalism.com) · [Browse components](https://www.fluidfunctionalism.com/docs) · [Compare with shadcn/ui](https://www.fluidfunctionalism.com/compare)
 
@@ -146,7 +146,7 @@ The systems every component shares. Each installs as code, the same way.
 
 | System | Registry name | What it does |
 |---|---|---|
-| [Fluid Hover](https://www.fluidfunctionalism.com/docs/fluid-hover) | `use-fluid-hover` | One hook and one highlight per list. The highlight glides to the item nearest your cursor and never blinks off between rows |
+| [Fluid Hover](https://www.fluidfunctionalism.com/docs/fluid-hover) | `use-fluid-hover` | One hook and one highlight per list. The highlight glides from item to item under your cursor instead of blinking between them |
 | [Motion](https://www.fluidfunctionalism.com/docs/motion) | `springs` | 3 spring speeds, fast, moderate, and slow, each with an exit one tier quicker than its entrance |
 | [Reveal](https://www.fluidfunctionalism.com/docs/reveal) | `reveal` | 1 class reveals a whole page, on load and on scroll |
 | [Scrollbars](https://www.fluidfunctionalism.com/docs/scrollbars) | `scroll-area` · `base/scroll-area` | A scrollbar that stays out of the way but never disappears, with native scroll on touch |
@@ -192,7 +192,7 @@ Or install a whole set (`@fluid/icons-tabler`, `@fluid/icons-phosphor`, `@fluid/
 ## What makes these different
 
 - **Motion as information.** Transitions make state changes legible. Nothing moves for decoration.
-- **Hover as preview.** One highlight per list glides to the item nearest your cursor, so you see where a click lands before you click.
+- **Hover as preview.** One highlight per list glides from item to item under your cursor, so you see where a click lands before you click.
 - **Springs, not durations.** 3 spring speeds cover the library. Interrupt an animation and it reverses from where it is instead of finishing first.
 - **Weight without reflow.** Selected and hovered labels get heavier. An optical-size axis compensates the width and a ghost span reserves it, so nothing shifts.
 - **Two flavors, one API.** Radix or Base UI, whichever your project already uses.

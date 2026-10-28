@@ -75,16 +75,17 @@ const FLUID_HOVER_CODE = `import { useRef } from "react";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
 
-// One list, one highlight. The hook picks the row whose center is nearest
-// the cursor; the highlight springs to that row's rect on spring.fast.
+// One list, one highlight. The hook lights the row under the cursor; the
+// highlight springs to that row's rect on spring.fast, and goes out over
+// empty space.
 function List({ rows }: { rows: string[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const hover = useFluidHover(containerRef);
 
   return (
     <div ref={containerRef} className="relative flex flex-col p-2" {...hover.handlers}>
-      {/* The highlight reads the hook: it sits on the nearest row and fades
-          in fresh on every entry instead of sliding over from its last spot. */}
+      {/* The highlight reads the hook: it sits on the lit row and fades in
+          fresh on every entry instead of sliding over from its last spot. */}
       <FluidHoverHighlight hover={hover} className="rounded-lg" />
       {rows.map((label, i) => (
         <Row key={label} index={i} registerItem={hover.registerItem} onClick={() => open(label)}>
@@ -112,7 +113,8 @@ function Row({ index, registerItem, onClick, children }) {
   );
 }`;
 
-const MATH_CODE = `// Per mouse move (coalesced to one animation frame), for every row:
+const MATH_CODE = `// useFluidHover(containerRef, { nearest: true })
+// Per mouse move (coalesced to one animation frame), for every row:
 const center = rect.top + rect.height / 2;
 const distance = Math.abs(cursorY - center);
 if (distance < closestDistance) {
@@ -126,14 +128,15 @@ setActiveIndex(containing ?? nearest);`;
 
 const AXES_CODE = `import { useFluidHover } from "@/hooks/use-fluid-hover";
 
+// With nearest, the axis says how "nearest" is measured.
 // "y" (default): lists. Nearest by the vertical center, top + height / 2.
-useFluidHover(containerRef);
+useFluidHover(containerRef, { nearest: true });
 
 // "x": strips. Nearest by the horizontal center, left + width / 2.
-useFluidHover(containerRef, { axis: "x" });
+useFluidHover(containerRef, { nearest: true, axis: "x" });
 
 // "xy": grids. Nearest center by straight-line distance across rows and columns.
-useFluidHover(containerRef, { axis: "xy" });`;
+useFluidHover(containerRef, { nearest: true, axis: "xy" });`;
 
 // ---------------------------------------------------------------------------
 // Shared bare-row pieces
@@ -283,7 +286,8 @@ export function PlainVsFluidPreview({ paused }: { paused: boolean }) {
   const shape = useShape();
   const rootRef = useRef<HTMLDivElement>(null);
   const fluidRef = useRef<HTMLDivElement>(null);
-  const hover = useFluidHover(fluidRef);
+  // The nearest rule: the cursor riding the gaps and padding keeps a row lit.
+  const hover = useFluidHover(fluidRef, { nearest: true });
   const inView = useInView(rootRef, { amount: 0.35 });
   const reduced = useReducedMotion();
   // A real pointer inside the demo owns both lists until it leaves.
@@ -406,7 +410,7 @@ export function PlainVsFluidDemo() {
 function MathList({ showMath }: { showMath: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const shape = useShape();
-  const hover = useFluidHover(containerRef);
+  const hover = useFluidHover(containerRef, { nearest: true });
   const { activeIndex, itemRects, isMeasured, handlers, registerItem } = hover;
   const [cursorY, setCursorY] = useState<number | null>(null);
 

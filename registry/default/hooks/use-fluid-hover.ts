@@ -20,7 +20,7 @@ export interface ItemRect {
 
 export interface UseFluidHoverOptions {
   /**
-   * Which direction to resolve the nearest item along.
+   * With `nearest`, which direction to resolve the nearest item along.
    *   "y"  — vertical lists (default): closest by top/height
    *   "x"  — horizontal strips: closest by left/width
    *   "xy" — 2-D grids: closest card across both rows AND columns,
@@ -35,15 +35,24 @@ export interface UseFluidHoverOptions {
    */
   isItemDisabled?: (element: HTMLElement) => boolean;
   /**
-   * Whether a click that lands between items (a gap, the padding, past the
-   * last row) is routed to the highlighted item, so what is lit is what a
-   * click hits. On by default: in a menu or a list the highlight is a
-   * promise about the click. Pass `false` where empty space should stay
+   * With `nearest`, whether a click that lands between items (a gap, the
+   * padding, past the last row) is routed to the highlighted item, so what
+   * is lit is what a click hits. On by default: in a menu or a list the
+   * highlight is a promise about the click. Without `nearest` nothing is lit
+   * between items, so there is nothing to route. Pass `false` where empty space should stay
    * inert (rows with destructive actions, generous whitespace), or
    * `{ maxDistance }` to route only clicks within that many pixels of the
    * highlighted item's edge.
    */
   gapClick?: boolean | { maxDistance?: number };
+  /**
+   * Whether empty space lights the nearest item. Off by default: only the
+   * item under the pointer lights, and the highlight fades out over empty
+   * space (a popup's padding, the unfilled end of a grid row, a label beside
+   * a control), gliding again from the next item it lands on. Pass `true` to
+   * light the item nearest the pointer wherever it is in the container.
+   */
+  nearest?: boolean;
 }
 
 export interface UseFluidHoverReturn {
@@ -247,7 +256,7 @@ export function useFluidHover<T extends HTMLElement>(
   containerRef: RefObject<T | null>,
   options: UseFluidHoverOptions = {}
 ): UseFluidHoverReturn {
-  const { axis = "y", isItemDisabled, gapClick = true } = options;
+  const { axis = "y", isItemDisabled, gapClick = true, nearest = false } = options;
   const gapClickMaxDistance =
     typeof gapClick === "object" ? (gapClick.maxDistance ?? Infinity) : Infinity;
   const itemsRef = useRef(new Map<number, HTMLElement>());
@@ -455,6 +464,7 @@ export function useFluidHover<T extends HTMLElement>(
       if (!isOwnEvent(e)) return;
       const mouseX = e.clientX;
       const mouseY = e.clientY;
+      const target = e.target as Node;
 
       if (rafIdRef.current !== null) {
         cancelAnimationFrame(rafIdRef.current);
@@ -464,7 +474,14 @@ export function useFluidHover<T extends HTMLElement>(
         rafIdRef.current = null;
         const container = containerRef.current;
         if (!container) return;
-        const next = pickNearest({
+        let next: number | null;
+        if (!nearest) {
+          // The item under the pointer, or none.
+          next = null;
+          for (const [index, el] of itemsRef.current) {
+            if (el.contains(target) && !isItemDisabled?.(el)) next = index;
+          }
+        } else next = pickNearest({
           axis,
           point: { x: mouseX, y: mouseY },
           rects: itemRectsRef.current,
@@ -484,10 +501,13 @@ export function useFluidHover<T extends HTMLElement>(
           sessionRef.current += 1;
           setSession(sessionRef.current);
         }
+        // Empty space put the highlight out: the next item lit fades it in
+        // there, as on entering, instead of sliding from the last one.
+        if (next === null) sessionPendingRef.current = true;
         setActiveIndex(next);
       });
     },
-    [axis, containerRef, isItemDisabled]
+    [axis, containerRef, isItemDisabled, nearest]
   );
 
   const handleMouseEnter = useCallback(() => {

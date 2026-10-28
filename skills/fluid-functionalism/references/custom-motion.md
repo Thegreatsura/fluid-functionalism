@@ -79,10 +79,11 @@ not system drift. Judge the app's own chrome, not what it depicts.
 
 ## Fluid hover for custom lists
 
-One highlight per list: `useFluidHover` picks the item whose center is nearest
-the cursor, and a single `bg-hover` overlay springs to its rect on
-`spring.fast`. The cursor in a gap still lights the nearest row, and never
-blinks off between rows. Install `@fluid/use-fluid-hover`; it ships the hook
+One highlight per list: `useFluidHover` lights the item under the cursor, and
+a single `bg-hover` overlay springs to its rect on `spring.fast`, gliding
+between touching rows instead of blinking. Empty space (padding, a gap, the end
+of a grid row) puts it out; pass `nearest: true` to keep the nearest row lit
+there instead. Install `@fluid/use-fluid-hover`; it ships the hook
 and the `FluidHoverHighlight` component, and pulls in `@fluid/tokens` for the
 `bg-hover` fill. The component lands in
 `components/`, not `components/ui/`, so import it from
@@ -116,10 +117,12 @@ Rules that keep it honest:
 
 - **Render `<FluidHoverHighlight hover={hover} />`** — never a hand-rolled
   `motion.div` fill. It handles measurement readiness, the pointer session
-  (fade in at the nearest row instead of sliding across the screen), reduced
+  (fade in where it lands instead of sliding across the screen), reduced
   motion, and z-order. `className` carries radius; `hidden` keeps state while
   a popup is closed; `from` seeds where a fresh entry starts.
-- **Axis matches the shape:** `y` for lists, `x` for strips, `xy` for grids.
+- **Rows touch (gap 0)** so the highlight glides from row to row; a gap puts
+  it out for the crossing. **With `nearest`, the axis matches the shape:** `y`
+  for lists, `x` for strips, `xy` for grids.
 - **One list per group of alternatives.** A divider between different kinds
   of rows means a new container and a new hook. Children of a parent row
   belong to the parent's list.

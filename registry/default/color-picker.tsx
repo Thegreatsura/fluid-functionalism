@@ -1836,8 +1836,9 @@ function SwatchStrip({
     return resolved;
   }, [isClient, items]);
 
-  // One fluid hover across the grid: the background follows the pointer to
-  // the nearest swatch, row and column alike.
+  // One fluid hover across the grid: the background follows the pointer
+  // from swatch to swatch, row and column alike, and goes out over the
+  // unfilled end of the last row.
   const containerRef = useRef<HTMLDivElement>(null);
   const hover = useFluidHover(containerRef, { axis: "xy" });
   // registerItem is stable; the handlers object is new each render.

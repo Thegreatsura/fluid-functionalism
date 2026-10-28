@@ -48,7 +48,7 @@ const basicCode = `import {
 </div>`;
 
 const gridCode = `// Two-column grid of image tiles — columns > 1 turns on 2-D
-// fluid hover: the highlight springs to the nearest card across rows AND columns.
+// fluid hover: the highlight springs from card to card across rows AND columns.
 <div className="w-full max-w-[560px]">
   <CardGroup columns={2} border="outlined" separated>
     <Card onClick={() => open(item)}>
@@ -189,7 +189,7 @@ function BasicDemo() {
 }
 
 // Two-column grid of image tiles with primary + secondary actions; the magnetic
-// highlight resolves the nearest card across both rows and columns.
+// highlight follows the card under the pointer across rows and columns.
 function GridDemo() {
   const features = useFeatures();
   return (

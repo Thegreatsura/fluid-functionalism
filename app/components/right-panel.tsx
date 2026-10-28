@@ -478,26 +478,45 @@ export function GitHubStarButton() {
   );
 }
 
-/** "Created by @micka_design", inset like the group labels. */
-export function Credit({ className }: { className?: string }) {
+/** The author's avatar, shaped as an IconComponent so it can ride Button's
+ *  leadingIcon slot the way the GitHub mark does. A face reads at 20px, not
+ *  at the button's 14px icon size, so it ignores the size it is handed. */
+const AVATAR_SIZE = 20;
+function AuthorAvatar({ className }: { size?: number; className?: string }) {
+  const size = AVATAR_SIZE;
   return (
-    <div className={cn("flex items-center gap-2 pl-2", className)}>
-      <img
-        src="/micka.png"
-        alt=""
-        className="w-5 h-5 rounded-full object-cover shrink-0 outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
-      />
-      <p className="text-site-body text-muted-foreground">
-        Created by{" "}
-        <a
-          href="https://x.com/micka_design"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="rounded text-muted-foreground hover:text-foreground transition-colors duration-80 outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)] focus-visible:ring-offset-2"
-        >
-          @micka_design
-        </a>
-      </p>
+    // eslint-disable-next-line @next/next/no-img-element -- a 16px avatar, served as is
+    <img
+      src="/micka.png"
+      alt=""
+      width={size}
+      height={size}
+      className={cn(
+        "shrink-0 rounded-full object-cover outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10",
+        className
+      )}
+    />
+  );
+}
+
+/** "Created by" on the left, the author on the right as a ghost button (the
+ *  avatar and the handle), opening their X profile like the GitHub button
+ *  opens the repo. The label is inset like the group labels. */
+export function Credit({ className }: { className?: string }) {
+  const shapeCtx = useShape();
+  return (
+    <div className={cn("flex items-center justify-between gap-2 pl-2", className)}>
+      <p className="text-site-body text-muted-foreground">Created by</p>
+      <Button
+        variant="ghost"
+        size="sm"
+        leadingIcon={AuthorAvatar}
+        aria-label="@micka_design on X"
+        className={shapeCtx.button}
+        onClick={() => window.open("https://x.com/micka_design", "_blank", "noopener,noreferrer")}
+      >
+        @micka_design
+      </Button>
     </div>
   );
 }

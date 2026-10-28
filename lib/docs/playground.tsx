@@ -6,6 +6,8 @@ import { Shuffle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { RailHairline, useRightRailNode } from "@/lib/right-rail";
+import { Tooltip } from "@/registry/radix/tooltip";
+import { showShortcutToast } from "@/lib/docs/settings-toast";
 import { useShape } from "@/lib/shape-context";
 import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
@@ -102,7 +104,7 @@ export function PlaygroundOverlay({ children }: { children: ReactNode }) {
 
 /** Hairline between two control groups, inset like the group label's. */
 export function PlayDivider() {
-  return <div aria-hidden className="my-2 ml-2 mr-3 h-px shrink-0 bg-border" />;
+  return <div aria-hidden className="my-2 mx-2 h-px shrink-0 bg-border" />;
 }
 
 /** The muted controls card: title row with a shuffle button, fields below. */
@@ -118,6 +120,27 @@ export function PlaygroundPanel({
   // A group like the settings above it and the left sidebar's: no card, a
   // small label with the shuffle on its right, a hairline under it.
   const shape = useShape();
+
+  // X shuffles, like the settings' single-key shortcuts and with their
+  // guards: not while typing, not from inside a menu or a dialog.
+  const shuffleRef = useRef(onShuffle);
+  useEffect(() => {
+    shuffleRef.current = onShuffle;
+  });
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "x" && e.key !== "X") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) return;
+      if (target?.closest('[role="listbox"], [role="menu"], [role="dialog"], [role="combobox"], [role="option"]')) return;
+      e.preventDefault();
+      shuffleRef.current();
+      showShortcutToast("X", "Playground shuffled");
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   // One fluid hover across the controls, as in the settings group: every
   // select trigger and switch row (marked play-row) is a stop, in page order.
@@ -158,15 +181,25 @@ export function PlaygroundPanel({
     <div className="w-full pt-8">
       <div className="flex h-8 items-center justify-between pl-2">
         <h2 className="text-site-caption text-foreground">{title}</h2>
-        <button
-          type="button"
-          onClick={onShuffle}
-          aria-label="Randomize properties"
-          title="Randomize"
-          className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors duration-80 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]"
+        {/* A 16px icon centers 6px into the 28px button; mr-0.5 brings its
+            end to 8px in, under the hairline's end and the chevrons. */}
+        <Tooltip
+          content={
+            <span>
+              Shuffle &ensp;<kbd className="font-mono opacity-50">X</kbd>
+            </span>
+          }
         >
-          <Shuffle size={15} strokeWidth={1.5} />
-        </button>
+          <button
+            type="button"
+            onClick={onShuffle}
+            aria-label="Shuffle the playground"
+            aria-keyshortcuts="X"
+            className="mr-0.5 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors duration-80 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]"
+          >
+            <Shuffle size={16} strokeWidth={1.5} />
+          </button>
+        </Tooltip>
       </div>
       <RailHairline />
       {/* Triggers drop their own hover fill: the gliding one replaces it. */}

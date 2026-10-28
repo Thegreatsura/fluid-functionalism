@@ -48,8 +48,10 @@ export function useRightRailNode() {
 }
 
 /** The hairline under a right-rail group's label, as the left sidebar draws
- *  one: from the label's first letter (8px in) to 12px short of the edge,
- *  with 4px before the first row so its hover fill clears the line. */
+ *  one: from the label's first letter (8px in) to where the rows' trailing
+ *  icons end (8px short of the edge: the chevrons, the switches, the header's
+ *  star count and shuffle), with 4px before the first row so its hover fill
+ *  clears the line. */
 export function RailHairline() {
-  return <div aria-hidden className="mb-1 ml-2 mr-3 h-px shrink-0 bg-border" />;
+  return <div aria-hidden className="mb-1 mx-2 h-px shrink-0 bg-border" />;
 }

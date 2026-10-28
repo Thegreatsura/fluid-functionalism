@@ -110,7 +110,9 @@ export function SiteSidebar() {
                 </h2>
                 <GitHubStarButton />
               </div>
-              <SettingsContent />
+              {/* Labels start under the heading: no group label to line
+                  up with here, unlike the right panel. */}
+              <SettingsContent inset={false} />
             </div>
             <div aria-hidden className="mx-4 mb-2 h-px shrink-0 bg-border" />
           </>

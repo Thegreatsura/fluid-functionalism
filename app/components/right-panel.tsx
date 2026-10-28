@@ -127,6 +127,9 @@ const SettingHoverContext = createContext<
   ((index: number, element: HTMLElement | null) => void) | null
 >(null);
 
+/** Whether rows inset their label 8px, to line up with a group label. */
+const SettingInsetContext = createContext(true);
+
 /** A setting: its label, then its control with the keyboard shortcut inside
  *  it, in view without a hover, in the key chip the settings toast shows
  *  when it's pressed. Touch screens drop the keys: there's no keyboard to
@@ -154,6 +157,7 @@ function SettingRow({
 }) {
   // The chevron's size, for the accent swatch to take the same room.
   const { icon } = useSize();
+  const inset = useContext(SettingInsetContext);
   const reduceMotion = useReducedMotion();
   const controlRef = useRef<HTMLSpanElement>(null);
   // The control's trigger button, once mounted, to hold the shortcut key.
@@ -335,7 +339,7 @@ function SettingRow({
     // relative: painted over the list's highlight, which sits behind the
     // trigger in place of the trigger's own hover fill.
     // pl-2: the label starts where the group label above it does.
-    <div className="relative flex items-center justify-between gap-3 pl-2">
+    <div className={cn("relative flex items-center justify-between gap-3", inset && "pl-2")}>
       <span className="shrink-0 whitespace-nowrap text-site-body text-muted-foreground">{label}</span>
       <span
         ref={controlRef}
@@ -511,9 +515,10 @@ export function Credit({ className }: { className?: string }) {
 }
 
 /** The inner settings content: reused in the right column and mobile drawer.
- *  `credit={false}` where the host shows the credit elsewhere (the right
- *  panel puts it at the top, where the sidebar has Search). */
-export function SettingsContent({ credit = true }: { credit?: boolean }) {
+ *  `credit={false}` where the host shows the credit elsewhere. `inset` (on
+ *  by default) starts the labels 8px in, under the right panel's group
+ *  label; the mobile sheet turns it off, so they start under its heading. */
+export function SettingsContent({ credit = true, inset = true }: { credit?: boolean; inset?: boolean }) {
   const { theme, setTheme } = useThemeContext();
   const { shape, setShape } = useShapeContext();
   const { size, setSize } = useSizeContext();
@@ -567,6 +572,7 @@ export function SettingsContent({ credit = true }: { credit?: boolean }) {
   return (
     <div className="flex flex-col gap-2">
       {/* The settings, stacked with no gap under one fluid hover. */}
+      <SettingInsetContext.Provider value={inset}>
       <SettingHoverContext.Provider value={registerHover}>
       <div ref={listRef} className="relative flex flex-col" {...hoverHandlers}>
         <FluidHoverHighlight hover={hover} className={shapeClasses.input} />
@@ -727,13 +733,14 @@ export function SettingsContent({ credit = true }: { credit?: boolean }) {
         </SettingRow>
       </div>
       </SettingHoverContext.Provider>
+      </SettingInsetContext.Provider>
 
       {/* The home page's install prompt, carrying everything set above.
           mt-2 + the column's gap-2: 16px under the rows, and the same 16px
           (mb-2 + gap-2) on to the credit when it follows. */}
       <StarterPromptButton size="sm" className={cn("mt-2 w-full", credit && "mb-2")} />
 
-      {credit && <Credit />}
+      {credit && <Credit className={inset ? undefined : "pl-0"} />}
 
     </div>
   );

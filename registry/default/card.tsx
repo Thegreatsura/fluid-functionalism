@@ -121,12 +121,9 @@ const CardGroup = forwardRef<HTMLDivElement, CardGroupProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const shape = useShape();
 
-    // >1 column wraps into a grid, where nearest-item must be resolved in two
-    // dimensions; a single column is a plain vertical list.
-    const axis = columns > 1 ? "xy" : "y";
-    // A card grid has generous whitespace, so a gap click only routes when it
-    // lands within a hand's width of the highlighted card.
-    const hover = useFluidHover(containerRef, { axis, gapClick: { maxDistance: 16 } });
+    // The card under the pointer lights, in a column or a grid alike; the
+    // gaps between cards light nothing, so a click there lands nowhere.
+    const hover = useFluidHover(containerRef);
     const {
       activeIndex,
       handlers,

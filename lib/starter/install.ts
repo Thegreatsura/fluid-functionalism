@@ -16,7 +16,7 @@
 import { generateSidebarPresetFiles } from "@/lib/preset/sidebar-install";
 import { DEFAULT_PRESET } from "@/lib/preset/sidebar-options";
 import { starterSlug, type StarterSettings } from "./settings";
-import { ACCENT_PRESETS } from "@/lib/accent";
+import { ACCENT_PRESETS, accentCss } from "@/lib/accent";
 
 export const SITE = "https://www.fluidfunctionalism.com";
 
@@ -123,8 +123,9 @@ export default function RootLayout({
       suppressHydrationWarning
       className={\`\${inter.variable} \${mono.variable} font-sans antialiased\`}
       // The accent (${ACCENT_PRESETS[s.accent].label}): focus rings, the switch track and every other
-      // accented detail read --fluid-accent. Change it here.
-      style={{ "--fluid-accent": "${ACCENT_PRESETS[s.accent].hex}" } as React.CSSProperties}
+      // accented detail read --fluid-accent. Change it here.${accentCss(s.accent, null).startsWith("light-dark") ? `
+      // light-dark() picks the light or dark shade from the theme's color-scheme.` : ""}
+      style={{ "--fluid-accent": "${accentCss(s.accent, null)}" } as React.CSSProperties}
     >
       <body>
         <Providers>{children}</Providers>

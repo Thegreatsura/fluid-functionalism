@@ -18,7 +18,7 @@ export interface SystemEntry {
 }
 
 export const systemList: SystemEntry[] = [
-  { slug: "fluid-hover", name: "Fluid Hover", description: "Hover that never blinks and always follows your cursor to the nearest item.", installSlug: "use-fluid-hover", installNote: "The useFluidHover hook and its highlight, already in every list and menu." },
+  { slug: "fluid-hover", name: "Fluid Hover", description: "Hover that glides from item to item under your cursor instead of blinking between them.", installSlug: "use-fluid-hover", installNote: "The useFluidHover hook and its highlight, already in every list and menu." },
   { slug: "motion", name: "Motion", description: "Spring tokens, faster exits, fluid hover, and reflow-free weight animation — the motion rules shared by every component.", installSlug: "springs", installNote: "Installs the springs lib — the fast / moderate / slow spring presets every component animates with." },
   { slug: "reveal", name: "Reveal", description: "1 class reveals a whole page, on load and on scroll.", installNote: "Installs the 4 preset classes, reveal-landing, reveal-product, and their -subtle steps, plus shadcn's Skeleton for slow data." },
   { slug: "scrollbars", name: "Scrollbars", description: "A scrollbar that stays out of the way but never disappears, over shadcn's scroll-fade baseline — restyled to the shape system, native scroll on touch.", installSlug: "scroll-area", installNote: "Installs the ScrollArea component with the shape-system scrollbar and the scroll-fade edge treatment." },

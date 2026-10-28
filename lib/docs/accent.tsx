@@ -1,10 +1,21 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 
 import {
   ACCENT_ORDER,
   ACCENT_PRESETS,
+  accentCss,
   accentHex,
   presetForHex,
   type AccentPreset,
@@ -17,8 +28,10 @@ interface AccentContextValue {
   preset: AccentPreset;
   /** The visitor's own color (6-digit hex), overriding the preset. */
   custom: string | null;
-  /** The color on screen. */
+  /** The color on screen, on the theme showing now. */
   hex: string;
+  /** Whether the dark theme is showing: presets have a shade per theme. */
+  dark: boolean;
   /** Picks a preset and drops any custom color. */
   setPreset: (preset: AccentPreset) => void;
   /** Takes any 6-digit hex: a preset's hex selects that preset. */
@@ -26,6 +39,31 @@ interface AccentContextValue {
 }
 
 const AccentContext = createContext<AccentContextValue | null>(null);
+
+// The theme showing: a .light or .dark class on <html> pins it, else the OS
+// decides. Light on the server, which can't know the OS: the CSS value is
+// light-dark() either way, so only JS readers (the picker) wait a frame.
+function subscribeScheme(onChange: () => void) {
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  media.addEventListener("change", onChange);
+  return () => {
+    observer.disconnect();
+    media.removeEventListener("change", onChange);
+  };
+}
+
+function readDark() {
+  const root = document.documentElement.classList;
+  if (root.contains("dark")) return true;
+  if (root.contains("light")) return false;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+function useDarkScheme() {
+  return useSyncExternalStore(subscribeScheme, readDark, () => false);
+}
 
 /**
  * Docs-site-only: the accent (--fluid-accent) behind every focus ring and
@@ -46,11 +84,13 @@ export function AccentProvider({
 }) {
   const [preset, setPresetState] = useState(defaultPreset);
   const [custom, setCustom] = useState(defaultCustom);
-  const hex = accentHex(preset, custom);
+  const dark = useDarkScheme();
+  const hex = accentHex(preset, custom, dark);
+  const css = accentCss(preset, custom);
 
   useEffect(() => {
-    document.documentElement.style.setProperty("--fluid-accent", hex);
-  }, [hex]);
+    document.documentElement.style.setProperty("--fluid-accent", css);
+  }, [css]);
 
   // The custom color's cookie, written once the color settles: a picker drag
   // changes it every frame. Nothing is written until it differs from what the
@@ -83,11 +123,27 @@ export function AccentProvider({
   );
 
   const value = useMemo(
-    () => ({ preset, custom, hex, setPreset, setColor }),
-    [preset, custom, hex, setPreset, setColor]
+    () => ({ preset, custom, hex, dark, setPreset, setColor }),
+    [preset, custom, hex, dark, setPreset, setColor]
   );
 
   return <AccentContext.Provider value={value}>{children}</AccentContext.Provider>;
+}
+
+/** The presets as a ColorPicker's swatches, in panel order: each preset's
+ *  shade for the theme showing, named in its tooltip. */
+const SWATCHES = {
+  light: ACCENT_ORDER.map((p) => ({ color: ACCENT_PRESETS[p].light, label: ACCENT_PRESETS[p].label })),
+  dark: ACCENT_ORDER.map((p) => ({ color: ACCENT_PRESETS[p].dark, label: ACCENT_PRESETS[p].label })),
+};
+export function accentSwatches(dark: boolean) {
+  return SWATCHES[dark ? "dark" : "light"];
+}
+
+/** A ColorPicker's parsed color as the 6-digit uppercase hex the accent
+ *  stores (it has no alpha). */
+export function accentHexOf({ r, g, b }: { r: number; g: number; b: number }): string {
+  return "#" + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("").toUpperCase();
 }
 
 export function useAccent(): AccentContextValue {

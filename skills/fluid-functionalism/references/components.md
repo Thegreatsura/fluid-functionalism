@@ -54,7 +54,7 @@ needs it.
 
 | System | Registry name | What it does | Craft |
 |---|---|---|---|
-| [Fluid Hover](https://www.fluidfunctionalism.com/docs/fluid-hover) | `use-fluid-hover` | One hook and one highlight per list. The highlight glides to the item nearest your cursor and never blinks off between rows | [Fluid Hover](craft.md#fluid-hover) |
+| [Fluid Hover](https://www.fluidfunctionalism.com/docs/fluid-hover) | `use-fluid-hover` | One hook and one highlight per list. The highlight glides from item to item under your cursor instead of blinking between them | [Fluid Hover](craft.md#fluid-hover) |
 | [Motion](https://www.fluidfunctionalism.com/docs/motion) | `springs` | 3 spring speeds — fast, moderate, slow — each with an exit one tier quicker than its entrance | [Motion](craft.md#motion) |
 | [Reveal](https://www.fluidfunctionalism.com/docs/reveal) | `reveal` | 1 class reveals a whole page, on load and on scroll | [Reveal](craft.md#reveal) |
 | [Scrollbars](https://www.fluidfunctionalism.com/docs/scrollbars) | `scroll-area` · `base/scroll-area` | A scrollbar that stays out of the way but never disappears, with native scroll on touch | [Scrollbars](craft.md#scrollbars) |

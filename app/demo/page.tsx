@@ -294,7 +294,7 @@ function DemoPageInner() {
               style={{ height: "100%" }}
               action={cardActions()}
             >
-              {stage(<SettingsContent tooltipSide="right" />)}
+              {stage(<SettingsContent />)}
             </BentoCard>
           ) : Playground ? (
             <Playground key={current.slug}>

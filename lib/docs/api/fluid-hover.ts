@@ -3,9 +3,10 @@
 import type { ApiTable, PropDef } from "@/lib/docs/api/types";
 
 export const hookOptions: PropDef[] = [
-  { name: "axis", type: '"y" | "x" | "xy"', default: '"y"', description: "Which way the list runs: y for lists, x for strips, xy for grids." },
+  { name: "nearest", type: "boolean", default: "false", description: "Lights the item nearest the pointer, so gaps and padding never go dark. Off, only the item under the pointer lights and empty space puts the highlight out." },
+  { name: "axis", type: '"y" | "x" | "xy"', default: '"y"', description: "With nearest, which way the list runs: y for lists, x for strips, xy for grids." },
   { name: "isItemDisabled", type: "(el: HTMLElement) => boolean", description: "Skips an item: never lit, never clicked. Runs on every move, so keep it cheap." },
-  { name: "gapClick", type: "boolean | { maxDistance?: number }", default: "true", description: "A click between items goes to the lit one. false turns it off. maxDistance limits it to clicks within that many px." },
+  { name: "gapClick", type: "boolean | { maxDistance?: number }", default: "true", description: "With nearest, a click between items goes to the lit one. false turns it off. maxDistance limits it to clicks within that many px." },
 ];
 
 export const hookReturn: PropDef[] = [

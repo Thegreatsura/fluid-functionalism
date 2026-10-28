@@ -3,6 +3,7 @@ import {
   ACCENT_ORDER,
   ACCENT_PRESETS,
   DEFAULT_ACCENT,
+  accentCss,
   accentHex,
   accentLabel,
   contrastRatio,
@@ -24,25 +25,37 @@ const valueOf = (line: string) => line.split("; ")[0].split("=").slice(1).join("
 describe("accent presets", () => {
   it("default to the blue the system always had", () => {
     expect(DEFAULT_ACCENT).toBe("blue");
-    expect(ACCENT_PRESETS.blue.hex).toBe("#6B97FF");
+    expect(ACCENT_PRESETS.blue).toMatchObject({ light: "#6B97FF", dark: "#6B97FF" });
+    expect(accentCss("blue", null)).toBe("#6B97FF");
     expect([...SETTING_VALUES.accent]).toEqual(ACCENT_ORDER);
   });
 
-  // A 1px focus ring has to read the same whichever preset is on.
-  it("sit at the blue's contrast on both backgrounds", () => {
+  // A 1px focus ring has to stay findable whichever preset is on, on
+  // either theme: each shade clears the blue's own contrast, give or take.
+  it("keep a visible ring on both backgrounds", () => {
     for (const preset of ACCENT_ORDER) {
-      const { hex } = ACCENT_PRESETS[preset];
-      expect(contrastRatio(hex, "#FFFFFF"), preset).toBeGreaterThan(2.75);
-      expect(contrastRatio(hex, "#FFFFFF"), preset).toBeLessThan(3);
-      expect(contrastRatio(hex, "#171717"), preset).toBeGreaterThan(5.5);
+      const { light, dark } = ACCENT_PRESETS[preset];
+      expect(contrastRatio(light, "#FFFFFF"), preset).toBeGreaterThan(2.75);
+      expect(contrastRatio(dark, "#171717"), preset).toBeGreaterThan(5.5);
     }
   });
 
+  it("are every Tailwind hue but blue, by hue, around the system's blue", () => {
+    expect(ACCENT_ORDER).toEqual([
+      "red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan",
+      "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose",
+    ]);
+  });
+
   it("map a hex back to its preset, any case", () => {
-    expect(presetForHex("#ac82f0")).toBe("violet");
+    expect(presetForHex("#a684ff")).toBe("violet");
+    expect(presetForHex("#7f22fe")).toBe("violet");
     expect(presetForHex("#123456")).toBeNull();
-    expect(accentHex("red", null)).toBe("#FF6964");
-    expect(accentHex("red", "#123456")).toBe("#123456");
+    expect(accentHex("red", null, false)).toBe("#E7000B");
+    expect(accentHex("red", null, true)).toBe("#FF6467");
+    expect(accentHex("red", "#123456", true)).toBe("#123456");
+    expect(accentCss("red", null)).toBe("light-dark(#E7000B, #FF6467)");
+    expect(accentCss("red", "#123456")).toBe("#123456");
     expect(accentLabel("red", null)).toBe("Red");
     expect(accentLabel("red", "#abcdef")).toBe("#ABCDEF");
   });
@@ -68,9 +81,9 @@ describe("the starter Copy prompt's accent", () => {
     const prompt = buildStarterPrompt(settings);
     expect(starterCommand(settings)).toContain("/r/starter/violet.json");
     expect(prompt).toContain("violet accent");
-    expect(prompt).toContain("(violet, #AC82F0)");
+    expect(prompt).toContain("(violet, light-dark(#7F22FE, #A684FF))");
     // An existing app gets the tokens' blue, so it sets the preset itself.
-    expect(prompt).toContain(`put style={{ "--fluid-accent": "#AC82F0" }} on <html>`);
+    expect(prompt).toContain(`put style={{ "--fluid-accent": "light-dark(#7F22FE, #A684FF)" }} on <html>`);
   });
 
   it("asks nothing extra of an existing app for the default blue", () => {

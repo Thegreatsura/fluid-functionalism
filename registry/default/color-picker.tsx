@@ -1743,6 +1743,10 @@ interface SwatchCellProps extends Omit<HTMLAttributes<HTMLButtonElement>, "color
   label?: string;
   index: number;
   selected: boolean;
+  /** The pointer is on this cell. */
+  lit: boolean;
+  /** …and pressing. */
+  pressed: boolean;
   registerItem: (index: number, element: HTMLElement | null) => void;
   onPick: (color: string) => void;
 }
@@ -1750,7 +1754,7 @@ interface SwatchCellProps extends Omit<HTMLAttributes<HTMLButtonElement>, "color
 // forwardRef and the rest props: a labeled cell is a Tooltip's asChild
 // trigger, which hands it a ref and its pointer and focus handlers.
 const SwatchCell = forwardRef<HTMLButtonElement, SwatchCellProps>(
-  ({ color, label, index, selected, registerItem, onPick, className, ...props }, forwardedRef) => {
+  ({ color, label, index, selected, lit, pressed, registerItem, onPick, className, ...props }, forwardedRef) => {
     const shape = useShape();
     const ref = useRef<HTMLButtonElement>(null);
     useRegisterFluidHoverItem(registerItem, index, ref);
@@ -1776,14 +1780,18 @@ const SwatchCell = forwardRef<HTMLButtonElement, SwatchCellProps>(
         )}
         onClick={() => onPick(color)}
       >
+        {/* The selected band, 2px in. Under the pointer it dims a step,
+            the way a solid Button answers hover, and pressed it thins by
+            1px a side, as the hover fill does. */}
         <span
           aria-hidden
           className={cn(
-            "absolute inset-0.5 bg-foreground transition-opacity duration-80",
-            selected ? "opacity-100" : "opacity-0"
+            "absolute bg-foreground transition-[opacity,inset,border-radius] duration-80",
+            lit && pressed ? "inset-[3px]" : "inset-0.5",
+            !selected ? "opacity-0" : lit && !pressed ? "opacity-80" : "opacity-100"
           )}
-          // Concentric with the cell, 2px in.
-          style={{ borderRadius: nestedRadius(shape.containerRadius, 2) }}
+          // Concentric with the cell.
+          style={{ borderRadius: nestedRadius(shape.containerRadius, lit && pressed ? 3 : 2) }}
         />
         <span
           className={cn("relative block size-7 overflow-hidden", shape.bg)}
@@ -1854,8 +1862,8 @@ function SwatchStrip({
       : resolvedSwatches[color] ?? color.toLowerCase();
   });
   const selectedIndex = normalized.indexOf(normalizedCurrent);
-  // Hovering the selected swatch: the hover fill sits under its solid cell,
-  // so the ring above (as on a Calendar range end) shows instead.
+  // Hovering the selected swatch: its band answers the press itself, so the
+  // fill under it stays at rest.
   const litSelected = activeIndex !== null && activeIndex === selectedIndex;
 
   // Held from the press until the button comes up anywhere, as the Calendar
@@ -1884,31 +1892,20 @@ function SwatchStrip({
         onMouseUp={() => setPressed(false)}
       >
         {/* The hover fill, pressed like a ghost Button (the Calendar's day
-            recipe): a surface 1px in with a same-color 1px spread at rest,
-            the spread collapsing on press so the fill shrinks 1px a side
-            and steps to the active token. */}
+            recipe): a surface 3px in with a same-color 1px spread at rest,
+            so its edge sits 2px in, where the selected band's does; the
+            spread collapses on press, shrinking it 1px a side as it steps
+            to the active token. */}
         <FluidHoverHighlight
           hover={hover}
           className={cn(
-            "bg-transparent before:pointer-events-none before:absolute before:inset-px before:rounded-[inherit] before:bg-[var(--swatch-press)] before:transition-[box-shadow,background-color] before:[transition-duration:180ms,80ms] before:[transition-timing-function:cubic-bezier(0.23,1,0.32,1),ease]",
+            "bg-transparent before:pointer-events-none before:absolute before:inset-[3px] before:bg-[var(--swatch-press)] before:transition-[box-shadow,background-color] before:[transition-duration:180ms,80ms] before:[transition-timing-function:cubic-bezier(0.23,1,0.32,1),ease]",
             shape.container,
+            // The band's radius 2px in, less the 1px spread.
+            shape.variant === "pill" ? "before:rounded-full" : "before:rounded-[9px]",
             pressed && !litSelected
               ? "[--swatch-press:var(--active)] before:shadow-[0_0_0_0px_var(--swatch-press)] before:[transition-duration:80ms,80ms]"
               : "[--swatch-press:var(--hover)] before:shadow-[0_0_0_1px_var(--swatch-press)]"
-          )}
-        />
-        {/* Over the selected swatch's band, the highlight brings an inner
-            ring on top instead: on the band's outer edge (2px in), in the
-            page color, at 40%, gliding on the same rect and spring. Pressed,
-            it goes solid. */}
-        <FluidHoverHighlight
-          hover={hover}
-          className={cn(
-            "z-20 bg-transparent before:pointer-events-none before:absolute before:inset-0.5 before:border before:border-background before:transition-opacity before:duration-80",
-            shape.container,
-            // The band's radius, 2px in from the cell's.
-            shape.variant === "pill" ? "before:rounded-full" : "before:rounded-[10px]",
-            !litSelected ? "before:opacity-0" : pressed ? "before:opacity-100" : "before:opacity-40"
           )}
         />
         {items.map(({ color, label }, i) => {
@@ -1918,6 +1915,8 @@ function SwatchStrip({
               label={label}
               index={i}
               selected={i === selectedIndex}
+              lit={activeIndex === i}
+              pressed={pressed}
               registerItem={registerItem}
               onPick={onPick}
             />

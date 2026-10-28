@@ -26,12 +26,12 @@ const displayOrder: { slug: string; side?: "right" }[] = [
   { slug: "input-message" },                  // band 1 · medium left
   { slug: "thinking-indicator" },
   { slug: "color-picker", side: "right" },    // band 2 · large right
-  { slug: "tooltip" },
+  { slug: "combobox" },
   { slug: "switch" },
   { slug: "card" },                           // band 3 · medium left
   { slug: "select" },
   { slug: "command-menu", side: "right" },    // band 4 · large right
-  { slug: "combobox" },
+  { slug: "tooltip" },
   { slug: "badge" },
   { slug: "sidebar" },                        // band 5 · large left
   { slug: "radio-group" },

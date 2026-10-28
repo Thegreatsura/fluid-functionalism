@@ -1732,9 +1732,10 @@ ColorSwatch.displayName = "ColorSwatch";
 
 // One cell of the strip: the swatch with 4px of room, so the cells tile with
 // no gap and the hover background, a cell wide, rings the swatch. The cell is
-// the button; the swatch inside only paints. Selected, the cell fills with
-// the foreground, as a Calendar range end does: a frame no swatch color can
-// swallow, the hover background gliding beneath it.
+// the button; the swatch inside only paints. Selected, the foreground fills
+// a band 2px in, as a Calendar range end fills its cell: a 2px frame round
+// the swatch that no swatch color can swallow, the hover background gliding
+// beneath it.
 const SWATCH_HAIRLINE = "inset 0 0 0 1px rgba(127,127,127,0.25)";
 
 interface SwatchCellProps extends Omit<HTMLAttributes<HTMLButtonElement>, "color" | "onClick"> {
@@ -1769,13 +1770,21 @@ const SwatchCell = forwardRef<HTMLButtonElement, SwatchCellProps>(
         aria-label={label ?? `Select color ${color}`}
         aria-pressed={selected}
         className={cn(
-          "relative z-10 shrink-0 cursor-pointer p-1 outline-none transition-[background-color] duration-80 focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
+          "relative z-10 shrink-0 cursor-pointer p-1 outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
           shape.container,
-          selected && "bg-foreground",
           className
         )}
         onClick={() => onPick(color)}
       >
+        <span
+          aria-hidden
+          className={cn(
+            "absolute inset-0.5 bg-foreground transition-opacity duration-80",
+            selected ? "opacity-100" : "opacity-0"
+          )}
+          // Concentric with the cell, 2px in.
+          style={{ borderRadius: nestedRadius(shape.containerRadius, 2) }}
+        />
         <span
           className={cn("relative block size-7 overflow-hidden", shape.bg)}
           style={{ ...CHECKER_BG, boxShadow: SWATCH_HAIRLINE }}
@@ -1887,14 +1896,17 @@ function SwatchStrip({
               : "[--swatch-press:var(--hover)] before:shadow-[0_0_0_1px_var(--swatch-press)]"
           )}
         />
-        {/* Over the selected swatch's solid cell, the highlight brings an
-            inner ring on top instead: 1px in, in the page color, at 40%,
-            gliding on the same rect and spring. Pressed, it goes solid. */}
+        {/* Over the selected swatch's band, the highlight brings an inner
+            ring on top instead: on the band's outer edge (2px in), in the
+            page color, at 40%, gliding on the same rect and spring. Pressed,
+            it goes solid. */}
         <FluidHoverHighlight
           hover={hover}
           className={cn(
-            "z-20 bg-transparent before:pointer-events-none before:absolute before:inset-px before:rounded-[inherit] before:border before:border-background before:transition-opacity before:duration-80",
+            "z-20 bg-transparent before:pointer-events-none before:absolute before:inset-0.5 before:border before:border-background before:transition-opacity before:duration-80",
             shape.container,
+            // The band's radius, 2px in from the cell's.
+            shape.variant === "pill" ? "before:rounded-full" : "before:rounded-[10px]",
             !litSelected ? "before:opacity-0" : pressed ? "before:opacity-100" : "before:opacity-40"
           )}
         />

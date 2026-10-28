@@ -213,6 +213,8 @@ function SettingRow({
   const snapshot = useRef<HTMLElement | null>(null);
   const leaving = useRef<HTMLElement | null>(null);
   const rolls = useRef(0);
+  const entering = useRef<ReturnType<typeof animate> | null>(null);
+  const lastChange = useRef(0);
   // Layout effects: the new value is already in the DOM, and the roll has
   // to start before it paints at rest.
   useLayoutEffect(() => {
@@ -227,6 +229,23 @@ function SettingRow({
     const content = rollingParts(trigger);
     if (!content.length) return;
     const y = index > from ? ROLL : -ROLL;
+
+    // A held key repeats faster than a roll lasts: restarting it each time
+    // keeps the value faded out at its start. A change within a roll's
+    // length of the last one snaps to the new value instead, so a held key
+    // steps through values and the next press after a pause rolls again.
+    const now = performance.now();
+    const quick = now - lastChange.current < spring.moderate.duration * 1000;
+    lastChange.current = now;
+    if (quick) {
+      entering.current?.stop();
+      entering.current = null;
+      rolls.current++;
+      animate(content, { opacity: 1, y: 0 }, { duration: 0 });
+      trigger.style.removeProperty("mask-image");
+      trigger.style.removeProperty("-webkit-mask-image");
+      return;
+    }
 
     const old = snapshot.current;
     if (old) {
@@ -283,7 +302,11 @@ function SettingRow({
         if (leaving.current === old) leaving.current = null;
       });
     }
-    enter.then(done);
+    entering.current = enter;
+    enter.then(() => {
+      if (entering.current === enter) entering.current = null;
+      done();
+    });
   }, [index, reduceMotion]);
   // After every render, so the copy has whatever the trigger shows now (an
   // icon set swapped, a label renamed), with none of a roll's inline styles.

@@ -177,11 +177,17 @@ export function SiteCommandMenuTrigger() {
         <SidebarMenuButton icon={icons.search} onClick={() => setOpen(true)}>
           Search
         </SidebarMenuButton>
-        {/* The key chip of the right panel's shortcuts: 18px on a 2px-round
-            tint, 1px down to stay centered where the 20px badge sits. Touch
-            screens have no keyboard to press it with. */}
-        <SidebarMenuBadge className="mt-px h-[18px] min-w-[18px] rounded-[2px] bg-[light-dark(rgb(23_23_23/0.15),rgb(245_245_245/0.08))] font-mono text-site-micro leading-none [@media(hover:none)]:hidden">
-          {mac ? "⌘K" : "Ctrl K"}
+        {/* The right panel's key chips, one per key: 18px on a 2px-round
+            tint, 1px down to stay centered where the 20px badge sat. */}
+        <SidebarMenuBadge className="mt-px gap-0.5 px-0 font-mono text-site-micro leading-none [@media(hover:none)]:hidden">
+          {(mac ? ["⌘", "K"] : ["Ctrl", "K"]).map((key) => (
+            <kbd
+              key={key}
+              className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[2px] bg-[light-dark(rgb(23_23_23/0.15),rgb(245_245_245/0.08))] px-1 font-[inherit]"
+            >
+              {key}
+            </kbd>
+          ))}
         </SidebarMenuBadge>
       </SidebarMenuItem>
     </SidebarMenu>

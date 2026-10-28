@@ -460,9 +460,7 @@ export function GitHubStarButton() {
       size="sm"
       leadingIcon={GitHubIcon}
       aria-label="View on GitHub"
-      // -mr-1: the count's last digit ends 8px in, under the hairline's end
-      // and the chevrons, not at the button's own 12px padding.
-      className={cn("-mr-1", shapeCtx.button)}
+      className={shapeCtx.button}
       onClick={() =>
         window.open(
           `https://github.com/${REPO}`,

@@ -689,7 +689,7 @@ const [color, setColor] = useState("#6B97FF");
       "onValueChange: (value, parsed) => void. Fired on every change with the formatted string and a parsed color object.",
       'format: "hex" | "rgb" | "hsl" | "oklch". Controlled format selection.',
       'defaultFormat: "hex" | "rgb" | "hsl" | "oklch" (default "hex"). Initial format when uncontrolled.',
-      "swatches: string[]. Optional preset swatches; the strip is hidden when omitted.",
+      "swatches: (string | { color, label? })[]. Optional preset swatches; a label names the color in a tooltip and to screen readers. The strip is hidden when omitted.",
       "hideEyedropper: boolean (default false). Force-hide the eyedropper button.",
       "ColorPickerPopover triggerLabel: string. Optional label rendered next to the color tile.",
       "ColorPickerPopover triggerShowValue: boolean (default true). Show the hex value next to the tile.",

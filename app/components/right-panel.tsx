@@ -94,10 +94,10 @@ function AccentContrastNote({ hex, dark }: { hex: string; dark: boolean }) {
 }
 
 /** The accent presets as the picker's swatches, in panel order: each
- *  preset's shade for the theme showing. */
+ *  preset's shade for the theme showing, named in its tooltip. */
 const ACCENT_SWATCHES = {
-  light: ACCENT_ORDER.map((p) => ACCENT_PRESETS[p].light),
-  dark: ACCENT_ORDER.map((p) => ACCENT_PRESETS[p].dark),
+  light: ACCENT_ORDER.map((p) => ({ color: ACCENT_PRESETS[p].light, label: ACCENT_PRESETS[p].label })),
+  dark: ACCENT_ORDER.map((p) => ({ color: ACCENT_PRESETS[p].dark, label: ACCENT_PRESETS[p].label })),
 };
 
 /** A color as a 6-digit uppercase hex (the accent has no alpha). */

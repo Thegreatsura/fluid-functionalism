@@ -3,6 +3,7 @@
 import {
   createContext,
   forwardRef,
+  Fragment,
   useContext,
   useRef,
   useState,
@@ -100,8 +101,9 @@ interface ColorPickerProps
   format?: ColorFormat;
   defaultFormat?: ColorFormat;
   onFormatChange?: (format: ColorFormat) => void;
-  /** Any CSS color, named colors ("tomato") included. */
-  swatches?: string[];
+  /** Any CSS color, named colors ("tomato") included. A `{ color, label }`
+   *  swatch names its color in a tooltip and to screen readers. */
+  swatches?: ColorSwatchItem[];
   /** The button already hides itself where `window.EyeDropper` is missing
    *  (the API is Chromium-only). */
   hideEyedropper?: boolean;
@@ -135,6 +137,9 @@ interface ColorPickerPopoverProps extends ColorPickerProps {
   /** Called when the open state would change (fires even when controlled). */
   onOpenChange?: (open: boolean) => void;
 }
+
+/** A swatch for the picker's strip: a CSS color, or one with a name. */
+type ColorSwatchItem = string | { color: string; label?: string };
 
 interface ColorSwatchProps
   extends Omit<HTMLAttributes<HTMLButtonElement>, "color"> {
@@ -1725,15 +1730,78 @@ ColorSwatch.displayName = "ColorSwatch";
 // SwatchStrip
 // ---------------------------------------------------------------------------
 
+// One cell of the strip: the swatch with 4px of room, so the cells tile with
+// no gap and the hover background, a cell wide, rings the swatch. The cell is
+// the button; the swatch inside only paints.
+const SWATCH_HAIRLINE = "inset 0 0 0 1px rgba(127,127,127,0.25)";
+const SWATCH_SELECTED = `${SWATCH_HAIRLINE}, 0 0 0 2px var(--background), 0 0 0 4px var(--fluid-accent, #6B97FF)`;
+
+interface SwatchCellProps extends Omit<HTMLAttributes<HTMLButtonElement>, "color" | "onClick"> {
+  color: string;
+  label?: string;
+  index: number;
+  selected: boolean;
+  registerItem: (index: number, element: HTMLElement | null) => void;
+  onPick: (color: string) => void;
+}
+
+// forwardRef and the rest props: a labeled cell is a Tooltip's asChild
+// trigger, which hands it a ref and its pointer and focus handlers.
+const SwatchCell = forwardRef<HTMLButtonElement, SwatchCellProps>(
+  ({ color, label, index, selected, registerItem, onPick, className, ...props }, forwardedRef) => {
+    const shape = useShape();
+    const ref = useRef<HTMLButtonElement>(null);
+    useRegisterFluidHoverItem(registerItem, index, ref);
+    const setRef = useCallback(
+      (node: HTMLButtonElement | null) => {
+        ref.current = node;
+        if (typeof forwardedRef === "function") forwardedRef(node);
+        else if (forwardedRef) forwardedRef.current = node;
+      },
+      [forwardedRef]
+    );
+    return (
+      <button
+        {...props}
+        ref={setRef}
+        type="button"
+        aria-label={label ?? `Select color ${color}`}
+        aria-pressed={selected}
+        className={cn(
+          "relative z-10 shrink-0 cursor-pointer p-1 outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
+          shape.container,
+          className
+        )}
+        onClick={() => onPick(color)}
+      >
+        <span
+          className={cn("relative block size-7 overflow-hidden transition-shadow duration-80", shape.bg)}
+          style={{ ...CHECKER_BG, boxShadow: selected ? SWATCH_SELECTED : SWATCH_HAIRLINE }}
+        >
+          <span className="absolute inset-0" style={{ backgroundColor: color }} />
+        </span>
+      </button>
+    );
+  }
+);
+
+SwatchCell.displayName = "SwatchCell";
+
 function SwatchStrip({
   swatches,
   current,
   onPick,
 }: {
-  swatches: string[];
+  swatches: ColorSwatchItem[];
   current: string;
   onPick: (color: string) => void;
 }) {
+  const shape = useShape();
+  const items = useMemo(
+    () => swatches.map((sw) => (typeof sw === "string" ? { color: sw, label: undefined } : sw)),
+    [swatches]
+  );
+
   // Selection compares normalized lowercase hex (alpha included), so "#FFF",
   // "#ffffff" and "rgb(255, 255, 255)" all mark the same swatch.
   const normalizedCurrent = useMemo(() => {
@@ -1748,34 +1816,51 @@ function SwatchStrip({
   const resolvedSwatches = useMemo(() => {
     const resolved: Record<string, string> = {};
     if (!isClient) return resolved;
-    for (const sw of swatches) {
-      if (!parseColor(sw)) {
-        const p = resolveCssColor(sw);
-        if (p) resolved[sw] = rgbToHexStr(p.r, p.g, p.b, p.a).toLowerCase();
+    for (const { color } of items) {
+      if (!parseColor(color)) {
+        const p = resolveCssColor(color);
+        if (p) resolved[color] = rgbToHexStr(p.r, p.g, p.b, p.a).toLowerCase();
       }
     }
     return resolved;
-  }, [isClient, swatches]);
+  }, [isClient, items]);
+
+  // One fluid hover across the grid: the background follows the pointer to
+  // the nearest swatch, row and column alike.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hover = useFluidHover(containerRef, { axis: "xy" });
+  // registerItem is stable; the handlers object is new each render.
+  const { registerItem, handlers } = hover;
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {swatches.map((sw, i) => {
+    // -m-1: the cells' 4px of room sits outside the strip's edges, so the
+    // swatches line up with the fields above.
+    <div ref={containerRef} className="relative -m-1 flex flex-wrap" {...handlers}>
+      <FluidHoverHighlight hover={hover} className={shape.container} />
+      {items.map(({ color, label }, i) => {
         // Until a named swatch is resolved, its raw name never equals a hex,
         // so it renders unselected while hydrating.
-        const parsed = parseColor(sw);
+        const parsed = parseColor(color);
         const normalized = parsed
           ? rgbToHexStr(parsed.r, parsed.g, parsed.b, parsed.a).toLowerCase()
-          : resolvedSwatches[sw] ?? sw.toLowerCase();
-        const isSelected = normalized === normalizedCurrent;
-        return (
-          // Index in the key: the same color may appear twice in a list.
-          <ColorSwatch
-            key={`${sw}-${i}`}
-            color={sw}
-            size={28}
-            selected={isSelected}
-            onClick={() => onPick(sw)}
+          : resolvedSwatches[color] ?? color.toLowerCase();
+        const cell = (
+          <SwatchCell
+            color={color}
+            label={label}
+            index={i}
+            selected={normalized === normalizedCurrent}
+            registerItem={registerItem}
+            onPick={onPick}
           />
+        );
+        // Index in the key: the same color may appear twice in a list.
+        return label ? (
+          <Tooltip key={`${color}-${i}`} content={label} delayDuration={300}>
+            {cell}
+          </Tooltip>
+        ) : (
+          <Fragment key={`${color}-${i}`}>{cell}</Fragment>
         );
       })}
     </div>
@@ -2442,6 +2527,7 @@ export {
 
 export type {
   ColorPickerProps,
+  ColorSwatchItem,
   ColorPickerPopoverProps,
   ColorSwatchProps,
   ColorFormat,

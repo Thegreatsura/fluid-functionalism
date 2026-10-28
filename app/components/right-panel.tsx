@@ -90,8 +90,12 @@ function AccentContrastNote({ hex }: { hex: string }) {
   );
 }
 
-/** The accent presets as the picker's swatches, in panel order. */
-const ACCENT_SWATCHES = ACCENT_ORDER.map((p) => ACCENT_PRESETS[p].hex);
+/** The accent presets as the picker's swatches, in panel order: each
+ *  preset's shade for the theme showing. */
+const ACCENT_SWATCHES = {
+  light: ACCENT_ORDER.map((p) => ACCENT_PRESETS[p].light),
+  dark: ACCENT_ORDER.map((p) => ACCENT_PRESETS[p].dark),
+};
 
 /** A color as a 6-digit uppercase hex (the accent has no alpha). */
 const toHex = ({ r, g, b }: { r: number; g: number; b: number }) =>
@@ -568,7 +572,7 @@ export function SettingsContent() {
           <ColorPickerPopover
             value={accent.hex}
             onValueChange={(_, parsed) => accent.setColor(toHex(parsed))}
-            swatches={ACCENT_SWATCHES}
+            swatches={ACCENT_SWATCHES[accent.dark ? "dark" : "light"]}
             triggerLabel={accentLabel(accent.preset, accent.custom)}
             triggerShowValue={false}
             triggerClassName="h-7 border-transparent px-2 text-site-body [&_span]:px-0 [&_span]:text-foreground"

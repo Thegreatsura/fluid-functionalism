@@ -17,7 +17,7 @@ import { SettingsToast } from "@/lib/docs/settings-toast";
 import { SettingsPersistence } from "@/lib/docs/settings-persistence";
 import { readCustomAccent, readHeadingFont, readSettings } from "@/lib/docs/site-settings";
 import { AccentProvider, AccentShortcut } from "@/lib/docs/accent";
-import { accentHex } from "@/lib/accent";
+import { accentCss } from "@/lib/accent";
 import { HeadingFontProvider, HeadingFontShortcut } from "@/lib/docs/heading-font";
 import googleFonts from "@/lib/docs/google-fonts.json";
 import { customHeadingVars, googleFontWeights, type GoogleFont } from "@/lib/docs/google-fonts";
@@ -109,7 +109,7 @@ export default async function RootLayout({
       data-font={headingFont}
       style={
         {
-          "--fluid-accent": accentHex(settings.accent, customAccent),
+          "--fluid-accent": accentCss(settings.accent, customAccent),
           ...(customFont ? customHeadingVars(customFont, customWeight) : {}),
         } as React.CSSProperties
       }

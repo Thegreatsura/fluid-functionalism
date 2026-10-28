@@ -42,7 +42,7 @@ import {
 } from "@/lib/docs/icon-playground";
 import { useBase, installUrl, type Base } from "@/lib/base-context";
 import { useAccent } from "@/lib/docs/accent";
-import { ACCENT_ORDER, ACCENT_PRESETS } from "@/lib/accent";
+import { ACCENT_ORDER, ACCENT_PRESETS, accentCss } from "@/lib/accent";
 
 // ---------------------------------------------------------------------------
 // The site's own command menu: ⌘K anywhere. Every page, every setting the
@@ -119,7 +119,8 @@ const SHAPES: { value: ShapeVariant; label: string; icon: IconName }[] = [
 /** Each accent preset's own color in place of an icon: a round swatch in
  *  the icon's box, three quarters of it across so it sits level with the
  *  line icons around it, edged like the color picker's tiles. */
-function accentSwatch(hex: string): IconComponent {
+/** `color` is any CSS color: a preset's light-dark() follows the theme. */
+function accentSwatch(color: string): IconComponent {
   function AccentSwatch({ size = 16, className }: IconComponentProps) {
     return (
       <span
@@ -129,7 +130,7 @@ function accentSwatch(hex: string): IconComponent {
       >
         <span
           className="rounded-full shadow-[inset_0_0_0_1px_rgba(127,127,127,0.25)]"
-          style={{ width: size * 0.75, height: size * 0.75, backgroundColor: hex }}
+          style={{ width: size * 0.75, height: size * 0.75, backgroundColor: color }}
         />
       </span>
     );
@@ -137,7 +138,7 @@ function accentSwatch(hex: string): IconComponent {
   return AccentSwatch;
 }
 const ACCENT_SWATCHES = Object.fromEntries(
-  ACCENT_ORDER.map((a) => [a, accentSwatch(ACCENT_PRESETS[a].hex)])
+  ACCENT_ORDER.map((a) => [a, accentSwatch(accentCss(a, null))])
 ) as Record<(typeof ACCENT_ORDER)[number], IconComponent>;
 const SIZES: { value: SizeVariant; label: string }[] = [
   { value: "default", label: "Default" },

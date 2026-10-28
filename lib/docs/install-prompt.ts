@@ -7,7 +7,7 @@ import { SETTING_LABELS, describeSettings } from "@/lib/starter/install";
 import { starterSlug, type StarterSettings } from "@/lib/starter/settings";
 import type { HeadingFont } from "@/lib/docs/site-settings";
 import { googleFontWeights, nearestGoogleFontWeight, type GoogleFont } from "@/lib/docs/google-fonts";
-import { ACCENT_PRESETS, DEFAULT_ACCENT, accentHex } from "@/lib/accent";
+import { ACCENT_PRESETS, DEFAULT_ACCENT, accentCss } from "@/lib/accent";
 import {
   SITE,
   OVERWRITE_NOTE,
@@ -242,8 +242,8 @@ export function buildStarterPrompt(
   const summary = describeSettings(settings, customAccent);
   // The color an existing app has to set itself: the tokens item installs
   // the default blue.
-  const accent = accentHex(settings.accent, customAccent);
-  const setAccent = accent !== ACCENT_PRESETS[DEFAULT_ACCENT].hex;
+  const accent = accentCss(settings.accent, customAccent);
+  const setAccent = accent !== accentCss(DEFAULT_ACCENT, null);
   const lines: string[] = [];
   lines.push(
     `Start a new React app with Fluid Functionalism: every component installed, every system wired, set to ${summary}${family ? `, ${family} headings` : ""}.`,
@@ -262,7 +262,7 @@ export function buildStarterPrompt(
   lines.push(
     customAccent
       ? `- app/layout.tsx sets the accent on <html> as --fluid-accent (focus rings, the switch track and every accented detail read it). Change its value to "${customAccent}", the color picked on the site.`
-      : `- app/layout.tsx sets the accent on <html> as --fluid-accent (${ACCENT_PRESETS[settings.accent].label.toLowerCase()}, ${ACCENT_PRESETS[settings.accent].hex}): focus rings, the switch track and every accented detail read it.`,
+      : `- app/layout.tsx sets the accent on <html> as --fluid-accent (${ACCENT_PRESETS[settings.accent].label.toLowerCase()}, ${accent}): focus rings, the switch track and every accented detail read it.`,
   );
   lines.push("- app/page.tsx: an app shell (sidebar and topbar) around a home screen to replace.");
   lines.push(

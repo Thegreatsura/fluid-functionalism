@@ -23,6 +23,8 @@ import googleFonts from "@/lib/docs/google-fonts.json";
 import { customHeadingVars, googleFontWeights, type GoogleFont } from "@/lib/docs/google-fonts";
 import { BaseProvider } from "@/lib/base-context";
 import { SidebarLayout } from "@/app/components/sidebar-layout";
+import { GitHubStarsProvider } from "@/app/components/right-panel";
+import { getGitHubStars } from "@/lib/github-stars";
 import { latestMarks } from "@/lib/changelog/load";
 
 // The optional serif for headings (right panel > Heading font, or F). Variable on both
@@ -73,7 +75,9 @@ export default async function RootLayout({
   // Server-side read of the sidebar's persisted open state so the rail
   // renders in its last position with no post-hydration flicker. A missing
   // cookie means open — the component's own default.
-  const cookieStore = await cookies();
+  // The star count rides along so the panel's GitHub button paints with
+  // its number instead of widening when a client fetch lands.
+  const [cookieStore, stars] = await Promise.all([cookies(), getGitHubStars()]);
   const sidebarDefaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
   // The "Make them yours" settings, saved one cookie each by
   // SettingsPersistence: rendering them here means a reload paints the
@@ -132,9 +136,11 @@ export default async function RootLayout({
                         <SettingsPersistence />
                         {/* The sidebar's New dots: what the latest changelog
                             release lists as New, read from content/changelog. */}
-                        <SidebarLayout defaultOpen={sidebarDefaultOpen} marks={latestMarks()}>
-                          {children}
-                        </SidebarLayout>
+                        <GitHubStarsProvider stars={stars}>
+                          <SidebarLayout defaultOpen={sidebarDefaultOpen} marks={latestMarks()}>
+                            {children}
+                          </SidebarLayout>
+                        </GitHubStarsProvider>
                         <SettingsToast />
                         <Analytics />
                         <SpeedInsights />

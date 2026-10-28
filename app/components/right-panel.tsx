@@ -404,40 +404,59 @@ function GitHubIcon({ size = 16, className }: { size?: number; className?: strin
 }
 
 /** Standalone GitHub star-count button — rendered next to the "Make them yours" heading. */
-// One fetch per page load, shared by every instance (right panel + the
-// sidebar sheet's footer). Without the cache, each sheet open remounted the
-// button and refired the unauthenticated API call — GitHub rate-limits those
-// per IP, after which the count silently disappeared.
+// The count comes from the root layout, rendered on the server, so the button
+// paints with its number. Only when that came back empty (GitHub slow or
+// refusing) does the client ask, through /api/stars: that route shares one
+// GitHub call a minute across visitors, where calling GitHub from the browser
+// spent each visitor's own 60-an-hour limit, after which the count vanished.
+const GitHubStarsContext = createContext<number | null>(null);
+
+export function GitHubStarsProvider({
+  stars,
+  children,
+}: {
+  stars: number | null;
+  children: ReactNode;
+}) {
+  return <GitHubStarsContext.Provider value={stars}>{children}</GitHubStarsContext.Provider>;
+}
+
+// One client fetch at a time, shared by every instance (right panel + the
+// sidebar sheet's footer). A miss clears it, so the next mount asks again.
 let cachedStars: number | null = null;
 let starsPromise: Promise<number | null> | null = null;
 
 function fetchStars(): Promise<number | null> {
-  starsPromise ??= fetch(`https://api.github.com/repos/${REPO}`, {
-    headers: { Accept: "application/vnd.github.v3+json" },
-  })
+  starsPromise ??= fetch("/api/stars")
     .then((res) => (res.ok ? res.json() : null))
     .then((data) => {
-      if (data?.stargazers_count != null) cachedStars = data.stargazers_count;
+      if (typeof data?.stars === "number") cachedStars = data.stars;
       return cachedStars;
     })
-    .catch(() => null);
+    .catch(() => null)
+    .then((count) => {
+      if (count === null) starsPromise = null;
+      return count;
+    });
   return starsPromise;
 }
 
 export function GitHubStarButton() {
   const shapeCtx = useShape();
-  const [stars, setStars] = useState<number | null>(cachedStars);
+  const serverStars = useContext(GitHubStarsContext);
+  const [fetchedStars, setFetchedStars] = useState<number | null>(cachedStars);
+  const stars = serverStars ?? fetchedStars;
 
   useEffect(() => {
-    if (cachedStars !== null) return;
+    if (serverStars !== null || cachedStars !== null) return;
     let cancelled = false;
     fetchStars().then((count) => {
-      if (!cancelled && count !== null) setStars(count);
+      if (!cancelled && count !== null) setFetchedStars(count);
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [serverStars]);
 
   return (
     <Button

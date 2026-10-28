@@ -904,7 +904,9 @@ export function RightPanel() {
           edges. The fade sits on the viewport itself, so it starts at the
           panel's true edge — any breathing room lives INSIDE the scroller,
           under the mask, never outside pushing the gradient down. */}
-      <ScrollArea viewportClassName="scroll-fade max-h-[calc(100svh-2rem)]">
+      {/* max-h leaves room for the credit pinned under the panel: its 32px
+          row and 16px over it, on top of the 16px insets above and below. */}
+      <ScrollArea viewportClassName="scroll-fade max-h-[calc(100svh-2rem-48px)]">
       {/* Groups stack like the left sidebar's: each later one brings its own
           16px (pt-4) above its label. */}
       <div className="flex flex-col">
@@ -913,12 +915,9 @@ export function RightPanel() {
         // so the card's one-line labels would widen it past the rail;
         // contained, it takes the rail's width and the values truncate.
         // A group like the left sidebar's: no card, a small label with the
-        // star count on its right, a hairline under it. The credit tops the
-        // panel where Search tops the sidebar, one row, and the group starts
-        // 16px under it as the sidebar's labeled groups do.
+        // star count on its right, a hairline under it.
         <aside className="contain-inline-size">
-          <Credit className="h-8" />
-          <div className="mt-4 flex h-8 items-center justify-between pl-2">
+          <div className="flex h-8 items-center justify-between pl-2">
             <h2 className="text-site-caption text-foreground">Make them yours</h2>
             <GitHubStarButton />
           </div>
@@ -931,6 +930,10 @@ export function RightPanel() {
         <RightRailTarget />
       </div>
       </ScrollArea>
+      {/* The credit, pinned to the page's bottom-right corner in the panel's
+          column: 16px off the bottom like the panel's 16px off the top, and
+          fading with it. */}
+      <Credit className="fixed bottom-4 right-4 h-8 w-64" />
       </motion.div>
     </motion.div>
     </>

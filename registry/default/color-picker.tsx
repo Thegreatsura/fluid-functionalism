@@ -21,7 +21,7 @@ import { Popover } from "@base-ui/react/popover";
 import { Menu } from "@base-ui/react/menu";
 import { NumberField } from "@base-ui/react/number-field";
 import { cn } from "@/lib/utils";
-import { spring } from "@/lib/springs";
+import { spring, exitFallbackMs } from "@/lib/springs";
 import { fontWeights } from "@/lib/font-weight";
 import { nestedRadius, useShape, shapeMap } from "@/lib/shape-context";
 import { SizeProvider, useSize, typeClass, type SizeVariant } from "@/lib/size-context";
@@ -30,6 +30,7 @@ import { surfaceClasses } from "@/lib/surface-classes";
 import { useIcons } from "@/lib/icon-context";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { Elevated } from "@/lib/elevated";
+import { popupMotionClass } from "@/lib/popup";
 import { Slider } from "@/registry/radix/slider";
 import { Tooltip, TooltipProvider } from "@/registry/radix/tooltip";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
@@ -1007,15 +1008,17 @@ function FormatDropdown({
           sideOffset={6}
           className="z-[60] outline-none"
         >
+          {/* The positioner's data-side flips the origin and the 4px enter
+              offset when the menu opens above, as Dropdown's does. */}
           <motion.div
-            initial={{ opacity: 0, y: -4, scaleY: 0.96 }}
+            className={popupMotionClass}
+            initial={{ opacity: 0, y: "var(--popup-enter-y)", scaleY: 0.96 }}
             animate={
               open
                 ? { opacity: 1, y: 0, scaleY: 1 }
-                : { opacity: 0, y: -4, scaleY: 0.96 }
+                : { opacity: 0, y: "var(--popup-enter-y)", scaleY: 0.96 }
             }
             transition={open ? spring.fast : spring.fast.exit}
-            style={{ transformOrigin: "top center" }}
             // The close held Base UI's unmount (preventUnmountOnClose); release it once
             // the exit spring has finished so the close animation fully plays.
             onAnimationComplete={() => {
@@ -2435,11 +2438,10 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
     // Release Base UI's deferred unmount once the exit tween has played.
     // onAnimationComplete on the motion.div is the primary signal; this
     // timeout is a fallback for throttled/background tabs where rAF-driven
-    // animation callbacks can stall (spring.moderate.exit is 120ms — 150ms
-    // covers it with margin).
+    // animation callbacks can stall.
     useEffect(() => {
       if (open) return;
-      const id = setTimeout(() => actionsRef.current?.unmount(), 150);
+      const id = setTimeout(() => actionsRef.current?.unmount(), exitFallbackMs(spring.fast));
       return () => clearTimeout(id);
     }, [open, actionsRef]);
 
@@ -2455,6 +2457,45 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
       ? rgbToHexStr(parsed.r, parsed.g, parsed.b, 1).replace(/^#/, "").toUpperCase()
       : currentValue;
 
+    // With the remove button the trigger becomes a field of two segments, as
+    // in DatePicker: the border moves to a wrapper, and one fluid hover glides
+    // between the open segment and the X. Segments sit 2px inside the field
+    // (plus its 1px border), so their corners nest 3px inside its radius.
+    const fieldRef = useRef<HTMLDivElement>(null);
+    const segmentHover = useFluidHover(fieldRef, { axis: "x", gapClick: false });
+    const { registerItem: registerSegment } = segmentHover;
+    const triggerSegmentRef = useCallback(
+      (el: HTMLButtonElement | null) => registerSegment(0, el),
+      [registerSegment]
+    );
+    const removeSegmentRef = useCallback(
+      (el: HTMLButtonElement | null) => registerSegment(1, el),
+      [registerSegment]
+    );
+    const innerRadius =
+      nestedRadius(shape.bgRadius, 3) === 5 ? "rounded-[5px]" : "rounded-[17px]";
+
+    const triggerContent = (
+      <>
+        {triggerLabel && triggerLabelPosition === "left" && (
+          <span className={cn("text-muted-foreground px-1 select-none", sizeClasses.text)}>
+            {triggerLabel}
+          </span>
+        )}
+        <ColorTile color={swatchColor} size={compact ? 16 : 20} />
+        {triggerShowValue && (
+          <span className={cn("text-foreground tabular-nums", sizeClasses.text)}>
+            {valueLabel}
+          </span>
+        )}
+        {triggerLabel && triggerLabelPosition === "right" && (
+          <span className={cn("text-muted-foreground px-1 select-none", sizeClasses.text)}>
+            {triggerLabel}
+          </span>
+        )}
+      </>
+    );
+
     // A size prop pins the whole compound (trigger + portalled panel — React
     // context crosses portals) to one step of the ladder.
     const root = (
@@ -2467,76 +2508,88 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
         modal={false}
       >
         <div ref={ref} className="inline-flex">
-          <Popover.Trigger
-            className={cn(
-              "flex items-center border border-border bg-transparent hover:bg-hover transition-colors duration-80 outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)] cursor-pointer",
-              sizeClasses.gap,
-              sizeClasses.control,
-              compact ? "px-1.5" : "px-2",
-              shape.input,
-              triggerClassName
-            )}
-            style={{ fontVariationSettings: fontWeights.normal }}
-          >
-            {triggerLabel && triggerLabelPosition === "left" && (
-              <span className={cn("text-muted-foreground px-1 select-none", sizeClasses.text)}>
-                {triggerLabel}
-              </span>
-            )}
-            <ColorTile color={swatchColor} size={compact ? 16 : 20} />
-            {triggerShowValue && (
-              <span className={cn("text-foreground tabular-nums", sizeClasses.text)}>
-                {valueLabel}
-              </span>
-            )}
-            {triggerLabel && triggerLabelPosition === "right" && (
-              <span className={cn("text-muted-foreground px-1 select-none", sizeClasses.text)}>
-                {triggerLabel}
-              </span>
-            )}
-            {/* A span with role="button", since a real button can't nest in
-                the trigger button. stopPropagation keeps a remove press from
-                also toggling the popover. */}
-            {triggerShowRemove && (
-              <span
-                role="button"
+          {triggerShowRemove ? (
+            <div
+              ref={fieldRef}
+              data-slot="color-picker-trigger-field"
+              className={cn(
+                "relative inline-flex items-center border border-border bg-transparent p-0.5",
+                sizeClasses.control,
+                shape.input,
+                triggerClassName
+              )}
+              {...segmentHover.handlers}
+            >
+              <FluidHoverHighlight hover={segmentHover} className={cn("z-0", innerRadius)} />
+              <Popover.Trigger
+                ref={triggerSegmentRef}
+                className={cn(
+                  "relative z-[1] flex h-full items-center outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)] cursor-pointer",
+                  sizeClasses.gap,
+                  // 2px field padding + this keeps the content where the
+                  // single-segment trigger has it.
+                  compact ? "px-1" : "px-1.5",
+                  innerRadius
+                )}
+                style={{ fontVariationSettings: fontWeights.normal }}
+              >
+                {triggerContent}
+              </Popover.Trigger>
+              <button
+                ref={removeSegmentRef}
+                type="button"
                 aria-label="Remove color"
-                tabIndex={0}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onTriggerRemove?.();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    onTriggerRemove?.();
-                  }
-                }}
-                className="ml-1 text-muted-foreground hover:text-foreground cursor-pointer flex items-center"
+                onClick={() => onTriggerRemove?.()}
+                className={cn(
+                  "relative z-[1] inline-flex h-full shrink-0 cursor-pointer items-center justify-center text-muted-foreground outline-none hover:text-foreground focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
+                  compact ? "w-6" : "w-7",
+                  innerRadius
+                )}
               >
                 <XIcon size={14} strokeWidth={1.5} />
-              </span>
-            )}
-          </Popover.Trigger>
+              </button>
+            </div>
+          ) : (
+            <Popover.Trigger
+              className={cn(
+                "flex items-center border border-border bg-transparent hover:bg-hover transition-colors duration-80 outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)] cursor-pointer",
+                sizeClasses.gap,
+                sizeClasses.control,
+                compact ? "px-1.5" : "px-2",
+                shape.input,
+                triggerClassName
+              )}
+              style={{ fontVariationSettings: fontWeights.normal }}
+            >
+              {triggerContent}
+            </Popover.Trigger>
+          )}
           <Popover.Portal>
             <Popover.Positioner
+              // With the remove button, the panel lines up with the field's
+              // edge rather than the open segment's.
+              anchor={triggerShowRemove ? fieldRef : undefined}
               side="bottom"
               align="start"
               sideOffset={6}
               className="z-50 outline-none"
             >
               <motion.div
-                initial={{ opacity: 0, y: -4, scaleY: 0.96 }}
+                // The positioner's data-side flips the 4px enter offset when
+                // the panel opens above, as Dropdown's does. The origin stays
+                // on the trigger's corner (align="start"): top-left below,
+                // bottom-left above.
+                className={cn(
+                  popupMotionClass,
+                  "origin-top-left [[data-side=top]_&]:origin-bottom-left"
+                )}
+                initial={{ opacity: 0, y: "var(--popup-enter-y)", scaleY: 0.96 }}
                 animate={
                   open
                     ? { opacity: 1, y: 0, scaleY: 1 }
-                    : { opacity: 0, y: -4, scaleY: 0.96 }
+                    : { opacity: 0, y: "var(--popup-enter-y)", scaleY: 0.96 }
                 }
-                transition={open ? spring.moderate : spring.moderate.exit}
-                // Top-left origin matches align="start": the panel unfolds
-                // from the trigger's corner.
-                style={{ transformOrigin: "top left" }}
+                transition={open ? spring.fast : spring.fast.exit}
                 // The close held Base UI's unmount (preventUnmountOnClose); release it
                 // once the exit spring has finished so the close animation
                 // fully plays.

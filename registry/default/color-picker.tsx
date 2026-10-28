@@ -31,7 +31,7 @@ import { useIcons } from "@/lib/icon-context";
 import { useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { Elevated } from "@/lib/elevated";
 import { Slider } from "@/registry/radix/slider";
-import { Tooltip } from "@/registry/radix/tooltip";
+import { Tooltip, TooltipProvider } from "@/registry/radix/tooltip";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 
 // ---------------------------------------------------------------------------
@@ -1734,7 +1734,9 @@ ColorSwatch.displayName = "ColorSwatch";
 // no gap and the hover background, a cell wide, rings the swatch. The cell is
 // the button; the swatch inside only paints.
 const SWATCH_HAIRLINE = "inset 0 0 0 1px rgba(127,127,127,0.25)";
-const SWATCH_SELECTED = `${SWATCH_HAIRLINE}, 0 0 0 2px var(--background), 0 0 0 4px var(--fluid-accent, #6B97FF)`;
+// Selected rings in the foreground color, not the accent: the swatches are
+// often accents themselves, and an accent ring vanishes around its own color.
+const SWATCH_SELECTED = `${SWATCH_HAIRLINE}, 0 0 0 2px var(--background), 0 0 0 4px var(--foreground)`;
 
 interface SwatchCellProps extends Omit<HTMLAttributes<HTMLButtonElement>, "color" | "onClick"> {
   color: string;
@@ -1834,36 +1836,42 @@ function SwatchStrip({
 
   return (
     // -m-1: the cells' 4px of room sits outside the strip's edges, so the
-    // swatches line up with the fields above.
-    <div ref={containerRef} className="relative -m-1 flex flex-wrap" {...handlers}>
-      <FluidHoverHighlight hover={hover} className={shape.container} />
-      {items.map(({ color, label }, i) => {
-        // Until a named swatch is resolved, its raw name never equals a hex,
-        // so it renders unselected while hydrating.
-        const parsed = parseColor(color);
-        const normalized = parsed
-          ? rgbToHexStr(parsed.r, parsed.g, parsed.b, parsed.a).toLowerCase()
-          : resolvedSwatches[color] ?? color.toLowerCase();
-        const cell = (
-          <SwatchCell
-            color={color}
-            label={label}
-            index={i}
-            selected={normalized === normalizedCurrent}
-            registerItem={registerItem}
-            onPick={onPick}
-          />
-        );
-        // Index in the key: the same color may appear twice in a list.
-        return label ? (
-          <Tooltip key={`${color}-${i}`} content={label} delayDuration={300}>
-            {cell}
-          </Tooltip>
-        ) : (
-          <Fragment key={`${color}-${i}`}>{cell}</Fragment>
-        );
-      })}
-    </div>
+    // swatches line up with the fields above. One tooltip group: once a name
+    // shows, the next swatch's shows at once instead of waiting again. Not
+    // hoverable: crossing to a name would hold off the swatches in its path.
+    <TooltipProvider delayDuration={300} disableHoverableContent>
+      <div ref={containerRef} className="relative -m-1 flex flex-wrap" {...handlers}>
+        <FluidHoverHighlight hover={hover} className={shape.container} />
+        {items.map(({ color, label }, i) => {
+          // Until a named swatch is resolved, its raw name never equals a hex,
+          // so it renders unselected while hydrating.
+          const parsed = parseColor(color);
+          const normalized = parsed
+            ? rgbToHexStr(parsed.r, parsed.g, parsed.b, parsed.a).toLowerCase()
+            : resolvedSwatches[color] ?? color.toLowerCase();
+          const cell = (
+            <SwatchCell
+              color={color}
+              label={label}
+              index={i}
+              selected={normalized === normalizedCurrent}
+              registerItem={registerItem}
+              onPick={onPick}
+            />
+          );
+          // Index in the key: the same color may appear twice in a list.
+          return label ? (
+            // sideOffset 2: the name sits just past the cell, 6px off the
+          // swatch, clear of the selected ring.
+          <Tooltip key={`${color}-${i}`} content={label} sideOffset={2}>
+              {cell}
+            </Tooltip>
+          ) : (
+            <Fragment key={`${color}-${i}`}>{cell}</Fragment>
+          );
+        })}
+      </div>
+    </TooltipProvider>
   );
 }
 

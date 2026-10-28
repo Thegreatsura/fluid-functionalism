@@ -3,6 +3,8 @@
 import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Shuffle } from "lucide-react";
+import { animate } from "motion/react";
+import { spring } from "@/registry/default/lib/springs";
 import { cn } from "@/lib/utils";
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { RailHairline, useRightRailNode } from "@/lib/right-rail";
@@ -124,6 +126,7 @@ export function PlaygroundPanel({
   // X shuffles, like the settings' single-key shortcuts and with their
   // guards: not while typing, not from inside a menu or a dialog.
   const shuffleRef = useRef(onShuffle);
+  const keyRef = useRef<HTMLElement>(null);
   useEffect(() => {
     shuffleRef.current = onShuffle;
   });
@@ -137,9 +140,20 @@ export function PlaygroundPanel({
       e.preventDefault();
       shuffleRef.current();
       showShortcutToast("X", "Playground shuffled");
+      // The key chip presses like the settings' chips: down, held 80ms,
+      // then back on the fast spring.
+      const key = keyRef.current;
+      if (!key) return;
+      clearTimeout(release);
+      animate(key, { scale: 0.85 }, spring.fast);
+      release = setTimeout(() => animate(key, { scale: 1 }, spring.fast), 80);
     };
+    let release: ReturnType<typeof setTimeout> | undefined;
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      clearTimeout(release);
+    };
   }, []);
 
   // One fluid hover across the controls, as in the settings group: every
@@ -181,22 +195,29 @@ export function PlaygroundPanel({
     <div className="w-full pt-8">
       <div className="flex h-8 items-center justify-between pl-2">
         <h2 className="text-site-caption text-foreground">{title}</h2>
-        {/* A 16px icon centers 6px into the 28px button; mr-0.5 brings its
-            end to 8px in, under the hairline's end and the chevrons. */}
-        <Tooltip
-          content={
-            <span>
-              Shuffle &ensp;<kbd className="font-mono opacity-50">X</kbd>
-            </span>
-          }
-        >
+        {/* The X key chip, then the icon: px-1.5 + mr-0.5 end the icon 8px
+            in, under the hairline's end and the chevrons. */}
+        {/* The key shows on the button itself, so the tooltip names it. */}
+        <Tooltip content="Shuffle">
           <button
             type="button"
             onClick={onShuffle}
             aria-label="Shuffle the playground"
             aria-keyshortcuts="X"
-            className="mr-0.5 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors duration-80 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]"
+            // Rounds with the Radius setting, like the select triggers beside it.
+            className={cn(
+              "mr-0.5 flex h-7 items-center gap-1.5 px-1.5 text-muted-foreground hover:text-foreground hover:bg-hover transition-colors duration-80 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
+              shape.input
+            )}
           >
+            {/* The settings' key chip; hidden on touch, where there is no X. */}
+            <kbd
+              ref={keyRef}
+              aria-hidden
+              className="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center bg-[light-dark(rgb(23_23_23/0.08),rgb(245_245_245/0.08))] px-1 font-mono text-site-micro leading-none text-muted-foreground rounded-[2px] pointer-coarse:hidden"
+            >
+              X
+            </kbd>
             <Shuffle size={16} strokeWidth={1.5} />
           </button>
         </Tooltip>

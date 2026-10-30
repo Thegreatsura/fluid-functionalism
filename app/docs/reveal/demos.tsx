@@ -16,7 +16,7 @@ import { PRESET_SPECS } from "@/lib/docs/api/reveal";
 import type { RevealPresetName } from "@/lib/reveal/presets";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TabsSubtle, TabsSubtleItem } from "@/components/flavored/tabs-subtle";
+import { Tabs, TabsItem } from "@/components/flavored/tabs";
 
 // ---------------------------------------------------------------------------
 // Tidepool, a made-up shared inbox: its landing page and the app itself
@@ -677,7 +677,7 @@ export function PresetDemo({ preset }: { preset: Preset }) {
     <ComponentPreview hideHeader padding="none">
       <div className="flex w-full flex-col self-stretch">
         <div className="flex w-full items-center gap-3 border-b border-border/60 px-3 py-3">
-          <TabsSubtle
+          <Tabs
             idPrefix={`reveal-${preset.toLowerCase()}`}
             selectedIndex={INTENSITIES.indexOf(intensity)}
             onSelect={(i) => {
@@ -686,9 +686,9 @@ export function PresetDemo({ preset }: { preset: Preset }) {
             }}
           >
             {INTENSITIES.map((label, i) => (
-              <TabsSubtleItem key={label} index={i} label={label} />
+              <TabsItem key={label} index={i} label={label} />
             ))}
-          </TabsSubtle>
+          </Tabs>
           <Button
             className="ml-auto"
             leadingIcon={ReplayIcon}

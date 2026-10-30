@@ -37,12 +37,12 @@ const displayOrder: { slug: string; side?: "right" }[] = [
   { slug: "radio-group" },
   { slug: "chat-message" },
   { slug: "thinking-steps", side: "right" },  // band 6 · large right
-  { slug: "tabs-subtle" },
+  { slug: "tabs" },
   { slug: "checkbox-group" },
   { slug: "ask-user-questions" },             // band 7 · large left
   { slug: "slider" },
   { slug: "dropdown" },
-  { slug: "tabs", side: "right" },            // band 8 · medium right
+  { slug: "banner", side: "right" },          // band 8 · medium right
   { slug: "input-copy" },
   { slug: "accordion" },                      // band 9 · medium left
   { slug: "input-group" },

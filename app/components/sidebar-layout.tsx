@@ -197,9 +197,11 @@ export function SidebarLayout({ children, defaultOpen = true, marks = NO_MARKS }
         <SiteSidebar />
         <CloseSheetOnNavigate />
 
-        {/* Mobile trigger for the sheet; desktop collapse uses [ or the rail */}
+        {/* Mobile trigger for the sheet; desktop collapse uses [ or the rail.
+            It floats over the page, so a blurred page-colored ground keeps
+            the icon legible over headings scrolling under it. */}
         <SidebarTrigger
-          className="xl:hidden fixed top-4 left-4 z-50"
+          className="xl:hidden fixed top-4 left-4 z-50 bg-background/70 backdrop-blur-md"
           aria-label="Open navigation"
         />
         <DesktopReopenTrigger />

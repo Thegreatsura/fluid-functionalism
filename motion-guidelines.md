@@ -225,8 +225,8 @@ transform, and the component reads `useReducedMotion()` itself so an installed
 copy drops the travel and keeps the fade without any wrapper (see
 [Reduced motion](#reduced-motion)).
 
-Deliberately not on the component: `tabs` / `tabs-subtle` (the hover pill
-fades in from, and on leave back to, the selected pill at 0.4 opacity on
+Deliberately not on the component: `tabs` (the hover pill fades in
+from, and on leave back to, the selected pill at 0.4 opacity on
 `spring.moderate`) and `thinking-steps` (a single trigger with an inset fade).
 
 ## Where each speed shows up
@@ -298,7 +298,7 @@ fix:
 > the compositor.
 
 Known stragglers that still animate layout properties (so they aren't yet
-auto-reduced): the hover pill in `tabs` / `tabs-subtle`, the selected
+auto-reduced): the hover pill in `tabs` / `tabs`, the selected
 backgrounds (`bg-active`, the merged selection blocks), and the travelling
 focus rings. Re-expressing those as `transform` (or gating them on
 `useReducedMotion()`) is the remaining work. The hover highlight is done:

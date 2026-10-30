@@ -348,8 +348,7 @@ written down. In order of reach:
   installing half a tree.
 - If an install fails on a name, check the catalog in
   [references/components.md](references/components.md) — the registry name is
-  not always the component's display name (e.g. TabsSubtle → `tabs-subtle`,
-  Fluid Hover → `use-fluid-hover`, Motion → `springs`).
+  not always the component's display name (e.g. Fluid Hover → `use-fluid-hover`, Motion → `springs`).
 - The base flavor lives at the `base/<name>` **path** — `@fluid/base/select`,
   URL `/r/base/select.json`. Names like `<name>-base` are internal build
   names; `/r/<name>-base.json` 404s **by design** (the build moves those

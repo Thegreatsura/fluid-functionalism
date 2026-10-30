@@ -33,7 +33,7 @@ import {
 } from "@/registry/default/hooks/use-fluid-hover";
 import { FluidHoverHighlight } from "@/components/ui/fluid-hover-highlight";
 import { Switch } from "@/components/flavored/switch";
-import { Tabs, TabsList, TabItem } from "@/registry/radix/tabs";
+import { Tabs, TabsItem } from "@/registry/radix/tabs";
 import { Dropdown } from "@/components/flavored/dropdown";
 import {
   SidebarProvider,
@@ -569,16 +569,15 @@ function AxisBlock({
 }
 
 export function AxesDemo() {
+  const [tab, setTab] = useState(0);
   return (
     <ComponentPreview code={AXES_CODE} padding="responsive">
       <div className="flex w-full max-w-md flex-col gap-8">
         <AxisBlock axis="x" hint="strips: tabs">
-          <Tabs defaultValue={TAB_ITEMS[0]}>
-            <TabsList>
-              {TAB_ITEMS.map((label) => (
-                <TabItem key={label} value={label} label={label} />
-              ))}
-            </TabsList>
+          <Tabs selectedIndex={tab} onSelect={setTab} aria-label="Folders">
+            {TAB_ITEMS.map((label, i) => (
+              <TabsItem key={label} index={i} label={label} />
+            ))}
           </Tabs>
         </AxisBlock>
         <AxisBlock axis="y" hint="lists: menus, tables, radios">

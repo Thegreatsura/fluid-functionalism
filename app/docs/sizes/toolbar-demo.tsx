@@ -5,7 +5,7 @@ import { SizeProvider, sizeMap, type SizeVariant } from "@/registry/default/lib/
 import { fontWeights } from "@/registry/default/lib/font-weight";
 import { Button } from "@/registry/radix/button";
 import { Select, SelectTrigger, SelectContent, SelectItem } from "@/components/flavored/select";
-import { TabsSubtle, TabsSubtleItem } from "@/components/flavored/tabs-subtle";
+import { Tabs, TabsItem } from "@/components/flavored/tabs";
 import { InputGroup, InputField } from "@/registry/default/input-group";
 import { cn } from "@/registry/default/lib/utils";
 import { ListFilter, Plus, Search, SquareKanban, Table2 } from "lucide-react";
@@ -111,10 +111,10 @@ function ToolbarRow({ variant }: { variant: SizeVariant }) {
           <div
             className={cn("flex w-full flex-wrap items-center sm:pr-[44px]", gap)}
           >
-            <TabsSubtle activeLabel selectedIndex={view} onSelect={setView}>
-              <TabsSubtleItem index={0} icon={Table2} label="Table" />
-              <TabsSubtleItem index={1} icon={SquareKanban} label="Board" />
-            </TabsSubtle>
+            <Tabs activeLabel selectedIndex={view} onSelect={setView}>
+              <TabsItem index={0} icon={Table2} label="Table" />
+              <TabsItem index={1} icon={SquareKanban} label="Board" />
+            </Tabs>
             <div className={cn("ml-auto flex items-center", gap)}>
               {/* Mobile shows the trimmed toolbar — tabs, filter, primary
                   action; search and sort return at sm. display:contents keeps

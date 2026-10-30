@@ -171,7 +171,7 @@ import { Skeleton } from "@/components/ui/skeleton";
     craft: [
       "Two steps only: default 36px controls and compact 28px. Every dimension steps down together \u2014 text 13\u219212px, icon 16\u219214px, control padding 12\u219210px, row padding 8\u21926px, gap 8\u21924px \u2014 \"so the whole control shrinks together, not just its box\".",
       "One `control` height token by design for BOTH bounded controls (buttons, inputs, select triggers) AND list/menu rows: a popup row lines up with the trigger that opened it because they share this height.",
-      "Segmented tabs are sized so `segmentPad` + `segmentItem` adds back up to the control height (28px item + 4px pad = 36px default; 24 + 2 = 28 compact) \u2014 the segmented control's outer box stays on the same ladder as its neighbours.",
+      "Tabs take the `control` height directly (36px default, 28px compact), so a tab row lines up with the buttons, selects and inputs beside it. The `segmentPad` + `segmentItem` pair stays on the ladder for segmented controls built by hand.",
       "The compact step halves the `gap` token (8px \u2192 4px) because \"density is spacing as much as control height\" \u2014 control-to-control spacing comes from the ladder, not from layout code.",
       "Type follows the ladder: compact drops each of the six roles one notch, size and leading together (body 13/20px \u2192 12/18px, caption 12/16px \u2192 11/14px), so a dense region reads as \"a smaller sibling of the same hierarchy, not a squeezed copy\". The scale itself is its own system: see Typography.",
       "Resolution order is explicit component `size` prop > surrounding `SizeProvider` > `\"default\"`; ~20 components accept the per-component override and it wins over the provider.",
@@ -600,24 +600,29 @@ const [slide, setSlide] = useState(0);
     craft: [
       "Every message enters with opacity 0, y 8, scale 0.96 \u2192 settled on spring.moderate, with transformOrigin bottom-right for user messages and bottom-left for assistant, so bubbles appear to grow from the composer side they belong to.",
       "`layout=\"position\"` is baked in so earlier messages slide up smoothly when a new one is appended to the transcript.",
+      "Messages already sent when the transcript first renders skip the entrance: wrap the list in `<AnimatePresence initial={false}>` (keyed children), so loaded history appears settled and only messages added later rise in. Layout motion starts once a message has entered, so page-load width changes never slide a bubble sideways mid-entrance.",
       "User = right-aligned accent bubble filled with `color-mix(in oklab, var(--accent), var(--background) 45%)`; assistant = flush-left plain text with no background at all.",
       "`text-pretty` is applied only to user bubbles and deliberately left off assistant replies: `text-wrap: pretty` re-balances the last lines on every content change, so a word-by-word stream would visibly reflow earlier words onto new lines; normal wrapping appends left-to-right and stays put.",
       "The meta row (timestamp + icon actions) is always rendered so it reserves its height and the gap between bubbles never shifts; it fades in over 150ms on hover or focus-within, and stays permanently visible on touch where hover is unreachable.",
       "Timestamps are a user-message-only affordance \u2014 `time` is ignored on assistant replies, which show their actions alone; the timestamp renders tabular-nums.",
       "Messages cap at max-w-[80%]; attachments render as square thumbnails (default 64px) in a row above the bubble, justified toward the message's own side, and an attachment-only message (no children) drops the text bubble entirely. Each thumbnail gets a 1px inset pure-black/pure-white 10% outline so bright edge pixels do not disappear into the page.",
     ],
-    usage: `import { ChatMessage } from "@/components/ui/chat-message";
+    usage: `import { AnimatePresence } from "motion/react";
+import { ChatMessage } from "@/components/ui/chat-message";
 import { Copy } from "lucide-react";
 
 const actions = <button aria-label="Copy"><Copy size={13} /></button>;
 
+// initial={false}: messages already sent skip the entrance; new ones animate in.
 <div className="flex flex-col gap-2">
-  <ChatMessage from="user" time="Wednesday 6:06 PM" actions={actions}>
-    What does "good design" actually mean?
-  </ChatMessage>
-  <ChatMessage from="assistant" actions={actions}>
-    Good design is mostly invisible. You only notice it when it is missing.
-  </ChatMessage>
+  <AnimatePresence initial={false}>
+    <ChatMessage key="m1" from="user" time="Wednesday 6:06 PM" actions={actions}>
+      What does "good design" actually mean?
+    </ChatMessage>
+    <ChatMessage key="m2" from="assistant" actions={actions}>
+      Good design is mostly invisible. You only notice it when it is missing.
+    </ChatMessage>
+  </AnimatePresence>
 </div>`,
     props: [
       'from: "user" | "assistant". Who sent it: user is a right-aligned accent bubble, assistant is left-aligned plain text.',
@@ -1201,43 +1206,7 @@ const [checked, setChecked] = useState(false);
   },
   "tabs": {
     craft: [
-      "The active pill travels between tabs on `spring.moderate`; clicking sets an optimistic selected index so the indicator jumps immediately instead of waiting for controlled state to round-trip \u2014 the item's onClick is composed, not spread-overridable, so a consumer onClick can't break this.",
-      "The hover pill is born AT the selected pill (initial = selectedRect, opacity 0) and springs to the hovered tab at opacity 0.4 on `spring.fast`; when the mouse exits the list it travels back to the selected pill while fading out (spring.moderate, 60ms opacity) rather than just disappearing.",
-      "While a non-selected tab is hovered, the active pill dims to opacity 0.85 (0.08s), signalling the split attention.",
-      "The active pill's surface level is `min(substrate + 3, 8)` \u2014 \"1 above the muted track + 2 for pop\": surface 4 on the page, but 8 inside a dialog (substrate 5) instead of colliding at 4.",
-      "Labels change weight without layout shift: two stacked grid spans, an invisible semibold sizer plus the visible label, both carrying `[text-box:trim-both_cap_alphabetic]` so their boxes stay identical; selected = semibold, color+weight transition `duration-80`.",
-      "Items use a fixed height from the size ladder instead of `py` \"so the text-box trim below doesn't shrink the tab \u2014 browsers without text-box support render identically\"; segmentPad + segmentItem sum to the ladder's 36px/28px control height so the control lines up with adjacent buttons/selects/inputs.",
-      "Icons animate strokeWidth 1.5 \u2192 2 and muted \u2192 foreground color when the tab is hovered or selected (`transition-[color,stroke-width] duration-80`).",
-      "Keyboard focus draws a springing 2px-outset focus ring rect only on `:focus-visible`, and focus also drives the hover highlight; blur clears the highlight only if the mouse isn't inside the list.",
-    ],
-    usage: `import { Tabs, TabsList, TabItem, TabPanel } from "@/components/ui/tabs";
-
-<Tabs defaultValue="library">
-  <TabsList>
-    <TabItem value="library" label="Library" />
-    <TabItem value="recents" label="Recents" />
-    <TabItem value="favorites" label="Favorites" />
-  </TabsList>
-  <TabPanel value="library">Library content.</TabPanel>
-  <TabPanel value="recents">Recents content.</TabPanel>
-  <TabPanel value="favorites">Favorites content.</TabPanel>
-</Tabs>`,
-    props: [
-      "value: string. Controlled active tab value. Takes precedence over selectedIndex.",
-      "onValueChange: (value: string) => void. Called when the active tab changes.",
-      "defaultValue: string. Default active tab for uncontrolled usage.",
-      "selectedIndex: number. Index-based controlled alternative.",
-      "onSelect: (index: number) => void. Called with the new index when the active tab changes.",
-      "size: \"default\" | \"compact\" (default from SizeProvider). Pins the segmented control to one step of the size ladder.",
-      "TabItem.value: string. Unique value identifying this tab.",
-      "TabItem.label: string. Text label for the tab.",
-      "TabItem.icon: IconComponent. Optional leading icon.",
-      "TabPanel.value: string. Must match a TabItem value; content renders when that tab is active.",
-    ],
-  },
-  "tabs-subtle": {
-    craft: [
-      "Same pill choreography as Tabs: the hover pill starts at the selected pill (opacity 0), springs to the hovered tab at opacity 0.4 (`spring.fast`), and on mouse exit travels back to the selected pill while fading (spring.moderate, 60ms opacity); the selected pill dims to 0.8 while another tab is hovered.",
+      "The hover pill starts at the selected pill (opacity 0), springs to the hovered tab at opacity 0.4 (`spring.fast`), and on mouse exit travels back to the selected pill while fading (spring.moderate, 60ms opacity); the selected pill dims to 0.8 while another tab is hovered.",
       "`activeLabel` mode collapses every non-selected tab to its icon; the label expands/collapses by animating width to a MEASURED `offsetWidth`, never `\"auto\"` \u2014 framer resolves an \"auto\" target from the element's visual (transformed) size, so under a scaled ancestor the spring overshoots and snaps.",
       "Until the first measurement lands, width stays plain CSS `auto` instead of handing framer \"auto\": under the /demo card's ~1.76x scale framer would write back a too-wide width and spring back down, making the selected tab visibly pulse on arrival.",
       "The expanding label animates `marginLeft` to 8px, 6px compact: the default matches the ladder's `gap-2`, while the compact value is its own, 2px wider than the ladder's `gap-1`.",
@@ -1246,20 +1215,20 @@ const [checked, setChecked] = useState(false);
       "Activation is manual, `activationMode=\"manual\"` on Radix and `activateOnFocus={false}` on Base UI: arrows move focus, Enter/Space selects. The primitive owns role=\"tablist\", roving tabindex, and Arrow/Home/End.",
     ],
     usage: `import { useState } from "react";
-import { TabsSubtle, TabsSubtleItem, TabsSubtlePanel } from "@/components/ui/tabs-subtle";
+import { Tabs, TabsItem, TabsPanel } from "@/components/ui/tabs";
 
 const tabs = ["Teamspaces", "Recents", "Favorites"];
 const [selected, setSelected] = useState(0);
 
-<TabsSubtle idPrefix="demo" selectedIndex={selected} onSelect={setSelected}>
+<Tabs idPrefix="demo" selectedIndex={selected} onSelect={setSelected}>
   {tabs.map((label, i) => (
-    <TabsSubtleItem key={label} index={i} label={label} />
+    <TabsItem key={label} index={i} label={label} />
   ))}
-</TabsSubtle>
+</Tabs>
 {tabs.map((label, i) => (
-  <TabsSubtlePanel key={label} index={i} selectedIndex={selected} idPrefix="demo">
+  <TabsPanel key={label} index={i} selectedIndex={selected} idPrefix="demo">
     <p>{label} content</p>
-  </TabsSubtlePanel>
+  </TabsPanel>
 ))}`,
     props: [
       "selectedIndex: number. Index of the currently selected tab.",
@@ -1267,11 +1236,11 @@ const [selected, setSelected] = useState(0);
       "idPrefix: string. Prefix for ARIA IDs linking tabs to panels.",
       "activeLabel: boolean (default false). Only the selected tab shows its text label. Requires icons on tabs.",
       "size: \"default\" | \"compact\" (default from SizeProvider). Pins the tabs to one step of the size ladder.",
-      "TabsSubtleItem.index: number. Position index within the tab list.",
-      "TabsSubtleItem.label: string. Text label for the tab.",
-      "TabsSubtleItem.icon: IconComponent. Icon displayed in the tab.",
-      "TabsSubtlePanel.index: number. Index of this panel; rendered only when it matches selectedIndex.",
-      "TabsSubtlePanel.idPrefix: string. Must match the TabsSubtle idPrefix.",
+      "TabsItem.index: number. Position index within the tab list.",
+      "TabsItem.label: string. Text label for the tab.",
+      "TabsItem.icon: IconComponent. Icon displayed in the tab.",
+      "TabsPanel.index: number. Index of this panel; rendered only when it matches selectedIndex.",
+      "TabsPanel.idPrefix: string. Must match the Tabs idPrefix.",
     ],
   },
   "thinking-indicator": {

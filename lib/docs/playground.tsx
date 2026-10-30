@@ -1,6 +1,14 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { Shuffle } from "lucide-react";
 import { animate } from "motion/react";
@@ -111,6 +119,10 @@ export function PlayDivider() {
   return <div aria-hidden className="my-2 mx-2 h-px shrink-0 bg-border" />;
 }
 
+// True when PlaygroundLayout renders the controls under the preview instead
+// of in the rail: the panel then drops the rail's group spacing.
+const InlinePlaygroundContext = createContext(false);
+
 /** The muted controls card: title row with a shuffle button, fields below. */
 export function PlaygroundPanel({
   title = "Playground variant",
@@ -124,6 +136,7 @@ export function PlaygroundPanel({
   // A group like the settings above it and the left sidebar's: no card, a
   // small label with the shuffle on its right, a hairline under it.
   const shape = useShape();
+  const inline = useContext(InlinePlaygroundContext);
 
   // X shuffles, like the settings' single-key shortcuts and with their
   // guards: not while typing, not from inside a menu or a dialog.
@@ -192,9 +205,11 @@ export function PlaygroundPanel({
   }, [registerItem]);
 
   return (
-    // pt-8: a clear break from the settings group above, double the
-    // sidebar's 16px between groups.
-    <div className="w-full pt-8">
+    // In the rail, pt-8 is a clear break from the settings group above,
+    // double the sidebar's 16px between groups. Under the preview there is no
+    // group above, and -mx-2 hangs the rows' 8px inset outside the column, so
+    // the labels, chevrons and hairline line up with the preview's edges.
+    <div className={cn("w-full", inline ? "-mx-2 w-auto" : "pt-8")}>
       <div className="flex h-8 items-center justify-between pl-2">
         <h2 className="text-site-caption text-foreground">{title}</h2>
         {/* The X key chip, then the icon: px-1.5 + mr-0.5 end the icon 8px
@@ -299,7 +314,11 @@ export function PlaygroundLayout({
           railNode
         )
       )}
-      {mounted && !inRail && <div className="mt-3">{controls}</div>}
+      {mounted && !inRail && (
+        <div className="mt-3">
+          <InlinePlaygroundContext.Provider value={true}>{controls}</InlinePlaygroundContext.Provider>
+        </div>
+      )}
     </div>
   );
 }

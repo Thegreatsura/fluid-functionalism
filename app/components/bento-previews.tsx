@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { slideVariants, useSlideDirection } from "@/lib/docs/slide-direction";
 import { useCardArt } from "@/lib/docs/playgrounds/card";
@@ -31,8 +31,6 @@ import {
   SWITCH_ITEMS,
   TABLE_COLUMNS,
   TABLE_ROWS,
-  TABS_DEFAULT,
-  TABS_ITEMS,
   TOOLTIP_COPY,
 } from "@/app/components/demo-data";
 
@@ -43,6 +41,13 @@ import {
   AccordionContent,
 } from "@/registry/radix/accordion";
 import { Badge } from "@/registry/default/badge";
+import {
+  Banner,
+  BannerTitle,
+  BannerDescription,
+  BannerActions,
+  BannerAction,
+} from "@/registry/default/banner";
 import { Button } from "@/registry/radix/button";
 import {
   Card,
@@ -135,11 +140,10 @@ import {
   TableHead,
   TableCell,
 } from "@/registry/default/table";
-import { Tabs, TabsList, TabItem } from "@/registry/radix/tabs";
 import {
-  TabsSubtle,
-  TabsSubtleItem,
-} from "@/components/flavored/tabs-subtle";
+  Tabs,
+  TabsItem,
+} from "@/components/flavored/tabs";
 import { ThinkingIndicator } from "@/registry/default/thinking-indicator";
 import {
   ThinkingSteps,
@@ -577,21 +581,6 @@ function TablePreview() {
 }
 
 function TabsPreview() {
-  const [tab, setTab] = useState<string>(TABS_DEFAULT);
-  return (
-    <div className="w-full max-w-[360px]">
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          {TABS_ITEMS.map((item) => (
-            <TabItem key={item.value} value={item.value} label={item.label} />
-          ))}
-        </TabsList>
-      </Tabs>
-    </div>
-  );
-}
-
-function TabsSubtlePreview() {
   const Home = useIcon("home");
   const MessageCircle = useIcon("message-circle");
   const Inbox = useIcon("inbox");
@@ -603,11 +592,34 @@ function TabsSubtlePreview() {
   ];
   return (
     <div className="w-fit mx-auto">
-      <TabsSubtle idPrefix="bento-tabs" selectedIndex={tab} onSelect={setTab} activeLabel aria-label="Navigation">
+      <Tabs idPrefix="bento-tabs" selectedIndex={tab} onSelect={setTab} activeLabel aria-label="Navigation">
         {items.map((item, i) => (
-          <TabsSubtleItem key={item.label} index={i} icon={item.icon} label={item.label} />
+          <TabsItem key={item.label} index={i} icon={item.icon} label={item.label} />
         ))}
-      </TabsSubtle>
+      </Tabs>
+    </div>
+  );
+}
+
+function BannerPreview() {
+  // Dismissing collapses it; it comes back a beat later so the tile never
+  // sits empty.
+  const [open, setOpen] = useState(true);
+  useEffect(() => {
+    if (open) return;
+    const id = setTimeout(() => setOpen(true), 1200);
+    return () => clearTimeout(id);
+  }, [open]);
+  return (
+    <div className="w-full max-w-[440px]">
+      <Banner status="info" dismissible open={open} onDismiss={() => setOpen(false)}>
+        <BannerTitle>The registry has new components</BannerTitle>
+        <BannerDescription>Run the install command again to pull the latest versions.</BannerDescription>
+        <BannerActions>
+          <BannerAction variant="primary">Copy command</BannerAction>
+          <BannerAction variant="ghost">Later</BannerAction>
+        </BannerActions>
+      </Banner>
     </div>
   );
 }
@@ -646,7 +658,7 @@ const askUserExampleQuestions: AskUserQuestion[] = [
       { id: "input", title: "InputMessage", description: "Chat-style composer with attachments" },
       { id: "thinking", title: "ThinkingSteps", description: "Streamed reasoning steps" },
       { id: "ask", title: "AskUserQuestions", description: "Stepped question flows" },
-      { id: "tabs", title: "TabsSubtle", description: "Quiet segmented tabs" },
+      { id: "tabs", title: "Tabs", description: "Quiet segmented tabs" },
       { id: "nav", title: "NavMenu", description: "Sidebar navigation" },
     ],
     nextLabel: "Continue",
@@ -795,12 +807,15 @@ function ColorPickerPreview() {
 function ChatMessagePreview() {
   return (
     <div className="flex w-full max-w-[300px] flex-col gap-1">
-      <ChatMessage from="user" size="compact">
-        Why is every other input box so stiff?
-      </ChatMessage>
-      <ChatMessage from="assistant" size="compact">
-        Because nothing about them moves with you.
-      </ChatMessage>
+      {/* Already sent: initial={false} skips their entrance. */}
+      <AnimatePresence initial={false}>
+        <ChatMessage key="q" from="user" size="compact">
+          Why is every other input box so stiff?
+        </ChatMessage>
+        <ChatMessage key="a" from="assistant" size="compact">
+          Because nothing about them moves with you.
+        </ChatMessage>
+      </AnimatePresence>
     </div>
   );
 }
@@ -929,6 +944,7 @@ function SidebarPreview() {
 }
 
 export const previewMap: Record<string, React.FC> = {
+  banner: BannerPreview,
   "input-message": InputMessagePreview,
   "chat-message": ChatMessagePreview,
   sidebar: SidebarPreview,
@@ -953,8 +969,7 @@ export const previewMap: Record<string, React.FC> = {
   slider: SliderPreview,
   switch: SwitchPreview,
   table: TablePreview,
-  tabs: TabsPreview,
-  "tabs-subtle": TabsSubtlePreview,
+  "tabs": TabsPreview,
   "thinking-indicator": ThinkingIndicatorPreview,
   "thinking-steps": ThinkingStepsPreview,
   tooltip: TooltipPreview,

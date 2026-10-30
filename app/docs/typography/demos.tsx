@@ -28,7 +28,7 @@ import { HeadingWeightSelect, headingFontLabel, useHeadingFont } from "@/lib/doc
 import { HEADING_FONTS } from "@/lib/docs/site-settings";
 import { nearestGoogleFontWeight } from "@/lib/docs/google-fonts";
 import { Button } from "@/components/ui/button";
-import { TabsSubtle, TabsSubtleItem } from "@/components/flavored/tabs-subtle";
+import { Tabs, TabsItem } from "@/components/flavored/tabs";
 
 /** One side of a before/after: a framed specimen with its verdict under it,
  *  as on the fluid hover page. */
@@ -778,16 +778,16 @@ export function HeadingFontDemo() {
     <ComponentPreview hideHeader inspectable={false}>
       <div className="flex w-full flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <TabsSubtle
+          <Tabs
             selectedIndex={HEADING_FONTS.indexOf(font)}
             onSelect={(i) => setFont(HEADING_FONTS[i])}
             idPrefix="heading-font-tabs"
             aria-label="Heading font"
           >
             {HEADING_FONTS.map((f, i) => (
-              <TabsSubtleItem key={f} index={i} label={headingFontLabel(f, custom)} />
+              <TabsItem key={f} index={i} label={headingFontLabel(f, custom)} />
             ))}
-          </TabsSubtle>
+          </Tabs>
           <div className="flex items-center gap-1">
             <HeadingWeightSelect triggerClassName="min-w-0 w-auto" />
             <Button variant="secondary" size="sm" onClick={browse}>

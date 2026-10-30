@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { Source_Serif_4 } from "next/font/google";
+import localFont from "next/font/local";
 import { MotionConfig } from "motion/react";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
@@ -27,15 +27,18 @@ import { GitHubStarsProvider } from "@/app/components/right-panel";
 import { getGitHubStars } from "@/lib/github-stars";
 import { latestMarks } from "@/lib/changelog/load";
 
-// The optional serif for headings (right panel > Heading font, or F). Variable on both
-// wght and opsz, like Inter 4.0, so the fontWeights tokens drive it the same
-// way. Not preloaded: only visitors who pick it download it.
-const sourceSerif = Source_Serif_4({
-  subsets: ["latin"],
-  axes: ["opsz"],
+// The optional serif for headings (right panel > Heading font, or F):
+// Vercel's display serif, one Regular cut so far and not on Google Fonts, so
+// the file is vendored from the geist package (OFL, app/fonts). Not
+// preloaded: only visitors who pick it download it.
+const geistSerif = localFont({
+  src: "./fonts/GeistSerif-Regular.woff2",
+  weight: "400",
   display: "swap",
   preload: false,
-  variable: "--font-source-serif",
+  fallback: ["Times New Roman", "Times", "serif"],
+  adjustFontFallback: "Times New Roman",
+  variable: "--font-geist-serif",
 });
 
 export const metadata: Metadata = {
@@ -104,7 +107,7 @@ export default async function RootLayout({
       lang="en"
       // Mirrors what ThemeProvider and SizeAttribute apply on the client, so
       // a saved dark theme or compact size never paints the default first.
-      className={settings.theme === "system" ? sourceSerif.variable : `${settings.theme} ${sourceSerif.variable}`}
+      className={settings.theme === "system" ? geistSerif.variable : `${settings.theme} ${geistSerif.variable}`}
       data-size={settings.size}
       data-font={headingFont}
       style={

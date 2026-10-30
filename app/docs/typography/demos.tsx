@@ -768,19 +768,45 @@ export function PrettyDemo() {
   );
 }
 
+/** Runs a change that resizes the page above `el` (a heading font swap
+ *  grows the title and the scale specimen), then scrolls by however far
+ *  `el` moved, so what was clicked stays under the pointer. Scroll
+ *  anchoring is off meanwhile: it picks some other anchor and adds its own
+ *  shift on top. Corrects again once the new face has loaded, as the
+ *  fallback's metrics differ. */
+function keepInPlace(el: HTMLElement | null, change: () => void) {
+  if (!el) return change();
+  const root = document.documentElement;
+  const top = el.getBoundingClientRect().top;
+  const settle = () => {
+    const moved = el.getBoundingClientRect().top - top;
+    if (moved !== 0) window.scrollBy(0, moved);
+  };
+  root.style.overflowAnchor = "none";
+  change();
+  settle();
+  // Skipped if the visitor scrolled meanwhile: the page is theirs again.
+  const scrollY = window.scrollY;
+  void document.fonts.ready.then(() => {
+    if (window.scrollY === scrollY) settle();
+    requestAnimationFrame(() => root.style.removeProperty("overflow-anchor"));
+  });
+}
+
 /** The heading font switch: the same global setting as the right panel, so
  *  picking here also restyles every heading on the page. The third tab is
  *  the custom Google Fonts family: picked once through Browse, it stays,
  *  with its heading weight beside Browse. */
 export function HeadingFontDemo() {
   const { font, custom, setFont, browse } = useHeadingFont();
+  const rowRef = useRef<HTMLDivElement>(null);
   return (
     <ComponentPreview hideHeader inspectable={false}>
       <div className="flex w-full flex-col gap-6">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div ref={rowRef} className="flex flex-wrap items-center justify-between gap-2">
           <Tabs
             selectedIndex={HEADING_FONTS.indexOf(font)}
-            onSelect={(i) => setFont(HEADING_FONTS[i])}
+            onSelect={(i) => keepInPlace(rowRef.current, () => setFont(HEADING_FONTS[i]))}
             idPrefix="heading-font-tabs"
             aria-label="Heading font"
           >

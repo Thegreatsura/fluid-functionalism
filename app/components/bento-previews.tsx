@@ -288,7 +288,8 @@ function ButtonPreview() {
 }
 
 function CheckboxPreview() {
-  const [checked, setChecked] = useState<Set<number>>(new Set());
+  // Two neighbours start checked, so the tile shows the merged selection fill.
+  const [checked, setChecked] = useState<Set<number>>(() => new Set([1, 2]));
   return (
     <div className="w-full max-w-[220px]">
       <CheckboxGroup checkedIndices={checked}>

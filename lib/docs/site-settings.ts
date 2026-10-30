@@ -116,9 +116,9 @@ export function customAccentCookie(hex: string | null): string {
 // <html data-font> so a saved serif paints on the first frame.
 // ---------------------------------------------------------------------------
 
-export type HeadingFont = "inter" | "source-serif" | "custom";
+export type HeadingFont = "inter" | "geist-serif" | "custom";
 
-export const HEADING_FONTS = ["inter", "source-serif", "custom"] as const satisfies readonly HeadingFont[];
+export const HEADING_FONTS = ["inter", "geist-serif", "custom"] as const satisfies readonly HeadingFont[];
 
 export const DEFAULT_HEADING_FONT: HeadingFont = "inter";
 

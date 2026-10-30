@@ -182,7 +182,7 @@ export interface StarterHeading {
 /** The family a heading choice names, or null for Inter (nothing to do). */
 function headingFamily(heading: StarterHeading | undefined): string | null {
   if (!heading || heading.font === "inter") return null;
-  if (heading.font === "source-serif") return "Source Serif 4";
+  if (heading.font === "geist-serif") return "Geist Serif";
   return heading.custom?.n ?? null;
 }
 
@@ -192,12 +192,11 @@ const nextFontExport = (family: string) => family.replace(/[^A-Za-z0-9]+/g, "_")
 /** The step that sets the headings' font, as the site renders it. */
 function headingLines(heading: StarterHeading): string[] {
   const css = "app/globals.css";
-  if (heading.font === "source-serif") {
+  if (heading.font === "geist-serif") {
     return [
-      "Either way, set the headings in Source Serif 4, as picked on the site (body text and components stay Inter):",
-      `- app/layout.tsx: import { Source_Serif_4 } from "next/font/google", load it with { subsets: ["latin"], axes: ["opsz"], variable: "--font-heading" } and add its .variable class to <html> next to Inter's.`,
-      // eslint-disable-next-line no-restricted-syntax -- prompt text for the agent's CSS, not a style here
-      `- ${css}: h1, h2, h3 { font-family: var(--font-heading), Georgia, serif; font-variation-settings: 'wght' 450, 'opsz' 18 !important; } and h1 { font-variation-settings: 'wght' 450, 'opsz' 25 !important; }. One weight, 450, for every heading: the serif carries its own contrast. !important because component titles set their weight inline.`,
+      "Either way, set the headings in Geist Serif, as picked on the site (body text and components stay Inter):",
+      `- Run npm i geist. app/layout.tsx: import { GeistSerifRegular } from "geist/font/serif/regular" and add its .variable class (--font-geist-serif-regular) to <html> next to Inter's.`,
+      `- ${css}: h1, h2, h3 { font-family: var(--font-geist-serif-regular), "Times New Roman", serif; font-variation-settings: normal !important; font-weight: 400 !important; font-synthesis-weight: none; }. Geist Serif has one Regular cut so far, so every heading is 400. !important because component titles set Inter's weight inline.`,
       `- Also in ${css}, the display role runs 4px larger for the serif: :root { --fs-display: 32px; --lh-display: 38px; --fs-display-compact: 28px; --lh-display-compact: 34px; } after the type scale.`,
     ];
   }

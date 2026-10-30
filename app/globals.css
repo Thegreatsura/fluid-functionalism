@@ -512,15 +512,15 @@ html[data-size="compact"] {
    through .typeset. The typography specimen reads sizes and weights back
    from the DOM, so nothing here is mirrored in JS. */
 
-/* Source Serif 4 (next/font, app/layout.tsx): every role at 450, as the
-   serif carries its own contrast and heavier weights read loud, each with
-   Inter's opsz for that role. The display role also runs 4px larger (and 4px
-   more leading) at every step, as its smaller x-height reads small at
-   Inter's size. The [data-size] rules out-rank the base one on purpose. */
-:root[data-font="source-serif"] {
-  --heading-family: var(--font-source-serif), Georgia, serif;
-  --heading-fvs: 'wght' 450, 'opsz' 18;
-  --heading-display-fvs: 'wght' 450, 'opsz' 25;
+/* Geist Serif (next/font/local, app/layout.tsx): one Regular cut so far,
+   with no weight or opsz axis, so every role draws its Regular. The display
+   role runs 4px larger (and 4px more leading) at every step, as the serif
+   reads small at Inter's size. The [data-size] rules out-rank the base one
+   on purpose. */
+:root[data-font="geist-serif"] {
+  --heading-family: var(--font-geist-serif);
+  --heading-fvs: normal;
+  --heading-display-fvs: normal;
   --fs-display: 32px;
   --lh-display: 38px;
   --fs-display-compact: 28px;
@@ -529,17 +529,17 @@ html[data-size="compact"] {
   --lh-site-display: 32px;
 }
 @media (min-width: 640px) {
-  :root[data-font="source-serif"] {
+  :root[data-font="geist-serif"] {
     --fs-site-display: 32px;
     --lh-site-display: 38px;
   }
 }
-:root[data-font="source-serif"][data-size="compact"] {
+:root[data-font="geist-serif"][data-size="compact"] {
   --fs-site-display: 24px;
   --lh-site-display: 30px;
 }
 @media (min-width: 640px) {
-  :root[data-font="source-serif"][data-size="compact"] {
+  :root[data-font="geist-serif"][data-size="compact"] {
     --fs-site-display: 28px;
     --lh-site-display: 34px;
   }
@@ -563,7 +563,7 @@ html[data-size="compact"] {
 /* !important: site headings set their weight inline from fontWeights, and
    a mode has to win over it. No faux bold: a single-weight face stays as
    drawn. The display rule has the same specificity and wins by order. */
-:root:is([data-font="source-serif"], [data-font="custom"]) :is(
+:root:is([data-font="geist-serif"], [data-font="custom"]) :is(
   :is(h1, h2, h3):is(.text-site-display, .text-site-title, .text-site-subtitle),
   .font-heading,
   .font-heading-display,
@@ -574,7 +574,7 @@ html[data-size="compact"] {
   font-weight: var(--heading-weight, 400);
   font-synthesis-weight: none;
 }
-:root:is([data-font="source-serif"], [data-font="custom"]) :is(
+:root:is([data-font="geist-serif"], [data-font="custom"]) :is(
   :is(h1, h2, h3).text-site-display,
   .font-heading-display,
   .typeset h1
